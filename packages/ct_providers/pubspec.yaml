@@ -1,0 +1,20 @@
+name: ct_providers
+description: >-
+  Built-in plugin implementations of Comic Translate Screen: detectors, OCR,
+  inpainters and translators. One file per provider plus one registry line.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  ct_core: any
+  ct_onnx: any
+
+dev_dependencies:
+  crypto: ^3.0.7
+  lints: ^6.0.0
+  path: ^1.9.1
+  test: ^1.26.3
