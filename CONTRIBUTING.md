@@ -15,6 +15,19 @@ Thanks for helping! This project is a Dart/Flutter rewrite based on
 flutter pub get
 ```
 
+Disable Flutter's experimental "record use" feature once:
+
+```bash
+flutter config --no-enable-record-use
+```
+
+With it on, dartcv4 restricts the exports of its native library to the
+functions recorded in the previous release build, so a release build that
+starts using a new OpenCV function fails with "Failed to lookup symbol". If
+that already happened, run `flutter clean` in `apps/comic_translate` and
+delete `.dart_tool/hooks_runner/dartcv4` and
+`.dart_tool/hooks_runner/shared/dartcv4/dartcv_keep.txt`.
+
 The first build compiles the OpenCV wrapper of `dartcv4` and downloads ONNX
 Runtime through build hooks. Compiling takes roughly 10–15 minutes on a laptop
 and happens once per build mode (`dart test`, Flutter debug/tests, Flutter

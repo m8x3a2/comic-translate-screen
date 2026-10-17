@@ -2,10 +2,6 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:ct_core/ct_core.dart';
-import 'package:ct_core/src/detection/foreground_color.dart';
-import 'package:ct_core/src/detection/geometry.dart';
-import 'package:ct_core/src/detection/reading_order.dart';
-import 'package:ct_core/src/detection/slicer.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 

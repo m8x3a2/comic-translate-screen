@@ -6,6 +6,7 @@ import 'package:ct_core/ct_core.dart';
 
 import '../bootstrap.dart';
 import 'cli_context.dart';
+import 'commands/detect_command.dart';
 import 'commands/doctor_command.dart';
 import 'commands/models_command.dart';
 import 'commands/report_command.dart';
@@ -45,6 +46,7 @@ CommandRunner<int> buildRunner(CliContextHolder holder) {
     ..addCommand(DoctorCommand(holder))
     ..addCommand(SelftestCommand(holder))
     ..addCommand(ModelsCommand(holder))
+    ..addCommand(DetectCommand(holder))
     ..addCommand(SecretsCommand(holder))
     ..addCommand(ReportCommand(holder));
   return runner;

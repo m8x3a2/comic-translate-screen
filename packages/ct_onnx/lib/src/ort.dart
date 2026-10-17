@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ffi' as ffi;
 import 'dart:io';
 import 'dart:typed_data';
@@ -191,13 +192,23 @@ class OrtRuntime {
   static void _checkWith(ffi.Pointer<OrtApi> api, ffi.Pointer<OrtStatus> status) {
     if (status == ffi.nullptr) return;
     final code = api.ref.GetErrorCode.asFunction<int Function(ffi.Pointer<OrtStatus>)>()(status);
-    final message = api.ref.GetErrorMessage
-        .asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<OrtStatus>)>()(status)
-        .cast<Utf8>()
-        .toDartString();
+    final message = decodeNativeMessage(
+        api.ref.GetErrorMessage.asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<OrtStatus>)>()(status).cast());
     api.ref.ReleaseStatus.asFunction<void Function(ffi.Pointer<OrtStatus>)>()(status);
     throw OrtException(code, message);
   }
+}
+
+/// Decodes a NUL-terminated native message. ONNX Runtime passes through
+/// Windows system messages in the local code page (e.g. cp1251), which are
+/// not valid UTF-8; invalid sequences become U+FFFD instead of throwing.
+String decodeNativeMessage(ffi.Pointer<ffi.Uint8> ptr) {
+  if (ptr == ffi.nullptr) return '';
+  var length = 0;
+  while (ptr[length] != 0 && length < 1 << 16) {
+    length++;
+  }
+  return utf8.decode(ptr.asTypedList(length), allowMalformed: true);
 }
 
 /// A loaded model.

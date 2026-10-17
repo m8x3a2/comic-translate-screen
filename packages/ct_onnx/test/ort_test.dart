@@ -1,7 +1,10 @@
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ct_onnx/ct_onnx.dart';
+import 'package:ct_onnx/src/ort.dart' show decodeNativeMessage;
+import 'package:ffi/ffi.dart';
 import 'package:test/test.dart';
 
 String fixture(String name) => '${Directory.current.path}/test/fixtures/$name';
@@ -66,6 +69,17 @@ void main() {
     expect(r.cpuOk, isTrue);
     expect(r.version, OrtNativeRelease.version);
     printOnFailure(r.toJson().toString());
+  });
+
+  test('native messages in a non-UTF-8 code page do not throw', () {
+    // "Ошибка" in cp1251, as Windows reports system errors on Russian systems.
+    final bytes = [0xCE, 0xF8, 0xE8, 0xE1, 0xEA, 0xE0, 0x3A, 0x20, 0x44, 0x4D, 0x4C, 0];
+    final ptr = calloc<Uint8>(bytes.length);
+    addTearDown(() => calloc.free(ptr));
+    ptr.asTypedList(bytes.length).setAll(0, bytes);
+    final text = decodeNativeMessage(ptr);
+    expect(text, endsWith(': DML'));
+    expect(text, contains('�'));
   });
 
   test('tensor shape must match data', () {

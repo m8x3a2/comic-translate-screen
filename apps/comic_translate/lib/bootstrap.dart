@@ -1,4 +1,5 @@
 import 'package:ct_core/ct_core.dart';
+import 'package:ct_providers/ct_providers.dart';
 
 import 'app_info.dart';
 import 'services/secure_secret_store.dart';
@@ -25,7 +26,35 @@ class AppServices {
   final RedactingSecretStore secrets;
   final ModelManager models;
   final SettingsStore settingsStore;
+
+  /// All built-in plugins and their live instances.
+  final PluginRegistry registry = builtInRegistry();
   final JsonlFileSink _appLogSink;
+
+  /// Resolves the configuration of plugin [id]: stored values from
+  /// [settings], then [overrides], plus its secrets from secure storage.
+  Future<PluginConfig> pluginConfig(String id, AppSettings settings, {Map<String, Object?> overrides = const {}}) async {
+    final info = registry.info(id);
+    final secrets = <String, String>{};
+    for (final field in info.settings.whereType<SecretSetting>()) {
+      final value = await this.secrets.read(pluginSecretKey(id, field.key));
+      if (value != null && value.isNotEmpty) secrets[field.key] = value;
+    }
+    return PluginConfig.resolve(info.settings, {...settings.pluginValues(id), ...overrides}, secrets: secrets);
+  }
+
+  /// Creates (or reuses) plugin [id] as configured in [settings].
+  Future<T> plugin<T extends Plugin>(
+    String id,
+    AppSettings settings, {
+    Map<String, Object?> overrides = const {},
+    bool? useGpu,
+    EventLog? log,
+  }) async {
+    final config = await pluginConfig(id, settings, overrides: overrides);
+    final env = PluginEnvironment(models: models, log: log ?? appLog, useGpu: useGpu ?? settings.useGpu);
+    return registry.instance<T>(id, config, env);
+  }
 
   /// [secretStore] defaults to the OS secure storage; tests pass a
   /// [MemorySecretStore]. Extra log sinks are built with the shared
@@ -69,5 +98,8 @@ class AppServices {
         },
       );
 
-  Future<void> dispose() => _appLogSink.close();
+  Future<void> dispose() async {
+    await registry.disposeInstances();
+    await _appLogSink.close();
+  }
 }
