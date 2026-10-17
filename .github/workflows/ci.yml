@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.7
+          channel: stable
+          cache: true
+
+      - name: Disable tool analytics
+        run: |
+          flutter --disable-analytics
+          dart --disable-analytics
+
+      - name: Resolve dependencies
+        run: flutter pub get
+
+      - name: ct_core — analyze and test
+        working-directory: packages/ct_core
+        run: |
+          dart analyze --fatal-infos
+          dart test
+
+      - name: App — analyze and test
+        working-directory: apps/comic_translate
+        run: |
+          flutter analyze
+          flutter test --timeout 120s
+
+      - name: Build Windows (GUI + cts.exe)
+        working-directory: apps/comic_translate
+        shell: bash
+        run: flutter build windows --release --dart-define=CTS_GIT_SHA=$(git rev-parse --short HEAD)
+
+      - name: CLI smoke test
+        working-directory: apps/comic_translate/build/windows/x64/runner/Release
+        shell: bash
+        env:
+          CTS_DATA_DIR: ${{ runner.temp }}/cts-data
+        run: |
+          ./cts.exe version
+          ./cts.exe doctor
+          ./cts.exe selftest render -o "$RUNNER_TEMP/render.png"
+          ./cts.exe --json report -o "$RUNNER_TEMP/report.zip"
