@@ -1,33 +1,66 @@
 # Plugins
 
-> The plugin interfaces land in milestone M1. This page describes the contract they
-> will follow; it is updated together with the code.
+Detection, OCR, translation and inpainting are plugins. Interfaces live in
+`packages/ct_core/lib/src/plugins/`, implementations in `packages/ct_providers`
+(from M2) or in a platform package such as `ct_ocr_windows` when native code is
+involved.
 
-Detection, OCR, translation, inpainting and text rendering are plugins. Interfaces
-live in `packages/ct_core`, implementations in `packages/ct_providers` (or in a
-platform package such as `ct_ocr_windows` when native code is involved).
+## Interfaces
 
-## Contract
+| Kind | Interface | Method |
+|---|---|---|
+| `detector` | `TextDetector` | `detect(RgbImage, PluginContext) → List<TextBlock>` |
+| `ocr` | `OcrEngine` | `recognize(RgbImage, blocks, sourceLanguage:, context:)` fills `TextBlock.text` |
+| `translator` | `Translator` | `translate(TranslationRequest, PluginContext)` fills `TextBlock.translation` |
+| `inpainter` | `Inpainter` | `inpaint(RgbImage, GrayImage mask, InpaintConfig, PluginContext) → RgbImage` |
 
-Every plugin exposes a `PluginInfo`:
+Every instance also implements `dispose()` to release native resources.
+`PluginContext` carries the event log (with page/stage context), a
+`CancelToken` and, in test mode, the `RunRecorder` for extra artifacts.
+
+## Description: `PluginInfo`
 
 | Field | Meaning |
 |---|---|
 | `id` | Stable identifier stored in settings and logs, e.g. `openai_compatible` |
-| `displayName` | Name shown in the UI |
-| `kind` | `detector`, `ocr`, `translator`, `inpainter`, `renderer` |
+| `displayName`, `description` | Shown in the UI |
+| `kind` | `detector`, `ocr`, `translator`, `inpainter` |
 | `privacy` | `local` (nothing leaves the device), `lan` (local network), `cloud` (internet) |
 | `platforms` | Platforms where it works |
-| `settings` | Settings schema; the settings page is generated from it. Fields marked secret are stored in secure storage |
-| `models` | Models to download before first use (URL, size, SHA-256, license) |
+| `settings` | Settings schema (`TextSetting`, `SecretSetting`, `ChoiceSetting`, `IntSetting`, `DoubleSetting`, `BoolSetting`); the settings page is generated from it |
+| `models` | Ids from `ModelCatalog` that must be downloaded first |
+
+Values are resolved with `PluginConfig.resolve(schema, stored, secrets:)`: types are
+coerced, ranges clamped, unknown keys dropped. `SecretSetting` values never reach
+`settings.json`; they are stored in the OS secure storage under
+`plugin.<pluginId>.<key>` and masked in all diagnostics.
 
 ## Adding a provider
 
-1. Create one file, e.g. `packages/ct_providers/lib/src/translation/my_provider.dart`,
-   implementing the interface for its kind.
-2. Add one line to `packages/ct_providers/lib/registry.dart`.
-3. Add tests next to it. Network providers are tested against a local fake server;
-   tests must not need real keys or internet access.
+1. Create one file, e.g. `packages/ct_providers/lib/src/translation/my_provider.dart`:
 
-Providers that send data out of the device must declare `privacy: cloud` (or `lan`);
-the UI marks them and asks the user before first use.
+   ```dart
+   const myProviderInfo = PluginInfo(
+     id: 'my_provider',
+     displayName: 'My provider',
+     kind: PluginKind.translator,
+     privacy: Privacy.cloud,
+     settings: [
+       TextSetting(key: 'url', label: 'API URL', isUrl: true),
+       SecretSetting(key: 'api_key', label: 'API key'),
+     ],
+   );
+
+   final myProviderFactory = PluginFactory<Translator>(
+     myProviderInfo,
+     (config, env) async => MyProvider(config),
+   );
+   ```
+
+2. Add one line to `packages/ct_providers/lib/registry.dart`:
+   `registry.register(myProviderFactory);`
+3. Add tests next to it. Network providers are tested against a local fake
+   server; tests must not need real keys or internet access.
+
+The registry caches one live instance per plugin and configuration, and
+releases the old one when the configuration changes.

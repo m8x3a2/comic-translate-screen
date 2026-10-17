@@ -2,9 +2,24 @@
 library;
 
 export 'src/app_paths.dart';
+export 'src/cancel.dart';
 export 'src/diagnostics/bug_report.dart';
 export 'src/diagnostics/env_info.dart';
 export 'src/diagnostics/event_log.dart';
 export 'src/diagnostics/log_event.dart';
 export 'src/diagnostics/redactor.dart';
 export 'src/diagnostics/run_recorder.dart';
+export 'src/image/cv_bridge.dart';
+export 'src/image/raster.dart';
+export 'src/model/geometry.dart';
+export 'src/model/language.dart';
+export 'src/model/text_block.dart';
+export 'src/models/model_catalog.dart';
+export 'src/models/model_manager.dart';
+export 'src/plugins/engines.dart';
+export 'src/plugins/plugin.dart';
+export 'src/plugins/registry.dart';
+export 'src/plugins/settings_schema.dart';
+export 'src/settings/app_settings.dart';
+export 'src/settings/secret_store.dart';
+export 'src/settings/settings_store.dart';
