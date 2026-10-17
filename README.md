@@ -17,8 +17,9 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 
 | Milestone | Scope | State |
 |---|---|---|
-| M0 | Project skeleton, `cts` CLI, diagnostics | in progress |
-| M1–M6 | Core, detection, OCR, translation, inpainting, text rendering | planned |
+| M0 | Project skeleton, `cts` CLI, diagnostics | done |
+| M1 | Core model, plugin registry, settings and secrets, model manager, ONNX Runtime, OpenCV | done |
+| M2–M6 | Detection, OCR, translation, inpainting, text rendering | planned |
 | M7–M12 | Full GUI, projects and export, webtoon mode, PSD, polish | planned |
 
 ## Principles
@@ -35,7 +36,9 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 
 ## Differences from the original (stage 1)
 
-- OCR uses the system engine (Windows.Media.Ocr; ML Kit on Android later).
+- OCR runs locally: PaddleOCR (PP-OCRv5, ONNX) by default, as in the original, plus
+  the system engine (Windows.Media.Ocr; ML Kit on Android later) as a lightweight
+  alternative that needs no model download. Paid cloud OCR is removed.
 - Translation: an offline test translator and one OpenAI-compatible provider
   (works with OpenRouter, OpenAI, DeepSeek, LM Studio, Ollama, llama.cpp server).
   Other providers will return one by one.
@@ -44,7 +47,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 ## Building from source (Windows)
 
 Requirements: Flutter 3.47+ (Dart 3.13+), Visual Studio 2022 Build Tools with the
-"Desktop development with C++" workload, Windows Developer Mode enabled.
+"Desktop development with C++" workload and the "C++ ATL" component (needed by the
+secure-storage plugin), Windows Developer Mode enabled.
 
 ```bash
 flutter pub get

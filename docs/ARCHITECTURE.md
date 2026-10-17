@@ -17,7 +17,7 @@ load page → detect → OCR → translate → mask → inpaint → layout text 
 | Stage | Stage 1 implementation | Ported from |
 |---|---|---|
 | detect | RT-DETR-v2 (`detector-v4-s_int8.onnx`), slicing of tall pages, bubble association, heuristic line segmentation | `modules/detection/*` |
-| OCR | Windows.Media.Ocr through a C++/WinRT library (ML Kit on Android later) | replaces `modules/ocr/*` |
+| OCR | PaddleOCR (PP-OCRv5 detection + per-script recognition, ONNX) by default; Windows.Media.Ocr through a C++/WinRT library as a lightweight alternative (ML Kit on Android later) | `modules/ocr/ppocr/*`, `modules/ocr/processor.py` |
 | translate | `mock` (offline) and `openai_compatible`; same prompt and `block_N` JSON protocol | `modules/translation/*` |
 | mask | connected components inside blocks, bubble clipping, dilation | `modules/utils/image_utils.py` |
 | inpaint | AOT (default), LaMa, MI-GAN via ONNX Runtime; HD strategies; fast fill of uniform bubbles | `pipeline/inpainting.py`, `modules/inpainting/*` |
@@ -39,7 +39,8 @@ packages/ct_core/       pure Dart: models, pipeline, plugin interfaces, registry
 packages/ct_onnx/       FFI bindings to the ONNX Runtime C API + build hook that
                         fetches pinned official binaries                            (M1)
 packages/ct_ocr_windows/ Windows.Media.Ocr: C++/WinRT library with a C ABI          (M3)
-packages/ct_providers/  plugin implementations (detectors, inpainters, translators) (M1+)
+packages/ct_providers/  plugin implementations: detector, PaddleOCR, inpainters,
+                        translators                                                 (M2+)
 tools/                  developer scripts; reference/ generates parity data from
                         the original Python code                                    (M2)
 test_data/              test pages (with licenses), reference outputs, goldens      (M2)
@@ -109,7 +110,7 @@ settings.json      settings (no secrets)
 ## Stage 1 milestones
 
 M0 skeleton, CLI, diagnostics → M1 core, plugin registry, model manager, ONNX Runtime →
-M2 detection → M3 Windows OCR → M4 translation → M5 mask and inpainting →
+M2 detection → M3 OCR (PaddleOCR ONNX, then Windows OCR) → M4 translation → M5 mask and inpainting →
 M6 text rendering, end-to-end `cts process`, goldens → M7 GUI basics and automatic mode →
 M8 manual mode and editing → M9 projects and export → M10 webtoon mode → M11 PSD →
 M12 UI languages, automatic source language, documentation.

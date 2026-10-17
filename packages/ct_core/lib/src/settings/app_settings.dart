@@ -8,7 +8,7 @@ import '../plugins/engines.dart';
 class AppSettings {
   AppSettings({
     this.detector = 'rtdetr_v2',
-    this.ocr = 'windows_ocr',
+    this.ocr = 'ppocr',
     this.translator = 'openai_compatible',
     this.inpainter = 'aot',
     this.useGpu = false,

@@ -16,6 +16,10 @@ URLs and checksums are taken from the original `modules/utils/download.py`.
 | `lama-manga` | Text removal, higher quality (LaMa manga fine-tune) | `lama-manga-dynamic.onnx` | 197 MB | Apache-2.0 | huggingface.co/ogkalu/lama-manga-onnx-dynamic |
 | `osd-script-id` | Automatic source-language (script) detection | `osd_lstm.onnx`, `osd_labels.json` | 3.6 MB | Apache-2.0 | huggingface.co/ogkalu/image-script-identification |
 
+PaddleOCR models (PP-OCRv5 detection and recognition for Latin, English, East
+Slavic, Korean and Chinese/Japanese scripts, already published in ONNX by the
+upstream project) are added to the registry with the OCR milestone (M3).
+
 MI-GAN is not included: the original's ONNX download URL returns 404 and the
 original user interface only offers LaMa and AOT.
 

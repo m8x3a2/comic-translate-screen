@@ -6,7 +6,8 @@ Thanks for helping! This project is a Dart/Flutter rewrite based on
 ## Setup (Windows)
 
 1. Install Flutter 3.47+ and Visual Studio 2022 Build Tools with the
-   "Desktop development with C++" workload.
+   "Desktop development with C++" workload and the "C++ ATL" component
+   (`Microsoft.VisualStudio.Component.VC.ATL`, needed by flutter_secure_storage).
 2. Enable Windows Developer Mode (needed for Flutter plugins).
 3. From the repository root:
 
@@ -14,10 +15,20 @@ Thanks for helping! This project is a Dart/Flutter rewrite based on
 flutter pub get
 ```
 
+The first build compiles the OpenCV wrapper of `dartcv4` and downloads ONNX
+Runtime through build hooks. Compiling takes roughly 10–15 minutes on a laptop
+and happens once per build mode (`dart test`, Flutter debug/tests, Flutter
+release); results are cached in `.dart_tool/hooks_runner` afterwards.
+
+To regenerate the ONNX Runtime bindings (only when upgrading ONNX Runtime) you
+also need LLVM: `winget install LLVM.LLVM`, then
+`cd packages/ct_onnx && dart run tool/ffigen.dart`.
+
 ## Checks before a pull request
 
 ```bash
 cd packages/ct_core && dart analyze && dart test
+cd packages/ct_onnx && dart analyze && dart test
 cd apps/comic_translate && flutter analyze && flutter test
 ```
 
