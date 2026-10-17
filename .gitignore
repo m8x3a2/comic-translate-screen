@@ -1,2 +1,33 @@
-*.txt
-!requirements*.txt
+# Dart / Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+pubspec_overrides.yaml
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/*
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python (tools/reference)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local runtime data produced by the app/CLI during development
+/.cts/
+/out/
+*.log
+
+# Downloaded native binaries and models are fetched by build hooks / model manager
+/third_party/_downloads/
