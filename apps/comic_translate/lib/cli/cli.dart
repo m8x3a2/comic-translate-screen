@@ -7,7 +7,9 @@ import 'package:ct_core/ct_core.dart';
 import '../bootstrap.dart';
 import 'cli_context.dart';
 import 'commands/doctor_command.dart';
+import 'commands/models_command.dart';
 import 'commands/report_command.dart';
+import 'commands/secrets_command.dart';
 import 'commands/selftest_command.dart';
 import 'commands/version_command.dart';
 
@@ -42,12 +44,23 @@ CommandRunner<int> buildRunner(CliContextHolder holder) {
     ..addCommand(VersionCommand(holder))
     ..addCommand(DoctorCommand(holder))
     ..addCommand(SelftestCommand(holder))
+    ..addCommand(ModelsCommand(holder))
+    ..addCommand(SecretsCommand(holder))
     ..addCommand(ReportCommand(holder));
   return runner;
 }
 
 /// Entry point for `cts.exe`. Returns the process exit code.
-Future<int> runCli(List<String> args, {IOSink? out, IOSink? err, String? dataDirOverride}) async {
+///
+/// Tests pass [secretStore] (a [MemorySecretStore]) because the OS secure
+/// storage plugin is not available under `flutter test`.
+Future<int> runCli(
+  List<String> args, {
+  IOSink? out,
+  IOSink? err,
+  String? dataDirOverride,
+  SecretStore? secretStore,
+}) async {
   final stderrSink = err ?? stderr;
   final holder = CliContextHolder();
   final runner = buildRunner(holder);
@@ -64,11 +77,12 @@ Future<int> runCli(List<String> args, {IOSink? out, IOSink? err, String? dataDir
   }
 
   final verbose = results.flag('verbose');
-  final redactorForConsole = Redactor(homeDir: AppPaths.homeDir());
   final services = AppServices.create(
     dataDirOverride: dataDirOverride ?? results.option('data-dir'),
-    extraSinks: [if (verbose) ConsoleSink(redactorForConsole, out: stderrSink)],
+    extraSinks: [if (verbose) (redactor) => ConsoleSink(redactor, out: stderrSink)],
+    secretStore: secretStore,
   );
+  await services.init();
   holder._context = CliContext(
     services: services,
     json: results.flag('json'),

@@ -8,6 +8,7 @@ import '../bootstrap.dart';
 Future<void> guiMain(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   final services = AppServices.create();
+  await services.init();
   final log = services.appLog.child(stage: 'gui');
 
   // Every unhandled error ends up in logs/app.jsonl (redacted).

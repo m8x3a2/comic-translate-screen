@@ -19,15 +19,24 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | Command | Purpose |
 |---|---|
 | `cts version` | Version, git commit, Flutter and Dart versions |
-| `cts doctor` | Environment checks: data directory, text rendering engine (more checks arrive with each milestone) |
+| `cts doctor` | Environment checks: data directory, text rendering, OpenCV, ONNX Runtime (CPU and DirectML), secure storage, models |
 | `cts selftest render [-o file.png]` | Render sample text with dart:ui and save it |
+| `cts models list` | Known models: status, size, license, location |
+| `cts models download <id>... \| --all` | Download models (network access; shows hosts and sizes, resumes interrupted downloads) |
+| `cts models verify <id>... \| --all` | Re-check SHA-256 of downloaded files |
+| `cts models delete <id>...` | Delete downloaded files |
+| `cts secrets list` | Names of stored secrets (values are never printed) |
+| `cts secrets set <name>` | Store a secret read from stdin, e.g. `plugin.openai_compatible.api_key` |
+| `cts secrets delete <name>` | Delete a stored secret |
 | `cts report [--run ID] [--with-images] [--note TEXT] [-o file.zip]` | Build a bug report |
+
+Secrets are read from stdin so they never appear in shell history or process
+lists. They are stored in the OS secure storage and masked in all logs.
 
 ## Planned
 
 | Command | Milestone |
 |---|---|
-| `cts models list\|download\|verify` | M1 |
 | `cts detect <img>` → `blocks.json`, `overlay.png` | M2 |
 | `cts parity <page>` (compare with the original's reference output) | M2 |
 | `cts ocr <img> [--blocks f] --lang en` | M3 |

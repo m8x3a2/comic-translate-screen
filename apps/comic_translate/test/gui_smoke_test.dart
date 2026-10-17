@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:comic_translate/app_info.dart';
 import 'package:comic_translate/bootstrap.dart';
 import 'package:comic_translate/gui/gui_main.dart';
+import 'package:ct_core/ct_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -13,7 +14,7 @@ void main() {
 
   setUpAll(() {
     dir = Directory.systemTemp.createTempSync('cts_gui_test_');
-    services = AppServices.create(dataDirOverride: dir.path);
+    services = AppServices.create(dataDirOverride: dir.path, secretStore: MemorySecretStore());
   });
 
   tearDownAll(() async {

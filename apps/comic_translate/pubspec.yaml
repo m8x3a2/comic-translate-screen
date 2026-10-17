@@ -12,6 +12,8 @@ dependencies:
     sdk: flutter
   args: ^2.7.0
   ct_core: any
+  ct_onnx: any
+  flutter_secure_storage: ^11.2.0
   path: ^1.9.1
 
 dev_dependencies:
