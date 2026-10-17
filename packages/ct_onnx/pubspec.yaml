@@ -1,0 +1,22 @@
+name: ct_onnx
+description: >-
+  Thin FFI bindings to the ONNX Runtime C API for Comic Translate Screen.
+  A build hook fetches pinned official ONNX Runtime binaries.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  archive: ^4.0.7
+  code_assets: ^2.1.0
+  crypto: ^3.0.7
+  ffi: ^2.1.4
+  hooks: ^2.2.0
+
+dev_dependencies:
+  ffigen: ^23.0.0
+  lints: ^6.0.0
+  test: ^1.26.3

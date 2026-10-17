@@ -8,3 +8,15 @@ environment:
 workspace:
   - apps/comic_translate
   - packages/ct_core
+  - packages/ct_onnx
+
+hooks:
+  user_defines:
+    dartcv4:
+      # Only what the pipeline uses: smaller DLL, faster native build.
+      include_modules:
+        - imgcodecs
+        - imgproc
+        - photo
+      windows:
+        use_opencl: false
