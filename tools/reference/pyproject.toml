@@ -18,6 +18,9 @@ dependencies = [
     "requests>=2.31.0",
     # Same ONNX Runtime release as packages/ct_onnx, so inference matches.
     "onnxruntime==1.24.4",
+    # Same OpenCV release as dartcv4 builds (4.12.0): reference pages are
+    # decoded with it so both sides start from identical pixels.
+    "opencv-python-headless==4.12.0.88",
 ]
 
 [tool.uv]
