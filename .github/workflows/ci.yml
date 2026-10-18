@@ -32,8 +32,14 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .dart_tool/hooks_runner
-          key: hooks-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'pubspec.yaml') }}
-          restore-keys: hooks-${{ runner.os }}-
+          # v2: caches from before `--no-enable-record-use` carry a dartcv4
+          # keep-list that strips OpenCV functions used by newer code.
+          key: hooks-v2-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'pubspec.yaml') }}
+          restore-keys: hooks-v2-${{ runner.os }}-
+
+      - name: Drop stale native keep-lists
+        shell: bash
+        run: rm -f .dart_tool/hooks_runner/shared/dartcv4/dartcv_keep.txt
 
       - name: Resolve dependencies
         run: flutter pub get
@@ -42,32 +48,32 @@ jobs:
         working-directory: packages/ct_core
         run: |
           dart analyze --fatal-infos
-          dart test
+          dart test --reporter github
 
       - name: ct_onnx — analyze and test
         working-directory: packages/ct_onnx
         run: |
           dart analyze --fatal-infos
-          dart test
+          dart test --reporter github
 
       - name: ct_ocr_windows — analyze and test
         working-directory: packages/ct_ocr_windows
         run: |
           dart analyze --fatal-infos
-          dart test
+          dart test --reporter github
 
       # Parity tests that need downloaded models skip themselves here.
       - name: ct_providers — analyze and test
         working-directory: packages/ct_providers
         run: |
           dart analyze --fatal-infos
-          dart test
+          dart test --reporter github
 
       - name: App — analyze and test
         working-directory: apps/comic_translate
         run: |
           flutter analyze
-          flutter test --timeout 120s
+          flutter test --timeout 120s --reporter github
 
       - name: Build Windows (GUI + cts.exe)
         working-directory: apps/comic_translate
