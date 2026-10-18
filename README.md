@@ -20,7 +20,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 | M0 | Project skeleton, `cts` CLI, diagnostics | done |
 | M1 | Core model, plugin registry, settings and secrets, model manager, ONNX Runtime, OpenCV | done |
 | M2 | Text and bubble detection (RT-DETR-v2), line splitting, `cts detect`; identical output to the original on the test pages | done |
-| M3–M6 | OCR, translation, inpainting, text rendering | planned |
+| M3 | OCR: PaddleOCR and manga-ocr (identical output to the original), Windows OCR, `cts ocr` | done |
+| M4–M6 | Translation, inpainting, text rendering | planned |
 | M7–M12 | Full GUI, projects and export, webtoon mode, PSD, polish | planned |
 
 ## Principles
@@ -37,9 +38,10 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 
 ## Differences from the original (stage 1)
 
-- OCR runs locally: PaddleOCR (PP-OCRv5, ONNX) by default, as in the original, plus
-  the system engine (Windows.Media.Ocr; ML Kit on Android later) as a lightweight
-  alternative that needs no model download. Paid cloud OCR is removed.
+- OCR runs locally, as in the original's default: PaddleOCR (PP-OCRv5/v6, ONNX)
+  and manga-ocr for Japanese. New: the OCR built into Windows (Windows.Media.Ocr;
+  ML Kit on Android later) as a light alternative that needs no model download.
+  Paid cloud OCR is removed.
 - Translation: an offline test translator and one OpenAI-compatible provider
   (works with OpenRouter, OpenAI, DeepSeek, LM Studio, Ollama, llama.cpp server).
   Other providers will return one by one.

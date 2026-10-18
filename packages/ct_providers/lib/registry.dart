@@ -4,6 +4,7 @@ import 'src/detection/rtdetr_v2.dart';
 import 'src/ocr/default_ocr.dart';
 import 'src/ocr/manga_ocr.dart';
 import 'src/ocr/ppocr.dart';
+import 'src/ocr/windows_ocr.dart';
 
 /// Registers every built-in plugin. Adding a provider = one line here.
 void registerBuiltInPlugins(PluginRegistry registry) {
@@ -11,6 +12,7 @@ void registerBuiltInPlugins(PluginRegistry registry) {
   registry.register(defaultOcrFactory);
   registry.register(ppocrFactory);
   registry.register(mangaOcrFactory);
+  registry.register(windowsOcrFactory);
 }
 
 /// A registry with all built-in plugins.

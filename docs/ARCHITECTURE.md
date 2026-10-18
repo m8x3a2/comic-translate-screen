@@ -17,13 +17,22 @@ load page → detect → OCR → translate → mask → inpaint → layout text 
 | Stage | Stage 1 implementation | Ported from |
 |---|---|---|
 | detect | RT-DETR-v2 (`detector-v4-s_int8.onnx`), slicing of tall pages, bubble association, heuristic line segmentation | `modules/detection/*` |
-| OCR | PaddleOCR (PP-OCRv5 detection + per-script recognition, ONNX) by default; Windows.Media.Ocr through a C++/WinRT library as a lightweight alternative (ML Kit on Android later) | `modules/ocr/ppocr/*`, `modules/ocr/processor.py` |
+| OCR | `default` = the original's Default: PaddleOCR recognition of each heuristic line (PP-OCRv5/v6 per script, ONNX) and manga-ocr for Japanese; `windows_ocr` (Windows.Media.Ocr through a C++/WinRT library) as a light alternative (ML Kit on Android later) | `modules/ocr/ppocr/*`, `modules/ocr/manga_ocr/mobile/*`, `modules/ocr/factory.py`, `modules/ocr/processor.py` |
 | translate | `mock` (offline) and `openai_compatible`; same prompt and `block_N` JSON protocol | `modules/translation/*` |
 | mask | connected components inside blocks, bubble clipping, dilation | `modules/utils/image_utils.py` |
 | inpaint | AOT (default), LaMa, MI-GAN via ONNX Runtime; HD strategies; fast fill of uniform bubbles | `pipeline/inpainting.py`, `modules/inpainting/*` |
 | layout + render | font-size fitting and wrapping with dart:ui (hyphenation, no-space languages, vertical CJK), outline, smart colour | `modules/rendering/*` |
 
 A future upscaling stage (stage 2) is inserted before `inpaint`.
+
+### Deliberate differences from the original
+
+- The PP-OCR line *detector* is not ported. The original runs it only when no
+  block has text lines; the heuristic line splitter always produces lines, and a
+  block without lines is read as a whole instead.
+- Automatic source language ("Auto") needs the script-identification model and
+  arrives with M12; until then a language must be chosen.
+- `windows_ocr` is new (system OCR, no download).
 
 ## Packages (pub workspace)
 
@@ -38,8 +47,9 @@ packages/ct_core/       pure Dart: models, pipeline, plugin interfaces, registry
                         image-processing ports, project format, diagnostics
 packages/ct_onnx/       FFI bindings to the ONNX Runtime C API + build hook that
                         fetches pinned official binaries                            (M1)
-packages/ct_ocr_windows/ Windows.Media.Ocr: C++/WinRT library with a C ABI          (M3)
-packages/ct_providers/  plugin implementations: detector, PaddleOCR, inpainters,
+packages/ct_ocr_windows/ Windows.Media.Ocr: C++/WinRT library with a C ABI, compiled
+                        by a build hook                                             (M3)
+packages/ct_providers/  plugin implementations: detector, OCR engines, inpainters,
                         translators                                                 (M2+)
 tools/                  developer scripts; reference/ generates parity data from
                         the original Python code                                    (M2)

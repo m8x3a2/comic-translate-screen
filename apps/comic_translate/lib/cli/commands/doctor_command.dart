@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
+import 'package:ct_ocr_windows/ct_ocr_windows.dart';
 import 'package:ct_onnx/ct_onnx.dart';
 import 'package:path/path.dart' as p;
 
@@ -53,6 +54,7 @@ class DoctorCommand extends CtsCommand {
       await guardedCheck('text rendering (dart:ui)', _checkRender),
       await guardedCheck('image codecs (OpenCV)', _checkOpenCv),
       ...await _checkOnnxRuntime(),
+      if (Platform.isWindows) await guardedCheck('Windows OCR', _checkWindowsOcr),
       await guardedCheck('secure storage', _checkSecrets),
       ...await _checkModels(),
     ];
@@ -128,6 +130,14 @@ class DoctorCommand extends CtsCommand {
       else
         DoctorCheck.warn('ONNX Runtime (GPU, DirectML)', 'falls back to CPU: ${r.directmlFallbackReason ?? 'unknown'}'),
     ];
+  }
+
+  Future<DoctorCheck> _checkWindowsOcr() async {
+    final info = WindowsOcr.info();
+    if (info.languages.isEmpty) {
+      return DoctorCheck.warn('Windows OCR', 'no OCR language packs installed (PaddleOCR still works)');
+    }
+    return DoctorCheck.ok('Windows OCR', 'languages: ${info.languages.join(', ')}');
   }
 
   Future<DoctorCheck> _checkSecrets() async {

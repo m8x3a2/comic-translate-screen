@@ -37,11 +37,18 @@ To regenerate the ONNX Runtime bindings (only when upgrading ONNX Runtime) you
 also need LLVM: `winget install LLVM.LLVM`, then
 `cd packages/ct_onnx && dart run tool/ffigen.dart`.
 
+Parity tests in `ct_providers` need the models they test
+(`cts models download rtdetr-v2-int8 ppocr-v5-rec-en ...`) and skip themselves
+otherwise. The native Windows OCR library is compiled by a build hook with the
+Visual Studio C++ tools (C++/WinRT headers come with the Windows SDK).
+
 ## Checks before a pull request
 
 ```bash
 cd packages/ct_core && dart analyze && dart test
 cd packages/ct_onnx && dart analyze && dart test
+cd packages/ct_ocr_windows && dart analyze && dart test
+cd packages/ct_providers && dart analyze && dart test
 cd apps/comic_translate && flutter analyze && flutter test
 ```
 

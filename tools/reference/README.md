@@ -13,9 +13,13 @@ with small tolerances.
 | `primitives` | PIL grayscale and resize, mahotas Otsu and labelling, numpy median/percentile | `packages/ct_core/test/parity/primitives_test.dart` |
 | `geometry` | box filtering and merging, slicing of tall pages, reading order | `packages/ct_core/test/parity/geometry_test.dart` |
 | `detection` | RT-DETR-v2 on every test page: raw outputs, blocks, lines, colours | `packages/ct_providers/test/rtdetr_v2_parity_test.dart` (needs the model) |
+| `ocr` | PaddleOCR on the detected blocks: line crops, recognizer inputs, texts | `packages/ct_providers/test/ppocr_parity_test.dart` (needs the models) |
+| `manga_ocr` | manga-ocr on two pages (inputs, tokens, texts) and its text clean-up | `packages/ct_providers/test/manga_ocr_parity_test.dart`, `packages/ct_core/test/parity/manga_ocr_text_test.dart` |
 | `heuristics` | line splitting and text direction on ~500 crops (blocks, bubbles, rotated, inverted, random regions) | `packages/ct_core/test/parity/heuristics_test.dart` |
 
-`heuristics` reuses the blocks of `detection`, so generate `detection` first
+`gen_manga_ocr_tables.py` generates the jaconv tables used by the Dart port.
+
+`heuristics`, `ocr` and `manga_ocr` reuse the blocks of `detection`, so generate `detection` first
 (it needs the model: `cts models download rtdetr-v2-int8`).
 
 The original repository is only read. Point `CT_ORIGINAL_DIR` at a checkout

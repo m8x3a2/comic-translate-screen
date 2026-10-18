@@ -18,6 +18,16 @@ Every instance also implements `dispose()` to release native resources.
 `PluginContext` carries the event log (with page/stage context), a
 `CancelToken` and, in test mode, the `RunRecorder` for extra artifacts.
 
+## Built-in plugins
+
+| Id | Kind | Notes |
+|---|---|---|
+| `rtdetr_v2` | detector | RT-DETR-v2 + heuristic line splitting |
+| `default` | ocr | PaddleOCR, manga-ocr for Japanese (the original's Default); the default OCR |
+| `ppocr` | ocr | PaddleOCR only (any source language, Japanese with PP-OCRv6) |
+| `manga_ocr` | ocr | manga-ocr only (Japanese) |
+| `windows_ocr` | ocr | Windows.Media.Ocr, Windows only, needs the language's OCR pack |
+
 ## Description: `PluginInfo`
 
 | Field | Meaning |

@@ -16,9 +16,15 @@ URLs and checksums are taken from the original `modules/utils/download.py`.
 | `lama-manga` | Text removal, higher quality (LaMa manga fine-tune) | `lama-manga-dynamic.onnx` | 197 MB | Apache-2.0 | huggingface.co/ogkalu/lama-manga-onnx-dynamic |
 | `osd-script-id` | Automatic source-language (script) detection | `osd_lstm.onnx`, `osd_labels.json` | 3.6 MB | Apache-2.0 | huggingface.co/ogkalu/image-script-identification |
 
-PaddleOCR models (PP-OCRv5 detection and recognition for Latin, English, East
-Slavic, Korean and Chinese/Japanese scripts, already published in ONNX by the
-upstream project) are added to the registry with the OCR milestone (M3).
+| `ppocr-v5-rec-en` | OCR, English (PP-OCRv5 mobile) | `en_PP-OCRv5_rec_mobile_infer.onnx` + dictionary | 7.5 MB | Apache-2.0 | huggingface.co/ogkalu/ppocr-v5-onnx |
+| `ppocr-v5-rec-latin` | OCR, French, German, Spanish, Italian, Dutch | `latin_PP-OCRv5_rec_mobile_infer.onnx` + dictionary | 7.5 MB | Apache-2.0 | huggingface.co/ogkalu/ppocr-v5-onnx |
+| `ppocr-v5-rec-eslav` | OCR, Russian | `eslav_PP-OCRv5_rec_mobile_infer.onnx` + dictionary | 7.5 MB | Apache-2.0 | huggingface.co/ogkalu/ppocr-v5-onnx |
+| `ppocr-v5-rec-korean` | OCR, Korean | `korean_PP-OCRv5_rec_mobile_infer.onnx` + dictionary | 12.9 MB | Apache-2.0 | huggingface.co/ogkalu/ppocr-v5-onnx |
+| `ppocr-v6-rec-small` | OCR, Chinese (and Japanese titles) | `PP-OCRv6_small_rec.onnx` + dictionary | 20.3 MB | Apache-2.0 | huggingface.co/ogkalu/ppocr-v6-onnx |
+| `manga-ocr-mobile` | OCR, Japanese (manga-ocr) | encoder, two decoder parts, vocabulary | 61.8 MB | Apache-2.0 | huggingface.co/ogkalu/manga-ocr-mobile |
+
+Only the recognizer of the chosen source language is needed. The PP-OCR line
+detector of the original is not used (see docs/ARCHITECTURE.md).
 
 MI-GAN is not included: the original's ONNX download URL returns 404 and the
 original user interface only offers LaMa and AOT.

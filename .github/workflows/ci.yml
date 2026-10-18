@@ -50,6 +50,19 @@ jobs:
           dart analyze --fatal-infos
           dart test
 
+      - name: ct_ocr_windows — analyze and test
+        working-directory: packages/ct_ocr_windows
+        run: |
+          dart analyze --fatal-infos
+          dart test
+
+      # Parity tests that need downloaded models skip themselves here.
+      - name: ct_providers — analyze and test
+        working-directory: packages/ct_providers
+        run: |
+          dart analyze --fatal-infos
+          dart test
+
       - name: App — analyze and test
         working-directory: apps/comic_translate
         run: |

@@ -19,7 +19,7 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | Command | Purpose |
 |---|---|
 | `cts version` | Version, git commit, Flutter and Dart versions |
-| `cts doctor` | Environment checks: data directory, text rendering, OpenCV, ONNX Runtime (CPU and DirectML), secure storage, models |
+| `cts doctor` | Environment checks: data directory, text rendering, OpenCV, ONNX Runtime (CPU and DirectML), Windows OCR languages, secure storage, models |
 | `cts selftest render [-o file.png]` | Render sample text with dart:ui and save it |
 | `cts models list` | Known models: status, size, license, location |
 | `cts models download <id>... \| --all` | Download models (network access; shows hosts and sizes, resumes interrupted downloads) |
@@ -29,6 +29,7 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | `cts secrets set <name>` | Store a secret read from stdin, e.g. `plugin.openai_compatible.api_key` |
 | `cts secrets delete <name>` | Delete a stored secret |
 | `cts detect <image>... [-o dir] [--gpu] [--confidence X] [--debug]` | Detect text blocks and speech bubbles; writes `<name>.blocks.json` (blocks with their lines and text direction) and `<name>.overlay.png` |
+| `cts ocr <image>... [--lang English] [--ocr default\|ppocr\|manga_ocr\|windows_ocr] [--blocks f.blocks.json] [-o dir] [--debug]` | Detect (or load blocks) and recognize text; writes `<name>.ocr.json` and prints the text in reading order |
 | `cts report [--run ID] [--with-images] [--note TEXT] [-o file.zip]` | Build a bug report |
 
 Secrets are read from stdin so they never appear in shell history or process
@@ -38,7 +39,6 @@ lists. They are stored in the OS secure storage and masked in all logs.
 
 | Command | Milestone |
 |---|---|
-| `cts ocr <img> [--blocks f] --lang en` | M3 |
 | `cts translate <blocks.json> --to ru [--provider mock\|openai_compatible]` | M4 |
 | `cts mask <img> --blocks f`, `cts inpaint <img> --mask m.png [--model aot\|lama\|migan]` | M5 |
 | `cts render`, `cts process <inputs> -o out [--debug]`, `cts compare`, `cts golden check\|update`, `cts bench` | M6 |

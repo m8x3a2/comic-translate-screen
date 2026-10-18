@@ -6,3 +6,4 @@ export 'src/detection/rtdetr_v2.dart';
 export 'src/ocr/default_ocr.dart';
 export 'src/ocr/manga_ocr.dart';
 export 'src/ocr/ppocr.dart';
+export 'src/ocr/windows_ocr.dart';
