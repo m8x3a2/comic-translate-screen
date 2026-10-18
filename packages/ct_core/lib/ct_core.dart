@@ -36,3 +36,4 @@ export 'src/plugins/settings_schema.dart';
 export 'src/settings/app_settings.dart';
 export 'src/settings/secret_store.dart';
 export 'src/settings/settings_store.dart';
+export 'src/translation/llm_protocol.dart';

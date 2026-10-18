@@ -5,6 +5,8 @@ import 'src/ocr/default_ocr.dart';
 import 'src/ocr/manga_ocr.dart';
 import 'src/ocr/ppocr.dart';
 import 'src/ocr/windows_ocr.dart';
+import 'src/translation/mock.dart';
+import 'src/translation/openai_compatible.dart';
 
 /// Registers every built-in plugin. Adding a provider = one line here.
 void registerBuiltInPlugins(PluginRegistry registry) {
@@ -13,6 +15,8 @@ void registerBuiltInPlugins(PluginRegistry registry) {
   registry.register(ppocrFactory);
   registry.register(mangaOcrFactory);
   registry.register(windowsOcrFactory);
+  registry.register(openAiCompatibleFactory);
+  registry.register(mockTranslatorFactory);
 }
 
 /// A registry with all built-in plugins.

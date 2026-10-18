@@ -1,6 +1,6 @@
 """Generate parity reference data by running the original comic-translate code.
 
-    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr]
+    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr|translation]
 
 The original repository is only imported (bytecode writing is disabled), never
 modified. Outputs go to test_data/reference/ and are compared by Dart tests.
@@ -531,6 +531,72 @@ def gen_manga_ocr(out: Path, pages_dir: Path, models_dir: Path, detection_dir: P
     write_json(out / "manga_ocr.json", {"pages": pages, "postprocess": text_cases, "vocab_size": model.vocab_size})
 
 
+# ------------------------------------------------------------ translation ---
+
+def gen_translation(out: Path) -> None:
+    """The LLM translation protocol: prompts, block JSON, reply parsing, filters."""
+    from modules.translation.base import LLMTranslation
+    from modules.utils.textblock import TextBlock
+    from modules.utils.translator_utils import (
+        get_raw_text, has_translatable_content, set_texts_from_json, set_upper_case,
+    )
+
+    class Prompt(LLMTranslation):
+        def initialize(self, *a, **k): pass
+        def translate(self, *a, **k): pass
+
+    texts_sets = [
+        [],
+        ["Hello!", "NO! Don't even think about it.", "..."],
+        ["ダメ！そんなことしちゃだめなんだから", "환력", "Ах.. идеально", 'He said "hi" \\ back', "tab\there\nnew line", "\x01ctrl\x1f"],
+        ["", "   ", "!?", "5", "何", "€"],
+    ]
+    prompts = []
+    for src, tgt in [("English", "Russian"), ("Japanese", "English"), ("Korean", "Simplified Chinese")]:
+        prompts.append({"source": src, "target": tgt, "system": Prompt().get_system_prompt(src, tgt)})
+
+    raw = []
+    for texts in texts_sets:
+        blocks = [TextBlock(text_bbox=np.array([0, 0, 1, 1]), text=t) for t in texts]
+        raw_json = get_raw_text(blocks)
+        user = f"{'A comic about witches.'}\nMake the translation sound as natural as possible.\nTranslate this:\n{raw_json}"
+        raw.append({"texts": texts, "json": raw_json, "user_prompt": user})
+
+    replies = [
+        '{"block_0": "Привет!", "block_1": "НЕТ!"}',
+        'Sure! Here you go:\n```json\n{\n  "block_0": "a",\n  "block_2": "c"\n}\n```\nHope it helps {really}',
+        "no json at all",
+        '{"block_0": 5, "block_1": null, "block_2": "x"}',
+    ]
+    reply_cases = []
+    for reply in replies:
+        blocks = [TextBlock(text_bbox=np.array([0, 0, 1, 1]), text=f"t{i}") for i in range(3)]
+        for b in blocks:
+            b.translation = "old"
+        error = None
+        try:
+            set_texts_from_json(blocks, reply)
+        except Exception as e:
+            error = type(e).__name__
+        reply_cases.append({"reply": reply, "translations": [b.translation if isinstance(b.translation, str) else to_py(b.translation) for b in blocks], "error": error})
+
+    samples = ["", "...", "!?", "a", "5", "何", "ー", "・・・", "€", "½", "Ⅻ", "x²", " \t", "환", "ـ"]
+    translatable = [{"text": t, "result": has_translatable_content(t)} for t in samples]
+
+    upper_cases = []
+    for t in ["hello world", "HELLO WORLD", "Hello", "привет МИР", "ПРИВЕТ", "123", "ダメ", "ß straße", "ǆ title", "İstanbul", ""]:
+        for flag in (True, False):
+            blk = TextBlock(text_bbox=np.array([0, 0, 1, 1]))
+            blk.translation = t
+            set_upper_case([blk], flag)
+            upper_cases.append({"in": t, "upper": flag, "out": blk.translation})
+
+    write_json(out / "translation.json", {
+        "prompts": prompts, "raw": raw, "replies": reply_cases,
+        "translatable": translatable, "upper_case": upper_cases,
+    })
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> None:
@@ -539,7 +605,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -565,7 +631,7 @@ def main() -> None:
         "decoder": "cv2.imdecode(IMREAD_COLOR) + BGR2RGB",
     })
 
-    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr"])
+    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation"])
     if "primitives" in only:
         gen_primitives(args.out)
     if "geometry" in only:
@@ -578,6 +644,8 @@ def main() -> None:
         gen_ocr(args.out, args.pages, args.models, args.out / "detection")
     if "manga_ocr" in only:
         gen_manga_ocr(args.out, args.pages, args.models, args.out / "detection")
+    if "translation" in only:
+        gen_translation(args.out)
 
 
 if __name__ == "__main__":

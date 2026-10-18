@@ -1,0 +1,271 @@
+{
+ "prompts": [
+  {
+   "source": "English",
+   "target": "Russian",
+   "system": "You are an expert translator who translates English to Russian. You pay attention to style, formality, idioms, slang etc and try to convey it in the way a Russian speaker would understand.\n        BE MORE NATURAL. NEVER USE 당신, 그녀, 그 or its Japanese equivalents.\n        Specifically, you will be translating text OCR'd from a comic. The OCR is not perfect and as such you may receive text with typos or other mistakes.\n        To aid you and provide context, You may be given the image of the page and/or extra context about the comic. You will be given a json string of the detected text blocks and the text to translate. Return the json string with the texts translated. DO NOT translate the keys of the json. For each block:\n        - If it's already in Russian or looks like gibberish, OUTPUT IT AS IT IS instead\n        - DO NOT give explanations\n        Do Your Best! I'm really counting on you."
+  },
+  {
+   "source": "Japanese",
+   "target": "English",
+   "system": "You are an expert translator who translates Japanese to English. You pay attention to style, formality, idioms, slang etc and try to convey it in the way a English speaker would understand.\n        BE MORE NATURAL. NEVER USE 당신, 그녀, 그 or its Japanese equivalents.\n        Specifically, you will be translating text OCR'd from a comic. The OCR is not perfect and as such you may receive text with typos or other mistakes.\n        To aid you and provide context, You may be given the image of the page and/or extra context about the comic. You will be given a json string of the detected text blocks and the text to translate. Return the json string with the texts translated. DO NOT translate the keys of the json. For each block:\n        - If it's already in English or looks like gibberish, OUTPUT IT AS IT IS instead\n        - DO NOT give explanations\n        Do Your Best! I'm really counting on you."
+  },
+  {
+   "source": "Korean",
+   "target": "Simplified Chinese",
+   "system": "You are an expert translator who translates Korean to Simplified Chinese. You pay attention to style, formality, idioms, slang etc and try to convey it in the way a Simplified Chinese speaker would understand.\n        BE MORE NATURAL. NEVER USE 당신, 그녀, 그 or its Japanese equivalents.\n        Specifically, you will be translating text OCR'd from a comic. The OCR is not perfect and as such you may receive text with typos or other mistakes.\n        To aid you and provide context, You may be given the image of the page and/or extra context about the comic. You will be given a json string of the detected text blocks and the text to translate. Return the json string with the texts translated. DO NOT translate the keys of the json. For each block:\n        - If it's already in Simplified Chinese or looks like gibberish, OUTPUT IT AS IT IS instead\n        - DO NOT give explanations\n        Do Your Best! I'm really counting on you."
+  }
+ ],
+ "raw": [
+  {
+   "texts": [],
+   "json": "{}",
+   "user_prompt": "A comic about witches.\nMake the translation sound as natural as possible.\nTranslate this:\n{}"
+  },
+  {
+   "texts": [
+    "Hello!",
+    "NO! Don't even think about it.",
+    "..."
+   ],
+   "json": "{\n    \"block_0\": \"Hello!\",\n    \"block_1\": \"NO! Don't even think about it.\",\n    \"block_2\": \"...\"\n}",
+   "user_prompt": "A comic about witches.\nMake the translation sound as natural as possible.\nTranslate this:\n{\n    \"block_0\": \"Hello!\",\n    \"block_1\": \"NO! Don't even think about it.\",\n    \"block_2\": \"...\"\n}"
+  },
+  {
+   "texts": [
+    "ダメ！そんなことしちゃだめなんだから",
+    "환력",
+    "Ах.. идеально",
+    "He said \"hi\" \\ back",
+    "tab\there\nnew line",
+    "\u0001ctrl\u001f"
+   ],
+   "json": "{\n    \"block_0\": \"ダメ！そんなことしちゃだめなんだから\",\n    \"block_1\": \"환력\",\n    \"block_2\": \"Ах.. идеально\",\n    \"block_3\": \"He said \\\"hi\\\" \\\\ back\",\n    \"block_4\": \"tab\\there\\nnew line\",\n    \"block_5\": \"\\u0001ctrl\\u001f\"\n}",
+   "user_prompt": "A comic about witches.\nMake the translation sound as natural as possible.\nTranslate this:\n{\n    \"block_0\": \"ダメ！そんなことしちゃだめなんだから\",\n    \"block_1\": \"환력\",\n    \"block_2\": \"Ах.. идеально\",\n    \"block_3\": \"He said \\\"hi\\\" \\\\ back\",\n    \"block_4\": \"tab\\there\\nnew line\",\n    \"block_5\": \"\\u0001ctrl\\u001f\"\n}"
+  },
+  {
+   "texts": [
+    "",
+    "   ",
+    "!?",
+    "5",
+    "何",
+    "€"
+   ],
+   "json": "{\n    \"block_0\": \"\",\n    \"block_1\": \"   \",\n    \"block_2\": \"!?\",\n    \"block_3\": \"5\",\n    \"block_4\": \"何\",\n    \"block_5\": \"€\"\n}",
+   "user_prompt": "A comic about witches.\nMake the translation sound as natural as possible.\nTranslate this:\n{\n    \"block_0\": \"\",\n    \"block_1\": \"   \",\n    \"block_2\": \"!?\",\n    \"block_3\": \"5\",\n    \"block_4\": \"何\",\n    \"block_5\": \"€\"\n}"
+  }
+ ],
+ "replies": [
+  {
+   "reply": "{\"block_0\": \"Привет!\", \"block_1\": \"НЕТ!\"}",
+   "translations": [
+    "Привет!",
+    "НЕТ!",
+    "old"
+   ],
+   "error": null
+  },
+  {
+   "reply": "Sure! Here you go:\n```json\n{\n  \"block_0\": \"a\",\n  \"block_2\": \"c\"\n}\n```\nHope it helps {really}",
+   "translations": [
+    "old",
+    "old",
+    "old"
+   ],
+   "error": "JSONDecodeError"
+  },
+  {
+   "reply": "no json at all",
+   "translations": [
+    "old",
+    "old",
+    "old"
+   ],
+   "error": null
+  },
+  {
+   "reply": "{\"block_0\": 5, \"block_1\": null, \"block_2\": \"x\"}",
+   "translations": [
+    5,
+    null,
+    "x"
+   ],
+   "error": null
+  }
+ ],
+ "translatable": [
+  {
+   "text": "",
+   "result": false
+  },
+  {
+   "text": "...",
+   "result": false
+  },
+  {
+   "text": "!?",
+   "result": false
+  },
+  {
+   "text": "a",
+   "result": true
+  },
+  {
+   "text": "5",
+   "result": true
+  },
+  {
+   "text": "何",
+   "result": true
+  },
+  {
+   "text": "ー",
+   "result": true
+  },
+  {
+   "text": "・・・",
+   "result": false
+  },
+  {
+   "text": "€",
+   "result": false
+  },
+  {
+   "text": "½",
+   "result": true
+  },
+  {
+   "text": "Ⅻ",
+   "result": true
+  },
+  {
+   "text": "x²",
+   "result": true
+  },
+  {
+   "text": " \t",
+   "result": false
+  },
+  {
+   "text": "환",
+   "result": true
+  },
+  {
+   "text": "ـ",
+   "result": true
+  }
+ ],
+ "upper_case": [
+  {
+   "in": "hello world",
+   "upper": true,
+   "out": "HELLO WORLD"
+  },
+  {
+   "in": "hello world",
+   "upper": false,
+   "out": "hello world"
+  },
+  {
+   "in": "HELLO WORLD",
+   "upper": true,
+   "out": "HELLO WORLD"
+  },
+  {
+   "in": "HELLO WORLD",
+   "upper": false,
+   "out": "Hello world"
+  },
+  {
+   "in": "Hello",
+   "upper": true,
+   "out": "HELLO"
+  },
+  {
+   "in": "Hello",
+   "upper": false,
+   "out": "Hello"
+  },
+  {
+   "in": "привет МИР",
+   "upper": true,
+   "out": "ПРИВЕТ МИР"
+  },
+  {
+   "in": "привет МИР",
+   "upper": false,
+   "out": "привет МИР"
+  },
+  {
+   "in": "ПРИВЕТ",
+   "upper": true,
+   "out": "ПРИВЕТ"
+  },
+  {
+   "in": "ПРИВЕТ",
+   "upper": false,
+   "out": "Привет"
+  },
+  {
+   "in": "123",
+   "upper": true,
+   "out": "123"
+  },
+  {
+   "in": "123",
+   "upper": false,
+   "out": "123"
+  },
+  {
+   "in": "ダメ",
+   "upper": true,
+   "out": "ダメ"
+  },
+  {
+   "in": "ダメ",
+   "upper": false,
+   "out": "ダメ"
+  },
+  {
+   "in": "ß straße",
+   "upper": true,
+   "out": "SS STRASSE"
+  },
+  {
+   "in": "ß straße",
+   "upper": false,
+   "out": "ß straße"
+  },
+  {
+   "in": "ǆ title",
+   "upper": true,
+   "out": "Ǆ TITLE"
+  },
+  {
+   "in": "ǆ title",
+   "upper": false,
+   "out": "ǆ title"
+  },
+  {
+   "in": "İstanbul",
+   "upper": true,
+   "out": "İSTANBUL"
+  },
+  {
+   "in": "İstanbul",
+   "upper": false,
+   "out": "İstanbul"
+  },
+  {
+   "in": "",
+   "upper": true,
+   "out": ""
+  },
+  {
+   "in": "",
+   "upper": false,
+   "out": ""
+  }
+ ]
+}
