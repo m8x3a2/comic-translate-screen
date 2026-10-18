@@ -9,6 +9,7 @@ import 'cli_context.dart';
 import 'commands/detect_command.dart';
 import 'commands/doctor_command.dart';
 import 'commands/models_command.dart';
+import 'commands/ocr_command.dart';
 import 'commands/report_command.dart';
 import 'commands/secrets_command.dart';
 import 'commands/selftest_command.dart';
@@ -47,6 +48,7 @@ CommandRunner<int> buildRunner(CliContextHolder holder) {
     ..addCommand(SelftestCommand(holder))
     ..addCommand(ModelsCommand(holder))
     ..addCommand(DetectCommand(holder))
+    ..addCommand(OcrCommand(holder))
     ..addCommand(SecretsCommand(holder))
     ..addCommand(ReportCommand(holder));
   return runner;
