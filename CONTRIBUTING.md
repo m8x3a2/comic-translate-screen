@@ -59,6 +59,16 @@ cd apps/comic_translate && flutter build windows
 build/windows/x64/runner/Release/cts.exe doctor
 ```
 
+When the pipeline or rendering changed, check the golden pages from the
+repository root (needs the default models: `cts models download --all`):
+
+```bash
+apps/comic_translate/build/windows/x64/runner/Release/cts.exe golden check
+```
+
+If a difference is intended, run `golden update`, look at the new pictures in
+`test_data/golden/` and commit them with the change.
+
 ## Guidelines
 
 - Keep `ct_core` free of Flutter imports so it stays testable with `dart test`.

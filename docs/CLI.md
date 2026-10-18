@@ -34,6 +34,11 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | `cts settings show\|get <path>\|set <path> <value>\|plugins` | Read or change settings.json by dotted path (e.g. `plugins.openai_compatible.api_url`); `plugins` lists every plugin with its settings and where it sends data |
 | `cts mask <image> --blocks f.json [-o dir]` | Build the text-removal mask from blocks (detect/ocr/translate JSON); writes `<name>.mask.png` |
 | `cts inpaint <image>... [--blocks f.json \| --mask m.png] [--inpainter aot\|lama] [--strategy resize\|crop\|original] [--gpu] [-o dir] [--debug]` | Remove text: uniform bubbles are flat-filled, the rest goes to the inpainting network (by patches or the whole page); without `--blocks`/`--mask` text is detected first; writes `<name>.clean.png` |
+| `cts render <page.png> --blocks f.translated.json [--to lang] [-o dir]` | Draw translations onto a page (usually the cleaned page from `cts inpaint`); writes `<name>.rendered.png` and `<name>.layout.json` |
+| `cts process <image\|folder>... [--from English] [--to Russian] [--translator mock\|openai_compatible] [--allow-network [--remember]] [--gpu] [-o dir] [--debug]` | The whole pipeline: detect, OCR, translate, remove text, draw the translation. Folders are read in natural order (page2 before page10). Writes `<name>.translated.png` and `<name>.json` (blocks, layout, timings) |
+| `cts compare <a.png> <b.png> [--diff d.png] [--threshold 16] [--min-psnr dB]` | Compare two images (PSNR, largest difference, changed pixels); exit code 0 when identical (or PSNR ≥ `--min-psnr`) |
+| `cts golden check\|update [--dir test_data/golden] [-o dir]` | Re-run the golden pages (default settings, offline mock translator, CPU) and compare blocks, OCR text, layout and picture with the saved results; `update` saves new results after an intended change |
+| `cts bench <image>... [--from] [--to] [--repeat 2] [--gpu]` | Time every stage (mock translator, nothing sent); the first run is shown separately, plus model loading time and peak memory |
 | `cts report [--run ID] [--with-images] [--note TEXT] [-o file.zip]` | Build a bug report |
 
 Example: translate with OpenRouter
@@ -46,6 +51,17 @@ cts ocr page.jpg -o out
 cts translate out/page.ocr.json --to Russian --allow-network -o out
 ```
 
+Example: translate a whole chapter in one go
+
+```
+cts process chapter01 --from English --to Russian --allow-network -o out
+cts process chapter01 --to Russian --translator mock -o out      (offline test run)
+```
+
+`--debug` (or `cts settings set test_mode true`) also saves every stage
+(`01_detect` … `06_render`: blocks, mask, cleaned page, layout, final page and
+timings) in the run folder.
+
 Secrets are read from stdin so they never appear in shell history or process
 lists. They are stored in the OS secure storage and masked in all logs.
 
@@ -53,7 +69,8 @@ lists. They are stored in the OS secure storage and masked in all logs.
 
 | Command | Milestone |
 |---|---|
-| `cts render`, `cts process <inputs> -o out [--debug]`, `cts compare`, `cts golden check\|update`, `cts bench` | M6 |
+| `cts process` on archives (cbz, zip, pdf …) and projects | M7, M9 |
+| `cts models import` | M7 |
 
 Parity with the original is checked by the test suites (`dart test`) against
 `test_data/reference/`, not by a CLI command: see

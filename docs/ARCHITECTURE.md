@@ -21,7 +21,7 @@ load page → detect → OCR → translate → mask → inpaint → layout text 
 | translate | `mock` (offline) and `openai_compatible` (the original's Custom); same prompt, `block_N` JSON protocol, filters and upper-case handling | `modules/translation/*`, `modules/utils/translator_utils.py` |
 | mask | Otsu content components inside each block, text-like component selection, bubble interior segmentation (ellipse fallback), clipping and dilation | `modules/utils/image_utils.py`, `modules/detection/utils/content.py` |
 | inpaint | fast flat fill of uniform bubbles; the rest by AOT (default) or LaMa via ONNX Runtime, by patches or on the whole page (the original's cost model), with the Resize / Crop / Original high-resolution strategies | `pipeline/inpainting.py`, `modules/inpainting/*` |
-| layout + render | font-size fitting and wrapping with dart:ui (hyphenation, no-space languages, vertical CJK), outline, smart colour | `modules/rendering/*` |
+| layout + render | render areas (5% inset), greedy wrapping with hyphen handling and no-space languages, binary search for the largest font size that fits (outline included), smart colour, upper case; measured and drawn with dart:ui (bundled Pangolin font, system fallbacks for CJK), outline as in Qt, simplified vertical CJK, long pages drawn in 4096 px strips | `modules/rendering/render.py`, `pipeline/batch_processor.py` |
 
 A future upscaling stage (stage 2) is inserted before `inpaint`.
 
@@ -46,6 +46,12 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 - Translation: a reply with stray braces after its JSON is still read (the
   original fails the page); the Authorization header is omitted when no API key
   is set; the length-limit field name is configurable for older servers.
+- Rendering: fitted text is centred vertically in its area and placed
+  horizontally by the alignment (setting `render.place_in_block`, on by
+  default). The original puts it at the area's top-left corner, so short
+  lines sit off-centre in their bubbles. Text is drawn by Flutter instead of
+  Qt, so glyph shapes and line breaks can differ slightly; vertical text is a
+  simplified column layout. The default font is Pangolin (OFL), bundled.
 
 ## Packages (pub workspace)
 
@@ -54,7 +60,8 @@ apps/comic_translate/   Flutter app: GUI and CLI share one Dart entry point
   lib/main.dart         --cts-cli flag → CLI, otherwise GUI
   lib/cli/              cts commands (package:args)
   lib/gui/              interface shells; "Full" in stage 1, "Simple" in stage 2   (M7+)
-  lib/render/           text layout and rasterization with dart:ui                 (M6)
+  lib/render/           text measurement and drawing with dart:ui                  (M6)
+  lib/pipeline/         one page through every step (CLI now, GUI later)          (M6)
   windows/runner/       main.cpp → comic_translate.exe, cli_main.cpp → cts.exe
 packages/ct_core/       pure Dart: models, pipeline, plugin interfaces, registry,
                         image-processing ports, project format, diagnostics

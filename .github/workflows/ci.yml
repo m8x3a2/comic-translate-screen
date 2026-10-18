@@ -105,6 +105,7 @@ jobs:
           ./cts.exe doctor
           ./cts.exe models list
           ./cts.exe selftest render -o "$RUNNER_TEMP/render.png"
+          ./cts.exe compare "$RUNNER_TEMP/render.png" "$RUNNER_TEMP/render.png"
           ./cts.exe --json report -o "$RUNNER_TEMP/report.zip"
 
       # Logs need a GitHub login; annotations do not. On failure, publish the
