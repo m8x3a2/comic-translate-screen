@@ -13,6 +13,8 @@ import 'commands/ocr_command.dart';
 import 'commands/report_command.dart';
 import 'commands/secrets_command.dart';
 import 'commands/selftest_command.dart';
+import 'commands/settings_command.dart';
+import 'commands/translate_command.dart';
 import 'commands/version_command.dart';
 
 /// Holds the context created after global options are parsed; commands read
@@ -49,6 +51,8 @@ CommandRunner<int> buildRunner(CliContextHolder holder) {
     ..addCommand(ModelsCommand(holder))
     ..addCommand(DetectCommand(holder))
     ..addCommand(OcrCommand(holder))
+    ..addCommand(TranslateCommand(holder))
+    ..addCommand(SettingsCommand(holder))
     ..addCommand(SecretsCommand(holder))
     ..addCommand(ReportCommand(holder));
   return runner;

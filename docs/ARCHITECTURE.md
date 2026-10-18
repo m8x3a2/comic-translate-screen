@@ -18,7 +18,7 @@ load page → detect → OCR → translate → mask → inpaint → layout text 
 |---|---|---|
 | detect | RT-DETR-v2 (`detector-v4-s_int8.onnx`), slicing of tall pages, bubble association, heuristic line segmentation | `modules/detection/*` |
 | OCR | `default` = the original's Default: PaddleOCR recognition of each heuristic line (PP-OCRv5/v6 per script, ONNX) and manga-ocr for Japanese; `windows_ocr` (Windows.Media.Ocr through a C++/WinRT library) as a light alternative (ML Kit on Android later) | `modules/ocr/ppocr/*`, `modules/ocr/manga_ocr/mobile/*`, `modules/ocr/factory.py`, `modules/ocr/processor.py` |
-| translate | `mock` (offline) and `openai_compatible`; same prompt and `block_N` JSON protocol | `modules/translation/*` |
+| translate | `mock` (offline) and `openai_compatible` (the original's Custom); same prompt, `block_N` JSON protocol, filters and upper-case handling | `modules/translation/*`, `modules/utils/translator_utils.py` |
 | mask | connected components inside blocks, bubble clipping, dilation | `modules/utils/image_utils.py` |
 | inpaint | AOT (default), LaMa, MI-GAN via ONNX Runtime; HD strategies; fast fill of uniform bubbles | `pipeline/inpainting.py`, `modules/inpainting/*` |
 | layout + render | font-size fitting and wrapping with dart:ui (hyphenation, no-space languages, vertical CJK), outline, smart colour | `modules/rendering/*` |
@@ -33,6 +33,9 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 - Automatic source language ("Auto") needs the script-identification model and
   arrives with M12; until then a language must be chosen.
 - `windows_ocr` is new (system OCR, no download).
+- Translation: a reply with stray braces after its JSON is still read (the
+  original fails the page); the Authorization header is omitted when no API key
+  is set; the length-limit field name is configurable for older servers.
 
 ## Packages (pub workspace)
 

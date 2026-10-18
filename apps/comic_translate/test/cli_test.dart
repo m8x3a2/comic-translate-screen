@@ -97,4 +97,54 @@ void main() {
     expect(r.code, ExitCodes.ok);
     expect(File(zip).existsSync(), isTrue);
   });
+
+  test('settings set/get round trip and rejects unknown keys', () async {
+    expect((await cts(['settings', 'set', 'languages.target', 'German'], dataDir)).code, ExitCodes.ok);
+    expect((await cts(['settings', 'set', 'plugins.openai_compatible.model', 'm/x'], dataDir)).code, ExitCodes.ok);
+    final r = await cts(['settings', 'get', 'languages.target'], dataDir);
+    expect(jsonDecode(r.out), 'German');
+    final bad = await cts(['settings', 'set', 'tools.use_gpu', 'yes'], dataDir);
+    expect(bad.code, ExitCodes.failure, reason: 'use_gpu must be a boolean');
+  });
+
+  group('translate', () {
+    late String ocrJson;
+    setUp(() {
+      ocrJson = p.join(dataDir.path, 'page.ocr.json');
+      File(ocrJson).writeAsStringSync(jsonEncode({
+        'image': 'page.jpg',
+        'source_language': 'English',
+        'blocks': [
+          TextBlock(xyxy: const BBox(0, 50, 10, 60), text: 'Second').toJson(),
+          TextBlock(xyxy: const BBox(0, 0, 10, 10), text: 'First').toJson(),
+          TextBlock(xyxy: const BBox(0, 80, 10, 90), text: '...').toJson(),
+        ],
+        'reading_order': [1, 0, 2],
+      }));
+    });
+
+    test('mock translator writes translations in reading order', () async {
+      final out = p.join(dataDir.path, 'out');
+      final r = await cts(['--json', 'translate', '--translator', 'mock', '--to', 'Russian', ocrJson, '-o', out], dataDir);
+      expect(r.code, ExitCodes.ok, reason: r.err);
+      final pairs = ((jsonDecode(r.out) as Map)['results'] as List).single['pairs'] as List;
+      expect([for (final x in pairs) x['translation']], ['[ru] First', '[ru] Second', '']);
+      final written = jsonDecode(File(p.join(out, 'page.translated.json')).readAsStringSync()) as Map;
+      expect(written['target_language'], 'Russian');
+    });
+
+    test('a cloud translator needs explicit permission; nothing is sent without it', () async {
+      await cts(['settings', 'set', 'plugins.openai_compatible.api_url', 'https://example.invalid/v1'], dataDir);
+      await cts(['settings', 'set', 'plugins.openai_compatible.model', 'm'], dataDir);
+      final r = await cts(['translate', '--translator', 'openai_compatible', ocrJson, '-o', dataDir.path], dataDir);
+      expect(r.code, ExitCodes.failure);
+      expect(r.err, contains('Nothing was sent'));
+      expect(r.err, contains('example.invalid'));
+    });
+
+    test('unknown translator is a usage error', () async {
+      final r = await cts(['translate', '--translator', 'nope', ocrJson], dataDir);
+      expect(r.code, ExitCodes.usage);
+    });
+  });
 }

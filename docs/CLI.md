@@ -30,7 +30,19 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | `cts secrets delete <name>` | Delete a stored secret |
 | `cts detect <image>... [-o dir] [--gpu] [--confidence X] [--debug]` | Detect text blocks and speech bubbles; writes `<name>.blocks.json` (blocks with their lines and text direction) and `<name>.overlay.png` |
 | `cts ocr <image>... [--lang English] [--ocr default\|ppocr\|manga_ocr\|windows_ocr] [--blocks f.blocks.json] [-o dir] [--debug]` | Detect (or load blocks) and recognize text; writes `<name>.ocr.json` and prints the text in reading order |
+| `cts translate <name.ocr.json>... [--to Russian] [--translator mock\|openai_compatible] [--allow-network [--remember]] [--image page.jpg] [-o dir] [--debug]` | Translate blocks recognized by `cts ocr` in reading order; writes `<name>.translated.json`. A translator that sends data off this computer refuses to run without `--allow-network` (or a remembered approval for that server) |
+| `cts settings show\|get <path>\|set <path> <value>\|plugins` | Read or change settings.json by dotted path (e.g. `plugins.openai_compatible.api_url`); `plugins` lists every plugin with its settings and where it sends data |
 | `cts report [--run ID] [--with-images] [--note TEXT] [-o file.zip]` | Build a bug report |
+
+Example: translate with OpenRouter
+
+```
+cts settings set plugins.openai_compatible.api_url https://openrouter.ai/api/v1
+cts settings set plugins.openai_compatible.model openai/gpt-4.1-mini
+cts secrets set plugin.openai_compatible.api_key      (paste the key, Enter)
+cts ocr page.jpg -o out
+cts translate out/page.ocr.json --to Russian --allow-network -o out
+```
 
 Secrets are read from stdin so they never appear in shell history or process
 lists. They are stored in the OS secure storage and masked in all logs.
@@ -39,7 +51,6 @@ lists. They are stored in the OS secure storage and masked in all logs.
 
 | Command | Milestone |
 |---|---|
-| `cts translate <blocks.json> --to ru [--provider mock\|openai_compatible]` | M4 |
 | `cts mask <img> --blocks f`, `cts inpaint <img> --mask m.png [--model aot\|lama\|migan]` | M5 |
 | `cts render`, `cts process <inputs> -o out [--debug]`, `cts compare`, `cts golden check\|update`, `cts bench` | M6 |
 

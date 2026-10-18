@@ -21,7 +21,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 | M1 | Core model, plugin registry, settings and secrets, model manager, ONNX Runtime, OpenCV | done |
 | M2 | Text and bubble detection (RT-DETR-v2), line splitting, `cts detect`; identical output to the original on the test pages | done |
 | M3 | OCR: PaddleOCR and manga-ocr (identical output to the original), Windows OCR, `cts ocr` | done |
-| M4–M6 | Translation, inpainting, text rendering | planned |
+| M4 | Translation: the original's LLM protocol, an OpenAI-compatible provider (OpenRouter, OpenAI, local servers), an offline test translator, `cts translate` | done |
+| M5–M6 | Inpainting, text rendering | planned |
 | M7–M12 | Full GUI, projects and export, webtoon mode, PSD, polish | planned |
 
 ## Principles
@@ -43,8 +44,9 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
   ML Kit on Android later) as a light alternative that needs no model download.
   Paid cloud OCR is removed.
 - Translation: an offline test translator and one OpenAI-compatible provider
-  (works with OpenRouter, OpenAI, DeepSeek, LM Studio, Ollama, llama.cpp server).
-  Other providers will return one by one.
+  (works with OpenRouter, OpenAI, DeepSeek, LM Studio, Ollama, llama.cpp server)
+  with the original's prompt. Other providers will return one by one. A server
+  on `localhost` counts as local; anything else is marked and needs approval.
 - Removed: sign-in, accounts, credits, paid cloud OCR, automatic update checks.
 
 ## Building from source (Windows)

@@ -27,6 +27,8 @@ Every instance also implements `dispose()` to release native resources.
 | `ppocr` | ocr | PaddleOCR only (any source language, Japanese with PP-OCRv6) |
 | `manga_ocr` | ocr | manga-ocr only (Japanese) |
 | `windows_ocr` | ocr | Windows.Media.Ocr, Windows only, needs the language's OCR pack |
+| `openai_compatible` | translator | Any OpenAI-compatible server; privacy follows the server address (`endpoint`) |
+| `mock` | translator | Offline test translator |
 
 ## Description: `PluginInfo`
 
@@ -36,6 +38,7 @@ Every instance also implements `dispose()` to release native resources.
 | `displayName`, `description` | Shown in the UI |
 | `kind` | `detector`, `ocr`, `translator`, `inpainter` |
 | `privacy` | `local` (nothing leaves the device), `lan` (local network), `cloud` (internet) |
+| `endpoint` | Optional: computes the privacy level and host from the plugin's settings (e.g. a server URL). Approvals are remembered per plugin and host (`approved_network_plugins`: `id@host`) |
 | `platforms` | Platforms where it works |
 | `settings` | Settings schema (`TextSetting`, `SecretSetting`, `ChoiceSetting`, `IntSetting`, `DoubleSetting`, `BoolSetting`); the settings page is generated from it |
 | `models` | Ids from `ModelCatalog` that must be downloaded first |

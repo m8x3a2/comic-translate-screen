@@ -17,6 +17,7 @@ class AppSettings {
     this.targetLanguage = 'Russian',
     this.extraContext = '',
     this.sendPageImage = false,
+    this.upperCase = false,
     this.theme = 'dark',
     this.uiLanguage = 'ru',
     this.testMode = false,
@@ -49,6 +50,11 @@ class AppSettings {
   /// as in the original).
   bool sendPageImage;
 
+  /// "Render text in upper case" (off by default, as in the original): when
+  /// on, translations are upper-cased; when off, all-caps translations are
+  /// turned into sentence case.
+  bool upperCase;
+
   /// `dark`, `light` or `system`.
   String theme;
   String uiLanguage;
@@ -79,6 +85,7 @@ class AppSettings {
         'inpaint': inpaint.toJson(),
         'languages': {'source': sourceLanguage, 'target': targetLanguage},
         'llm': {'extra_context': extraContext, 'send_page_image': sendPageImage},
+        'render': {'upper_case': upperCase},
         'ui': {'theme': theme, 'language': uiLanguage},
         'test_mode': testMode,
         'plugins': plugins,
@@ -98,8 +105,9 @@ class AppSettings {
     final languages = group('languages');
     final llm = group('llm');
     final ui = group('ui');
+    final render = group('render');
     const known = {
-      'schema_version', 'tools', 'inpaint', 'languages', 'llm', 'ui', 'test_mode', 'plugins', //
+      'schema_version', 'tools', 'inpaint', 'languages', 'llm', 'render', 'ui', 'test_mode', 'plugins', //
       'approved_network_plugins',
     };
     final strategyName = pick<String>(inpaint, 'strategy', defaults.inpaint.strategy.name);
@@ -119,6 +127,7 @@ class AppSettings {
       targetLanguage: pick(languages, 'target', defaults.targetLanguage),
       extraContext: pick(llm, 'extra_context', defaults.extraContext),
       sendPageImage: pick(llm, 'send_page_image', defaults.sendPageImage),
+      upperCase: pick(render, 'upper_case', defaults.upperCase),
       theme: pick(ui, 'theme', defaults.theme),
       uiLanguage: pick(ui, 'language', defaults.uiLanguage),
       testMode: pick(json, 'test_mode', defaults.testMode),

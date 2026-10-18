@@ -186,7 +186,9 @@ class OpenAiCompatibleTranslator implements Translator {
       final req = await client.postUrl(uri).timeout(timeout);
       req.headers.contentType = ContentType.json;
       if (apiKey.isNotEmpty) req.headers.set(HttpHeaders.authorizationHeader, 'Bearer $apiKey');
-      req.add(utf8.encode(jsonEncode(payload)));
+      final bytes = utf8.encode(jsonEncode(payload));
+      req.contentLength = bytes.length; // some servers reject chunked request bodies
+      req.add(bytes);
       final res = await req.close().timeout(timeout);
       final body = await res.transform(utf8.decoder).join().timeout(timeout);
       if (res.statusCode < 200 || res.statusCode >= 300) {

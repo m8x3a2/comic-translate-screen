@@ -32,6 +32,7 @@ class FakeServer {
   static Future<FakeServer> start() async {
     final s = FakeServer._(await HttpServer.bind(InternetAddress.loopbackIPv4, 0));
     s._server.listen((req) async {
+      expect(req.headers.contentLength, greaterThan(0), reason: 'Content-Length must be set');
       final body = (jsonDecode(await utf8.decoder.bind(req).join()) as Map).cast<String, Object?>();
       s.requests.add((body: body, auth: req.headers.value('authorization'), path: req.uri.path));
       await Future<void>.delayed(s.delay);
