@@ -97,7 +97,7 @@ class OcrCommand extends CtsCommand {
         } finally {
           reading.restore();
         }
-        fixOcrScript(blocks, Languages.byName(language)?.code ?? '');
+        if (settings.fixCyrillicLookalikes) fixOcrScript(blocks, Languages.byName(language)?.code ?? '');
         final ocrMs = sw.elapsedMilliseconds - detectMs;
         if (reading.scaled) pageLog.info('reading_upscaled', {'factor': reading.scaleX});
         recorder?.recordTiming('02_ocr', Duration(milliseconds: ocrMs), page: page);

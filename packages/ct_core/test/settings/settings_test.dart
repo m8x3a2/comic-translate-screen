@@ -19,6 +19,9 @@ void main() {
     expect(s.inpaint.resizeLimit, 960);
     expect(s.sendPageImage, isFalse);
     expect(s.theme, 'dark');
+    expect(s.upperCase, isFalse);
+    expect(s.upscaleSmallText, isTrue);
+    expect(s.fixCyrillicLookalikes, isTrue);
   });
 
   test('round trip preserves values and unknown keys', () async {
@@ -26,6 +29,9 @@ void main() {
     final s = AppSettings(
       translator: 'mock',
       useGpu: true,
+      upscaleSmallText: false,
+      fixCyrillicLookalikes: false,
+      upperCase: true,
       inpaint: const InpaintConfig(strategy: HdStrategy.crop, cropMargin: 256),
       plugins: {
         'openai_compatible': {'url': 'http://localhost:1234/v1', 'model': 'x'},
@@ -38,6 +44,9 @@ void main() {
     expect(loaded.toJson(), s.toJson());
     expect(loaded.extra['future_feature'], 42);
     expect(loaded.inpaint.strategy, HdStrategy.crop);
+    expect(loaded.fixCyrillicLookalikes, isFalse);
+    expect(loaded.upscaleSmallText, isFalse);
+    expect(loaded.upperCase, isTrue);
   });
 
   test('corrupt file falls back to defaults and is kept as backup', () async {

@@ -13,6 +13,7 @@ class AppSettings {
     this.inpainter = 'aot',
     this.useGpu = false,
     this.upscaleSmallText = true,
+    this.fixCyrillicLookalikes = true,
     this.inpaint = const InpaintConfig(),
     this.sourceLanguage = 'English',
     this.targetLanguage = 'Russian',
@@ -42,6 +43,11 @@ class AppSettings {
   /// Enlarge pages with small text (screenshots, low-resolution scans)
   /// before line splitting and OCR. New in this project.
   bool upscaleSmallText;
+
+  /// For Cyrillic source languages, replace Latin look-alike letters that OCR
+  /// returns in Cyrillic text ("HET" → "НЕТ"). Turn off when the comics mix in
+  /// Latin words that must stay Latin. New in this project.
+  bool fixCyrillicLookalikes;
   InpaintConfig inpaint;
 
   /// Default languages for new pages (canonical English names).
@@ -87,6 +93,7 @@ class AppSettings {
           'inpainter': inpainter,
           'use_gpu': useGpu,
           'upscale_small_text': upscaleSmallText,
+          'fix_cyrillic_lookalikes': fixCyrillicLookalikes,
         },
         'inpaint': inpaint.toJson(),
         'languages': {'source': sourceLanguage, 'target': targetLanguage},
@@ -124,6 +131,7 @@ class AppSettings {
       inpainter: pick(tools, 'inpainter', defaults.inpainter),
       useGpu: pick(tools, 'use_gpu', defaults.useGpu),
       upscaleSmallText: pick(tools, 'upscale_small_text', defaults.upscaleSmallText),
+      fixCyrillicLookalikes: pick(tools, 'fix_cyrillic_lookalikes', defaults.fixCyrillicLookalikes),
       inpaint: InpaintConfig(
         strategy: HdStrategy.values.firstWhere((s) => s.name == strategyName, orElse: () => HdStrategy.resize),
         resizeLimit: pick<num>(inpaint, 'resize_limit', defaults.inpaint.resizeLimit).toInt(),
