@@ -24,6 +24,7 @@ export 'src/imaging/py_compat.dart';
 export 'src/model/geometry.dart';
 export 'src/model/language.dart';
 export 'src/model/text_block.dart';
+export 'src/imaging/compare.dart';
 export 'src/imaging/contours.dart';
 export 'src/imaging/linalg.dart';
 export 'src/imaging/morphology.dart';

@@ -169,4 +169,68 @@ void main() {
       expect(r.code, ExitCodes.usage);
     });
   });
+
+  group('render and quality', () {
+    String writePng(String name, RgbImage image) {
+      final path = p.join(dataDir.path, name);
+      File(path).writeAsBytesSync(ImageCodec.encodePng(image));
+      return path;
+    }
+
+    test('render draws the translation inside its block only', () async {
+      final png = writePng('page.clean.png', RgbImage.filled(400, 300, 255, 255, 255));
+      final blocks = p.join(dataDir.path, 'page.translated.json');
+      File(blocks).writeAsStringSync(jsonEncode({
+        'target_language': 'Russian',
+        'blocks': [TextBlock(xyxy: const BBox(100, 80, 300, 220), text: 'Hello', translation: 'Привет всем').toJson()],
+      }));
+      final out = p.join(dataDir.path, 'out');
+      final r = await cts(['--json', 'render', png, '--blocks', blocks, '-o', out], dataDir);
+      expect(r.code, ExitCodes.ok, reason: r.err);
+      expect((jsonDecode(r.out) as Map)['items'], 1);
+      final img = ImageCodec.decode(File(p.join(out, 'page.rendered.png')).readAsBytesSync());
+      var dark = 0, darkOutside = 0;
+      for (var y = 0; y < img.height; y++) {
+        for (var x = 0; x < img.width; x++) {
+          if (img.data[img.offset(x, y)] < 128) {
+            final inside = x >= 100 && x < 300 && y >= 80 && y < 220;
+            inside ? dark++ : darkOutside++;
+          }
+        }
+      }
+      expect(dark, greaterThan(50), reason: 'text is drawn');
+      expect(darkOutside, 0, reason: 'nothing is drawn outside the block');
+      final layout = jsonDecode(File(p.join(out, 'page.layout.json')).readAsStringSync()) as Map;
+      expect(((layout['items'] as List).single as Map)['text'], contains('Привет'));
+    });
+
+    test('compare: identical, different (with a difference picture), wrong size', () async {
+      final a = writePng('a.png', RgbImage.filled(20, 10, 200, 200, 200));
+      final b = writePng('b.png', RgbImage.filled(20, 10, 200, 200, 200)..data[0] = 0);
+      final c = writePng('c.png', RgbImage.filled(10, 10, 200, 200, 200));
+      expect((await cts(['compare', a, a], dataDir)).code, ExitCodes.ok);
+      final diff = p.join(dataDir.path, 'diff.png');
+      final r = await cts(['--json', 'compare', a, b, '--diff', diff], dataDir);
+      expect(r.code, ExitCodes.failure);
+      expect((jsonDecode(r.out) as Map)['max_diff'], 200);
+      expect(File(diff).existsSync(), isTrue);
+      expect((await cts(['compare', a, b, '--min-psnr', '20'], dataDir)).code, ExitCodes.ok);
+      expect((await cts(['compare', a, c], dataDir)).code, ExitCodes.failure);
+    });
+
+    test('golden check explains a missing manifest', () async {
+      final r = await cts(['golden', 'check', '--dir', p.join(dataDir.path, 'nope')], dataDir);
+      expect(r.code, ExitCodes.failure);
+      expect(r.err, contains('golden.json'));
+    });
+
+    test('process refuses a cloud translator without permission', () async {
+      final png = writePng('page.png', RgbImage.filled(50, 50, 255, 255, 255));
+      await cts(['settings', 'set', 'plugins.openai_compatible.api_url', 'https://example.invalid/v1'], dataDir);
+      await cts(['settings', 'set', 'plugins.openai_compatible.model', 'm'], dataDir);
+      final r = await cts(['process', png, '--translator', 'openai_compatible'], dataDir);
+      expect(r.code, ExitCodes.failure);
+      expect(r.err, contains('Nothing was sent'));
+    });
+  });
 }

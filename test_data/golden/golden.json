@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "about": "Whole-pipeline results checked by `cts golden check` (default settings, mock translator, CPU). Update with `cts golden update` after an intended change.",
+  "max_side": 1000,
+  "min_psnr": 30,
+  "min_iou": 0.9,
+  "pages": [
+    {"image": "../pages/peppercarrot/en_E01P01.jpg", "from": "English", "to": "Russian"},
+    {"image": "../pages/peppercarrot/en_E06P05.jpg", "from": "English", "to": "Russian"},
+    {"image": "../pages/peppercarrot/ru_E01P02.jpg", "from": "Russian", "to": "English"},
+    {"image": "../pages/peppercarrot/ja_E01P02.jpg", "from": "Japanese", "to": "English"},
+    {"image": "../pages/peppercarrot/kr_E01P02.jpg", "from": "Korean", "to": "English"},
+    {"image": "../pages/peppercarrot/cn_E01P02.jpg", "from": "Chinese", "to": "Japanese"}
+  ]
+}

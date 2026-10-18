@@ -14,6 +14,7 @@ import 'commands/ocr_command.dart';
 import 'commands/report_command.dart';
 import 'commands/secrets_command.dart';
 import 'commands/process_command.dart';
+import 'commands/quality_command.dart';
 import 'commands/selftest_command.dart';
 import 'commands/settings_command.dart';
 import 'commands/translate_command.dart';
@@ -58,6 +59,9 @@ CommandRunner<int> buildRunner(CliContextHolder holder) {
     ..addCommand(InpaintCommand(holder))
     ..addCommand(RenderCommand(holder))
     ..addCommand(ProcessCommand(holder))
+    ..addCommand(CompareCommand(holder))
+    ..addCommand(GoldenCommand(holder))
+    ..addCommand(BenchCommand(holder))
     ..addCommand(SettingsCommand(holder))
     ..addCommand(SecretsCommand(holder))
     ..addCommand(ReportCommand(holder));

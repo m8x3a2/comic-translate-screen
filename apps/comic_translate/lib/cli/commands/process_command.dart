@@ -4,24 +4,11 @@ import 'dart:io';
 import 'package:ct_core/ct_core.dart';
 import 'package:path/path.dart' as p;
 
-import '../../render/text_renderer.dart';
+import '../../pipeline/page_pipeline.dart';
 import '../cli.dart';
 import '../cli_context.dart';
 import 'inpaint_command.dart' show loadBlocksJson;
 import 'translate_command.dart' show checkTranslatorNetwork;
-
-/// Lays out and draws translations over [page] with the render settings.
-Future<(RgbImage, List<TextItem>)> renderPage(
-  RgbImage page,
-  List<TextBlock> blocks,
-  AppSettings settings, {
-  required String targetLanguage,
-}) async {
-  final family = await resolveFontFamily(settings.render.fontFamily);
-  final engine = UiTextEngine(settings.render, fontFamily: family, rtl: Languages.isRtlName(targetLanguage));
-  final items = layoutPage(blocks, page.width, page.height, engine, settings: settings.render, targetLanguage: targetLanguage);
-  return (await renderTextOnPage(page, items, engine), items);
-}
 
 /// `cts render`: draws translations onto a (cleaned) page.
 class RenderCommand extends CtsCommand {
@@ -121,15 +108,10 @@ class ProcessCommand extends CtsCommand {
     }
     final log = recorder?.log ?? services.appLog.child(stage: 'process');
 
-    final TextDetector detector;
-    final OcrEngine ocr;
-    final Translator translator;
-    final Inpainter inpainter;
+    final PagePipeline pipeline;
     try {
-      detector = await services.plugin<TextDetector>(settings.detector, settings, useGpu: useGpu, log: log);
-      ocr = await services.plugin<OcrEngine>(settings.ocr, settings, useGpu: useGpu, log: log);
-      translator = await services.plugin<Translator>(translatorId, settings, log: log);
-      inpainter = await services.plugin<Inpainter>(settings.inpainter, settings, useGpu: useGpu, log: log);
+      pipeline = await PagePipeline.load(services, settings,
+          sourceLanguage: source, targetLanguage: target, translatorId: translatorId, useGpu: useGpu, log: log);
     } on ModelNotInstalledException catch (e) {
       ctx.err.writeln(e);
       await recorder?.finish(success: false, summary: {'error': e.toString()});
@@ -143,84 +125,22 @@ class ProcessCommand extends CtsCommand {
       final page = p.basename(input);
       final pageLog = log.child(page: page);
       final context = PluginContext(log: pageLog, recorder: recorder, page: page);
-      final timings = <String, int>{};
-      final sw = Stopwatch()..start();
-      void lap(String stage) {
-        timings[stage] = sw.elapsedMilliseconds;
-        recorder?.recordTiming(stage, Duration(milliseconds: sw.elapsedMilliseconds), page: page);
-        sw.reset();
-      }
-
       try {
+        final sw = Stopwatch()..start();
         final image = await ImageCodec.readFile(input);
-        lap('00_decode');
-
-        var blocks = await detector.detect(image, context);
-        lap('01_detect');
-        await recorder?.writeJsonArtifact('01_detect', 'blocks.json', [for (final b in blocks) b.toJson()], page: page);
-
-        final reading = prepareReading(image, blocks,
-            sourceLanguageCode: Languages.byName(source)?.code ?? '', enabled: settings.upscaleSmallText);
-        try {
-          await ocr.recognize(reading.image, blocks, sourceLanguage: source, context: context);
-        } finally {
-          reading.restore();
-        }
-        if (settings.fixCyrillicLookalikes) fixOcrScript(blocks, Languages.byName(source)?.code ?? '');
-        blocks = sortBlocks(blocks, rightToLeft: source == 'Japanese');
-        lap('02_ocr');
-        await recorder?.writeJsonArtifact('02_ocr', 'blocks.json', [for (final b in blocks) b.toJson()], page: page);
-
-        await translateBlocks(
-          translator,
-          TranslationRequest(
-            blocks: blocks,
-            sourceLanguage: source,
-            targetLanguage: target,
-            pageImage: settings.sendPageImage ? image : null,
-            extraContext: settings.extraContext,
-          ),
-          context,
-        );
-        lap('03_translate');
-
-        final inpaintBlocks = selectInpaintBlocks(blocks);
-        final mask = generateMask(image, inpaintBlocks);
-        lap('04_mask');
-        await recorder?.writeArtifact('04_mask', 'mask.png', ImageCodec.encodeGrayPng(mask), page: page);
-        final report = InpaintReport();
-        final clean = await inpaintPage(
-          image,
-          mask,
-          settings.inpaint,
-          (img, m) => inpainter.inpaint(img, m, settings.inpaint, context),
-          blocks: inpaintBlocks,
-          report: report,
-        );
-        lap('05_inpaint');
-        await recorder?.writeArtifact('05_inpaint', 'clean.png', ImageCodec.encodePng(clean), page: page);
-
-        final (rendered, items) = await renderPage(clean, blocks, settings, targetLanguage: target);
-        lap('06_render');
-
+        final decodeMs = sw.elapsedMilliseconds;
+        final r = await pipeline.run(image, context);
+        final timings = {'00_decode': decodeMs, ...r.timingsMs};
         final stem = p.basenameWithoutExtension(input);
-        final png = ImageCodec.encodePng(rendered);
-        await recorder?.writeArtifact('06_render', 'final.png', png, page: page);
-        await recorder?.writeJsonArtifact('06_render', 'layout.json', [for (final i in items) i.toJson()], page: page);
-        final outPng = File(p.join(outDir.path, '$stem.translated.png'))..writeAsBytesSync(png);
+        final outPng = File(p.join(outDir.path, '$stem.translated.png'))..writeAsBytesSync(ImageCodec.encodePng(r.rendered));
         final outJson = File(p.join(outDir.path, '$stem.json'))
-          ..writeAsStringSync(const JsonEncoder.withIndent('  ').convert({
-            'image': page,
-            'source_language': source,
-            'target_language': target,
-            'blocks': [for (final b in blocks) b.toJson()],
-            'timings_ms': timings,
-          }));
+          ..writeAsStringSync(const JsonEncoder.withIndent('  ')
+              .convert({...r.toJson(image: page, source: source, target: target), 'timings_ms': timings}));
         final total = timings.values.fold(0, (a, b) => a + b);
-        pageLog.log(LogLevel.info, 'process_done', durMs: total, data: {'blocks': blocks.length, 'timings': timings});
-        results.add({'image': input, 'output': outPng.path, 'json': outJson.path, 'blocks': blocks.length, 'timings_ms': timings});
-        ctx.say('$page: ${blocks.length} block(s), ${report.fastFilledBlocks} bubble(s) flat-filled, '
-            '${items.length} text item(s), $total ms → ${outPng.path}');
+        pageLog.log(LogLevel.info, 'process_done', durMs: total, data: {'blocks': r.blocks.length, 'timings': timings});
+        results.add({'image': input, 'output': outPng.path, 'json': outJson.path, 'blocks': r.blocks.length, 'timings_ms': timings});
+        ctx.say('$page: ${r.blocks.length} block(s), ${r.inpaintReport.fastFilledBlocks} bubble(s) flat-filled, '
+            '${r.items.length} text item(s), $total ms → ${outPng.path}');
       } catch (e, st) {
         ok = false;
         pageLog.error('process_failed', e, st);

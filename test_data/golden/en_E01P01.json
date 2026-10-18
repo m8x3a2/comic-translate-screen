@@ -1,0 +1,38 @@
+{
+  "blocks": [
+    {
+      "xyxy": [
+        550,
+        78,
+        679,
+        128
+      ],
+      "text": "...and the last touch.",
+      "translation": "[ru] ...and the last touch."
+    },
+    {
+      "xyxy": [
+        571,
+        619,
+        700,
+        693
+      ],
+      "text": "...mmm probably not strong enough.",
+      "translation": "[ru] ...mmm probably not strong enough."
+    }
+  ],
+  "items": [
+    {
+      "text": "[ru] ...and the last\ntouch.",
+      "font_size_pt": 12,
+      "x": 553,
+      "y": 79
+    },
+    {
+      "text": "[ru] ...mmm\nprobably not\nstrong enough.",
+      "font_size_pt": 12,
+      "x": 581,
+      "y": 622
+    }
+  ]
+}

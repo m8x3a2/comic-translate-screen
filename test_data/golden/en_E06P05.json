@@ -1,0 +1,214 @@
+{
+  "blocks": [
+    {
+      "xyxy": [
+        94,
+        8,
+        238,
+        57
+      ],
+      "text": "FANTASTIC!",
+      "translation": "[ru] FANTASTIC!"
+    },
+    {
+      "xyxy": [
+        194,
+        46,
+        435,
+        135
+      ],
+      "text": "Coriander defies death itself with this mi-ra-cu-lous potion!",
+      "translation": "[ru] Coriander defies death itself with this mi-ra-cu-lous potion!"
+    },
+    {
+      "xyxy": [
+        117,
+        281,
+        333,
+        368
+      ],
+      "text": "...but please, save your applause, people of Komona!",
+      "translation": "[ru] ...but please, save your applause, people of Komona!"
+    },
+    {
+      "xyxy": [
+        297,
+        372,
+        474,
+        428
+      ],
+      "text": "Because here is MY Potion!",
+      "translation": "[ru] Because here is MY Potion!"
+    },
+    {
+      "xyxy": [
+        844,
+        431,
+        1110,
+        545
+      ],
+      "text": "The real potion you've al been waiting for: the one which will amaze your neighbors...",
+      "translation": "[ru] The real potion you've al been waiting for: the one which will amaze your neighbors..."
+    },
+    {
+      "xyxy": [
+        979,
+        556,
+        1130,
+        616
+      ],
+      "text": "...make them jealous!",
+      "translation": "[ru] ...make them jealous!"
+    },
+    {
+      "xyxy": [
+        245,
+        672,
+        601,
+        761
+      ],
+      "text": "...all this is possible with the simple application of a single drop of my...",
+      "translation": "[ru] ...all this is possible with the simple application of a single drop of my..."
+    },
+    {
+      "xyxy": [
+        774,
+        657,
+        984,
+        738
+      ],
+      "text": "...Potion of POSHNESS!",
+      "translation": "[ru] ...Potion of POSHNESS!"
+    },
+    {
+      "xyxy": [
+        672,
+        1101,
+        1166,
+        1290
+      ],
+      "text": "Co",
+      "translation": "[ru] Co"
+    },
+    {
+      "xyxy": [
+        61,
+        1308,
+        323,
+        1412
+      ],
+      "text": "Fantastic! Incredible! This potion could make all of Komona rich!",
+      "translation": "[ru] Fantastic! Incredible! This potion could make all of Komona rich!"
+    },
+    {
+      "xyxy": [
+        44,
+        1546,
+        393,
+        1650
+      ],
+      "text": "Clapalap nclap 5apiciap 610 CaeMeid",
+      "translation": "[ru] Clapalap nclap 5apiciap 610 CaeMeid"
+    },
+    {
+      "xyxy": [
+        390,
+        1492,
+        627,
+        1604
+      ],
+      "text": "Your applause can't be wrong. Coriander has already been eliminated.",
+      "translation": "[ru] Your applause can't be wrong. Coriander has already been eliminated."
+    },
+    {
+      "xyxy": [
+        624,
+        1533,
+        1144,
+        1641
+      ],
+      "text": "ayandnd IaPIaPIaCaaaPaPCI",
+      "translation": "[ru] ayandnd IaPIaPIaCaaaPaPCI"
+    }
+  ],
+  "items": [
+    {
+      "text": "[ru] FANTASTIC!",
+      "font_size_pt": 14,
+      "x": 96,
+      "y": 17
+    },
+    {
+      "text": "[ru] Coriander defies death\nitself with this mi-ra-cu-\nlous potion!",
+      "font_size_pt": 15,
+      "x": 201,
+      "y": 49
+    },
+    {
+      "text": "[ru] ...but please, save\nyour applause, people of\nKomona!",
+      "font_size_pt": 15,
+      "x": 122,
+      "y": 283
+    },
+    {
+      "text": "[ru] Because here is\nMY Potion!",
+      "font_size_pt": 14,
+      "x": 307,
+      "y": 373
+    },
+    {
+      "text": "[ru] The real potion you've al\nbeen waiting for: the one\nwhich will amaze your\nneighbors...",
+      "font_size_pt": 15,
+      "x": 857,
+      "y": 434
+    },
+    {
+      "text": "[ru] ...make\nthem jealous!",
+      "font_size_pt": 15,
+      "x": 994,
+      "y": 557
+    },
+    {
+      "text": "[ru] ...all this is possible with the simple\napplication of a single drop of my...",
+      "font_size_pt": 16,
+      "x": 250,
+      "y": 686
+    },
+    {
+      "text": "[ru] ...Potion of\nPOSHNESS!",
+      "font_size_pt": 21,
+      "x": 788,
+      "y": 659
+    },
+    {
+      "text": "[ru] Co",
+      "font_size_pt": 40,
+      "x": 839,
+      "y": 1158
+    },
+    {
+      "text": "[ru] Fantastic! Incredible!\nThis potion could make all\nof Komona rich!",
+      "font_size_pt": 17,
+      "x": 67,
+      "y": 1314
+    },
+    {
+      "text": "[ru] Clapalap nclap\n5apiciap 610 CaeMeid",
+      "font_size_pt": 28,
+      "x": 50,
+      "y": 1547
+    },
+    {
+      "text": "[ru] Your applause can't\nbe wrong. Coriander has\nalready been eliminated.",
+      "font_size_pt": 17,
+      "x": 392,
+      "y": 1502
+    },
+    {
+      "text": "[ru] ayandnd IaPIaPIaCaaaPaPCI",
+      "font_size_pt": 29,
+      "x": 626,
+      "y": 1559
+    }
+  ]
+}
