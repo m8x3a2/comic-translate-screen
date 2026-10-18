@@ -1,0 +1,21 @@
+{
+ "page": "en_E11P03",
+ "model": "aot",
+ "strategy": "Resize",
+ "mask_sha256": "3da9b107edbd55299c612dba197679c37e73ef08c6f4e437ee5b949551174f2d",
+ "fast_filled_blocks": 3,
+ "fast_fill_image_sha256": "bc2a8fca997ad60ead1f42997604a82c68d3eb8713d263f8764c46762e6b448c",
+ "residual_mask_sha256": "b67dbd18b0300e28cdadf3d366109c43d18eb621d1b2229c04dbfbd336a384de",
+ "residual_nonzero": 0,
+ "mode": "none",
+ "result_sha256": "bc2a8fca997ad60ead1f42997604a82c68d3eb8713d263f8764c46762e6b448c",
+ "result_region": {
+  "box": [
+   62,
+   36,
+   479,
+   1585
+  ],
+  "png": null
+ }
+}

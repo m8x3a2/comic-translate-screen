@@ -32,6 +32,8 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | `cts ocr <image>... [--lang English] [--ocr default\|ppocr\|manga_ocr\|windows_ocr] [--blocks f.blocks.json] [--[no-]upscale] [-o dir] [--debug]` | Detect (or load blocks) and recognize text; small text is read on an enlarged copy (`--no-upscale` turns that off); writes `<name>.ocr.json` and prints the text in reading order |
 | `cts translate <name.ocr.json>... [--to Russian] [--translator mock\|openai_compatible] [--allow-network [--remember]] [--image page.jpg] [-o dir] [--debug]` | Translate blocks recognized by `cts ocr` in reading order; writes `<name>.translated.json`. A translator that sends data off this computer refuses to run without `--allow-network` (or a remembered approval for that server) |
 | `cts settings show\|get <path>\|set <path> <value>\|plugins` | Read or change settings.json by dotted path (e.g. `plugins.openai_compatible.api_url`); `plugins` lists every plugin with its settings and where it sends data |
+| `cts mask <image> --blocks f.json [-o dir]` | Build the text-removal mask from blocks (detect/ocr/translate JSON); writes `<name>.mask.png` |
+| `cts inpaint <image>... [--blocks f.json \| --mask m.png] [--inpainter aot\|lama] [--strategy resize\|crop\|original] [--gpu] [-o dir] [--debug]` | Remove text: uniform bubbles are flat-filled, the rest goes to the inpainting network (by patches or the whole page); without `--blocks`/`--mask` text is detected first; writes `<name>.clean.png` |
 | `cts report [--run ID] [--with-images] [--note TEXT] [-o file.zip]` | Build a bug report |
 
 Example: translate with OpenRouter
@@ -51,7 +53,6 @@ lists. They are stored in the OS secure storage and masked in all logs.
 
 | Command | Milestone |
 |---|---|
-| `cts mask <img> --blocks f`, `cts inpaint <img> --mask m.png [--model aot\|lama\|migan]` | M5 |
 | `cts render`, `cts process <inputs> -o out [--debug]`, `cts compare`, `cts golden check\|update`, `cts bench` | M6 |
 
 Parity with the original is checked by the test suites (`dart test`) against

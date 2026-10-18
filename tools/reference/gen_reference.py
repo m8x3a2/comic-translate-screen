@@ -1,6 +1,6 @@
 """Generate parity reference data by running the original comic-translate code.
 
-    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr|translation|mask]
+    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr|translation|mask|inpaint]
 
 The original repository is only imported (bytecode writing is disabled), never
 modified. Outputs go to test_data/reference/ and are compared by Dart tests.
@@ -689,6 +689,96 @@ def gen_mask(out: Path, pages_dir: Path, detection_dir: Path) -> None:
         })
 
 
+# ---------------------------------------------------------------- inpaint ---
+
+INPAINT_RUNS = [
+    # page, inpainter, strategy
+    ("en_E06P05", "aot", "Resize"),
+    ("en_E01P01", "aot", "Resize"),
+    ("ja_E01P02", "aot", "Resize"),
+    ("kr_E01P02", "aot", "Original"),
+    ("ru_E01P02", "aot", "Crop"),
+    ("en_E11P03", "aot", "Resize"),
+    ("ja_E01P02", "lama", "Resize"),
+    ("en_E01P01", "lama", "Original"),
+]
+
+
+def gen_inpaint(out: Path, pages_dir: Path, models_dir: Path, detection_dir: Path) -> None:
+    """Fast bubble fill, patch/full routing and AOT/LaMa results on test pages."""
+    import imkit as imk
+    from modules.inpainting.schema import Config
+    from modules.utils.download import ModelDownloader, ModelID
+    from modules.utils.image_utils import generate_mask
+    from modules.utils.textblock import TextBlock
+    import types
+    # pipeline.inpainting imports the settings UI (and through it accounts);
+    # only these names are used, and not by inpaint_image.
+    stub = types.ModuleType("modules.utils.pipeline_config")
+    stub.inpaint_map, stub.get_config, stub.get_inpainter_backend = {}, None, None
+    sys.modules.setdefault("modules.utils.pipeline_config", stub)
+    import pipeline.inpainting as pin
+
+    files = {
+        "AOT_ONNX": models_dir / "aot-inpainting" / "aot.onnx",
+        "LAMA_ONNX": models_dir / "lama-manga" / "lama-manga-dynamic.onnx",
+    }
+    ModelDownloader.get = classmethod(lambda cls, model: None)
+    ModelDownloader.primary_path = classmethod(lambda cls, model: str(files[model.name if isinstance(model, ModelID) else model.id.name]))
+    from modules.inpainting.aot import AOT
+    from modules.inpainting.lama import LaMa
+    models = {"aot": AOT("cpu", backend="onnx"), "lama": LaMa("cpu", backend="onnx")}
+
+    for name, model_name, strategy in INPAINT_RUNS:
+        ref = json.loads((detection_dir / f"{name}.json").read_text(encoding="utf-8"))
+        image = decode_rgb(pages_dir / f"{name}.jpg")
+        blocks = [
+            TextBlock(
+                text_bbox=np.array(b["xyxy"]),
+                bubble_bbox=None if b["bubble_xyxy"] is None else np.array(b["bubble_xyxy"]),
+                text_class=b["text_class"], text="text", translation="x",
+            )
+            for b in ref["blocks"]
+        ]
+        mask = generate_mask(image, blocks)
+        if strategy == "Resize":
+            config = Config(hd_strategy="Resize", hd_strategy_resize_limit=960)
+        elif strategy == "Crop":
+            config = Config(hd_strategy="Crop", hd_strategy_crop_margin=512, hd_strategy_crop_trigger_size=512)
+        else:
+            config = Config(hd_strategy="Original")
+
+        handler = pin.InpaintingHandler(None)
+        handler.inpainter_cache = models[model_name]
+        working_image, working_mask, cleaned = handler._apply_fast_bubble_cleanup(image.copy(), mask.copy(), blocks)
+        calls = []
+        original_full, original_patches = handler._inpaint_full_image, handler._inpaint_by_patches
+        handler._inpaint_full_image = lambda i, m, c: (calls.append("full"), original_full(i, m, c))[1]
+        handler._inpaint_by_patches = lambda i, m, c: (calls.append("patches"), original_patches(i, m, c))[1]
+        result = handler.inpaint_image(image.copy(), mask.copy(), config, blk_list=blocks)
+        result = imk.convert_scale_abs(result)
+
+        ys, xs = np.nonzero(mask)
+        region = None
+        if ys.size:
+            y1, y2, x1, x2 = int(ys.min()), int(ys.max()) + 1, int(xs.min()), int(xs.max()) + 1
+            png = imk.encode_image(result[y1:y2, x1:x2], "png")
+            # Pixels only for small regions (fallback comparison on CPUs whose
+            # ONNX Runtime kernels round differently); the hash is the check.
+            region = {"box": [x1, y1, x2, y2], "png": base64.b64encode(png).decode("ascii") if len(png) < 400_000 else None}
+        write_json(out / "inpaint" / f"{name}.{model_name}.json", {
+            "page": name, "model": model_name, "strategy": strategy,
+            "mask_sha256": sha256(mask),
+            "fast_filled_blocks": int(cleaned),
+            "fast_fill_image_sha256": sha256(working_image),
+            "residual_mask_sha256": sha256(working_mask),
+            "residual_nonzero": int(np.count_nonzero(working_mask)),
+            "mode": calls[0] if calls else "none",
+            "result_sha256": sha256(result),
+            "result_region": region,
+        })
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> None:
@@ -697,7 +787,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask", "inpaint"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -723,7 +813,7 @@ def main() -> None:
         "decoder": "cv2.imdecode(IMREAD_COLOR) + BGR2RGB",
     })
 
-    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask"])
+    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask", "inpaint"])
     if "primitives" in only:
         gen_primitives(args.out)
     if "geometry" in only:
@@ -740,6 +830,8 @@ def main() -> None:
         gen_translation(args.out)
     if "mask" in only:
         gen_mask(args.out, args.pages, args.out / "detection")
+    if "inpaint" in only:
+        gen_inpaint(args.out, args.pages, args.models, args.out / "detection")
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ import '../bootstrap.dart';
 import 'cli_context.dart';
 import 'commands/detect_command.dart';
 import 'commands/doctor_command.dart';
+import 'commands/inpaint_command.dart';
 import 'commands/models_command.dart';
 import 'commands/ocr_command.dart';
 import 'commands/report_command.dart';
@@ -52,6 +53,8 @@ CommandRunner<int> buildRunner(CliContextHolder holder) {
     ..addCommand(DetectCommand(holder))
     ..addCommand(OcrCommand(holder))
     ..addCommand(TranslateCommand(holder))
+    ..addCommand(MaskCommand(holder))
+    ..addCommand(InpaintCommand(holder))
     ..addCommand(SettingsCommand(holder))
     ..addCommand(SecretsCommand(holder))
     ..addCommand(ReportCommand(holder));

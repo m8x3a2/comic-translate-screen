@@ -1,6 +1,8 @@
 import 'package:ct_core/ct_core.dart';
 
 import 'src/detection/rtdetr_v2.dart';
+import 'src/inpainting/aot.dart';
+import 'src/inpainting/lama.dart';
 import 'src/ocr/default_ocr.dart';
 import 'src/ocr/manga_ocr.dart';
 import 'src/ocr/ppocr.dart';
@@ -17,6 +19,8 @@ void registerBuiltInPlugins(PluginRegistry registry) {
   registry.register(windowsOcrFactory);
   registry.register(openAiCompatibleFactory);
   registry.register(mockTranslatorFactory);
+  registry.register(aotFactory);
+  registry.register(lamaFactory);
 }
 
 /// A registry with all built-in plugins.

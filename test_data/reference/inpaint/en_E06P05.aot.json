@@ -1,0 +1,21 @@
+{
+ "page": "en_E06P05",
+ "model": "aot",
+ "strategy": "Resize",
+ "mask_sha256": "624464a4a41a46a45b0eaa055d61bf3c9d91688792d133a1207f9b09541cd8d8",
+ "fast_filled_blocks": 7,
+ "fast_fill_image_sha256": "7a5ede5b69b8e139de21e0be8dfd22361ddb2afc106437ec7a6f232eb5bdc60d",
+ "residual_mask_sha256": "96c2ffa13a5cf68d0b6aa08a40343680d16e7eb9e3d90f5772159fcb1f42127b",
+ "residual_nonzero": 165489,
+ "mode": "patches",
+ "result_sha256": "a437215dc5bc7f7d6677b6e74df0fe54322bc88c8d828ddb3f0c976a41ac58fa",
+ "result_region": {
+  "box": [
+   40,
+   13,
+   1176,
+   1647
+  ],
+  "png": null
+ }
+}

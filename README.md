@@ -22,7 +22,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 | M2 | Text and bubble detection (RT-DETR-v2), line splitting, `cts detect`; identical output to the original on the test pages | done |
 | M3 | OCR: PaddleOCR and manga-ocr (identical output to the original), Windows OCR, `cts ocr` | done |
 | M4 | Translation: the original's LLM protocol, an OpenAI-compatible provider (OpenRouter, OpenAI, local servers), an offline test translator, `cts translate` | done |
-| M5–M6 | Inpainting, text rendering | planned |
+| M5 | Text removal: mask, fast fill of uniform bubbles, AOT and LaMa inpainting (identical output to the original), `cts mask`, `cts inpaint` | done |
+| M6 | Text rendering, full pipeline from the CLI | planned |
 | M7–M12 | Full GUI, projects and export, webtoon mode, PSD, polish | planned |
 
 ## Principles

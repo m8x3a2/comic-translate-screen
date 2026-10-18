@@ -142,6 +142,28 @@ void main() {
       expect(r.err, contains('example.invalid'));
     });
 
+    test('mask covers the text of the given blocks', () async {
+      // A white page with a dark "word" inside the block.
+      final page = RgbImage.filled(200, 120, 255, 255, 255);
+      for (var y = 50; y < 62; y++) {
+        for (var x = 60; x < 140; x++) {
+          if ((x ~/ 6).isEven) page.data.setRange(page.offset(x, y), page.offset(x, y) + 3, [10, 10, 10]);
+        }
+      }
+      final png = p.join(dataDir.path, 'page.png');
+      File(png).writeAsBytesSync(ImageCodec.encodePng(page));
+      final blocks = p.join(dataDir.path, 'page.blocks.json');
+      File(blocks).writeAsStringSync(jsonEncode({
+        'blocks': [TextBlock(xyxy: const BBox(50, 40, 150, 72), text: 'word').toJson()],
+      }));
+      final out = p.join(dataDir.path, 'out');
+      final r = await cts(['--json', 'mask', png, '--blocks', blocks, '-o', out], dataDir);
+      expect(r.code, ExitCodes.ok, reason: r.err);
+      final mask = ImageCodec.decodeGray(File(p.join(out, 'page.mask.png')).readAsBytesSync());
+      expect(mask.at(100, 55), 255, reason: 'text pixel is masked');
+      expect(mask.at(5, 5), 0, reason: 'background far from text is kept');
+    });
+
     test('unknown translator is a usage error', () async {
       final r = await cts(['translate', '--translator', 'nope', ocrJson], dataDir);
       expect(r.code, ExitCodes.usage);

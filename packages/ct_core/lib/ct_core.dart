@@ -27,6 +27,8 @@ export 'src/model/text_block.dart';
 export 'src/imaging/contours.dart';
 export 'src/imaging/linalg.dart';
 export 'src/imaging/morphology.dart';
+export 'src/inpainting/inpaint_model.dart';
+export 'src/inpainting/inpaint_page.dart';
 export 'src/inpainting/mask.dart';
 export 'src/models/model_catalog.dart';
 export 'src/ocr/manga_ocr.dart';
