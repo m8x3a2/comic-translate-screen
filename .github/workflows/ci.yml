@@ -46,34 +46,49 @@ jobs:
 
       - name: ct_core — analyze and test
         working-directory: packages/ct_core
+        shell: bash
         run: |
-          dart analyze --fatal-infos
-          dart test --reporter github
+          set -o pipefail
+          mkdir -p "$GITHUB_WORKSPACE/ci_logs"
+          dart analyze --fatal-infos 2>&1 | tee -a "$GITHUB_WORKSPACE/ci_logs/ct_core.log"
+          dart test --reporter github 2>&1 | tee -a "$GITHUB_WORKSPACE/ci_logs/ct_core.log"
 
       - name: ct_onnx — analyze and test
         working-directory: packages/ct_onnx
+        shell: bash
         run: |
-          dart analyze --fatal-infos
-          dart test --reporter github
+          set -o pipefail
+          mkdir -p "$GITHUB_WORKSPACE/ci_logs"
+          dart analyze --fatal-infos 2>&1 | tee -a "$GITHUB_WORKSPACE/ci_logs/ct_onnx.log"
+          dart test --reporter github 2>&1 | tee -a "$GITHUB_WORKSPACE/ci_logs/ct_onnx.log"
 
       - name: ct_ocr_windows — analyze and test
         working-directory: packages/ct_ocr_windows
+        shell: bash
         run: |
-          dart analyze --fatal-infos
-          dart test --reporter github
+          set -o pipefail
+          mkdir -p "$GITHUB_WORKSPACE/ci_logs"
+          dart analyze --fatal-infos 2>&1 | tee -a "$GITHUB_WORKSPACE/ci_logs/ct_ocr_windows.log"
+          dart test --reporter github 2>&1 | tee -a "$GITHUB_WORKSPACE/ci_logs/ct_ocr_windows.log"
 
       # Parity tests that need downloaded models skip themselves here.
       - name: ct_providers — analyze and test
         working-directory: packages/ct_providers
+        shell: bash
         run: |
-          dart analyze --fatal-infos
-          dart test --reporter github
+          set -o pipefail
+          mkdir -p "$GITHUB_WORKSPACE/ci_logs"
+          dart analyze --fatal-infos 2>&1 | tee -a "$GITHUB_WORKSPACE/ci_logs/ct_providers.log"
+          dart test --reporter github 2>&1 | tee -a "$GITHUB_WORKSPACE/ci_logs/ct_providers.log"
 
       - name: App — analyze and test
         working-directory: apps/comic_translate
+        shell: bash
         run: |
-          flutter analyze
-          flutter test --timeout 120s --reporter github
+          set -o pipefail
+          mkdir -p "$GITHUB_WORKSPACE/ci_logs"
+          flutter analyze 2>&1 | tee -a "$GITHUB_WORKSPACE/ci_logs/app.log"
+          flutter test --timeout 120s --reporter github 2>&1 | tee -a "$GITHUB_WORKSPACE/ci_logs/app.log"
 
       - name: Build Windows (GUI + cts.exe)
         working-directory: apps/comic_translate
@@ -91,3 +106,15 @@ jobs:
           ./cts.exe models list
           ./cts.exe selftest render -o "$RUNNER_TEMP/render.png"
           ./cts.exe --json report -o "$RUNNER_TEMP/report.zip"
+
+      # Logs need a GitHub login; annotations do not. On failure, publish the
+      # tail of each step log as one annotation so failures are readable.
+      - name: Publish failure details
+        if: failure()
+        shell: bash
+        run: |
+          for f in ci_logs/*.log; do
+            [ -f "$f" ] || continue
+            body=$(tail -c 8000 "$f" | sed 's/%/%25/g; s/\r//g' | awk 'BEGIN{ORS="%0A"} {print}')
+            echo "::error title=$(basename "$f")::$body"
+          done
