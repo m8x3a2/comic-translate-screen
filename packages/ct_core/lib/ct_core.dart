@@ -26,6 +26,7 @@ export 'src/model/language.dart';
 export 'src/model/text_block.dart';
 export 'src/imaging/linalg.dart';
 export 'src/models/model_catalog.dart';
+export 'src/ocr/manga_ocr.dart';
 export 'src/ocr/ppocr.dart';
 export 'src/models/model_manager.dart';
 export 'src/plugins/engines.dart';

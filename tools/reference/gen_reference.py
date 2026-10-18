@@ -1,6 +1,6 @@
 """Generate parity reference data by running the original comic-translate code.
 
-    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr]
+    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr]
 
 The original repository is only imported (bytecode writing is disabled), never
 modified. Outputs go to test_data/reference/ and are compared by Dart tests.
@@ -388,7 +388,7 @@ OCR_MODEL_DIRS = {
     "PPOCR_V5_REC_ESLAV_MOBILE": "ppocr-v5-rec-eslav",
     "PPOCR_V5_REC_KOREAN_MOBILE": "ppocr-v5-rec-korean",
     "PPOCR_V6_REC_SMALL": "ppocr-v6-rec-small",
-    "PPOCR_V5_DET_MOBILE": "ppocr-v5-det",
+    "MANGA_OCR_MOBILE_ONNX": "manga-ocr-mobile",
 }
 
 # Page -> (PP-OCR language, source language code) runs.
@@ -484,6 +484,53 @@ def gen_ocr(out: Path, pages_dir: Path, models_dir: Path, detection_dir: Path) -
             })
 
 
+def gen_manga_ocr(out: Path, pages_dir: Path, models_dir: Path, detection_dir: Path) -> None:
+    """manga-ocr on the Japanese page's blocks, plus its text post-processing."""
+    import modules.ocr.manga_ocr.mobile.onnx_engine as mo
+    from modules.utils.download import ModelDownloader, ModelID
+    from modules.utils.textblock import TextBlock
+
+    patch_model_downloader(models_dir)
+    folder = models_dir / OCR_MODEL_DIRS["MANGA_OCR_MOBILE_ONNX"]
+    ModelDownloader.get = classmethod(lambda cls, model: None)
+    ModelDownloader.get_file_path = classmethod(lambda cls, model, name: str(folder / name))
+    model = mo.MangaOCRMobileONNX()
+
+    pages = []
+    for name in ["ja_E01P02", "en_E01P02"]:
+        ref = json.loads((detection_dir / f"{name}.json").read_text(encoding="utf-8"))
+        image = decode_rgb(pages_dir / f"{name}.jpg")
+        blocks = []
+        for b in ref["blocks"]:
+            x1, y1, x2, y2 = b["xyxy"]
+            crop = np.ascontiguousarray(image[y1:y2, x1:x2])
+            model._preprocess_into(crop)
+            input_sha = sha256(model.image_buffer)
+            # Token ids: re-run the decoder loop through process_single with a spy on _decode.
+            captured = {}
+            original_decode = model._decode
+            model._decode = lambda ids: (captured.__setitem__("ids", list(ids)), original_decode(ids))[1]
+            try:
+                text = model.process_single(crop)
+            finally:
+                model._decode = original_decode
+            blocks.append({"xyxy": b["xyxy"], "input_sha256": input_sha, "token_ids": captured["ids"], "text": text})
+        pages.append({"page": name, "blocks": blocks})
+
+    samples = [
+        "ｶﾞｷﾞｸﾞﾊﾟﾋﾟｳﾞｱｲｳ", "abc XYZ 123!?", "ﾃｨﾛﾌｨﾅｰﾚ", "それは…………すごい", "....", "・・・・・・",
+        "えええええええええええええええええ", "ーーーーーーーーーーーー", "………………………………", "。。。。。。。。。。。。。",
+        "あ　い" + chr(9) + "う" + chr(10) + "え", "ＡＢＣ１２３", "~~~~~~~~~", "!?!?..........!?", "ok.....ok",
+        "ア" * 20 + "イ",
+    ]
+    # The engine's literal mojibake strings (an ellipsis and a dot class).
+    engine_src = Path(mo.__file__).read_text(encoding="utf-8")
+    mojibake = engine_src.split('text.replace("', 1)[1].split('"', 1)[0]
+    samples += ["a" + mojibake + "b", mojibake[:3] * 2 + "x"]
+    text_cases = [{"in": t, "out": model._postprocess(t)} for t in samples]
+    write_json(out / "manga_ocr.json", {"pages": pages, "postprocess": text_cases, "vocab_size": model.vocab_size})
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> None:
@@ -492,7 +539,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -518,7 +565,7 @@ def main() -> None:
         "decoder": "cv2.imdecode(IMREAD_COLOR) + BGR2RGB",
     })
 
-    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr"])
+    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr"])
     if "primitives" in only:
         gen_primitives(args.out)
     if "geometry" in only:
@@ -529,6 +576,8 @@ def main() -> None:
         gen_heuristics(args.out, args.pages, args.out / "detection")
     if "ocr" in only:
         gen_ocr(args.out, args.pages, args.models, args.out / "detection")
+    if "manga_ocr" in only:
+        gen_manga_ocr(args.out, args.pages, args.models, args.out / "detection")
 
 
 if __name__ == "__main__":

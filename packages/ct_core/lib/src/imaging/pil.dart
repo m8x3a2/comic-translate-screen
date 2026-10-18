@@ -32,6 +32,12 @@ double _sinc(double x) {
   return math.sin(x) / x;
 }
 
+double _bilinear(double x) {
+  if (x < 0.0) x = -x;
+  if (x < 1.0) return 1.0 - x;
+  return 0.0;
+}
+
 double _lanczos(double x) {
   if (-3.0 <= x && x < 3.0) return _sinc(x) * _sinc(x / 3);
   return 0.0;
@@ -41,6 +47,9 @@ double _lanczos(double x) {
 enum PilFilter {
   /// `Image.Resampling.BICUBIC` (the default of `Image.resize`).
   bicubic(_bicubic, 2.0),
+
+  /// `Image.Resampling.BILINEAR`.
+  bilinear(_bilinear, 1.0),
 
   /// `Image.Resampling.LANCZOS` (the default of `imkit.resize`).
   lanczos(_lanczos, 3.0);
