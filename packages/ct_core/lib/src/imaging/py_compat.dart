@@ -1,7 +1,10 @@
 /// Python/numpy numeric semantics needed for exact ports of the original code.
 library;
 
+import 'dart:ffi' as ffi;
+import 'dart:io' show Platform;
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 /// Python's `round(x)` / `numpy.rint`: round half to even (2.5 → 2, 3.5 → 4).
 /// Dart's `round()` rounds half away from zero, which shifts boxes by a pixel.
@@ -43,14 +46,93 @@ double npPercentile(Iterable<num> values, num q) {
   return frac >= 0.5 ? b - diff * (1 - frac) : a + diff * frac;
 }
 
+/// `numpy.sum` of float64 values, with numpy's summation order: pairwise
+/// summation inside buffers of 8192 elements, buffers added in sequence.
+double npSum(Iterable<num> values) {
+  final a = Float64List.fromList([for (final v in values) v.toDouble()]);
+  var res = 0.0;
+  for (var start = 0; start < a.length; start += 8192) {
+    res += _pairwiseSum(a, start, math.min(8192, a.length - start));
+  }
+  return res;
+}
+
+// numpy/_core/src/umath/loops_utils.h.src: pairwise_sum.
+double _pairwiseSum(Float64List a, int start, int n) {
+  if (n < 8) {
+    var res = -0.0;
+    for (var i = 0; i < n; i++) {
+      res += a[start + i];
+    }
+    return res;
+  }
+  if (n <= 128) {
+    final r = Float64List.sublistView(a, start, start + 8).toList();
+    var i = 8;
+    for (; i < n - (n % 8); i += 8) {
+      for (var j = 0; j < 8; j++) {
+        r[j] += a[start + i + j];
+      }
+    }
+    var res = ((r[0] + r[1]) + (r[2] + r[3])) + ((r[4] + r[5]) + (r[6] + r[7]));
+    for (; i < n; i++) {
+      res += a[start + i];
+    }
+    return res;
+  }
+  var n2 = n ~/ 2;
+  n2 -= n2 % 8;
+  return _pairwiseSum(a, start, n2) + _pairwiseSum(a, start + n2, n - n2);
+}
+
 /// `numpy.mean`.
 double npMean(Iterable<num> values) {
-  var sum = 0.0;
-  var n = 0;
-  for (final v in values) {
-    sum += v;
-    n++;
+  final list = values.toList();
+  if (list.isEmpty) throw ArgumentError('mean of an empty list');
+  return npSum(list) / list.length;
+}
+
+/// `numpy.std` (population, `ddof=0`).
+double npStd(Iterable<num> values) {
+  final list = [for (final v in values) v.toDouble()];
+  final mean = npMean(list);
+  return math.sqrt(npSum([for (final v in list) (v - mean) * (v - mean)]) / list.length);
+}
+
+/// `numpy.corrcoef(x, y)[0, 1]`. numpy multiplies the centred vectors with
+/// BLAS, whose summation order is unspecified, so this can differ from numpy
+/// in the last bits; callers only compare it against coarse thresholds.
+double npCorrcoef(List<num> x, List<num> y) {
+  final n = x.length;
+  final mx = npMean(x), my = npMean(y);
+  var sxx = 0.0, syy = 0.0, sxy = 0.0;
+  for (var i = 0; i < n; i++) {
+    final dx = x[i] - mx, dy = y[i] - my;
+    sxx += dx * dx;
+    syy += dy * dy;
+    sxy += dx * dy;
   }
-  if (n == 0) throw ArgumentError('mean of an empty list');
-  return sum / n;
+  final f = 1 / (n - 1);
+  final r = sxy * f / math.sqrt(sxx * f) / math.sqrt(syy * f);
+  return r.clamp(-1.0, 1.0);
+}
+
+/// Python's `math.tanh`: the C runtime's `tanh`, which Dart's `dart:math`
+/// lacks. Falls back to a Dart formula where the C function is unavailable.
+double pyTanh(double x) => (_cTanh ??= _loadCTanh())(x);
+
+double Function(double)? _cTanh;
+
+double Function(double) _loadCTanh() {
+  try {
+    final lib = Platform.isWindows ? ffi.DynamicLibrary.open('ucrtbase.dll') : ffi.DynamicLibrary.process();
+    return lib.lookupFunction<ffi.Double Function(ffi.Double), double Function(double)>('tanh');
+  } catch (_) {
+    return (x) {
+      if (x > 20) return 1.0;
+      if (x < -20) return -1.0;
+      final e = math.exp(2 * x);
+      return (e - 1) / (e + 1);
+    };
+  }
 }

@@ -1,6 +1,6 @@
 """Generate parity reference data by running the original comic-translate code.
 
-    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection]
+    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics]
 
 The original repository is only imported (bytecode writing is disabled), never
 modified. Outputs go to test_data/reference/ and are compared by Dart tests.
@@ -320,6 +320,65 @@ def gen_detection(out: Path, pages_dir: Path, models_dir: Path) -> None:
         write_json(out / "detection" / f"{name}.json", record)
 
 
+# ------------------------------------------------------------- heuristics ---
+
+def transform_crop(crop: np.ndarray, transform: str) -> np.ndarray:
+    if transform == "rot90":  # counter-clockwise, turns text rows into columns
+        return np.ascontiguousarray(np.rot90(crop))
+    if transform == "invert":
+        return 255 - crop
+    return crop
+
+
+def gen_heuristics(out: Path, pages_dir: Path, detection_dir: Path) -> None:
+    """Line/direction heuristics on many crops: detected blocks and bubbles,
+    rotated (vertical text), inverted and random regions of every page."""
+    from modules.detection.heuristic_lines.core import _detect_lines_and_direction_in_crop
+
+    rng = random.Random(SEED)
+    pages = {path.stem: decode_rgb(path) for path in sorted(pages_dir.glob("*.jpg"))}
+    cases = []
+    for name in sorted(pages):
+        image = pages[name]
+        h, w = image.shape[:2]
+        ref_path = detection_dir / f"{name}.json"
+        if not ref_path.exists():
+            sys.exit(f"Missing {ref_path}; generate the detection section first")
+        ref = json.loads(ref_path.read_text(encoding="utf-8"))
+
+        crops: list[tuple[list[int], list[tuple[str, str]]]] = []
+        for blk in ref["blocks"]:
+            x1, y1, x2, y2 = blk["xyxy"]
+            for pct in (4, 15):
+                dx, dy = (x2 - x1) * pct / 100.0, (y2 - y1) * pct / 100.0
+                box = [max(0, round(x1 - dx)), max(0, round(y1 - dy)), min(w, round(x2 + dx)), min(h, round(y2 + dy))]
+                variants = [("none", ""), ("rot90", ""), ("rot90", "ja"), ("invert", "")] if pct == 4 else [("none", ""), ("rot90", "zh")]
+                crops.append((box, variants))
+        for box in ref["filtered_bubble_boxes"]:
+            x1, y1, x2, y2 = (int(v) for v in box)
+            crops.append(([max(0, x1), max(0, y1), min(w, x2), min(h, y2)], [("none", ""), ("rot90", "ja")]))
+        for _ in range(12):
+            bw, bh = rng.randint(30, 520), rng.randint(30, 520)
+            x1, y1 = rng.randint(0, w - bw), rng.randint(0, h - bh)
+            crops.append(([x1, y1, x1 + bw, y1 + bh], [("none", ""), (rng.choice(["rot90", "invert"]), rng.choice(["", "ja", "ko"]))]))
+
+        for box, variants in crops:
+            x1, y1, x2, y2 = box
+            if x2 <= x1 or y2 <= y1:
+                continue
+            for transform, lang in variants:
+                crop = transform_crop(image[y1:y2, x1:x2], transform)
+                case = {"page": name, "box": box, "transform": transform, "lang": lang}
+                try:
+                    lines, direction = _detect_lines_and_direction_in_crop(crop, lang)
+                    case["lines"] = to_py(lines)
+                    case["direction"] = direction
+                except Exception as e:  # the Dart port must fail the same way
+                    case["error"] = type(e).__name__
+                cases.append(case)
+    write_json(out / "heuristics.json", {"cases": cases})
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> None:
@@ -328,7 +387,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -354,13 +413,15 @@ def main() -> None:
         "decoder": "cv2.imdecode(IMREAD_COLOR) + BGR2RGB",
     })
 
-    only = set(args.only or ["primitives", "geometry", "detection"])
+    only = set(args.only or ["primitives", "geometry", "detection", "heuristics"])
     if "primitives" in only:
         gen_primitives(args.out)
     if "geometry" in only:
         gen_geometry(args.out)
     if "detection" in only:
         gen_detection(args.out, args.pages, args.models)
+    if "heuristics" in only:
+        gen_heuristics(args.out, args.pages, args.out / "detection")
 
 
 if __name__ == "__main__":

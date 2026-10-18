@@ -19,7 +19,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 |---|---|---|
 | M0 | Project skeleton, `cts` CLI, diagnostics | done |
 | M1 | Core model, plugin registry, settings and secrets, model manager, ONNX Runtime, OpenCV | done |
-| M2–M6 | Detection, OCR, translation, inpainting, text rendering | planned |
+| M2 | Text and bubble detection (RT-DETR-v2), line splitting, `cts detect`; identical output to the original on the test pages | done |
+| M3–M6 | OCR, translation, inpainting, text rendering | planned |
 | M7–M12 | Full GUI, projects and export, webtoon mode, PSD, polish | planned |
 
 ## Principles

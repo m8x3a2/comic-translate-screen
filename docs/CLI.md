@@ -28,7 +28,7 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | `cts secrets list` | Names of stored secrets (values are never printed) |
 | `cts secrets set <name>` | Store a secret read from stdin, e.g. `plugin.openai_compatible.api_key` |
 | `cts secrets delete <name>` | Delete a stored secret |
-| `cts detect <image>... [-o dir] [--gpu] [--confidence X] [--debug]` | Detect text blocks and speech bubbles; writes `<name>.blocks.json` and `<name>.overlay.png` (line splitting arrives with the heuristic-lines port) |
+| `cts detect <image>... [-o dir] [--gpu] [--confidence X] [--debug]` | Detect text blocks and speech bubbles; writes `<name>.blocks.json` (blocks with their lines and text direction) and `<name>.overlay.png` |
 | `cts report [--run ID] [--with-images] [--note TEXT] [-o file.zip]` | Build a bug report |
 
 Secrets are read from stdin so they never appear in shell history or process
@@ -38,11 +38,14 @@ lists. They are stored in the OS secure storage and masked in all logs.
 
 | Command | Milestone |
 |---|---|
-| `cts parity <page>` (compare with the original's reference output) | M2 |
 | `cts ocr <img> [--blocks f] --lang en` | M3 |
 | `cts translate <blocks.json> --to ru [--provider mock\|openai_compatible]` | M4 |
 | `cts mask <img> --blocks f`, `cts inpaint <img> --mask m.png [--model aot\|lama\|migan]` | M5 |
 | `cts render`, `cts process <inputs> -o out [--debug]`, `cts compare`, `cts golden check\|update`, `cts bench` | M6 |
+
+Parity with the original is checked by the test suites (`dart test`) against
+`test_data/reference/`, not by a CLI command: see
+[tools/reference](../tools/reference/README.md).
 
 ## Exit codes
 

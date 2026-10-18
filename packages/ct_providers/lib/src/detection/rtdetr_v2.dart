@@ -58,7 +58,7 @@ class RtDetrV2Detector implements TextDetector {
     double confidence = 0.3,
     OrtDevice device = OrtDevice.cpu,
     EventLog? log,
-    LineAnnotator? annotateLines,
+    LineAnnotator? annotateLines = annotateBlocksWithHeuristicLines,
   }) {
     final session = OrtSession.open(modelPath, device: device, config: sessionConfig);
     log?.info('detector_session', {
@@ -78,7 +78,8 @@ class RtDetrV2Detector implements TextDetector {
     minSliceHeightRatio: 0.7,
   );
 
-  /// Splits blocks into lines (heuristic_lines port); null skips it.
+  /// Splits blocks into lines (the heuristic_lines port by default); null
+  /// skips it.
   LineAnnotator? annotateLines;
 
   OrtDevice get device => _session.device;

@@ -5,6 +5,7 @@ export 'src/app_paths.dart';
 export 'src/cancel.dart';
 export 'src/detection/foreground_color.dart';
 export 'src/detection/geometry.dart';
+export 'src/detection/heuristic_lines.dart' show HLine, annotateBlocksWithHeuristicLines, detectLinesAndDirectionInCrop;
 export 'src/detection/overlay.dart';
 export 'src/detection/reading_order.dart';
 export 'src/detection/slicer.dart';

@@ -85,6 +85,8 @@ void main() {
         expect(blocks[i].bubbleXyxy?.toList(), e['bubble_xyxy'], reason: 'block $i bubble');
         expect(blocks[i].textClass.id, e['text_class'], reason: 'block $i class');
         expect(blocks[i].fontColor, e['font_color'], reason: 'block $i colour');
+        expect([for (final l in blocks[i].lines) l.toJson()], e['lines'], reason: 'block $i lines');
+        expect(blocks[i].direction.id, e['direction'], reason: 'block $i direction');
       }
       expect([for (final b in sortBlocks(blocks)) blocks.indexOf(b)], r['sorted_order']);
     }, skip: hasModel ? false : 'model not downloaded: cts models download rtdetr-v2-int8');
