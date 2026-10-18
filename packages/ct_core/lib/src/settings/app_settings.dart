@@ -12,6 +12,7 @@ class AppSettings {
     this.translator = 'openai_compatible',
     this.inpainter = 'aot',
     this.useGpu = false,
+    this.upscaleSmallText = true,
     this.inpaint = const InpaintConfig(),
     this.sourceLanguage = 'English',
     this.targetLanguage = 'Russian',
@@ -37,6 +38,10 @@ class AppSettings {
   String inpainter;
 
   bool useGpu;
+
+  /// Enlarge pages with small text (screenshots, low-resolution scans)
+  /// before line splitting and OCR. New in this project.
+  bool upscaleSmallText;
   InpaintConfig inpaint;
 
   /// Default languages for new pages (canonical English names).
@@ -81,6 +86,7 @@ class AppSettings {
           'translator': translator,
           'inpainter': inpainter,
           'use_gpu': useGpu,
+          'upscale_small_text': upscaleSmallText,
         },
         'inpaint': inpaint.toJson(),
         'languages': {'source': sourceLanguage, 'target': targetLanguage},
@@ -117,6 +123,7 @@ class AppSettings {
       translator: pick(tools, 'translator', defaults.translator),
       inpainter: pick(tools, 'inpainter', defaults.inpainter),
       useGpu: pick(tools, 'use_gpu', defaults.useGpu),
+      upscaleSmallText: pick(tools, 'upscale_small_text', defaults.upscaleSmallText),
       inpaint: InpaintConfig(
         strategy: HdStrategy.values.firstWhere((s) => s.name == strategyName, orElse: () => HdStrategy.resize),
         resizeLimit: pick<num>(inpaint, 'resize_limit', defaults.inpaint.resizeLimit).toInt(),

@@ -16,6 +16,8 @@ class OcrCommand extends CtsCommand {
       ..addOption('ocr', help: 'OCR plugin id (default from settings: ppocr).')
       ..addOption('detector', help: 'Detector plugin id (default from settings).')
       ..addFlag('gpu', help: 'Use the GPU (DirectML). Default from settings.', defaultsTo: null)
+      ..addFlag('upscale',
+          help: 'Enlarge pages with small text before reading (default from settings: on).', defaultsTo: null)
       ..addFlag('debug', negatable: false, help: 'Test mode: save a run folder with artifacts and timings.');
   }
 
@@ -84,8 +86,20 @@ class OcrCommand extends CtsCommand {
           blocks = await detector!.detect(image, context);
         }
         final detectMs = sw.elapsedMilliseconds;
-        await ocr.recognize(image, blocks, sourceLanguage: language, context: context);
+        final reading = prepareReading(
+          image,
+          blocks,
+          sourceLanguageCode: Languages.byName(language)?.code ?? '',
+          enabled: args.wasParsed('upscale') ? args.flag('upscale') : settings.upscaleSmallText,
+        );
+        try {
+          await ocr.recognize(reading.image, blocks, sourceLanguage: language, context: context);
+        } finally {
+          reading.restore();
+        }
+        fixOcrScript(blocks, Languages.byName(language)?.code ?? '');
         final ocrMs = sw.elapsedMilliseconds - detectMs;
+        if (reading.scaled) pageLog.info('reading_upscaled', {'factor': reading.scaleX});
         recorder?.recordTiming('02_ocr', Duration(milliseconds: ocrMs), page: page);
 
         final order = sortBlocks(blocks, rightToLeft: language == 'Japanese');
@@ -95,6 +109,7 @@ class OcrCommand extends CtsCommand {
           'height': image.height,
           'source_language': language,
           'ocr': ocr.info.id,
+          'reading_scale': reading.scaleX,
           'blocks': [for (final b in blocks) b.toJson()],
           'reading_order': [for (final b in order) blocks.indexOf(b)],
         };
@@ -111,7 +126,8 @@ class OcrCommand extends CtsCommand {
           'json': jsonFile.path,
           'texts': [for (final b in order) b.text],
         });
-        ctx.say('$page: ${blocks.length} block(s), OCR $ocrMs ms → ${jsonFile.path}');
+        final scaleNote = reading.scaled ? ' (small text, read at ×${reading.scaleX.toStringAsFixed(1)})' : '';
+        ctx.say('$page: ${blocks.length} block(s), OCR $ocrMs ms$scaleNote → ${jsonFile.path}');
         for (final b in order) {
           ctx.say('  ${b.text}');
         }

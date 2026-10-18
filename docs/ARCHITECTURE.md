@@ -33,6 +33,13 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 - Automatic source language ("Auto") needs the script-identification model and
   arrives with M12; until then a language must be chosen.
 - `windows_ocr` is new (system OCR, no download).
+- Small text (screenshots, low-resolution scans) is read on an enlarged copy
+  of the page: when the smaller text lines are thinner than about 30 px, the
+  page is enlarged (Lanczos, up to 4×) and re-split into lines before OCR
+  (setting `tools.upscale_small_text`, on by default). On 400×570 screenshots
+  this turns unreadable OCR into usable text; on normal pages it changes little.
+- For Cyrillic source languages, Latin look-alike letters that OCR returns in
+  Cyrillic words ("HET" for "НЕТ") are replaced with Cyrillic ones.
 - Translation: a reply with stray braces after its JSON is still read (the
   original fails the page); the Authorization header is omitted when no API key
   is set; the length-limit field name is configurable for older servers.

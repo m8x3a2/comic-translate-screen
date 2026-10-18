@@ -29,7 +29,7 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | `cts secrets set <name>` | Store a secret read from stdin, e.g. `plugin.openai_compatible.api_key` |
 | `cts secrets delete <name>` | Delete a stored secret |
 | `cts detect <image>... [-o dir] [--gpu] [--confidence X] [--debug]` | Detect text blocks and speech bubbles; writes `<name>.blocks.json` (blocks with their lines and text direction) and `<name>.overlay.png` |
-| `cts ocr <image>... [--lang English] [--ocr default\|ppocr\|manga_ocr\|windows_ocr] [--blocks f.blocks.json] [-o dir] [--debug]` | Detect (or load blocks) and recognize text; writes `<name>.ocr.json` and prints the text in reading order |
+| `cts ocr <image>... [--lang English] [--ocr default\|ppocr\|manga_ocr\|windows_ocr] [--blocks f.blocks.json] [--[no-]upscale] [-o dir] [--debug]` | Detect (or load blocks) and recognize text; small text is read on an enlarged copy (`--no-upscale` turns that off); writes `<name>.ocr.json` and prints the text in reading order |
 | `cts translate <name.ocr.json>... [--to Russian] [--translator mock\|openai_compatible] [--allow-network [--remember]] [--image page.jpg] [-o dir] [--debug]` | Translate blocks recognized by `cts ocr` in reading order; writes `<name>.translated.json`. A translator that sends data off this computer refuses to run without `--allow-network` (or a remembered approval for that server) |
 | `cts settings show\|get <path>\|set <path> <value>\|plugins` | Read or change settings.json by dotted path (e.g. `plugins.openai_compatible.api_url`); `plugins` lists every plugin with its settings and where it sends data |
 | `cts report [--run ID] [--with-images] [--note TEXT] [-o file.zip]` | Build a bug report |
