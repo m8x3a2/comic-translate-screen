@@ -1,0 +1,77 @@
+{
+ "page": "en_E11P03",
+ "blocks": [
+  {
+   "clip": true,
+   "bounds": [
+    142,
+    740,
+    460,
+    885
+   ],
+   "sha256": "1b047723ac5b89513314a6347236ee338a7a8b1c7fa646ce2b4a844c71b6cf78",
+   "nonzero": 20445
+  },
+  {
+   "clip": false,
+   "bounds": [
+    142,
+    740,
+    460,
+    885
+   ],
+   "sha256": "6c0b31f093ba978c5e73fde2de7886e256a17e4d62b87087bcf1c1d5dad57cad",
+   "nonzero": 21103
+  },
+  {
+   "clip": true,
+   "bounds": [
+    204,
+    1479,
+    510,
+    1590
+   ],
+   "sha256": "a9d11fa7ba6c6c84155b54efcd660e74173bce85772b5c4998ea38c3eb23fafa",
+   "nonzero": 14176
+  },
+  {
+   "clip": false,
+   "bounds": [
+    204,
+    1479,
+    510,
+    1590
+   ],
+   "sha256": "43897249d912a6a205e86858192fb5e2476dd4d87f9bbd6ffd73290b47dec9c5",
+   "nonzero": 14190
+  },
+  {
+   "clip": true,
+   "bounds": [
+    46,
+    24,
+    344,
+    160
+   ],
+   "sha256": "7e008290eb0107b1666f81b77fc2b11ecb4be893351e2dfdf17b0bbb47b37cad",
+   "nonzero": 23703
+  },
+  {
+   "clip": false,
+   "bounds": [
+    46,
+    24,
+    344,
+    160
+   ],
+   "sha256": "7e008290eb0107b1666f81b77fc2b11ecb4be893351e2dfdf17b0bbb47b37cad",
+   "nonzero": 23703
+  }
+ ],
+ "mask_sha256": "3da9b107edbd55299c612dba197679c37e73ef08c6f4e437ee5b949551174f2d",
+ "mask_nonzero": 58324,
+ "mask_values": [
+  0,
+  255
+ ]
+}

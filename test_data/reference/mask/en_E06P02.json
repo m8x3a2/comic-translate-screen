@@ -1,0 +1,99 @@
+{
+ "page": "en_E06P02",
+ "blocks": [
+  {
+   "clip": true,
+   "bounds": [
+    819,
+    1253,
+    1138,
+    1393
+   ],
+   "sha256": "2f36f6996c2f8f24dbe79dedacda29d9a33058bdca1a0fa6deda19ec76ecc613",
+   "nonzero": 17752
+  },
+  {
+   "clip": false,
+   "bounds": [
+    819,
+    1253,
+    1138,
+    1393
+   ],
+   "sha256": "2eb18ded5ec6004ee6813fb724c093d18dc4be7c9bf3df51daf352f8431a68c0",
+   "nonzero": 17766
+  },
+  {
+   "clip": true,
+   "bounds": [
+    854,
+    1434,
+    1131,
+    1542
+   ],
+   "sha256": "c8a7d39d31099b746fdcef629528da63f3db97934f6e149e2c68ded62f223216",
+   "nonzero": 10440
+  },
+  {
+   "clip": false,
+   "bounds": [
+    854,
+    1434,
+    1131,
+    1542
+   ],
+   "sha256": "b2bbb9745ad18b9cb2804cc8a307514276924f19ba43b326cc7e2778218fc9dd",
+   "nonzero": 10646
+  },
+  {
+   "clip": true,
+   "bounds": [
+    715,
+    1153,
+    978,
+    1221
+   ],
+   "sha256": "ed738d7ed1e521118680673681c6ab97e30a3682cdc10747f85c4c4609525a85",
+   "nonzero": 4305
+  },
+  {
+   "clip": false,
+   "bounds": [
+    715,
+    1153,
+    978,
+    1221
+   ],
+   "sha256": "ed738d7ed1e521118680673681c6ab97e30a3682cdc10747f85c4c4609525a85",
+   "nonzero": 4305
+  },
+  {
+   "clip": true,
+   "bounds": [
+    305,
+    823,
+    604,
+    950
+   ],
+   "sha256": "47f7f4e4e2ccf6aa601b809e09a5c7951bf78492310f49c9251a13771c1936ce",
+   "nonzero": 18295
+  },
+  {
+   "clip": false,
+   "bounds": [
+    305,
+    823,
+    604,
+    950
+   ],
+   "sha256": "017801f9ef86698e49a62828d877c1c055162e280b250b5918ec1068708d7326",
+   "nonzero": 18497
+  }
+ ],
+ "mask_sha256": "9d3e296ec8cc999df6ab5aa3220b079371fe5fde558aa90b61bb5abd96baa723",
+ "mask_nonzero": 50792,
+ "mask_values": [
+  0,
+  255
+ ]
+}

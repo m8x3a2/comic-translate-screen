@@ -128,18 +128,26 @@ RgbImage pilResizeBicubic(RgbImage image, int width, int height) => pilResize(im
 /// vertical pass runs first. The order changes intermediate rounding, so it
 /// matters for bit-exact results.
 RgbImage pilResize(RgbImage image, int width, int height, {PilFilter filter = PilFilter.bicubic}) {
-  final inW = image.width, inH = image.height;
+  if (width == image.width && height == image.height) return image.clone();
+  return RgbImage(width, height, _resample(image.data, image.width, image.height, 3, width, height, filter));
+}
+
+/// `Image.resize` for an 8-bit single-channel ("L") image.
+GrayImage pilResizeGray(GrayImage image, int width, int height, {PilFilter filter = PilFilter.bicubic}) {
+  if (width == image.width && height == image.height) return image.clone();
+  return GrayImage(width, height, _resample(image.data, image.width, image.height, 1, width, height, filter));
+}
+
+Uint8List _resample(Uint8List data, int inW, int inH, int ch, int width, int height, PilFilter filter) {
   final needH = width != inW;
   final needV = height != inH;
-  if (!needH && !needV) return image.clone();
-
   final horizontalFirst = !((inH - height) > 0 && (inH - height) > (inW - width) * 2);
   final vert = _precompute(inH, 0, inH.toDouble(), height, filter);
   final horiz = _precompute(inW, 0, inW.toDouble(), width, filter);
 
   if (horizontalFirst) {
-    var src = image.data;
-    var srcW = inW, srcH = inH;
+    var src = data;
+    var srcW = inW;
     final vBounds = Int32List.fromList(vert.bounds);
     if (needH) {
       final yFirst = vBounds[0];
@@ -147,77 +155,176 @@ RgbImage pilResize(RgbImage image, int width, int height, {PilFilter filter = Pi
       for (var i = 0; i < height; i++) {
         vBounds[i * 2] -= yFirst;
       }
-      src = _horizontalPass(src, inW, yFirst, yLast - yFirst, width, horiz);
+      src = _horizontalPass(src, inW, yFirst, yLast - yFirst, width, horiz, ch);
       srcW = width;
-      srcH = yLast - yFirst;
     }
-    if (!needV) return RgbImage(srcW, srcH, src);
-    return RgbImage(srcW, height, _verticalPass(src, srcW, height, vBounds, vert));
+    if (!needV) return src;
+    return _verticalPass(src, srcW, height, vBounds, vert, ch);
   }
 
-  var src = image.data;
+  var src = data;
   var srcW = inW;
-  if (needV) {
-    src = _verticalPass(src, inW, height, vert.bounds, vert);
-  }
+  if (needV) src = _verticalPass(src, inW, height, vert.bounds, vert, ch);
   if (needH) {
-    src = _horizontalPass(src, srcW, 0, height, width, horiz);
+    src = _horizontalPass(src, srcW, 0, height, width, horiz, ch);
     srcW = width;
   }
-  return RgbImage(srcW, height, src);
+  return src;
 }
 
-Uint8List _horizontalPass(Uint8List src, int srcW, int rowOffset, int rows, int outW, _Coeffs c) {
-  final out = Uint8List(outW * rows * 3);
+Uint8List _horizontalPass(Uint8List src, int srcW, int rowOffset, int rows, int outW, _Coeffs c, int ch) {
+  final out = Uint8List(outW * rows * ch);
   const half = 1 << (_precisionBits - 1);
+  final s = List<int>.filled(ch, 0);
   for (var yy = 0; yy < rows; yy++) {
-    final srcRow = (yy + rowOffset) * srcW * 3;
-    final dstRow = yy * outW * 3;
+    final srcRow = (yy + rowOffset) * srcW * ch;
+    final dstRow = yy * outW * ch;
     for (var xx = 0; xx < outW; xx++) {
       final xmin = c.bounds[xx * 2];
       final xmax = c.bounds[xx * 2 + 1];
       final kb = xx * c.ksize;
-      var s0 = half, s1 = half, s2 = half;
+      s.fillRange(0, ch, half);
       for (var x = 0; x < xmax; x++) {
         final k = c.kk[kb + x];
-        final p = srcRow + (x + xmin) * 3;
-        s0 += src[p] * k;
-        s1 += src[p + 1] * k;
-        s2 += src[p + 2] * k;
+        final p = srcRow + (x + xmin) * ch;
+        for (var b = 0; b < ch; b++) {
+          s[b] += src[p + b] * k;
+        }
       }
-      final d = dstRow + xx * 3;
-      out[d] = _clip8(s0);
-      out[d + 1] = _clip8(s1);
-      out[d + 2] = _clip8(s2);
+      final d = dstRow + xx * ch;
+      for (var b = 0; b < ch; b++) {
+        out[d + b] = _clip8(s[b]);
+      }
     }
   }
   return out;
 }
 
-Uint8List _verticalPass(Uint8List src, int srcW, int outH, Int32List bounds, _Coeffs c) {
-  final out = Uint8List(srcW * outH * 3);
+Uint8List _verticalPass(Uint8List src, int srcW, int outH, Int32List bounds, _Coeffs c, int ch) {
+  final out = Uint8List(srcW * outH * ch);
   const half = 1 << (_precisionBits - 1);
+  final s = List<int>.filled(ch, 0);
   for (var yy = 0; yy < outH; yy++) {
     final ymin = bounds[yy * 2];
     final ymax = bounds[yy * 2 + 1];
     final kb = yy * c.ksize;
-    final dstRow = yy * srcW * 3;
+    final dstRow = yy * srcW * ch;
     for (var xx = 0; xx < srcW; xx++) {
-      var s0 = half, s1 = half, s2 = half;
+      s.fillRange(0, ch, half);
       for (var y = 0; y < ymax; y++) {
         final k = c.kk[kb + y];
-        final p = ((y + ymin) * srcW + xx) * 3;
-        s0 += src[p] * k;
-        s1 += src[p + 1] * k;
-        s2 += src[p + 2] * k;
+        final p = ((y + ymin) * srcW + xx) * ch;
+        for (var b = 0; b < ch; b++) {
+          s[b] += src[p + b] * k;
+        }
       }
-      final d = dstRow + xx * 3;
-      out[d] = _clip8(s0);
-      out[d + 1] = _clip8(s1);
-      out[d + 2] = _clip8(s2);
+      final d = dstRow + xx * ch;
+      for (var b = 0; b < ch; b++) {
+        out[d + b] = _clip8(s[b]);
+      }
     }
   }
   return out;
+}
+
+final _f32 = Float32List(1);
+
+double _fround(double v) {
+  _f32[0] = v;
+  return _f32[0];
+}
+
+/// `_gaussian_blur_radius` (BoxBlur.c) in C `float` arithmetic.
+double _gaussianBlurRadius(double radius, int passes) {
+  final r = _fround(radius);
+  final sigma2 = _fround(_fround(r * r) / passes);
+  final bigL = _fround(math.sqrt(12.0 * sigma2 + 1.0));
+  final l = _fround(((bigL - 1.0) / 2.0).floorToDouble());
+  var a = _fround(_fround(2 * l + 1) * _fround(_fround(l * _fround(l + 1)) - _fround(3 * sigma2)));
+  a = _fround(a / _fround(6 * _fround(sigma2 - _fround(_fround(l + 1) * _fround(l + 1)))));
+  return _fround(l + a);
+}
+
+/// `ImagingHorizontalBoxBlur` with `ImagingLineBoxBlur8` on every row.
+void _boxBlurRows(Uint8List data, int w, int h, double floatRadius) {
+  final radius = floatRadius.toInt();
+  // C: (UINT32)(1 << 24) / (float) is a float division.
+  final ww = _fround(16777216 / _fround(floatRadius * 2 + 1)).toInt();
+  final fw = (16777216 - (radius * 2 + 1) * ww) ~/ 2;
+  final edgeA = math.min(radius + 1, w);
+  final edgeB = math.max(w - radius - 1, 0);
+  final lastx = w - 1;
+  final line = Uint8List(w);
+  for (var y = 0; y < h; y++) {
+    final row = y * w;
+    int px(int i) => data[row + i];
+    var acc = px(0) * (radius + 1);
+    for (var x = 0; x < edgeA - 1; x++) {
+      acc += px(x);
+    }
+    acc += px(lastx) * (radius - edgeA + 1);
+    void save(int x, int left, int right) {
+      final bulk = (acc * ww + (px(left) + px(right)) * fw) & 0xFFFFFFFF;
+      line[x] = ((bulk + (1 << 23)) >> 24) & 0xFF;
+    }
+
+    if (edgeA <= edgeB) {
+      for (var x = 0; x < edgeA; x++) {
+        acc += px(x + radius) - px(0);
+        save(x, 0, x + radius + 1);
+      }
+      for (var x = edgeA; x < edgeB; x++) {
+        acc += px(x + radius) - px(x - radius - 1);
+        save(x, x - radius - 1, x + radius + 1);
+      }
+      for (var x = edgeB; x <= lastx; x++) {
+        acc += px(lastx) - px(x - radius - 1);
+        save(x, x - radius - 1, lastx);
+      }
+    } else {
+      for (var x = 0; x < edgeB; x++) {
+        acc += px(x + radius) - px(0);
+        save(x, 0, x + radius + 1);
+      }
+      for (var x = edgeB; x < edgeA; x++) {
+        acc += px(lastx) - px(0);
+        save(x, 0, lastx);
+      }
+      for (var x = edgeA; x <= lastx; x++) {
+        acc += px(lastx) - px(x - radius - 1);
+        save(x, x - radius - 1, lastx);
+      }
+    }
+    data.setRange(row, row + w, line);
+  }
+}
+
+Uint8List _transpose(Uint8List data, int w, int h) {
+  final out = Uint8List(w * h);
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      out[x * h + y] = data[y * w + x];
+    }
+  }
+  return out;
+}
+
+/// `image.filter(ImageFilter.GaussianBlur(radius))` for an "L" image
+/// (Pillow: three box-blur passes per direction).
+GrayImage pilGaussianBlurGray(GrayImage image, double radius, {int passes = 3}) {
+  final w = image.width, h = image.height;
+  if (w == 0 || h == 0 || radius == 0) return image.clone();
+  final r = _gaussianBlurRadius(radius, passes);
+  final data = Uint8List.fromList(image.data);
+  if (r == 0) return GrayImage(w, h, data);
+  for (var i = 0; i < passes; i++) {
+    _boxBlurRows(data, w, h, r);
+  }
+  final t = _transpose(data, w, h);
+  for (var i = 0; i < passes; i++) {
+    _boxBlurRows(t, h, w, r);
+  }
+  return GrayImage(w, h, _transpose(t, h, w));
 }
 
 int _floorC(double v) => v < 0.0 ? v.floor() : v.toInt();

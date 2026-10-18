@@ -1,6 +1,6 @@
 """Generate parity reference data by running the original comic-translate code.
 
-    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr|translation]
+    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr|translation|mask]
 
 The original repository is only imported (bytecode writing is disabled), never
 modified. Outputs go to test_data/reference/ and are compared by Dart tests.
@@ -597,6 +597,98 @@ def gen_translation(out: Path) -> None:
     })
 
 
+# ------------------------------------------------------------------- mask ---
+
+def gen_mask(out: Path, pages_dir: Path, detection_dir: Path) -> None:
+    """Morphology/contour/blur primitives and generate_mask on every page."""
+    import imkit as imk
+    import mahotas as mh
+    from PIL import Image, ImageFilter
+    from modules.utils.image_utils import generate_mask, build_block_mask_data
+    from modules.utils.textblock import TextBlock
+
+    rng = np.random.default_rng(SEED + 5)
+    prim: dict = {"morph": [], "close_holes": [], "contours": [], "blur": [], "resize_l": []}
+    ses = {
+        "rect3": np.ones((3, 3), bool), "rect5": np.ones((5, 5), bool), "rect4": np.ones((4, 4), bool),
+        "rect17": np.ones((17, 17), bool), "cross3": imk.get_structuring_element(imk.MORPH_CROSS, (3, 3)),
+    }
+    for i in range(60):
+        h, w = (int(v) for v in rng.integers(1, 40, 2))
+        a = rng.random((h, w)) < rng.uniform(0.05, 0.6)
+        name = list(ses)[i % len(ses)]
+        se = ses[name]
+        u8 = a.astype(np.uint8) * 255
+        prim["morph"].append({
+            "h": h, "w": w, "se": name, "a": b64(a.astype(np.uint8)),
+            "dilate_bool": b64(mh.dilate(a, se).astype(np.uint8)),
+            "erode_bool": b64(mh.erode(a, se).astype(np.uint8)),
+            "dilate_u8": b64(mh.dilate(u8, se)), "erode_u8": b64(mh.erode(u8, se)),
+            "close_u8": b64(mh.close(u8, se)),
+            "imk_dilate3": b64(imk.dilate(u8, se.astype(np.uint8), iterations=3)),
+            "imk_erode2": b64(imk.erode(u8, se.astype(np.uint8), iterations=2)),
+        })
+    for i in range(40):
+        h, w = (int(v) for v in rng.integers(3, 40, 2))
+        a = rng.random((h, w)) < rng.uniform(0.3, 0.8)
+        prim["close_holes"].append({"h": h, "w": w, "a": b64(a.astype(np.uint8)), "out": b64(imk.close_holes(a).astype(np.uint8))})
+    for i in range(60):
+        h, w = (int(v) for v in rng.integers(1, 50, 2))
+        a = (rng.random((h, w)) < rng.uniform(0.05, 0.7)).astype(np.uint8) * 255
+        contours, _ = imk.find_contours(a)
+        prim["contours"].append({
+            "h": h, "w": w, "a": b64(a),
+            "contours": [c.reshape(-1, 2).tolist() for c in contours],
+            "rects": [list(imk.bounding_rect(c)) for c in contours],
+        })
+    for i in range(30):
+        h, w = (int(v) for v in rng.integers(1, 60, 2))
+        a = (rng.random((h, w)) < 0.3).astype(np.uint8) * 255 if i % 2 else rng.integers(0, 256, (h, w), dtype=np.uint8)
+        radius = [1.0, 0.5, 2.0, 3.5][i % 4]
+        blurred = np.array(Image.fromarray(a).filter(ImageFilter.GaussianBlur(radius=radius)))
+        prim["blur"].append({"h": h, "w": w, "radius": radius, "a": b64(a), "out": b64(blurred)})
+    for i in range(30):
+        h, w = (int(v) for v in rng.integers(1, 80, 2))
+        a = rng.integers(0, 256, (h, w), dtype=np.uint8)
+        nh, nw = (int(v) for v in rng.integers(1, 120, 2))
+        mode = [Image.Resampling.BICUBIC, Image.Resampling.BILINEAR][i % 2]
+        prim["resize_l"].append({
+            "h": h, "w": w, "nh": nh, "nw": nw, "mode": "bicubic" if i % 2 == 0 else "bilinear",
+            "a": b64(a), "out": b64(np.array(Image.fromarray(a).resize((nw, nh), resample=mode))),
+        })
+    write_json(out / "mask_primitives.json", prim)
+
+    for ref_path in sorted(detection_dir.glob("*.json")):
+        ref = json.loads(ref_path.read_text(encoding="utf-8"))
+        name = ref["page"]
+        if name.startswith("webtoon_"):
+            continue
+        image = decode_rgb(pages_dir / f"{name}.jpg")
+        blocks = []
+        for b in ref["blocks"]:
+            blocks.append(TextBlock(
+                text_bbox=np.array(b["xyxy"]),
+                bubble_bbox=None if b["bubble_xyxy"] is None else np.array(b["bubble_xyxy"]),
+                text_class=b["text_class"], text="text",
+            ))
+        per_block = []
+        for blk in blocks:
+            for clip in (True, False):
+                m, bounds = build_block_mask_data(image, blk, clip_to_bubble=clip)
+                per_block.append({
+                    "clip": clip,
+                    "bounds": None if bounds is None else [int(v) for v in bounds],
+                    "sha256": None if m is None else sha256(m),
+                    "nonzero": None if m is None else int(np.count_nonzero(m)),
+                })
+        mask = generate_mask(image, blocks)
+        write_json(out / "mask" / f"{name}.json", {
+            "page": name, "blocks": per_block,
+            "mask_sha256": sha256(mask), "mask_nonzero": int(np.count_nonzero(mask)),
+            "mask_values": sorted(int(v) for v in np.unique(mask)),
+        })
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> None:
@@ -605,7 +697,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -631,7 +723,7 @@ def main() -> None:
         "decoder": "cv2.imdecode(IMREAD_COLOR) + BGR2RGB",
     })
 
-    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation"])
+    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask"])
     if "primitives" in only:
         gen_primitives(args.out)
     if "geometry" in only:
@@ -646,6 +738,8 @@ def main() -> None:
         gen_manga_ocr(args.out, args.pages, args.models, args.out / "detection")
     if "translation" in only:
         gen_translation(args.out)
+    if "mask" in only:
+        gen_mask(args.out, args.pages, args.out / "detection")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,55 @@
+{
+ "page": "cn_E01P02",
+ "blocks": [
+  {
+   "clip": true,
+   "bounds": [
+    575,
+    590,
+    784,
+    692
+   ],
+   "sha256": "047d4a53a42d6f6f9b8cccd089e127440e85888f35f23ab68689ea2264b37e21",
+   "nonzero": 4305
+  },
+  {
+   "clip": false,
+   "bounds": [
+    575,
+    590,
+    784,
+    692
+   ],
+   "sha256": "f7d402e4ae071001739d83818c3c6c09ed0c24170deb24f1a2d58e59b4961c28",
+   "nonzero": 4425
+  },
+  {
+   "clip": true,
+   "bounds": [
+    832,
+    109,
+    960,
+    182
+   ],
+   "sha256": "853a87ecbc4a1dfa0f996caf6ae838a8889e8dc107a9a60375c46184db76c621",
+   "nonzero": 3104
+  },
+  {
+   "clip": false,
+   "bounds": [
+    832,
+    109,
+    960,
+    182
+   ],
+   "sha256": "d163ddc39df3613d690f29c7f76963776a0a150efc06392cf6ef7421f51f1162",
+   "nonzero": 3594
+  }
+ ],
+ "mask_sha256": "14d04f79e2f4bcb7071bf6196d0b70a0b9d5be3bdc1ee7c1f692db72462c4d5a",
+ "mask_nonzero": 7409,
+ "mask_values": [
+  0,
+  255
+ ]
+}

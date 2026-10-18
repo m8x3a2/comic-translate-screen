@@ -1,0 +1,55 @@
+{
+ "page": "kr_E01P02",
+ "blocks": [
+  {
+   "clip": true,
+   "bounds": [
+    828,
+    102,
+    965,
+    181
+   ],
+   "sha256": "53720e9344d1b4cafa2ec2e75134e7e088e0d3ea6a4581575e179d2a3d6f15ed",
+   "nonzero": 3547
+  },
+  {
+   "clip": false,
+   "bounds": [
+    828,
+    102,
+    965,
+    181
+   ],
+   "sha256": "155d8e3b35e55e5820a3e4b384ca29656a64c0ac5865560c708b4fd82c35e398",
+   "nonzero": 3561
+  },
+  {
+   "clip": true,
+   "bounds": [
+    571,
+    592,
+    782,
+    689
+   ],
+   "sha256": "ca8e5828b9b7356f22e2687b8171eee1e57e6193b1c107c02d33c48359e8304a",
+   "nonzero": 6433
+  },
+  {
+   "clip": false,
+   "bounds": [
+    571,
+    592,
+    782,
+    689
+   ],
+   "sha256": "c8a952c115533941ae076429ab45155997656c9c84ea7b184fae21a81c05b275",
+   "nonzero": 6464
+  }
+ ],
+ "mask_sha256": "b543d1ff592ec048d83cb5cf8d6cf29bb958d2180bc7ca9e9f3d9bac160853d4",
+ "mask_nonzero": 9980,
+ "mask_values": [
+  0,
+  255
+ ]
+}
