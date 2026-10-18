@@ -1,0 +1,292 @@
+{
+ "wrap": [
+  {
+   "text": "Hello there, how are you today?",
+   "max": 30.0,
+   "no_space": false,
+   "out": "Hello\nthere,\nhow\nare\nyou\ntoday?"
+  },
+  {
+   "text": "Hello there, how are you today?",
+   "max": 70.0,
+   "no_space": false,
+   "out": "Hello\nthere, how\nare you\ntoday?"
+  },
+  {
+   "text": "Hello there, how are you today?",
+   "max": 120.0,
+   "no_space": false,
+   "out": "Hello there, how\nare you today?"
+  },
+  {
+   "text": "Hello there, how are you today?",
+   "max": 400.0,
+   "no_space": false,
+   "out": "Hello there, how are you today?"
+  },
+  {
+   "text": "A well-known self-taught jack-of-all-trades arrived.",
+   "max": 30.0,
+   "no_space": false,
+   "out": "A\nwell-known\nself-taught\njack-of-all-trades\narrived."
+  },
+  {
+   "text": "A well-known self-taught jack-of-all-trades arrived.",
+   "max": 70.0,
+   "no_space": false,
+   "out": "A well-\nknown\nself-\ntaught\njack-of-\nall-trades\narrived."
+  },
+  {
+   "text": "A well-known self-taught jack-of-all-trades arrived.",
+   "max": 120.0,
+   "no_space": false,
+   "out": "A well-known\nself-taught jack-\nof-all-trades\narrived."
+  },
+  {
+   "text": "A well-known self-taught jack-of-all-trades arrived.",
+   "max": 400.0,
+   "no_space": false,
+   "out": "A well-known self-taught jack-of-all-trades arrived."
+  },
+  {
+   "text": "Supercalifragilisticexpialidocious is long",
+   "max": 30.0,
+   "no_space": false,
+   "out": "Supercalifragilisticexpialidocious\nis\nlong"
+  },
+  {
+   "text": "Supercalifragilisticexpialidocious is long",
+   "max": 70.0,
+   "no_space": false,
+   "out": "Supercalifragilisticexpialidocious\nis long"
+  },
+  {
+   "text": "Supercalifragilisticexpialidocious is long",
+   "max": 120.0,
+   "no_space": false,
+   "out": "Supercalifragilisticexpialidocious\nis long"
+  },
+  {
+   "text": "Supercalifragilisticexpialidocious is long",
+   "max": 400.0,
+   "no_space": false,
+   "out": "Supercalifragilisticexpialidocious is long"
+  },
+  {
+   "text": "  spaces   everywhere \n and newlines  ",
+   "max": 30.0,
+   "no_space": false,
+   "out": "spaces\neverywhere\nand\nnewlines"
+  },
+  {
+   "text": "  spaces   everywhere \n and newlines  ",
+   "max": 70.0,
+   "no_space": false,
+   "out": "spaces\neverywhere\nand\nnewlines"
+  },
+  {
+   "text": "  spaces   everywhere \n and newlines  ",
+   "max": 120.0,
+   "no_space": false,
+   "out": "spaces everywhere\nand newlines"
+  },
+  {
+   "text": "  spaces   everywhere \n and newlines  ",
+   "max": 400.0,
+   "no_space": false,
+   "out": "spaces everywhere and newlines"
+  },
+  {
+   "text": "",
+   "max": 30.0,
+   "no_space": false,
+   "out": ""
+  },
+  {
+   "text": "",
+   "max": 70.0,
+   "no_space": false,
+   "out": ""
+  },
+  {
+   "text": "",
+   "max": 120.0,
+   "no_space": false,
+   "out": ""
+  },
+  {
+   "text": "",
+   "max": 400.0,
+   "no_space": false,
+   "out": ""
+  },
+  {
+   "text": "Так-то вот, ребята-демократы, по-моему, всё-таки нет.",
+   "max": 30.0,
+   "no_space": false,
+   "out": "Так-\nто\nвот,\nребята-демократы,\nпо-\nмоему,\nвсё-\nтаки\nнет."
+  },
+  {
+   "text": "Так-то вот, ребята-демократы, по-моему, всё-таки нет.",
+   "max": 70.0,
+   "no_space": false,
+   "out": "Так-то\nвот,\nребята-\nдемократы,\nпо-моему,\nвсё-таки\nнет."
+  },
+  {
+   "text": "Так-то вот, ребята-демократы, по-моему, всё-таки нет.",
+   "max": 120.0,
+   "no_space": false,
+   "out": "Так-то вот,\nребята-демократы,\nпо-моему, всё-\nтаки нет."
+  },
+  {
+   "text": "Так-то вот, ребята-демократы, по-моему, всё-таки нет.",
+   "max": 400.0,
+   "no_space": false,
+   "out": "Так-то вот, ребята-демократы, по-моему, всё-таки нет."
+  },
+  {
+   "text": "word-",
+   "max": 30.0,
+   "no_space": false,
+   "out": "word-"
+  },
+  {
+   "text": "word-",
+   "max": 70.0,
+   "no_space": false,
+   "out": "word-"
+  },
+  {
+   "text": "word-",
+   "max": 120.0,
+   "no_space": false,
+   "out": "word-"
+  },
+  {
+   "text": "word-",
+   "max": 400.0,
+   "no_space": false,
+   "out": "word-"
+  },
+  {
+   "text": "-word",
+   "max": 30.0,
+   "no_space": false,
+   "out": "-word"
+  },
+  {
+   "text": "-word",
+   "max": 70.0,
+   "no_space": false,
+   "out": "-word"
+  },
+  {
+   "text": "-word",
+   "max": 120.0,
+   "no_space": false,
+   "out": "-word"
+  },
+  {
+   "text": "-word",
+   "max": 400.0,
+   "no_space": false,
+   "out": "-word"
+  },
+  {
+   "text": "a b c d e f g h",
+   "max": 30.0,
+   "no_space": false,
+   "out": "a b\nc d\ne f\ng h"
+  },
+  {
+   "text": "a b c d e f g h",
+   "max": 70.0,
+   "no_space": false,
+   "out": "a b c d e\nf g h"
+  },
+  {
+   "text": "a b c d e f g h",
+   "max": 120.0,
+   "no_space": false,
+   "out": "a b c d e f g h"
+  },
+  {
+   "text": "a b c d e f g h",
+   "max": 400.0,
+   "no_space": false,
+   "out": "a b c d e f g h"
+  },
+  {
+   "text": "ダメ！そんなことしちゃだめなんだから",
+   "max": 14.0,
+   "no_space": true,
+   "out": "ダメ\n！そ\nんな\nこと\nしち\nゃだ\nめな\nんだ\nから"
+  },
+  {
+   "text": "ダメ！そんなことしちゃだめなんだから",
+   "max": 35.0,
+   "no_space": true,
+   "out": "ダメ！そん\nなことしち\nゃだめなん\nだから"
+  },
+  {
+   "text": "ダメ！そんなことしちゃだめなんだから",
+   "max": 70.0,
+   "no_space": true,
+   "out": "ダメ！そんなことしち\nゃだめなんだから"
+  },
+  {
+   "text": "哈…成功了！ 不行！想都別想！",
+   "max": 14.0,
+   "no_space": true,
+   "out": "哈…\n成功\n了！\n不行\n！想\n都別\n想！"
+  },
+  {
+   "text": "哈…成功了！ 不行！想都別想！",
+   "max": 35.0,
+   "no_space": true,
+   "out": "哈…成功了\n！不行！想\n都別想！"
+  },
+  {
+   "text": "哈…成功了！ 不行！想都別想！",
+   "max": 70.0,
+   "no_space": true,
+   "out": "哈…成功了！不行！想\n都別想！"
+  },
+  {
+   "text": "一行目\n二行目の長い文章です",
+   "max": 14.0,
+   "no_space": true,
+   "out": "一行\n目\n二行\n目の\n長い\n文章\nです"
+  },
+  {
+   "text": "一行目\n二行目の長い文章です",
+   "max": 35.0,
+   "no_space": true,
+   "out": "一行目\n二行目の長\nい文章です"
+  },
+  {
+   "text": "一行目\n二行目の長い文章です",
+   "max": 70.0,
+   "no_space": true,
+   "out": "一行目\n二行目の長い文章です"
+  },
+  {
+   "text": "",
+   "max": 14.0,
+   "no_space": true,
+   "out": ""
+  },
+  {
+   "text": "",
+   "max": 35.0,
+   "no_space": true,
+   "out": ""
+  },
+  {
+   "text": "",
+   "max": 70.0,
+   "no_space": true,
+   "out": ""
+  }
+ ]
+}

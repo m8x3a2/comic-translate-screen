@@ -31,7 +31,7 @@ void main() {
       useGpu: true,
       upscaleSmallText: false,
       fixCyrillicLookalikes: true,
-      upperCase: true,
+      render: const RenderSettings(upperCase: true, maxFontSize: 30, alignment: TextAlignment.left, color: 0xFF112233),
       inpaint: const InpaintConfig(strategy: HdStrategy.crop, cropMargin: 256),
       plugins: {
         'openai_compatible': {'url': 'http://localhost:1234/v1', 'model': 'x'},

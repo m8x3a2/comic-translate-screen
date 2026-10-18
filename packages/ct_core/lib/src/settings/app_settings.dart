@@ -1,4 +1,5 @@
 import '../plugins/engines.dart';
+import '../render/layout.dart';
 
 /// User settings stored in `settings.json` (never secrets).
 ///
@@ -19,7 +20,7 @@ class AppSettings {
     this.targetLanguage = 'Russian',
     this.extraContext = '',
     this.sendPageImage = false,
-    this.upperCase = false,
+    this.render = const RenderSettings(),
     this.theme = 'dark',
     this.uiLanguage = 'ru',
     this.testMode = false,
@@ -61,10 +62,15 @@ class AppSettings {
   /// as in the original).
   bool sendPageImage;
 
+  /// Text rendering (font, sizes, colours, outline...), defaults of the
+  /// original.
+  RenderSettings render;
+
   /// "Render text in upper case" (off by default, as in the original): when
   /// on, translations are upper-cased; when off, all-caps translations are
   /// turned into sentence case.
-  bool upperCase;
+  bool get upperCase => render.upperCase;
+  set upperCase(bool value) => render = render.copyWith(upperCase: value);
 
   /// `dark`, `light` or `system`.
   String theme;
@@ -98,7 +104,7 @@ class AppSettings {
         'inpaint': inpaint.toJson(),
         'languages': {'source': sourceLanguage, 'target': targetLanguage},
         'llm': {'extra_context': extraContext, 'send_page_image': sendPageImage},
-        'render': {'upper_case': upperCase},
+        'render': render.toJson(),
         'ui': {'theme': theme, 'language': uiLanguage},
         'test_mode': testMode,
         'plugins': plugins,
@@ -142,7 +148,7 @@ class AppSettings {
       targetLanguage: pick(languages, 'target', defaults.targetLanguage),
       extraContext: pick(llm, 'extra_context', defaults.extraContext),
       sendPageImage: pick(llm, 'send_page_image', defaults.sendPageImage),
-      upperCase: pick(render, 'upper_case', defaults.upperCase),
+      render: RenderSettings.fromJson(render),
       theme: pick(ui, 'theme', defaults.theme),
       uiLanguage: pick(ui, 'language', defaults.uiLanguage),
       testMode: pick(json, 'test_mode', defaults.testMode),

@@ -1,6 +1,6 @@
 """Generate parity reference data by running the original comic-translate code.
 
-    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr|translation|mask|inpaint]
+    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr|translation|mask|inpaint|render]
 
 The original repository is only imported (bytecode writing is disabled), never
 modified. Outputs go to test_data/reference/ and are compared by Dart tests.
@@ -779,6 +779,37 @@ def gen_inpaint(out: Path, pages_dir: Path, models_dir: Path, detection_dir: Pat
         })
 
 
+# ----------------------------------------------------------------- render ---
+
+def gen_render(out: Path) -> None:
+    """Greedy wrapping of render.py with a deterministic measure (characters x 7)."""
+    from modules.rendering.render import _wrap_text_greedily, _wrap_no_space_text_greedily
+
+    def measure(text):
+        return max((len(line) for line in text.split("\n")), default=0) * 7.0
+
+    texts = [
+        "Hello there, how are you today?",
+        "A well-known self-taught jack-of-all-trades arrived.",
+        "Supercalifragilisticexpialidocious is long",
+        "  spaces   everywhere \n and newlines  ",
+        "",
+        "Так-то вот, ребята-демократы, по-моему, всё-таки нет.",
+        "word-",
+        "-word",
+        "a b c d e f g h",
+    ]
+    no_space = ["ダメ！そんなことしちゃだめなんだから", "哈…成功了！ 不行！想都別想！", "一行目\n二行目の長い文章です", ""]
+    cases = []
+    for t in texts:
+        for max_side in (30.0, 70.0, 120.0, 400.0):
+            cases.append({"text": t, "max": max_side, "no_space": False, "out": _wrap_text_greedily(t, measure, max_side)})
+    for t in no_space:
+        for max_side in (14.0, 35.0, 70.0):
+            cases.append({"text": t, "max": max_side, "no_space": True, "out": _wrap_no_space_text_greedily(t, measure, max_side)})
+    write_json(out / "render.json", {"wrap": cases})
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> None:
@@ -787,7 +818,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask", "inpaint"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask", "inpaint", "render"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -813,7 +844,7 @@ def main() -> None:
         "decoder": "cv2.imdecode(IMREAD_COLOR) + BGR2RGB",
     })
 
-    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask", "inpaint"])
+    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask", "inpaint", "render"])
     if "primitives" in only:
         gen_primitives(args.out)
     if "geometry" in only:
@@ -832,6 +863,8 @@ def main() -> None:
         gen_mask(args.out, args.pages, args.out / "detection")
     if "inpaint" in only:
         gen_inpaint(args.out, args.pages, args.models, args.out / "detection")
+    if "render" in only:
+        gen_render(args.out)
 
 
 if __name__ == "__main__":
