@@ -118,8 +118,8 @@ jobs:
             [ -f "$f" ] || continue
             # Long lines (environment dumps of native builds) are cut so the
             # tail keeps many lines; error lines get their own annotation.
-            errors=$(tr -d '\r' < "$f" | cut -c1-400 | grep -iE 'error|exception|failed|fatal' | grep -v '✅' | tail -n 40 | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')
-            [ -n "$errors" ] && echo "::error title=$(basename "$f") (error lines)::$errors"
+            errors=$(tr -d '\r' < "$f" | cut -c1-400 | { grep -iE 'error|exception|failed|fatal' || true; } | { grep -v '✅' || true; } | tail -n 40 | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')
+            if [ -n "$errors" ]; then echo "::error title=$(basename "$f") (error lines)::$errors"; fi
             body=$(tr -d '\r' < "$f" | cut -c1-300 | tail -c 8000 | sed 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}')
             echo "::error title=$(basename "$f")::$body"
           done
