@@ -21,7 +21,7 @@ void main() {
     expect(s.theme, 'dark');
     expect(s.upperCase, isFalse);
     expect(s.upscaleSmallText, isTrue);
-    expect(s.fixCyrillicLookalikes, isTrue);
+    expect(s.fixCyrillicLookalikes, isFalse);
   });
 
   test('round trip preserves values and unknown keys', () async {
@@ -30,7 +30,7 @@ void main() {
       translator: 'mock',
       useGpu: true,
       upscaleSmallText: false,
-      fixCyrillicLookalikes: false,
+      fixCyrillicLookalikes: true,
       upperCase: true,
       inpaint: const InpaintConfig(strategy: HdStrategy.crop, cropMargin: 256),
       plugins: {
@@ -44,7 +44,7 @@ void main() {
     expect(loaded.toJson(), s.toJson());
     expect(loaded.extra['future_feature'], 42);
     expect(loaded.inpaint.strategy, HdStrategy.crop);
-    expect(loaded.fixCyrillicLookalikes, isFalse);
+    expect(loaded.fixCyrillicLookalikes, isTrue);
     expect(loaded.upscaleSmallText, isFalse);
     expect(loaded.upperCase, isTrue);
   });

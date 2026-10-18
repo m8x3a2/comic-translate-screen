@@ -13,7 +13,7 @@ class AppSettings {
     this.inpainter = 'aot',
     this.useGpu = false,
     this.upscaleSmallText = true,
-    this.fixCyrillicLookalikes = true,
+    this.fixCyrillicLookalikes = false,
     this.inpaint = const InpaintConfig(),
     this.sourceLanguage = 'English',
     this.targetLanguage = 'Russian',
@@ -45,8 +45,8 @@ class AppSettings {
   bool upscaleSmallText;
 
   /// For Cyrillic source languages, replace Latin look-alike letters that OCR
-  /// returns in Cyrillic text ("HET" → "НЕТ"). Turn off when the comics mix in
-  /// Latin words that must stay Latin. New in this project.
+  /// returns in Cyrillic text ("HET" → "НЕТ"). Off by default: Latin words in
+  /// the comic (signs, "OK") would become Cyrillic too. New in this project.
   bool fixCyrillicLookalikes;
   InpaintConfig inpaint;
 

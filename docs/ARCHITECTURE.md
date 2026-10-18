@@ -40,7 +40,7 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   this turns unreadable OCR into usable text; on normal pages it changes little.
 - For Cyrillic source languages, Latin look-alike letters that OCR returns in
   Cyrillic words ("HET" for "НЕТ") are replaced with Cyrillic ones (setting
-  `tools.fix_cyrillic_lookalikes`, on by default; never applied to other
+  `tools.fix_cyrillic_lookalikes`, off by default; never applied to other
   source languages).
 - Translation: a reply with stray braces after its JSON is still read (the
   original fails the page); the Authorization header is omitted when no API key
