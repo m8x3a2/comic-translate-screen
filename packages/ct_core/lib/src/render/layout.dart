@@ -33,6 +33,7 @@ class RenderSettings {
     this.underline = false,
     this.lineSpacing = 1.0,
     this.alignment = TextAlignment.center,
+    this.placeInBlock = true,
   });
 
   /// Font family or font file; empty = the app's default font.
@@ -54,6 +55,11 @@ class RenderSettings {
   final double lineSpacing;
   final TextAlignment alignment;
 
+  /// Places the fitted text inside its area: horizontally by [alignment],
+  /// vertically centred. The original puts it at the area's top-left corner
+  /// (false), which leaves short lines off-centre in their bubbles.
+  final bool placeInBlock;
+
   RenderSettings copyWith({
     String? fontFamily,
     int? minFontSize,
@@ -68,6 +74,7 @@ class RenderSettings {
     bool? underline,
     double? lineSpacing,
     TextAlignment? alignment,
+    bool? placeInBlock,
   }) =>
       RenderSettings(
         fontFamily: fontFamily ?? this.fontFamily,
@@ -83,6 +90,7 @@ class RenderSettings {
         underline: underline ?? this.underline,
         lineSpacing: lineSpacing ?? this.lineSpacing,
         alignment: alignment ?? this.alignment,
+        placeInBlock: placeInBlock ?? this.placeInBlock,
       );
 
   Map<String, Object?> toJson() => {
@@ -99,6 +107,7 @@ class RenderSettings {
         'underline': underline,
         'line_spacing': lineSpacing,
         'alignment': alignment.name,
+        'place_in_block': placeInBlock,
       };
 
   factory RenderSettings.fromJson(Map<String, Object?> j) {
@@ -118,6 +127,7 @@ class RenderSettings {
       underline: pick('underline', d.underline),
       lineSpacing: pick<num>('line_spacing', d.lineSpacing).toDouble(),
       alignment: TextAlignment.values.firstWhere((a) => a.name == j['alignment'], orElse: () => d.alignment),
+      placeInBlock: pick('place_in_block', d.placeInBlock),
     );
   }
 }
@@ -385,11 +395,22 @@ List<TextItem> layoutPage(
       vertical: vertical,
       noSpaceLanguage: noSpace,
     );
+    var x = b.xyxy.x1.toDouble(), y = b.xyxy.y1.toDouble();
+    if (settings.placeInBlock) {
+      final spareW = math.max(0.0, b.xyxy.width - fit.width);
+      final spareH = math.max(0.0, b.xyxy.height - fit.height);
+      x += switch (settings.alignment) {
+        TextAlignment.left => 0.0,
+        TextAlignment.center => spareW / 2,
+        TextAlignment.right => spareW,
+      };
+      y += spareH / 2;
+    }
     items.add(TextItem(
       text: fit.text,
       fontSizePt: fit.fontSizePt,
-      x: b.xyxy.x1.toDouble(),
-      y: b.xyxy.y1.toDouble(),
+      x: x,
+      y: y,
       width: fit.width,
       height: fit.height,
       color: smartTextColor(b.fontColor, settings.color),

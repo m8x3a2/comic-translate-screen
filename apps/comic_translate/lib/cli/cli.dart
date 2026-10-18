@@ -13,6 +13,7 @@ import 'commands/models_command.dart';
 import 'commands/ocr_command.dart';
 import 'commands/report_command.dart';
 import 'commands/secrets_command.dart';
+import 'commands/process_command.dart';
 import 'commands/selftest_command.dart';
 import 'commands/settings_command.dart';
 import 'commands/translate_command.dart';
@@ -55,6 +56,8 @@ CommandRunner<int> buildRunner(CliContextHolder holder) {
     ..addCommand(TranslateCommand(holder))
     ..addCommand(MaskCommand(holder))
     ..addCommand(InpaintCommand(holder))
+    ..addCommand(RenderCommand(holder))
+    ..addCommand(ProcessCommand(holder))
     ..addCommand(SettingsCommand(holder))
     ..addCommand(SecretsCommand(holder))
     ..addCommand(ReportCommand(holder));

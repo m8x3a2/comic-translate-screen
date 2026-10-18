@@ -78,8 +78,23 @@ void main() {
     expect(ja.single.vertical, isTrue);
   });
 
+  test('fitted text is placed inside its area (original: top-left corner)', () {
+    TextBlock block() => TextBlock(xyxy: const BBox(0, 0, 400, 300), translation: 'Hi')..sourceLang = 'ko';
+    final placed = layoutPage([block()], 1000, 1000, FakeMeasurer(), settings: const RenderSettings(), targetLanguage: 'English').single;
+    expect(placed.x, closeTo((400 - placed.width) / 2, 1e-9));
+    expect(placed.y, closeTo((300 - placed.height) / 2, 1e-9));
+    final right = layoutPage([block()], 1000, 1000, FakeMeasurer(),
+            settings: const RenderSettings(alignment: TextAlignment.right), targetLanguage: 'English')
+        .single;
+    expect(right.x, closeTo(400 - right.width, 1e-9));
+    final original = layoutPage([block()], 1000, 1000, FakeMeasurer(),
+            settings: const RenderSettings(placeInBlock: false), targetLanguage: 'English')
+        .single;
+    expect((original.x, original.y), (0.0, 0.0));
+  });
+
   test('render settings survive a JSON round trip', () {
-    const s = RenderSettings(fontFamily: 'Pangolin', color: 0xFF112233, outlineWidth: 1.5, alignment: TextAlignment.right);
+    const s = RenderSettings(fontFamily: 'Pangolin', color: 0xFF112233, outlineWidth: 1.5, alignment: TextAlignment.right, placeInBlock: false);
     final back = RenderSettings.fromJson(s.toJson());
     expect(back.toJson(), s.toJson());
     expect(parseColor('#ff0000'), 0xFFFF0000);

@@ -42,30 +42,15 @@ class TranslateCommand extends CtsCommand {
     if (Languages.byName(target) == null) usageException('Unknown target language "$target".');
     if (args.option('image') != null && args.rest.length != 1) usageException('--image works with exactly one file.');
 
-    final PluginInfo info;
-    try {
-      info = services.registry.info(translatorId);
-    } on UnknownPluginException {
-      usageException('Unknown translator "$translatorId". See `cts settings plugins`.');
-    }
-    if (info.kind != PluginKind.translator) usageException('"$translatorId" is not a translator.');
-    final config = await services.pluginConfig(translatorId, settings);
-    final endpoint = info.endpointFor(config);
-    if (endpoint != null) {
-      final key = endpoint.approvalKey(translatorId);
-      final where = endpoint.privacy == Privacy.lan ? 'a computer on your local network' : 'the internet';
-      if (!settings.approvedNetworkPlugins.contains(key) && !args.flag('allow-network')) {
-        ctx.err.writeln('"${info.displayName}" sends the recognized text to ${endpoint.host} ($where). '
-            'Nothing was sent. Re-run with --allow-network (add --remember to approve this server permanently), '
-            'or use --translator mock to test offline.');
-        return ExitCodes.failure;
-      }
-      if (args.flag('remember') && args.flag('allow-network')) {
-        settings.approvedNetworkPlugins.add(key);
-        await store.save(settings);
-      }
-      ctx.err.writeln('Sending text to ${endpoint.host} ($where).');
-    }
+    final allowed = await checkTranslatorNetwork(
+      ctx,
+      translatorId,
+      settings,
+      allowNetwork: args.flag('allow-network'),
+      remember: args.flag('remember'),
+      usageException: usageException,
+    );
+    if (!allowed) return ExitCodes.failure;
 
     RunRecorder? recorder;
     if (args.flag('debug')) {
@@ -157,4 +142,42 @@ class TranslateCommand extends CtsCommand {
     if (ctx.json) ctx.printJson({'ok': ok, 'run': recorder?.runId, 'results': results});
     return ok ? ExitCodes.ok : ExitCodes.failure;
   }
+}
+
+/// Refuses translators that send text off this computer unless the user
+/// allowed it for this run (`--allow-network`) or approved the server before.
+/// Prints where the text goes. Returns false when nothing may be sent.
+Future<bool> checkTranslatorNetwork(
+  CliContext ctx,
+  String translatorId,
+  AppSettings settings, {
+  required bool allowNetwork,
+  required bool remember,
+  required Never Function(String) usageException,
+}) async {
+  final services = ctx.services;
+  final PluginInfo info;
+  try {
+    info = services.registry.info(translatorId);
+  } on UnknownPluginException {
+    usageException('Unknown translator "$translatorId". See `cts settings plugins`.');
+  }
+  if (info.kind != PluginKind.translator) usageException('"$translatorId" is not a translator.');
+  final config = await services.pluginConfig(translatorId, settings);
+  final endpoint = info.endpointFor(config);
+  if (endpoint == null) return true;
+  final key = endpoint.approvalKey(translatorId);
+  final where = endpoint.privacy == Privacy.lan ? 'a computer on your local network' : 'the internet';
+  if (!settings.approvedNetworkPlugins.contains(key) && !allowNetwork) {
+    ctx.err.writeln('"${info.displayName}" sends the recognized text to ${endpoint.host} ($where). '
+        'Nothing was sent. Re-run with --allow-network (add --remember to approve this server permanently), '
+        'or use --translator mock to test offline.');
+    return false;
+  }
+  if (remember && allowNetwork) {
+    settings.approvedNetworkPlugins.add(key);
+    await services.settingsStore.save(settings);
+  }
+  ctx.err.writeln('Sending text to ${endpoint.host} ($where).');
+  return true;
 }

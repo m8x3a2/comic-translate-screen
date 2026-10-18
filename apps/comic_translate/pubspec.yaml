@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   args: ^2.7.0
+  crypto: ^3.0.7
   ct_core: any
   ct_ocr_windows: any
   ct_onnx: any
@@ -25,3 +26,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Default lettering font (SIL OFL 1.1, Latin and Cyrillic); CJK text falls
+  # back to system fonts.
+  fonts:
+    - family: Pangolin
+      fonts:
+        - asset: assets/fonts/Pangolin-Regular.ttf
