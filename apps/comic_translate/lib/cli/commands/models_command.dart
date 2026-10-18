@@ -63,8 +63,9 @@ class _ModelsList extends _ModelsSubcommand {
     if (ctx.json) {
       ctx.printJson(rows);
     } else {
+      final idWidth = rows.fold(0, (w, r) => (r['id'] as String).length > w ? (r['id'] as String).length : w);
       for (final r in rows) {
-        ctx.say('${(r['status'] as String).padRight(9)} ${(r['id'] as String).padRight(16)} '
+        ctx.say('${(r['status'] as String).padRight(9)} ${(r['id'] as String).padRight(idWidth)} '
             '${formatBytes(r['bytes'] as int).padLeft(8)}  ${r['purpose']}  [${r['license']}]');
       }
       ctx.say('');
