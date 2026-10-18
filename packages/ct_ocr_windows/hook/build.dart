@@ -13,7 +13,9 @@ void main(List<String> args) async {
       assetName: 'ct_ocr_windows',
       sources: ['src/ct_ocr_windows.cpp'],
       language: Language.cpp,
-      std: 'c++17',
+      // C++20: MSVC 14.51+ removed the experimental coroutines C++/WinRT
+      // uses under C++17.
+      std: 'c++20',
       flags: ['/EHsc', '/utf-8', '/permissive-'],
       libraries: ['WindowsApp', 'ole32'],
     ).run(
