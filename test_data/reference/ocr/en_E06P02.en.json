@@ -1,0 +1,199 @@
+{
+ "page": "en_E06P02",
+ "lang": "en",
+ "source_lang": "en",
+ "crops": [
+  {
+   "w": 206,
+   "h": 25,
+   "sha256": "0795fcfed23828c84ff93bf71eac8562d0a6e003d4abdf70c60f65cce9c47f62"
+  },
+  {
+   "w": 225,
+   "h": 21,
+   "sha256": "5ada7f6b9593db9e8f32c3795d93612f5967002ee5dec79611ca7cab27dbf737"
+  },
+  {
+   "w": 225,
+   "h": 25,
+   "sha256": "400775705a7d7f9b827b4a2895f42321d08049759b582c84920e46af4b5f1b9a"
+  },
+  {
+   "w": 170,
+   "h": 25,
+   "sha256": "efb1247755f41ba5da64cf9074b4a492de58d37616114cefeba4b9d83bc9a9db"
+  },
+  {
+   "w": 219,
+   "h": 29,
+   "sha256": "447d5a7b69562217aa4f1ecf126eab1ca4d165306984a6e704eb7d03770cf444"
+  },
+  {
+   "w": 138,
+   "h": 27,
+   "sha256": "01eecf972b4040635b7ce972bc530cb6212f54ad7c44801d0e58f9704b8c14f6"
+  },
+  {
+   "w": 80,
+   "h": 21,
+   "sha256": "ea828471685cc1a24bebb894bee5e7c2336889ab11899a01f253082e5d5bf41f"
+  },
+  {
+   "w": 172,
+   "h": 22,
+   "sha256": "a599a67672e4999ab8832dd9760edd9dc2c493f03b70ac857d1551b64d503f57"
+  },
+  {
+   "w": 189,
+   "h": 28,
+   "sha256": "abfd507c258b259bb7956184919bac1578daba066e0ec1d3d9f52735064d79d4"
+  },
+  {
+   "w": 125,
+   "h": 22,
+   "sha256": "d1c137baac2f2745fddd63591478940ea59cf45589ed2541bd88c2d2162b6f74"
+  }
+ ],
+ "rec_texts": [
+  "You even thought of",
+  "bringing a potion, my",
+  "clothes, and my hat...",
+  "...let's see which",
+  "potion you brought..",
+  "Fan-tas-tic!",
+  "Carrot!",
+  "You're so cute to",
+  "thought of bringing",
+  "the Contest!"
+ ],
+ "rec_confs": [
+  0.9927394201881007,
+  0.9959704223133269,
+  0.9831338877027685,
+  0.9515644676155515,
+  0.9738902866840362,
+  0.9999747574329376,
+  0.9998684695788792,
+  0.9884581355487599,
+  0.9925599600139418,
+  0.9990279078483582
+ ],
+ "inputs_in_bucket_order": [
+  {
+   "input_shape": [
+    3,
+    48,
+    396
+   ],
+   "input_sha256": "8cc2c6f8a2044148db0e9a8c782b2466301983a66a2c99e3ed530d08c737cbe4"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    515
+   ],
+   "input_sha256": "b81bb8b7529ad9f8bb93dea72556ab06f19779a67772306642241f8f26d9fed9"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    432
+   ],
+   "input_sha256": "4646e4622530fdf3440697063b055a1719b1a4c9518241003e437cd1249c889e"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    327
+   ],
+   "input_sha256": "e841a0058c20d849ccb443b57134319012217188f5f1bb21f36cff7df655b6b9"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    363
+   ],
+   "input_sha256": "7606be38e81e8ad09248689fd18366d74ed756de19f0b2faa9d824a3276a275d"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "b3a5c84245111b7f4940ac6a7c346030f6a9796982e60305bfbe583f46c7ee41"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "2c25b610f206653927f23d6e668cdbad3b3ad9e22767d7118a473ce9a07e3f02"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "c53235de0ba51d427a4caef9002e9d512fb722e08fa4c266f3c67b03dbdb64e6"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    376
+   ],
+   "input_sha256": "950fec65cb31d9bc5c0ada9ddb580c571a47b4d0adec5ae9d7f78b7d2fda36f4"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    324
+   ],
+   "input_sha256": "d1b52c56e72bf443e8bf2b98aa5cd1ecf082fcc47b60bbced32ff8fd7593ae7d"
+  }
+ ],
+ "blocks": [
+  {
+   "texts": [
+    "You even thought of",
+    "bringing a potion, my",
+    "clothes, and my hat..."
+   ],
+   "text": "You even thought of bringing a potion, my clothes, and my hat...",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "...let's see which",
+    "potion you brought.."
+   ],
+   "text": "...let's see which potion you brought..",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "Fan-tas-tic!"
+   ],
+   "text": "Fan-tas-tic!",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "Carrot!",
+    "You're so cute to",
+    "thought of bringing",
+    "the Contest!"
+   ],
+   "text": "Carrot! You're so cute to thought of bringing the Contest!",
+   "skipped": []
+  }
+ ]
+}

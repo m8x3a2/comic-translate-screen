@@ -1,0 +1,107 @@
+{
+ "page": "en_E01P01",
+ "lang": "en",
+ "source_lang": "en",
+ "crops": [
+  {
+   "w": 66,
+   "h": 16,
+   "sha256": "755fb82cfaf368d9ae3586aa5ac3dfe8f4d997358ada36064d45b8b85665f546"
+  },
+  {
+   "w": 115,
+   "h": 27,
+   "sha256": "c32570aa3a35339c5583f960def02e34c9cff7e8f9f26afd008dded5775783f8"
+  },
+  {
+   "w": 129,
+   "h": 25,
+   "sha256": "d2e0f26d5d9bbcefaf1d4d65d6086393403c1e5d22f4ff1a4908155088d879f8"
+  },
+  {
+   "w": 124,
+   "h": 21,
+   "sha256": "8804a5841d404eccec4ce27d0b199b6b1845817a96a28c20017a40f8b306a29e"
+  },
+  {
+   "w": 51,
+   "h": 19,
+   "sha256": "8515d1e42b20d2af31e265d77ef8d22a232d9e84fd0e1e907d3208d75c47f255"
+  }
+ ],
+ "rec_texts": [
+  "...mmm",
+  "probably not",
+  "strong enough.",
+  "...and the last",
+  "touch."
+ ],
+ "rec_confs": [
+  0.9278444250424703,
+  0.9998698035875956,
+  0.998057382447379,
+  0.9764280796051026,
+  0.9997917711734772
+ ],
+ "inputs_in_bucket_order": [
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "59459707084c39b257929f384445c50d512cce689245b0b9ccb10e7152d163ba"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "584ddb8328cc4c09124037f0fe98e774ee22f6d33b9ac3fbdfa005e385ec7074"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "a7a137b3aae50d9c2beaf5ebf8bb4bee1a19c24dbf6573bf52f1879777dd9ad1"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "7c63a237b7f38f9570266fab46b540a07d0351bc59a27b88b2f8fe364afa061f"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "c79ca76b64b8d2c7afaae23fd4222c35791a75a649bc10b1a509d9290c7ad710"
+  }
+ ],
+ "blocks": [
+  {
+   "texts": [
+    "...mmm",
+    "probably not",
+    "strong enough."
+   ],
+   "text": "...mmm probably not strong enough.",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "...and the last",
+    "touch."
+   ],
+   "text": "...and the last touch.",
+   "skipped": []
+  }
+ ]
+}

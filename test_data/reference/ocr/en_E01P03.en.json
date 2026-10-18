@@ -1,0 +1,97 @@
+{
+ "page": "en_E01P03",
+ "lang": "en",
+ "source_lang": "en",
+ "crops": [
+  {
+   "w": 75,
+   "h": 30,
+   "sha256": "fd720a6616a32a0c79e50ebcf37efb8433c9489deefad0dd9db90951c6e22bf2"
+  },
+  {
+   "w": 414,
+   "h": 71,
+   "sha256": "85dd3220d183b1f6fdd5f58048553d3734567ba86484eccee30f527acd9b0cab"
+  },
+  {
+   "w": 106,
+   "h": 16,
+   "sha256": "498ace9559ee2da10b994fe0467336b112cb29412523c475e54fb2cd072b64fb"
+  },
+  {
+   "w": 35,
+   "h": 16,
+   "sha256": "8ed531cad43b4f44797abbc97ee2d51e8e8b2c3814574921ae5b9a96917f2199"
+  }
+ ],
+ "rec_texts": [
+  "Happy?!",
+  "(52)",
+  "WWW.PEPPERCARROT.COM",
+  "05/2019"
+ ],
+ "rec_confs": [
+  0.999895589692252,
+  0.34023722261190414,
+  0.9968263119459152,
+  0.9578796114240374
+ ],
+ "inputs_in_bucket_order": [
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "dcf0ad9e9dfea7977799ee38011d46e6c1b0cae085f35e04672e0ae347623c24"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "1d81829ae4dbde24e26bfcf5cef97516b2df037d4b32dfda47ddde66a5a75c31"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "dc785d1ff97979fce8ef926167f430ac887ed45b0423e3454ca65971bc59864b"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "897693c27c3be8da22801828a32f9a25e0de4237d2f5532d89eca6b662f5d27a"
+  }
+ ],
+ "blocks": [
+  {
+   "texts": [
+    "Happy?!"
+   ],
+   "text": "Happy?!",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "(52)"
+   ],
+   "text": "(52)",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "WWW.PEPPERCARROT.COM",
+    "05/2019"
+   ],
+   "text": "WWW.PEPPERCARROT.COM 05/2019",
+   "skipped": []
+  }
+ ]
+}

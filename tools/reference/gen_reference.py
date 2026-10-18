@@ -1,6 +1,6 @@
 """Generate parity reference data by running the original comic-translate code.
 
-    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics]
+    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr]
 
 The original repository is only imported (bytecode writing is disabled), never
 modified. Outputs go to test_data/reference/ and are compared by Dart tests.
@@ -379,6 +379,111 @@ def gen_heuristics(out: Path, pages_dir: Path, detection_dir: Path) -> None:
     write_json(out / "heuristics.json", {"cases": cases})
 
 
+# -------------------------------------------------------------------- ocr ---
+
+# Our model directories (packages/ct_core ModelCatalog) per original ModelID.
+OCR_MODEL_DIRS = {
+    "PPOCR_V5_REC_EN_MOBILE": "ppocr-v5-rec-en",
+    "PPOCR_V5_REC_LATIN_MOBILE": "ppocr-v5-rec-latin",
+    "PPOCR_V5_REC_ESLAV_MOBILE": "ppocr-v5-rec-eslav",
+    "PPOCR_V5_REC_KOREAN_MOBILE": "ppocr-v5-rec-korean",
+    "PPOCR_V6_REC_SMALL": "ppocr-v6-rec-small",
+    "PPOCR_V5_DET_MOBILE": "ppocr-v5-det",
+}
+
+# Page -> (PP-OCR language, source language code) runs.
+OCR_RUNS = {
+    "en": [("en", "en"), ("latin", "fr")],
+    "ru": [("ru", "ru")],
+    "kr": [("ko", "ko")],
+    "cn": [("ch", "zh")],
+    "ja": [("ja", "ja")],
+}
+
+
+def patch_model_downloader(models_dir: Path) -> None:
+    from modules.utils.download import ModelDownloader, ModelID
+
+    def local_map(model):
+        spec = ModelDownloader.registry[model] if isinstance(model, ModelID) else model
+        folder = models_dir / OCR_MODEL_DIRS[spec.id.name]
+        return {name: str(folder / name) for name in spec.files}
+
+    ModelDownloader.ensure = classmethod(lambda cls, models: None)
+    ModelDownloader.file_path_map = classmethod(lambda cls, model: local_map(model))
+    ModelDownloader.primary_path = classmethod(lambda cls, model: next(iter(local_map(model).values())))
+
+
+def gen_ocr(out: Path, pages_dir: Path, models_dir: Path, detection_dir: Path) -> None:
+    """PP-OCR recognition of the detected blocks (with their heuristic lines)."""
+    import modules.ocr.ppocr.engine as eng
+    from modules.utils.textblock import TextBlock
+
+    patch_model_downloader(models_dir)
+    engines: dict[str, object] = {}
+    for ref_path in sorted(detection_dir.glob("*.json")):
+        ref = json.loads(ref_path.read_text(encoding="utf-8"))
+        name = ref["page"]
+        if name.startswith("webtoon_"):
+            continue
+        image = decode_rgb(pages_dir / f"{name}.jpg")
+        for lang, code in OCR_RUNS[name.split("_")[0]]:
+            if lang not in engines:
+                e = eng.PPOCRv5Engine()
+                e.initialize(lang=lang, device="cpu")
+                engines[lang] = e
+            engine = engines[lang]
+            blocks = []
+            for b in ref["blocks"]:
+                blk = TextBlock(
+                    text_bbox=np.array(b["xyxy"]),
+                    bubble_bbox=None if b["bubble_xyxy"] is None else np.array(b["bubble_xyxy"]),
+                    text_class=b["text_class"],
+                    lines=b["lines"],
+                    direction=b["direction"],
+                    source_lang=code,
+                )
+                blocks.append(blk)
+
+            crops_log: list[dict] = []
+            original_rec = eng.PPOCRv5Engine._rec_infer
+            original_norm = eng.rec_resize_norm
+
+            def logging_norm(img, img_shape=(3, 48, 320), max_wh_ratio=None):
+                x = original_norm(img, img_shape, max_wh_ratio)
+                crops_log.append({"input_shape": list(x.shape), "input_sha256": sha256(x.astype(np.float32))})
+                return x
+
+            recorded = {}
+
+            def capture_rec(self, crops):
+                recorded["crops"] = [{"w": int(c.shape[1]), "h": int(c.shape[0]), "sha256": sha256(np.ascontiguousarray(c))} for c in crops]
+                texts, confs = original_rec(self, crops)
+                recorded["texts"] = list(texts)
+                recorded["confs"] = [float(v) for v in confs]
+                return texts, confs
+
+            eng.rec_resize_norm = logging_norm
+            eng.PPOCRv5Engine._rec_infer = capture_rec
+            try:
+                engine.process_image(image, blocks)
+            finally:
+                eng.rec_resize_norm = original_norm
+                eng.PPOCRv5Engine._rec_infer = original_rec
+
+            # Inputs were logged in bucket order; recorded crops are in page order.
+            write_json(out / "ocr" / f"{name}.{lang}.json", {
+                "page": name,
+                "lang": lang,
+                "source_lang": code,
+                "crops": recorded.get("crops", []),
+                "rec_texts": recorded.get("texts", []),
+                "rec_confs": recorded.get("confs", []),
+                "inputs_in_bucket_order": crops_log,
+                "blocks": [{"texts": list(b.texts), "text": b.text, "skipped": to_py(b.skipped_small_texts)} for b in blocks],
+            })
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> None:
@@ -387,7 +492,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -413,7 +518,7 @@ def main() -> None:
         "decoder": "cv2.imdecode(IMREAD_COLOR) + BGR2RGB",
     })
 
-    only = set(args.only or ["primitives", "geometry", "detection", "heuristics"])
+    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr"])
     if "primitives" in only:
         gen_primitives(args.out)
     if "geometry" in only:
@@ -422,6 +527,8 @@ def main() -> None:
         gen_detection(args.out, args.pages, args.models)
     if "heuristics" in only:
         gen_heuristics(args.out, args.pages, args.out / "detection")
+    if "ocr" in only:
+        gen_ocr(args.out, args.pages, args.models, args.out / "detection")
 
 
 if __name__ == "__main__":

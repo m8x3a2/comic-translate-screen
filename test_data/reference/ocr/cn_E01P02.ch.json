@@ -1,0 +1,91 @@
+{
+ "page": "cn_E01P02",
+ "lang": "ch",
+ "source_lang": "zh",
+ "crops": [
+  {
+   "w": 51,
+   "h": 21,
+   "sha256": "a0ce795c0da9c9de7a0e6eb0799e5054e8782c38ff81c5894d6301d82e757764"
+  },
+  {
+   "w": 90,
+   "h": 25,
+   "sha256": "a066447a916d7e7e73ffa77b5189fa873fb7cb6ac5c199bc05f44bcfe2075250"
+  },
+  {
+   "w": 38,
+   "h": 22,
+   "sha256": "183114e4604c7ba94d310af4fd7d5cb94c4efa38228e6ab3a9a5b8ec62ed7e8f"
+  },
+  {
+   "w": 71,
+   "h": 25,
+   "sha256": "f2a808af342275b462187382c7f3287f6b2f1094509349b8e7b9472cd44616e3"
+  }
+ ],
+ "rec_texts": [
+  "不行！",
+  "想都別想！",
+  "哈…",
+  "成功了！"
+ ],
+ "rec_confs": [
+  0.9841508666674296,
+  0.9352385640144348,
+  0.9701331555843353,
+  0.9967228025197983
+ ],
+ "inputs_in_bucket_order": [
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "4f656650bd6c13ba4410cfc0f33ee3a012ab404daab68eaef2cf1b2ec883f952"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "345b82e6f151a03bc796cb9bdee414a9fdbfa9f306424bccf8d90fee27b0992c"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "74e2aed32deb9b6e64a3b7ab075f90eb521160c2538620d904801528ee440429"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "d7c2446aa9a7330cbc673d5141300d992847fcb124aa44578101f065d7526ea8"
+  }
+ ],
+ "blocks": [
+  {
+   "texts": [
+    "不行！",
+    "想都別想！"
+   ],
+   "text": "不行！想都別想！",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "哈…",
+    "成功了！"
+   ],
+   "text": "哈…成功了！",
+   "skipped": []
+  }
+ ]
+}

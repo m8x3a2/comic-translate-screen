@@ -1,0 +1,107 @@
+{
+ "page": "en_E01P02",
+ "lang": "en",
+ "source_lang": "en",
+ "crops": [
+  {
+   "w": 87,
+   "h": 24,
+   "sha256": "79fcd5079af7a77e0d1200f34467f60c3501559ecde346f7337692335d645d7d"
+  },
+  {
+   "w": 142,
+   "h": 31,
+   "sha256": "2355ed579d0f597b8bb21e97a1d7b6f4525c78abfff94b2c8a3edbaabe3dfffa"
+  },
+  {
+   "w": 74,
+   "h": 23,
+   "sha256": "02594e26ecc8846d4dc20ec4fd4f127947b6d246707873fd82eb8d77c4ff4687"
+  },
+  {
+   "w": 40,
+   "h": 20,
+   "sha256": "7261167147a169b2f9323b63d88fa6ae5b71776a4ad718bc2c277b726b6d03e7"
+  },
+  {
+   "w": 70,
+   "h": 21,
+   "sha256": "5206a15368b1395f9d6f8d82519d33741cf674ee91e0718248cd649fb4423984"
+  }
+ ],
+ "rec_texts": [
+  "NO!",
+  "Don't even think",
+  "about it.",
+  "ha...",
+  "perfect."
+ ],
+ "rec_confs": [
+  0.8823685646057129,
+  0.9783310331404209,
+  0.9998862147331238,
+  0.9915202498435974,
+  0.9997235462069511
+ ],
+ "inputs_in_bucket_order": [
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "9b0f73ab3663120669da2a6c0463f5ad93bf0b8fca9a1a651c0920ac007496bd"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "88b1f0255dd84f31ae06b0561ee146e47c0373a99d35de4b5745f2c67cb8a17b"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "5e106ebfccd33b5bd4ab2e94b19545d40b4496d083fd1c14dff4f6b331d86993"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "5cac7f7881ba3890ea8b7a433378f3b400ceea83db136ebf6c0bc1b3f3bc14f8"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "99b719e588ed0017ff0f13c158a28e0d0b6d1d04ef4946cf7f87365962745f0d"
+  }
+ ],
+ "blocks": [
+  {
+   "texts": [
+    "NO!",
+    "Don't even think",
+    "about it."
+   ],
+   "text": "NO! Don't even think about it.",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "ha...",
+    "perfect."
+   ],
+   "text": "ha... perfect.",
+   "skipped": []
+  }
+ ]
+}

@@ -1,0 +1,107 @@
+{
+ "page": "ru_E01P02",
+ "lang": "ru",
+ "source_lang": "ru",
+ "crops": [
+  {
+   "w": 31,
+   "h": 20,
+   "sha256": "3db05f068cebd96b7c552760d64d2eac7ac0ea095beaca23b60b3926b2bd7f82"
+  },
+  {
+   "w": 116,
+   "h": 25,
+   "sha256": "e016d0fcdad39f26f77564aacab4125e2527da291b2552fa077c1d9efef90e14"
+  },
+  {
+   "w": 58,
+   "h": 17,
+   "sha256": "1623691415c4fa6a5633e367a493402b7fc7ed5dfce8192123a5826ec0e5d05b"
+  },
+  {
+   "w": 23,
+   "h": 16,
+   "sha256": "f62123fbad8af6833b35d7b9a9512020658d086ea45e02a284947a97ee7ec3d0"
+  },
+  {
+   "w": 67,
+   "h": 18,
+   "sha256": "e47af424a0bd33a19d55796e734f3239d0e6db0fa349cae5927232bf76fdfde2"
+  }
+ ],
+ "rec_texts": [
+  "HET!",
+  "Даже не думай",
+  "об этом",
+  "ах..",
+  "идеально"
+ ],
+ "rec_confs": [
+  0.920765295624733,
+  0.9996223220458398,
+  0.9777053083692279,
+  0.7293667048215866,
+  0.9953782334923744
+ ],
+ "inputs_in_bucket_order": [
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "913d443a08fdbf565b92320ade523e88af5b059e4a7b2a50840c595faca15094"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "22efa174ddff0cf3876793e37be1190cbb621271ab93284e17111aff70be0a02"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "7023fc482672cad66c05f3c6c19f27f79f0e4f54155224099bb270136b3c3ce6"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "68e0e9f90ae3255e8d738161fba9ed7aba536bf5ff047c7e7e4808b3bcf2b099"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "92b2fe94ce022bf911523db8e0ee448ce78756597b0bd912dc4fe620fb12b9c1"
+  }
+ ],
+ "blocks": [
+  {
+   "texts": [
+    "HET!",
+    "Даже не думай",
+    "об этом"
+   ],
+   "text": "HET! Даже не думай об этом",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "ах..",
+    "идеально"
+   ],
+   "text": "ах.. идеально",
+   "skipped": []
+  }
+ ]
+}

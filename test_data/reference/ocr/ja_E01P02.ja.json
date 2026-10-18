@@ -1,0 +1,107 @@
+{
+ "page": "ja_E01P02",
+ "lang": "ja",
+ "source_lang": "ja",
+ "crops": [
+  {
+   "w": 52,
+   "h": 22,
+   "sha256": "149c0ec0d48bb2d261419da8f13262b2375070f0a527779f7aa15cd1efc1ea67"
+  },
+  {
+   "w": 154,
+   "h": 22,
+   "sha256": "6ab68e7192e9e9c0d1a85aca241bcb464a371e3c03e3e4cacafeb0af51c2fc12"
+  },
+  {
+   "w": 134,
+   "h": 25,
+   "sha256": "af299a7cff8ca1784d114817ea1f430e81d228ee0b980047061a2268cfeddc12"
+  },
+  {
+   "w": 57,
+   "h": 23,
+   "sha256": "416ec6ababc251236866ac09e0a9b059b92f33e7e59afb63ad92a4803d196c76"
+  },
+  {
+   "w": 78,
+   "h": 27,
+   "sha256": "36bea7f6da42a32c7a18902a42de134d7569636d2b0864f38a4c3f6595a84cd2"
+  }
+ ],
+ "rec_texts": [
+  "ダメ!",
+  "そんなことしちゃ",
+  "だめなんだから",
+  "うん…",
+  "カンペキ"
+ ],
+ "rec_confs": [
+  0.9081780314445496,
+  0.9998749643564224,
+  0.9999832596097674,
+  0.9620424111684164,
+  0.9992497563362122
+ ],
+ "inputs_in_bucket_order": [
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "bb62056d3931f9f5a1dd6cad33bb8d3b1b3d9206dea12a28ef204a72678de28f"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "4b1a6b9374638bff406c89698df609b44cbd037ba1bf8f2c343f795b7ec44ea7"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "cfd5b78b63725df3ea124fba096e8ef31bc57f80a221d9e7fc64b03e8bb50198"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "a2bf298af084a491f978941a1ce2463a23d97a9698c4601768fabcf146a219a0"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    336
+   ],
+   "input_sha256": "43731b8cd65cebfe854f2c0f628c45bb3e45d4cda692a0237d6c4762f01c4bcc"
+  }
+ ],
+ "blocks": [
+  {
+   "texts": [
+    "ダメ!",
+    "そんなことしちゃ",
+    "だめなんだから"
+   ],
+   "text": "ダメ!そんなことしちゃだめなんだから",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "うん…",
+    "カンペキ"
+   ],
+   "text": "うん…カンペキ",
+   "skipped": []
+  }
+ ]
+}

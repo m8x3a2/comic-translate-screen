@@ -1,0 +1,209 @@
+{
+ "page": "en_E11P03",
+ "lang": "latin",
+ "source_lang": "fr",
+ "crops": [
+  {
+   "w": 220,
+   "h": 21,
+   "sha256": "25ed036093f5d0ee09c574f7ca410e2aa96203a0410cc6ad0066e2c3861c6568"
+  },
+  {
+   "w": 182,
+   "h": 22,
+   "sha256": "2cbb0b171df123d1b240247759517d8d3e8e20ad821d0dfd80df4a5e353c42ca"
+  },
+  {
+   "w": 220,
+   "h": 22,
+   "sha256": "4dd6abb181864b222150e74051a7eda70df5c392403e0d24adb8b82e71c0f4c8"
+  },
+  {
+   "w": 152,
+   "h": 21,
+   "sha256": "57b54cb2fedc872845acec41148532a73e065184b607422a0ef81bb95bf074c1"
+  },
+  {
+   "w": 234,
+   "h": 22,
+   "sha256": "66a969b786bba7d62cd51a0e1577f3eea300f90cc8235aee6fe3dbb82ea3b2a3"
+  },
+  {
+   "w": 213,
+   "h": 22,
+   "sha256": "7cf2b4e5bab6d9683512ade937f3b603d8b0a822855c0693f5d060db20f9af51"
+  },
+  {
+   "w": 92,
+   "h": 22,
+   "sha256": "9f6e3a08e4e5e828c06aa737dc34b10abc6462a6c953a0b37a235375e7057f04"
+  },
+  {
+   "w": 240,
+   "h": 21,
+   "sha256": "c975ebc2dfd0cb2206cdf3ff1546ed882feaa8c5931ab69c2436326b92ec7260"
+  },
+  {
+   "w": 231,
+   "h": 28,
+   "sha256": "ac87f47641a36341122eb1e730fd477db8427d91959f6b65787d846edf1bc87a"
+  },
+  {
+   "w": 233,
+   "h": 28,
+   "sha256": "6774d5b8f037a373125ed710c6e6cb196336e35f7247e5a1957c394f1dafd077"
+  },
+  {
+   "w": 202,
+   "h": 21,
+   "sha256": "0c95c5d91107ff60f6ff96e0443e6e8a15bec3a0221321bf9591de8f22a743c8"
+  }
+ ],
+ "rec_texts": [
+  "Your first mission is to",
+  "find and intimidate",
+  "the monarch to better",
+  "manipulate him.",
+  "A true witch of Chaosah",
+  "has influence over the",
+  "powerful!",
+  "The new King of Acren is",
+  "too kind and gentle with",
+  "his subjects. The people",
+  "must fear their King."
+ ],
+ "rec_confs": [
+  0.9878227959076563,
+  0.9995317615960774,
+  0.9998425869714647,
+  0.9997636675834656,
+  0.953202662260636,
+  0.9990380731495944,
+  0.9984140992164612,
+  0.9813939929008484,
+  0.9997244502107302,
+  0.9740686441461245,
+  0.9880021328017825
+ ],
+ "inputs_in_bucket_order": [
+  {
+   "input_shape": [
+    3,
+    48,
+    503
+   ],
+   "input_sha256": "67fc0d4cd6904782e8c5852fa0b45919a62dee77e976684abca5b132f7cbf8e9"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    398
+   ],
+   "input_sha256": "68ca557464156bd4e8651af9062df42c1686d3b8cc0a200833daf2d6e5d24b16"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    480
+   ],
+   "input_sha256": "2268e517b7e5b2d00532d679121f26f9717bcf1ae8a5e0be2a27ee4ebbc44e36"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    348
+   ],
+   "input_sha256": "d448868f4eb53ee875a165c644ec2525862df04b9043ccdf92b40842509edb75"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    511
+   ],
+   "input_sha256": "3fb625959d26fa9e83a5d8982a247a3e99f494b6e4829e97724eaffee98d8957"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    465
+   ],
+   "input_sha256": "929a4e4d965a74a40f845459439a5e25b99409dc8022db0e39d155a47e7ab9a3"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "a1dd74a8c18e2d55fe92c540791b2d045da60ce99c33e16363b4ecc6837b096f"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    549
+   ],
+   "input_sha256": "1aa843ae2d07e6dab89539fe1d60044980247c7522bc9f0e77dffeeb1aa87ca1"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    396
+   ],
+   "input_sha256": "b6efdd3dda3494de22a30c0797b03024768c029b8d87ea8d9f8791a0346f1d27"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    400
+   ],
+   "input_sha256": "5e149c417c954f1364ff2814f584ae0c5d632a218255db484109cae29a6a7ba0"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    462
+   ],
+   "input_sha256": "f75607b0942b818e94986a5df263584c41bbd4a39eb9610bd7b47cf6afe8f989"
+  }
+ ],
+ "blocks": [
+  {
+   "texts": [
+    "Your first mission is to",
+    "find and intimidate",
+    "the monarch to better",
+    "manipulate him."
+   ],
+   "text": "Your first mission is to find and intimidate the monarch to better manipulate him.",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "A true witch of Chaosah",
+    "has influence over the",
+    "powerful!"
+   ],
+   "text": "A true witch of Chaosah has influence over the powerful!",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "The new King of Acren is",
+    "too kind and gentle with",
+    "his subjects. The people",
+    "must fear their King."
+   ],
+   "text": "The new King of Acren is too kind and gentle with his subjects. The people must fear their King.",
+   "skipped": []
+  }
+ ]
+}

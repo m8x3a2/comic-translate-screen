@@ -3,3 +3,4 @@ library;
 
 export 'registry.dart';
 export 'src/detection/rtdetr_v2.dart';
+export 'src/ocr/ppocr.dart';

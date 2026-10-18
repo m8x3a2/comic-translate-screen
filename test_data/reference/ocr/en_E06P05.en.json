@@ -1,0 +1,636 @@
+{
+ "page": "en_E06P05",
+ "lang": "en",
+ "source_lang": "en",
+ "crops": [
+  {
+   "w": 289,
+   "h": 25,
+   "sha256": "64dd76cfe8a88a6e13ab6792744a355b19d4cdf790d8c25dfa606e9c1c7c3035"
+  },
+  {
+   "w": 357,
+   "h": 29,
+   "sha256": "9fe27480ba4d8ef9e964ec4b5eeaeb1fd4abbf9e49140f3c90c74b888dd5d436"
+  },
+  {
+   "w": 77,
+   "h": 17,
+   "sha256": "3239e887e45cf218c2bd9b16470448885a539680afff7a7ca564e97632678629"
+  },
+  {
+   "w": 138,
+   "h": 26,
+   "sha256": "5c4c7db3334a8143d3b2898382c16bd7929eb8afb01a4d286c384edfe304268c"
+  },
+  {
+   "w": 206,
+   "h": 21,
+   "sha256": "88c113372d6a28bfd5300f04e0e1b95dcf5f27b649a67f69b6427287a280cf61"
+  },
+  {
+   "w": 196,
+   "h": 25,
+   "sha256": "b6f2ed1c10cb5b83fca30ceb6c4a9dfaa607b258cb75e607855dc70cf9e82a70"
+  },
+  {
+   "w": 260,
+   "h": 25,
+   "sha256": "53ae9fe5ec991b6109438f5f8342cff551c2ec7d6ea60e657949eddf7c4aa9fd"
+  },
+  {
+   "w": 176,
+   "h": 22,
+   "sha256": "e75c1e6b3d0505e62b071f320206950db6255916a1c31e8c5e1ca9463efa0a44"
+  },
+  {
+   "w": 176,
+   "h": 25,
+   "sha256": "43761f1539da83b36aaaf59898b4cef2c379e284327be6cd7c4e76935164ded9"
+  },
+  {
+   "w": 252,
+   "h": 21,
+   "sha256": "53dbdaeb94e505c43ea806f5842f6e3eab162d08d0eeb55a24b1f285bbb9bcc2"
+  },
+  {
+   "w": 252,
+   "h": 35,
+   "sha256": "f07b191107791018c093a457ea448f0115e634ef32b8eca76f744cf0f3d61568"
+  },
+  {
+   "w": 139,
+   "h": 25,
+   "sha256": "20d759c48ec55ad56e367495727a294229ffa0e572c196bbfea8a2d9462e6647"
+  },
+  {
+   "w": 215,
+   "h": 22,
+   "sha256": "0b7add1777e1567f226114923fb4c099fda14954d594d5fe61d9f503438dc12b"
+  },
+  {
+   "w": 174,
+   "h": 25,
+   "sha256": "91ffe6937e560c247f5244903fa45c138f8b45b70f929f34b4c4dd8354d7c910"
+  },
+  {
+   "w": 122,
+   "h": 26,
+   "sha256": "0e4d831edd398a2b172db0055277f0f0c07070c477348e16ae0a7180170147da"
+  },
+  {
+   "w": 150,
+   "h": 25,
+   "sha256": "ad603b208df68d189f4149791f6b8228c8a279963e712bcae01535d47dea1a8c"
+  },
+  {
+   "w": 162,
+   "h": 25,
+   "sha256": "866eca08202de32e5404847813af414541ce17fdfbc3babda6f12b789a99fa6a"
+  },
+  {
+   "w": 234,
+   "h": 25,
+   "sha256": "f8c60b4d76a78bfda457df9216302c2a92e897eeae230aeecaed1cafd6e5fa1b"
+  },
+  {
+   "w": 169,
+   "h": 22,
+   "sha256": "eb97e490ce0e66b69f2c16079b7b8f7ec2b4c6ef94f08c03180eba653fd53b30"
+  },
+  {
+   "w": 145,
+   "h": 26,
+   "sha256": "10a811712641e941383f0625c9996bceb6c66079b240709889266de75420ef04"
+  },
+  {
+   "w": 83,
+   "h": 25,
+   "sha256": "628506040a00f56318f639c859f359c5c5d26dd4df9cacaaeab4a9312bbcc77a"
+  },
+  {
+   "w": 121,
+   "h": 25,
+   "sha256": "f899ad34689e49712dd8b46139f13ef99f5d0ffc985bfdd025ca2fed72b802d5"
+  },
+  {
+   "w": 144,
+   "h": 43,
+   "sha256": "bff38453be801dae2e6ea2b2912c3c65e4bb2f0c7936f5cc3f4a49328a3f517c"
+  },
+  {
+   "w": 481,
+   "h": 68,
+   "sha256": "4ed6d4ca03832f4acd0e5fcf261b019b92cc0027067eba63f936d8931e0b2e0b"
+  },
+  {
+   "w": 521,
+   "h": 167,
+   "sha256": "baad804a5e048f7d7edbff7d0478ce3a39f3fc597df704e3a25fc2eee94cd442"
+  },
+  {
+   "w": 341,
+   "h": 17,
+   "sha256": "7aa7a5546973f08df7ee50470493d49c71ae3c7adef9cf9b28c19760b38f7f7d"
+  },
+  {
+   "w": 500,
+   "h": 54,
+   "sha256": "d6272525591f2837d2804a39ad6eecd42047bccb988a773d41029539e09d2d77"
+  },
+  {
+   "w": 132,
+   "h": 39,
+   "sha256": "6b5db99ee309a8a49f4f2e4c14ace832f06d115417ab61441698b0e2a3e36275"
+  },
+  {
+   "w": 58,
+   "h": 40,
+   "sha256": "653e42710a2c8afdcdbe5656261fa09fd7cc4a67f45a9d6dee78a829bdf44fb1"
+  },
+  {
+   "w": 10,
+   "h": 16,
+   "sha256": "ae153395d74c3c0b35d759ccdc45622b9154c3ee6a3dd5b89f43ab2516ae384d"
+  },
+  {
+   "w": 239,
+   "h": 26,
+   "sha256": "648bf7eb77f954a91f08870118addbc6bc3eb71ee7f6716ff7ad2926d7d0268e"
+  },
+  {
+   "w": 266,
+   "h": 25,
+   "sha256": "dd9e9940e51d36a45420c266164d1bc43a1275bcb2bc9c32385a491f917287d0"
+  },
+  {
+   "w": 231,
+   "h": 25,
+   "sha256": "9aa81b42d8e738a3b070b534cc31163ca325722ea083a07b918fde94a7044b4f"
+  },
+  {
+   "w": 36,
+   "h": 12,
+   "sha256": "3b198f15760e1655be58952a5828a0a113fdad6d502242f9110ebc96c8703748"
+  }
+ ],
+ "rec_texts": [
+  "...all this is possible with the",
+  "simple application of a single drop",
+  "of my...",
+  "...but please,",
+  "save your applause,",
+  "people of Komona!",
+  "The real potion you've al",
+  "been waiting for:",
+  "the one which wil",
+  "amaze your neighbors...",
+  "Coriander defies death",
+  "itself with this",
+  "mi-ra-cu-lous potion!",
+  "Because here is",
+  "MY Potion!",
+  "Your applause",
+  "can't be wrong.",
+  "Coriander has already",
+  "been eliminated.",
+  "...make them",
+  "jealous!",
+  "...Potion of",
+  "POSHNESS!",
+  "clapcla",
+  "Cladp",
+  "ayandnad",
+  "aPclapclap ClapclarlaPaiaplapclap",
+  "FANTASTIC!",
+  "3",
+  "0",
+  "Fantastic! Incredible!",
+  "This potion could make",
+  "all of Komona rich!",
+  ""
+ ],
+ "rec_confs": [
+  0.9697147328406572,
+  0.9944392902510507,
+  0.9552172273397446,
+  0.9591412544250488,
+  0.9993036420721757,
+  0.9989151288481319,
+  0.9899544978141784,
+  0.9991934650084552,
+  0.9732012082548702,
+  0.9953958988189697,
+  0.9979875087738037,
+  0.9834103100001812,
+  0.9965695965857733,
+  0.9965631206830342,
+  0.9645203173160553,
+  0.9981199869742761,
+  0.9972070693969727,
+  0.997948944568634,
+  0.9818516001105309,
+  0.9943076719840368,
+  0.9998565837740898,
+  0.9935342421134313,
+  0.9997782707214355,
+  0.8163336515426636,
+  0.515029764175415,
+  0.571785818785429,
+  0.8212626468051564,
+  0.9997079551219941,
+  0.38961371779441833,
+  0.9886080026626587,
+  0.9782503680749373,
+  0.9981484684077176,
+  0.9854660975305658,
+  0.0
+ ],
+ "inputs_in_bucket_order": [
+  {
+   "input_shape": [
+    3,
+    48,
+    555
+   ],
+   "input_sha256": "3211272ff6bb954beb02dfffef560a71615340d1fe75ac62ac69fc89b43f984b"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    591
+   ],
+   "input_sha256": "391992890e4ab99ff686635a041009a6fd52f8c1d4db092364ece9bb9ba8fc84"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "303663759226b257a4df84fc9cdb4ea4b86449d278a6dee189aa81d49cd2ce83"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "6b94874fda10921252b878866042388e202010b69e97155b9c181a89adda4744"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "143b1d3fdccec4d04e1a3ee7f0813eb142c6d77cbdead76fdb2bd83f8c73fbf9"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "a8b620e246de53bfd7da66176bf75f82789c1892b15951d6dd05e06b2ca031ff"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "229f9d2f773cb9434bbf19023854bd8c6a321a68cb032bee5785105d1613dc94"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "896cf90de56e444dae0ae784e4b994becd462e0d235a815925e519405d36ce94"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "c0ba56c3930a3616cfceed4878d54ef75d618850d3115d9e954d013b20fc077c"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "84a0da77321a03d868fc599a16ef703528716e8cf217678bf485fe0f5a225cb2"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "001a02753171dcf9545d94d1e3a4b200b7b32ecd56bb3f165a098f2143b4f271"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "716395eef3b647ac3cc2ffc90d9c6ec54e9dfd0631e5d407dd38302f3818d5aa"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "39fc09f453c29c31bfd063ff3ab8f300d372b9d6a14d4661291cb7cdb6df80f0"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "ac7e8110bb08c42e9ff9251f07e0321882a746abc44e9c0b6e86e7fda17b95fe"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "32ab043f1a07da2f58a482f4d34fbfbc13e36784d20ebeffc16c846f8bdf46d7"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "788b847533e28f82e44ee33b518adeae1bae2d21646df31aaa4e4811ad263c5e"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    320
+   ],
+   "input_sha256": "836bb348ebf032394838bd2e30baf2e7cb73490b81af68c2474b320ce47ec132"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    471
+   ],
+   "input_sha256": "63c3d989fdc6ab9e678b429ab1d54eb1fc70a7e88a76ccd10cea17427a285794"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    377
+   ],
+   "input_sha256": "a453757ac381aad5def8925b0677d29cb748e38456161b8911b05914faff5ae3"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    500
+   ],
+   "input_sha256": "7f615e158613dc09f95f98792736c8d395fbb1192a8d32f1f4c5a81acaa6ec1c"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    384
+   ],
+   "input_sha256": "0fcdcc3c132045faccb2dbec46e4af58238728905e595150ae26682b06fb98bf"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    338
+   ],
+   "input_sha256": "8e9efd06b3ed85729bdc3957d8ac3b51672f9e383c3383f4c53b7212a70c51cd"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    576
+   ],
+   "input_sha256": "8b6578f55eee2781af998c57bfc8fc044d7b7952927510f31578600bd668a78a"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    346
+   ],
+   "input_sha256": "a77c9c2995a91208b89cad74cda6a08b7db741b61f95b952afcde16eb84fadc2"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    470
+   ],
+   "input_sha256": "4ffd404cae1d6badeaccfa57e2c3cd629d03572e9f1bf818706ba0f16d21242c"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    335
+   ],
+   "input_sha256": "be9ad532765b6dce420beb7f781f454ae078c17f684ee50a4c5683b441e761ed"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    450
+   ],
+   "input_sha256": "9fb35a50c5aec47da79d2f6783d28c17a765aafcba845c3b212bfbb0f0cdf446"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    369
+   ],
+   "input_sha256": "7d6803cfc4f92a9c441c79fcec74fe3bbe27dd9cee5cb077e6721250aca83260"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    340
+   ],
+   "input_sha256": "d06a850cd58c4088acda8e8d092e68ab8dba4bad869caf510ec2906abf913b6a"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    963
+   ],
+   "input_sha256": "74b8ce02c7c5820a2945418435d5e86f2adae78157d393d458aa77b73564fd9a"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    445
+   ],
+   "input_sha256": "81d61f5d82de2cad4bc2dace96084d3d9f84f26e6d156e3279a61b0f43fb87da"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    442
+   ],
+   "input_sha256": "06140be79b3f815a87cf0b51e6831c86e1094b4bbe4fe01490ddb0a76a037b0e"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    511
+   ],
+   "input_sha256": "bf29df027d1ae1e44d3dd8b24bc40acaa8dc6068ca64811f7bf245be60b186f7"
+  },
+  {
+   "input_shape": [
+    3,
+    48,
+    444
+   ],
+   "input_sha256": "6d0ef6543f7ab8c158bdd2779af507935c7eeb9eb20ba812e52e216fb04ba7db"
+  }
+ ],
+ "blocks": [
+  {
+   "texts": [
+    "...all this is possible with the",
+    "simple application of a single drop",
+    "of my..."
+   ],
+   "text": "...all this is possible with the simple application of a single drop of my...",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "...but please,",
+    "save your applause,",
+    "people of Komona!"
+   ],
+   "text": "...but please, save your applause, people of Komona!",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "The real potion you've al",
+    "been waiting for:",
+    "the one which wil",
+    "amaze your neighbors..."
+   ],
+   "text": "The real potion you've al been waiting for: the one which wil amaze your neighbors...",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "Coriander defies death",
+    "itself with this",
+    "mi-ra-cu-lous potion!"
+   ],
+   "text": "Coriander defies death itself with this mi-ra-cu-lous potion!",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "Because here is",
+    "MY Potion!"
+   ],
+   "text": "Because here is MY Potion!",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "Your applause",
+    "can't be wrong.",
+    "Coriander has already",
+    "been eliminated."
+   ],
+   "text": "Your applause can't be wrong. Coriander has already been eliminated.",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "...make them",
+    "jealous!"
+   ],
+   "text": "...make them jealous!",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "...Potion of",
+    "POSHNESS!"
+   ],
+   "text": "...Potion of POSHNESS!",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "clapcla",
+    "Cladp"
+   ],
+   "text": "clapcla Cladp",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "ayandnad",
+    "aPclapclap ClapclarlaPaiaplapclap"
+   ],
+   "text": "ayandnad aPclapclap ClapclarlaPaiaplapclap",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "FANTASTIC!"
+   ],
+   "text": "FANTASTIC!",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "3",
+    "0"
+   ],
+   "text": "3 0",
+   "skipped": []
+  },
+  {
+   "texts": [
+    "Fantastic! Incredible!",
+    "This potion could make",
+    "all of Komona rich!"
+   ],
+   "text": "Fantastic! Incredible! This potion could make all of Komona rich!",
+   "skipped": []
+  }
+ ]
+}
