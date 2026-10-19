@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/app_state.dart';
+import 'info_hint.dart';
 import 'labels.dart';
 import 'plugin_strings.dart';
 
@@ -35,39 +36,48 @@ class PluginSettingsForm extends ConsumerWidget {
               SecretSetting() => _SecretField(info, field),
               BoolSetting() => SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(fieldLabel(context, info, field)),
+                title: titleWithInfo(fieldLabel(context, info, field), fieldInfo(context, info, field)),
                 subtitle: _help(context, field),
                 value: config.value<bool>(field.key),
                 onChanged: (v) => set(field.key, v),
               ),
-              ChoiceSetting(:final options) => DropdownButtonFormField<String>(
-                initialValue: config.value<String>(field.key),
-                decoration: InputDecoration(
-                  labelText: fieldLabel(context, info, field),
-                  helperText: _helpText(context, field),
+              ChoiceSetting(:final options) => withInfo(
+                DropdownButtonFormField<String>(
+                  initialValue: config.value<String>(field.key),
+                  decoration: InputDecoration(
+                    labelText: fieldLabel(context, info, field),
+                    helperText: _helpText(context, field),
+                  ),
+                  items: [for (final e in options.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+                  onChanged: (v) => set(field.key, v),
                 ),
-                items: [for (final e in options.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
-                onChanged: (v) => set(field.key, v),
+                fieldInfo(context, info, field),
               ),
-              TextSetting(:final placeholder, :final multiline) => DebouncedTextField(
-                key: ValueKey('${info.id}.${field.key}'),
-                value: config.value<String>(field.key),
-                label: fieldLabel(context, info, field),
-                help: _helpText(context, field),
-                hint: placeholder,
-                multiline: multiline,
-                onChanged: (v) => set(field.key, v),
+              TextSetting(:final placeholder, :final multiline) => withInfo(
+                DebouncedTextField(
+                  key: ValueKey('${info.id}.${field.key}'),
+                  value: config.value<String>(field.key),
+                  label: fieldLabel(context, info, field),
+                  help: _helpText(context, field),
+                  hint: placeholder,
+                  multiline: multiline,
+                  onChanged: (v) => set(field.key, v),
+                ),
+                fieldInfo(context, info, field),
               ),
-              IntSetting() || DoubleSetting() => DebouncedTextField(
-                key: ValueKey('${info.id}.${field.key}'),
-                value: '${config.values[field.key]}',
-                label: fieldLabel(context, info, field),
-                help: _helpText(context, field),
-                numeric: true,
-                onChanged: (v) {
-                  final parsed = num.tryParse(v.replaceAll(',', '.'));
-                  if (parsed != null) set(field.key, field.coerce(parsed));
-                },
+              IntSetting() || DoubleSetting() => withInfo(
+                DebouncedTextField(
+                  key: ValueKey('${info.id}.${field.key}'),
+                  value: '${config.values[field.key]}',
+                  label: fieldLabel(context, info, field),
+                  help: _helpText(context, field),
+                  numeric: true,
+                  onChanged: (v) {
+                    final parsed = num.tryParse(v.replaceAll(',', '.'));
+                    if (parsed != null) set(field.key, field.coerce(parsed));
+                  },
+                ),
+                fieldInfo(context, info, field),
               ),
             },
           ),

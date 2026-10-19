@@ -1,11 +1,14 @@
 /// Declarative settings of a plugin. The settings page is generated from this
 /// schema; values are validated and defaulted through it.
 sealed class SettingField {
-  const SettingField({required this.key, required this.label, this.help = ''});
+  const SettingField({required this.key, required this.label, this.help = '', this.info = ''});
 
   final String key;
   final String label;
   final String help;
+
+  /// A longer explanation, shown behind an "i" next to the field.
+  final String info;
 
   /// Default value, or null when the field has none (secrets).
   Object? get defaultValue;
@@ -19,6 +22,7 @@ class TextSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
+    super.info,
     this.defaultValue = '',
     this.placeholder = '',
     this.multiline = false,
@@ -38,7 +42,7 @@ class TextSetting extends SettingField {
 /// A secret (API key, token). Never stored in settings.json: values live in
 /// the OS secure storage under `plugin.<pluginId>.<key>`.
 class SecretSetting extends SettingField {
-  const SecretSetting({required super.key, required super.label, super.help, this.optional = false});
+  const SecretSetting({required super.key, required super.label, super.help, super.info, this.optional = false});
 
   final bool optional;
 
@@ -54,6 +58,7 @@ class ChoiceSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
+    super.info,
     required this.options,
     required this.defaultValue,
   });
@@ -73,6 +78,7 @@ class IntSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
+    super.info,
     required this.defaultValue,
     this.min,
     this.max,
@@ -98,6 +104,7 @@ class DoubleSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
+    super.info,
     required this.defaultValue,
     this.min,
     this.max,
@@ -119,7 +126,7 @@ class DoubleSetting extends SettingField {
 }
 
 class BoolSetting extends SettingField {
-  const BoolSetting({required super.key, required super.label, super.help, this.defaultValue = false});
+  const BoolSetting({required super.key, required super.label, super.help, super.info, this.defaultValue = false});
 
   @override
   final bool defaultValue;
@@ -131,8 +138,8 @@ class BoolSetting extends SettingField {
 /// Resolved settings for one plugin instance: validated values plus secrets.
 class PluginConfig {
   PluginConfig({Map<String, Object?> values = const {}, Map<String, String> secrets = const {}})
-      : values = Map.unmodifiable(values),
-        secrets = Map.unmodifiable(secrets);
+    : values = Map.unmodifiable(values),
+      secrets = Map.unmodifiable(secrets);
 
   final Map<String, Object?> values;
   final Map<String, String> secrets;

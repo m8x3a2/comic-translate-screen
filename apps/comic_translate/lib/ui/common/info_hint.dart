@@ -4,6 +4,27 @@ library;
 
 import 'package:flutter/material.dart';
 
+/// [field] with an [InfoHint] after it; just [field] when [info] is empty.
+Widget withInfo(Widget field, String? info) => info == null || info.isEmpty
+    ? field
+    : Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: field),
+          Padding(padding: const EdgeInsets.only(left: 4, top: 14), child: InfoHint(info)),
+        ],
+      );
+
+/// A title (of a switch, a group) with an [InfoHint] right after it.
+Widget titleWithInfo(String title, String? info, {TextStyle? style}) => info == null || info.isEmpty
+    ? Text(title, style: style)
+    : Row(
+        children: [
+          Flexible(child: Text(title, style: style)),
+          InfoHint(info),
+        ],
+      );
+
 class InfoHint extends StatelessWidget {
   const InfoHint(this.text, {super.key});
 

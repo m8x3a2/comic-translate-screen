@@ -505,19 +505,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inpainter => 'Text removal';
 
   @override
-  String get hdStrategy => 'Large pages';
+  String get hdStrategy => 'Cleaning large pages';
 
   @override
-  String get hdResize => 'Resize';
+  String get hdResize => 'Shrink (faster)';
 
   @override
-  String get hdCrop => 'In pieces';
+  String get hdCrop => 'In pieces (more precise)';
 
   @override
-  String get hdOriginal => 'Original size';
+  String get hdOriginal => 'Full size (slow)';
 
   @override
-  String get resizeLimit => 'Resize limit (px)';
+  String get resizeLimit => 'Shrink to (px, long side)';
 
   @override
   String get cropMargin => 'Piece margin (px)';
@@ -1487,4 +1487,63 @@ class AppLocalizationsEn extends AppLocalizations {
   String modelsVerifyAllBad(String names) {
     return 'Damaged: $names. Download them again.';
   }
+
+  @override
+  String get useGpuInfo =>
+      'Text finding, recognition and cleaning run on the graphics card through DirectML, which is part of Windows and works with NVIDIA, AMD and Intel. On a weak or old card it may be no faster than the processor. Translation is not sped up: it runs on the translator\'s server.';
+
+  @override
+  String get testModeInfo =>
+      'While it is on, the steps of every processed page are saved: the boxes found, the recognized text, the request to the translator (without the key), the mask, the cleaning and the result. Clicks and edits (font, spacing) are not recorded. A short log is always kept.\n\nWhen something goes wrong:\n1. Turn test mode on.\n2. Do the same thing again.\n3. Press “Make a bug report”.\n4. Send the archive to the developer. Then test mode can be turned off.';
+
+  @override
+  String get bugReportInfo =>
+      'A report can be made without test mode too: it holds the log and the settings (without API keys). If test mode was on, it also holds the steps of the last run as text (recognized text and translation included), without pictures.';
+
+  @override
+  String get extraContextInfo =>
+      'Written once and sent to the translator with every page. For example: “Characters: Maya (a girl), Timothy the cat. A comedy. Friends speak informally.” Helps with names, gender and forms of address.';
+
+  @override
+  String get sendPageImageInfo =>
+      'The model sees the drawing and better understands who speaks and what happens. The picture of the whole page goes to the translator\'s server; requests cost more, and the model must understand images.';
+
+  @override
+  String get upscaleSmallTextInfo =>
+      'When text lines are thinner than about 30 pixels (screenshots, small scans), the page is enlarged up to 4 times before recognition. There are far fewer mistakes; normal pages hardly change.';
+
+  @override
+  String get hdStrategyField => 'How to clean large pages';
+
+  @override
+  String get hdStrategyInfo =>
+      'The cleaning network is trained on small pictures.\n• Shrink (default): a copy of the page is shrunk to the limit and cleaned; only the cleaned places are put back on the full-size page. Fast.\n• In pieces: the parts around the text are cleaned at full size. More precise on large pages, but slower.\n• Full size: the whole page at once. The slowest, needs much memory.';
+
+  @override
+  String get resizeLimitInfo =>
+      'The long side of the shrunk copy, in pixels. Larger is neater but slower. 960 is the original\'s value.';
+
+  @override
+  String get cropMarginInfo =>
+      'How much background around the text goes into a piece: the network needs to see what to paint in.';
+
+  @override
+  String get cropTriggerInfo =>
+      'Pages smaller than this (long side) are cleaned whole, not in pieces.';
+
+  @override
+  String get fontSizeInfo =>
+      'The program picks the font size itself so that the translation fits the bubble, within these limits. When even the smallest does not fit, the page may be enlarged (see “Enlarging”).';
+
+  @override
+  String get lineSpacingInfo =>
+      '1 is normal spacing, 1.5 is half as much again. A single bubble can have its own in “Text style”.';
+
+  @override
+  String get outlineWidthInfo =>
+      'The outline is a light (or dark) edge around the letters so that the text reads over the drawing. The width is in pixels on each side of a letter.';
+
+  @override
+  String get imageFormatInfo =>
+      '“Same as the source” keeps the format of the original. PNG loses nothing but files are larger; JPG and WEBP are smaller, with a slight loss of quality.';
 }

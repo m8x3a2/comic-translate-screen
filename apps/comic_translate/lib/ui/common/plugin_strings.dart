@@ -11,6 +11,9 @@ const _ru = <String, String>{
   'rtdetr_v2.desc': 'Находит пузыри и области с текстом; работает на компьютере.',
   'rtdetr_v2.confidence': 'Порог уверенности',
   'rtdetr_v2.confidence.help': 'Находки с меньшей оценкой отбрасываются.',
+  'rtdetr_v2.confidence.info':
+      'Насколько программа должна быть уверена, что нашла текст (от 0,05 до 0,95). Меньше — найдёт больше, '
+      'но может принять рисунок за текст. Больше — пропустит бледный или мелкий текст. Обычно 0,3.',
   'default': 'По умолчанию (PaddleOCR, manga-ocr для японского)',
   'default.desc': 'Сам выбирает лучшую локальную модель для языка оригинала.',
   'ppocr': 'PaddleOCR',
@@ -45,12 +48,21 @@ const _ru = <String, String>{
   'openai_compatible.api_key': 'Ключ API',
   'openai_compatible.api_key.help': 'Для большинства локальных серверов не нужен.',
   'openai_compatible.temperature': 'Температура',
+  'openai_compatible.temperature.info':
+      'Насколько свободно модель подбирает слова. Ниже — точнее и одинаковее, выше — разнообразнее, '
+      'но больше ошибок. Для перевода обычно от 0 до 1.',
   'openai_compatible.max_tokens': 'Наибольшая длина ответа (токены)',
+  'openai_compatible.max_tokens.info':
+      'Самый длинный ответ, который может дать модель. Если перевод страницы обрывается, увеличьте. '
+      'Токен — примерно 3–4 буквы.',
   'openai_compatible.token_limit_param': 'Параметр ограничения длины',
   'openai_compatible.token_limit_param.help':
       'Как сервер называет ограничение длины: max_tokens для старых серверов, '
       'none — не передавать.',
   'openai_compatible.timeout': 'Время ожидания (секунды)',
+  'openai_compatible.timeout.info':
+      'Сколько ждать ответа сервера. Медленные бесплатные модели и локальные серверы на слабом компьютере '
+      'могут отвечать долго.',
 };
 
 String? _lookup(BuildContext context, String key) =>
@@ -66,3 +78,6 @@ String fieldLabel(BuildContext context, PluginInfo info, SettingField field) =>
 
 String fieldHelp(BuildContext context, PluginInfo info, SettingField field) =>
     _lookup(context, '${info.id}.${field.key}.help') ?? field.help;
+
+String fieldInfo(BuildContext context, PluginInfo info, SettingField field) =>
+    _lookup(context, '${info.id}.${field.key}.info') ?? field.info;

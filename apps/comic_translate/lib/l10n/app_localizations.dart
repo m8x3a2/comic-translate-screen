@@ -953,31 +953,31 @@ abstract class AppLocalizations {
   /// No description provided for @hdStrategy.
   ///
   /// In en, this message translates to:
-  /// **'Large pages'**
+  /// **'Cleaning large pages'**
   String get hdStrategy;
 
   /// No description provided for @hdResize.
   ///
   /// In en, this message translates to:
-  /// **'Resize'**
+  /// **'Shrink (faster)'**
   String get hdResize;
 
   /// No description provided for @hdCrop.
   ///
   /// In en, this message translates to:
-  /// **'In pieces'**
+  /// **'In pieces (more precise)'**
   String get hdCrop;
 
   /// No description provided for @hdOriginal.
   ///
   /// In en, this message translates to:
-  /// **'Original size'**
+  /// **'Full size (slow)'**
   String get hdOriginal;
 
   /// No description provided for @resizeLimit.
   ///
   /// In en, this message translates to:
-  /// **'Resize limit (px)'**
+  /// **'Shrink to (px, long side)'**
   String get resizeLimit;
 
   /// No description provided for @cropMargin.
@@ -2695,6 +2695,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Damaged: {names}. Download them again.'**
   String modelsVerifyAllBad(String names);
+
+  /// No description provided for @useGpuInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Text finding, recognition and cleaning run on the graphics card through DirectML, which is part of Windows and works with NVIDIA, AMD and Intel. On a weak or old card it may be no faster than the processor. Translation is not sped up: it runs on the translator\'s server.'**
+  String get useGpuInfo;
+
+  /// No description provided for @testModeInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'While it is on, the steps of every processed page are saved: the boxes found, the recognized text, the request to the translator (without the key), the mask, the cleaning and the result. Clicks and edits (font, spacing) are not recorded. A short log is always kept.\n\nWhen something goes wrong:\n1. Turn test mode on.\n2. Do the same thing again.\n3. Press “Make a bug report”.\n4. Send the archive to the developer. Then test mode can be turned off.'**
+  String get testModeInfo;
+
+  /// No description provided for @bugReportInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'A report can be made without test mode too: it holds the log and the settings (without API keys). If test mode was on, it also holds the steps of the last run as text (recognized text and translation included), without pictures.'**
+  String get bugReportInfo;
+
+  /// No description provided for @extraContextInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Written once and sent to the translator with every page. For example: “Characters: Maya (a girl), Timothy the cat. A comedy. Friends speak informally.” Helps with names, gender and forms of address.'**
+  String get extraContextInfo;
+
+  /// No description provided for @sendPageImageInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The model sees the drawing and better understands who speaks and what happens. The picture of the whole page goes to the translator\'s server; requests cost more, and the model must understand images.'**
+  String get sendPageImageInfo;
+
+  /// No description provided for @upscaleSmallTextInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'When text lines are thinner than about 30 pixels (screenshots, small scans), the page is enlarged up to 4 times before recognition. There are far fewer mistakes; normal pages hardly change.'**
+  String get upscaleSmallTextInfo;
+
+  /// No description provided for @hdStrategyField.
+  ///
+  /// In en, this message translates to:
+  /// **'How to clean large pages'**
+  String get hdStrategyField;
+
+  /// No description provided for @hdStrategyInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The cleaning network is trained on small pictures.\n• Shrink (default): a copy of the page is shrunk to the limit and cleaned; only the cleaned places are put back on the full-size page. Fast.\n• In pieces: the parts around the text are cleaned at full size. More precise on large pages, but slower.\n• Full size: the whole page at once. The slowest, needs much memory.'**
+  String get hdStrategyInfo;
+
+  /// No description provided for @resizeLimitInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The long side of the shrunk copy, in pixels. Larger is neater but slower. 960 is the original\'s value.'**
+  String get resizeLimitInfo;
+
+  /// No description provided for @cropMarginInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'How much background around the text goes into a piece: the network needs to see what to paint in.'**
+  String get cropMarginInfo;
+
+  /// No description provided for @cropTriggerInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages smaller than this (long side) are cleaned whole, not in pieces.'**
+  String get cropTriggerInfo;
+
+  /// No description provided for @fontSizeInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The program picks the font size itself so that the translation fits the bubble, within these limits. When even the smallest does not fit, the page may be enlarged (see “Enlarging”).'**
+  String get fontSizeInfo;
+
+  /// No description provided for @lineSpacingInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'1 is normal spacing, 1.5 is half as much again. A single bubble can have its own in “Text style”.'**
+  String get lineSpacingInfo;
+
+  /// No description provided for @outlineWidthInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The outline is a light (or dark) edge around the letters so that the text reads over the drawing. The width is in pixels on each side of a letter.'**
+  String get outlineWidthInfo;
+
+  /// No description provided for @imageFormatInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'“Same as the source” keeps the format of the original. PNG loses nothing but files are larger; JPG and WEBP are smaller, with a slight loss of quality.'**
+  String get imageFormatInfo;
 }
 
 class _AppLocalizationsDelegate

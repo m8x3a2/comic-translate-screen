@@ -14,6 +14,7 @@ import '../../state/app_state.dart';
 import '../../state/settings_reset.dart';
 import '../../render/text_renderer.dart' show defaultFontFamily;
 import '../common/fonts.dart';
+import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../common/plugin_form.dart';
 import '../common/plugin_strings.dart';
@@ -218,54 +219,59 @@ class _Dropdown<T> extends StatelessWidget {
     required this.options,
     required this.onChanged,
     this.help,
+    this.info,
   });
 
   final String label;
   final String? help;
+  final String? info;
   final T value;
   final Map<T, String> options;
   final ValueChanged<T> onChanged;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: DropdownButtonFormField<T>(
-      initialValue: options.containsKey(value) ? value : null,
-      isExpanded: true,
-      decoration: InputDecoration(labelText: label, helperText: help, helperMaxLines: 3),
-      items: [
-        for (final e in options.entries)
-          DropdownMenuItem(
-            value: e.key,
-            child: Text(e.value, overflow: TextOverflow.ellipsis),
-          ),
-      ],
-      onChanged: (v) {
-        if (v != null) onChanged(v);
-      },
-    ),
+  Widget build(BuildContext context) =>
+      Padding(padding: const EdgeInsets.only(bottom: 12), child: withInfo(_field(), info));
+
+  Widget _field() => DropdownButtonFormField<T>(
+    initialValue: options.containsKey(value) ? value : null,
+    isExpanded: true,
+    decoration: InputDecoration(labelText: label, helperText: help, helperMaxLines: 3),
+    items: [
+      for (final e in options.entries)
+        DropdownMenuItem(
+          value: e.key,
+          child: Text(e.value, overflow: TextOverflow.ellipsis),
+        ),
+    ],
+    onChanged: (v) {
+      if (v != null) onChanged(v);
+    },
   );
 }
 
-Widget _switch(String title, bool value, ValueChanged<bool> onChanged, {String? help}) => SwitchListTile(
+Widget _switch(String title, bool value, ValueChanged<bool> onChanged, {String? help, String? info}) => SwitchListTile(
   contentPadding: EdgeInsets.zero,
-  title: Text(title),
+  title: titleWithInfo(title, info),
   subtitle: help == null ? null : Text(help),
   value: value,
   onChanged: onChanged,
 );
 
-Widget _number(String key, String label, num value, ValueChanged<num> onChanged) => Padding(
+Widget _number(String key, String label, num value, ValueChanged<num> onChanged, {String? info}) => Padding(
   padding: const EdgeInsets.only(bottom: 12),
-  child: DebouncedTextField(
-    key: ValueKey(key),
-    value: '$value',
-    label: label,
-    numeric: true,
-    onChanged: (v) {
-      final n = num.tryParse(v.replaceAll(',', '.'));
-      if (n != null) onChanged(n);
-    },
+  child: withInfo(
+    DebouncedTextField(
+      key: ValueKey(key),
+      value: '$value',
+      label: label,
+      numeric: true,
+      onChanged: (v) {
+        final n = num.tryParse(v.replaceAll(',', '.'));
+        if (n != null) onChanged(n);
+      },
+    ),
+    info,
   ),
 );
 
@@ -368,7 +374,13 @@ class _GeneralSection extends ConsumerWidget {
               options: {'system': l.themeSystem, 'light': l.themeLight, 'dark': l.themeDark},
               onChanged: (v) => _change(ref, (s) => s.theme = v),
             ),
-            _switch(l.useGpu, s.useGpu, (v) => _change(ref, (s) => s.useGpu = v), help: l.useGpuHelp),
+            _switch(
+              l.useGpu,
+              s.useGpu,
+              (v) => _change(ref, (s) => s.useGpu = v),
+              help: l.useGpuHelp,
+              info: l.useGpuInfo,
+            ),
           ],
         ),
         SettingsGroup(
@@ -385,7 +397,13 @@ class _GeneralSection extends ConsumerWidget {
         SettingsGroup(
           title: l.testMode,
           children: [
-            _switch(l.testMode, s.testMode, (v) => _change(ref, (s) => s.testMode = v), help: l.testModeHelp),
+            _switch(
+              l.testMode,
+              s.testMode,
+              (v) => _change(ref, (s) => s.testMode = v),
+              help: l.testModeHelp,
+              info: l.testModeInfo,
+            ),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -418,7 +436,7 @@ class _GeneralSection extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 4),
-            Text(l.bugReportHelp, style: Theme.of(context).textTheme.bodySmall),
+            titleWithInfo(l.bugReportHelp, l.bugReportInfo, style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ],
@@ -454,13 +472,16 @@ class _TranslatorSection extends ConsumerWidget {
         ),
         SettingsGroup(
           children: [
-            DebouncedTextField(
-              key: const ValueKey('extra_context'),
-              value: s.extraContext,
-              label: l.extraContext,
-              help: l.extraContextHelp,
-              multiline: true,
-              onChanged: (v) => _change(ref, (s) => s.extraContext = v),
+            withInfo(
+              DebouncedTextField(
+                key: const ValueKey('extra_context'),
+                value: s.extraContext,
+                label: l.extraContext,
+                help: l.extraContextHelp,
+                multiline: true,
+                onChanged: (v) => _change(ref, (s) => s.extraContext = v),
+              ),
+              l.extraContextInfo,
             ),
             const SizedBox(height: 8),
             _switch(
@@ -468,6 +489,7 @@ class _TranslatorSection extends ConsumerWidget {
               s.sendPageImage,
               (v) => _change(ref, (s) => s.sendPageImage = v),
               help: l.sendPageImageHelp,
+              info: l.sendPageImageInfo,
             ),
           ],
         ),
@@ -527,7 +549,12 @@ class _ToolsSection extends ConsumerWidget {
         pluginWithForm(l.ocr, PluginKind.ocr, s.ocr, (s, v) => s.ocr = v),
         SettingsGroup(
           children: [
-            _switch(l.upscaleSmallText, s.upscaleSmallText, (v) => _change(ref, (s) => s.upscaleSmallText = v)),
+            _switch(
+              l.upscaleSmallText,
+              s.upscaleSmallText,
+              (v) => _change(ref, (s) => s.upscaleSmallText = v),
+              info: l.upscaleSmallTextInfo,
+            ),
             _switch(
               l.fixCyrillic,
               s.fixCyrillicLookalikes,
@@ -541,7 +568,8 @@ class _ToolsSection extends ConsumerWidget {
           title: l.hdStrategy,
           children: [
             _Dropdown(
-              label: l.hdStrategy,
+              label: l.hdStrategyField,
+              info: l.hdStrategyInfo,
               value: inpaint.strategy,
               options: {HdStrategy.resize: l.hdResize, HdStrategy.crop: l.hdCrop, HdStrategy.original: l.hdOriginal},
               onChanged: (v) => _change(ref, (s) => s.inpaint = withInpaint(strategy: v)),
@@ -552,6 +580,7 @@ class _ToolsSection extends ConsumerWidget {
                 l.resizeLimit,
                 inpaint.resizeLimit,
                 (v) => _change(ref, (s) => s.inpaint = withInpaint(resizeLimit: v.toInt().clamp(256, 8192))),
+                info: l.resizeLimitInfo,
               ),
             if (inpaint.strategy == HdStrategy.crop) ...[
               _number(
@@ -559,12 +588,14 @@ class _ToolsSection extends ConsumerWidget {
                 l.cropMargin,
                 inpaint.cropMargin,
                 (v) => _change(ref, (s) => s.inpaint = withInpaint(cropMargin: v.toInt().clamp(0, 4096))),
+                info: l.cropMarginInfo,
               ),
               _number(
                 'crop_trigger',
                 l.cropTrigger,
                 inpaint.cropTriggerSize,
                 (v) => _change(ref, (s) => s.inpaint = withInpaint(cropTriggerSize: v.toInt().clamp(64, 8192))),
+                info: l.cropTriggerInfo,
               ),
             ],
           ],
@@ -615,7 +646,8 @@ class _TextSection extends ConsumerWidget {
                       if (files.isEmpty) return;
                       final fonts = await ref.read(addedFontsProvider.notifier).add([for (final f in files) f.path]);
                       if (context.mounted && fonts.isNotEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.fontsAdded('${fonts.length}'))));
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text(l.fontsAdded('${fonts.length}'))));
                       }
                     },
                   ),
@@ -647,6 +679,7 @@ class _TextSection extends ConsumerWidget {
                     l.maxFontSize,
                     r.maxFontSize,
                     (v) => set((r) => r.copyWith(maxFontSize: v.toInt().clamp(r.minFontSize, 200))),
+                    info: l.fontSizeInfo,
                   ),
                 ),
               ],
@@ -656,6 +689,7 @@ class _TextSection extends ConsumerWidget {
               l.lineSpacing,
               r.lineSpacing,
               (v) => set((r) => r.copyWith(lineSpacing: v.toDouble().clamp(0.5, 3.0))),
+              info: l.lineSpacingInfo,
             ),
             _ColorRow(
               label: l.textColor,
@@ -694,6 +728,7 @@ class _TextSection extends ConsumerWidget {
                 l.outlineWidth,
                 r.outlineWidth,
                 (v) => set((r) => r.copyWith(outlineWidth: v.toDouble().clamp(0.0, 10.0))),
+                info: l.outlineWidthInfo,
               ),
             ],
           ],
@@ -820,6 +855,7 @@ class _ExportSection extends ConsumerWidget {
           children: [
             _Dropdown(
               label: l.imageFormat,
+              info: l.imageFormatInfo,
               value: e.imageFormat,
               options: {'source': l.formatSource, 'png': 'PNG', 'jpg': 'JPG', 'webp': 'WEBP'},
               onChanged: (v) => set((e) => e.copyWith(imageFormat: v)),

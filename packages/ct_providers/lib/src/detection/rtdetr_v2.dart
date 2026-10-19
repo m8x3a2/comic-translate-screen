@@ -19,6 +19,9 @@ const rtdetrV2Info = PluginInfo(
       key: 'confidence',
       label: 'Confidence threshold',
       help: 'Detections below this score are ignored.',
+      info:
+          'How sure the program must be that it found text (0.05 to 0.95). Lower finds more, but may take '
+          'drawing for text; higher misses faint or small text. Usually 0.3.',
       defaultValue: 0.3,
       min: 0.05,
       max: 0.95,

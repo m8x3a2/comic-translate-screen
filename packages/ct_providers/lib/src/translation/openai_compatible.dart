@@ -26,8 +26,24 @@ const openAiCompatibleInfo = PluginInfo(
     ),
     TextSetting(key: 'model', label: 'Model', placeholder: 'openai/gpt-4.1-mini'),
     SecretSetting(key: 'api_key', label: 'API key', help: 'Not needed for most local servers.', optional: true),
-    DoubleSetting(key: 'temperature', label: 'Temperature', defaultValue: llmDefaultTemperature, min: 0, max: 2),
-    IntSetting(key: 'max_tokens', label: 'Maximum answer length (tokens)', defaultValue: llmDefaultMaxTokens, min: 64, max: 200000),
+    DoubleSetting(
+      key: 'temperature',
+      label: 'Temperature',
+      info: 'How freely the model picks words. Lower is more exact and repeatable, higher more varied but with '
+          'more mistakes. For translation usually 0 to 1.',
+      defaultValue: llmDefaultTemperature,
+      min: 0,
+      max: 2,
+    ),
+    IntSetting(
+      key: 'max_tokens',
+      label: 'Maximum answer length (tokens)',
+      info: 'The longest answer the model may give. Raise it if a page translation is cut off. '
+          'A token is about 3-4 letters.',
+      defaultValue: llmDefaultMaxTokens,
+      min: 64,
+      max: 200000,
+    ),
     ChoiceSetting(
       key: 'token_limit_param',
       label: 'Length limit parameter',
@@ -35,7 +51,14 @@ const openAiCompatibleInfo = PluginInfo(
       options: {'max_completion_tokens': 'max_completion_tokens', 'max_tokens': 'max_tokens', 'none': 'none'},
       defaultValue: 'max_completion_tokens',
     ),
-    IntSetting(key: 'timeout', label: 'Timeout (seconds)', defaultValue: 120, min: 5, max: 3600),
+    IntSetting(
+      key: 'timeout',
+      label: 'Timeout (seconds)',
+      info: 'How long to wait for the server. Slow free models and local servers on a weak computer can take long.',
+      defaultValue: 120,
+      min: 5,
+      max: 3600,
+    ),
   ],
   endpoint: openAiCompatibleEndpoint,
   keyStatus: openAiCompatibleKeyStatus,

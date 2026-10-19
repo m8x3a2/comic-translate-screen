@@ -25,6 +25,40 @@ void main() {
     dir.deleteSync(recursive: true);
   });
 
+  Future<void> openSettings(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          servicesProvider.overrideWithValue(services),
+          initialSettingsProvider.overrideWithValue(fakeSettings()),
+          workerRegistryProvider.overrideWithValue(fakeRegistry),
+        ],
+        child: const ComicTranslateApp(),
+      ),
+    );
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('an "i" explains a setting on click, without changing it', (tester) async {
+    await openSettings(tester);
+    final testMode = find.widgetWithText(SwitchListTile, 'Режим тестирования');
+    final hint = find.descendant(of: testMode, matching: find.byType(InfoHint));
+    await tester.tap(hint);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.textContaining('Повторите то же действие'), findsOneWidget);
+    expect(tester.widget<SwitchListTile>(testMode).value, isFalse, reason: 'the switch stays as it was');
+    await tester.pump(const Duration(seconds: 20));
+
+    await tester.tap(find.widgetWithText(ListTile, 'Распознавание и очистка'));
+    await tester.pumpAndSettle();
+    expect(find.text('Как очищать большие страницы'), findsOneWidget);
+    expect(find.byType(InfoHint), findsAtLeastNWidgets(3), reason: 'confidence, small text, large pages, size');
+  });
+
   testWidgets('models are grouped, explained, and can be downloaded together', (tester) async {
     tester.view.physicalSize = const Size(1280, 2400);
     tester.view.devicePixelRatio = 1;
