@@ -2,6 +2,7 @@
 library;
 
 import 'dart:io';
+import 'dart:ui' show AppExitResponse;
 
 import 'package:ct_core/ct_core.dart';
 import 'package:desktop_drop/desktop_drop.dart';
@@ -42,10 +43,38 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen> {
   bool _dragging = false;
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(onExitRequested: _confirmExit);
+
+  /// Translations live only in a cache folder until projects arrive (M9):
+  /// closing asks first when some were not exported.
+  Future<AppExitResponse> _confirmExit() async {
+    final count = ref.read(workspaceProvider).unexportedCount;
+    if (count == 0 || !mounted) return AppExitResponse.exit;
+    final l = context.l10n;
+    final exit = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(l.exitTitle),
+        content: Text(l.exitBody('$count')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.exitAnyway)),
+        ],
+      ),
+    );
+    return (exit ?? false) ? AppExitResponse.exit : AppExitResponse.cancel;
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
+    _lifecycle;
     final section = ref.read(settingsOnStartProvider);
     if (section != null) {
       WidgetsBinding.instance.addPostFrameCallback(
@@ -121,6 +150,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final dir = await getDirectoryPath(confirmButtonText: l.export);
     if (dir == null) return;
     final count = await exportTranslatedPages(pages, dir, ref.read(settingsProvider).export.imageFormat);
+    ref.read(workspaceProvider.notifier).markExported([
+      for (final p in pages)
+        if (p.isDone) p.id,
+    ]);
     if (mounted) {
       _snack(
         l.exportDone('$count', dir),

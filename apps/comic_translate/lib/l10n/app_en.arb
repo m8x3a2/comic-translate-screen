@@ -153,6 +153,30 @@
     }
   },
   "reportNoSkipped": "Every page went through.",
+  "reportTranslatorFailing": "Stopped: the translator failed three pages in a row. Check the API key, the balance and the server address in Settings; the remaining pages were not sent.",
+  "missingKeyTitle": "API key needed",
+  "missingKeyBody": "\"{name}\" sends text to {host}, which needs an API key. Enter it in Settings → Translator (it is stored in Windows secure storage), or choose a local translator.",
+  "@missingKeyBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "openSettings": "Open settings",
+  "exitTitle": "Close the program?",
+  "exitBody": "{count} translated page(s) were not exported and will be lost.",
+  "@exitBody": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "exitAnyway": "Close",
   "showInFolder": "Show in folder",
   "goToPage": "Go to page",
   "reasonModelMissing": "model \"{name}\" is not downloaded",

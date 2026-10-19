@@ -27,7 +27,15 @@ abstract interface class BatchUi {
   Future<NetworkChoice> confirmNetwork(PluginInfo translator, PluginEndpoint endpoint, {required bool sendsImage});
 
   void showError(Object error);
+
+  /// The translator sends text to an internet service but has no API key.
+  Future<void> explainMissingKey(PluginInfo translator, String host);
 }
+
+/// After this many pages in a row whose translation failed, the run stops:
+/// the cause is almost always the key, the balance or the connection, and
+/// every further page would fail the same way.
+const maxTranslationFailuresInARow = 3;
 
 class SkippedPage {
   const SkippedPage(this.pageId, this.name, this.reason);
@@ -45,6 +53,7 @@ class BatchReport {
     required this.cancelled,
     required this.duration,
     this.exportDirs = const [],
+    this.translatorFailing = false,
   });
 
   final int total;
@@ -55,6 +64,9 @@ class BatchReport {
 
   /// Folders of the automatic export (text, cleaned pages).
   final List<String> exportDirs;
+
+  /// Stopped after [maxTranslationFailuresInARow] translation failures.
+  final bool translatorFailing;
 }
 
 sealed class BatchState {
@@ -177,11 +189,13 @@ class BatchNotifier extends Notifier<BatchState> {
     state = BatchRunning(total: todo.length, done: 0, started: started, stage: 'loading');
 
     var done = 0;
+    var failuresInARow = 0;
+    var translatorFailing = false;
     final skipped = <SkippedPage>[];
     final exportDirs = <String>{};
     PipelineWorker? worker;
     try {
-      if (!await _approveNetwork(ui)) {
+      if (!await _checkKey(ui) || !await _approveNetwork(ui)) {
         state = BatchIdle(last);
         return;
       }
@@ -277,6 +291,7 @@ class BatchNotifier extends Notifier<BatchState> {
             ),
           );
           done++;
+          failuresInARow = 0;
           if (settings.export.anyAutomatic) {
             final out = await _autoExport(worker, page, cleaned, settings.export, stamp, log);
             if (out != null) exportDirs.add(out);
@@ -296,6 +311,14 @@ class BatchNotifier extends Notifier<BatchState> {
             page.id,
             (p) => p.copyWith(status: PageStatus.skipped, reason: reason, clearStage: true),
           );
+          failuresInARow = reason is TranslationFailedReason ? failuresInARow + 1 : 0;
+          if (failuresInARow >= maxTranslationFailuresInARow) {
+            log.warn('batch_translator_failing', {'failures': failuresInARow});
+            translatorFailing = true;
+            pageMs.add(sw.elapsedMilliseconds);
+            _update((b) => b.copyWith(done: i + 1, pageMs: List.of(pageMs)));
+            break;
+          }
         }
         pageMs.add(sw.elapsedMilliseconds);
         _update((b) => b.copyWith(done: i + 1, pageMs: List.of(pageMs)));
@@ -317,11 +340,26 @@ class BatchNotifier extends Notifier<BatchState> {
           cancelled: cancelled,
           duration: DateTime.now().difference(started),
           exportDirs: exportDirs.toList(),
+          translatorFailing: translatorFailing,
         );
         log.info('batch_end', {'done': done, 'skipped': skipped.length, 'cancelled': cancelled});
         state = BatchIdle(report);
       }
     }
+  }
+
+  /// An internet translator without its key would fail every page.
+  Future<bool> _checkKey(BatchUi ui) async {
+    final services = ref.read(servicesProvider);
+    final settings = ref.read(settingsProvider);
+    final info = services.registry.info(settings.translator);
+    final config = await services.pluginConfig(settings.translator, settings);
+    final endpoint = info.endpointFor(config);
+    final keys = info.settings.whereType<SecretSetting>();
+    if (endpoint == null || endpoint.privacy != Privacy.cloud || keys.isEmpty) return true;
+    if (keys.any((k) => config.secret(k.key) != null)) return true;
+    await ui.explainMissingKey(info, endpoint.host);
+    return false;
   }
 
   Future<bool> _approveNetwork(BatchUi ui) async {

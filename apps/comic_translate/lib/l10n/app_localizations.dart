@@ -464,6 +464,48 @@ abstract class AppLocalizations {
   /// **'Every page went through.'**
   String get reportNoSkipped;
 
+  /// No description provided for @reportTranslatorFailing.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped: the translator failed three pages in a row. Check the API key, the balance and the server address in Settings; the remaining pages were not sent.'**
+  String get reportTranslatorFailing;
+
+  /// No description provided for @missingKeyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API key needed'**
+  String get missingKeyTitle;
+
+  /// No description provided for @missingKeyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" sends text to {host}, which needs an API key. Enter it in Settings → Translator (it is stored in Windows secure storage), or choose a local translator.'**
+  String missingKeyBody(String name, String host);
+
+  /// No description provided for @openSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get openSettings;
+
+  /// No description provided for @exitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the program?'**
+  String get exitTitle;
+
+  /// No description provided for @exitBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} translated page(s) were not exported and will be lost.'**
+  String exitBody(String count);
+
+  /// No description provided for @exitAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get exitAnyway;
+
   /// No description provided for @showInFolder.
   ///
   /// In en, this message translates to:

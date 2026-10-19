@@ -10,6 +10,7 @@ import '../../state/batch.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
 import '../common/plugin_strings.dart';
+import '../settings/settings_screen.dart';
 import 'main_screen.dart' show showInExplorer;
 
 class DialogBatchUi implements BatchUi {
@@ -98,6 +99,28 @@ class DialogBatchUi implements BatchUi {
   }
 
   @override
+  Future<void> explainMissingKey(PluginInfo translator, String host) async {
+    if (!context.mounted) return;
+    final l = context.l10n;
+    final open = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        icon: const Icon(Icons.key_outlined),
+        title: Text(l.missingKeyTitle),
+        content: SizedBox(width: 460, child: Text(l.missingKeyBody(pluginName(context, translator), host))),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.openSettings)),
+        ],
+      ),
+    );
+    if ((open ?? false) && context.mounted) {
+      await Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen(initial: SettingsSection.translator)));
+    }
+  }
+
+  @override
   void showError(Object error) {
     if (!context.mounted) return;
     final l = context.l10n;
@@ -131,7 +154,13 @@ class _ReportDialog extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(l.reportSummary('${report.done}', '${report.total}', formatDuration(report.duration))),
-            if (report.cancelled) Text(l.reportCancelled, style: TextStyle(color: theme.colorScheme.error)),
+            if (report.translatorFailing)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(l.reportTranslatorFailing, style: TextStyle(color: theme.colorScheme.error)),
+              )
+            else if (report.cancelled)
+              Text(l.reportCancelled, style: TextStyle(color: theme.colorScheme.error)),
             for (final dir in report.exportDirs)
               Padding(
                 padding: const EdgeInsets.only(top: 8),

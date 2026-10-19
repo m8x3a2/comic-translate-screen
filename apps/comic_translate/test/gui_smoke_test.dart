@@ -18,6 +18,10 @@ import 'support/fake_plugins.dart';
 /// Answers every question of a run with yes.
 class _YesUi implements BatchUi {
   final errors = <Object>[];
+  final missingKeys = <String>[];
+
+  @override
+  Future<void> explainMissingKey(PluginInfo translator, String host) async => missingKeys.add(host);
 
   @override
   Future<bool> confirmDownload(List<ModelSpec> models) async => true;
@@ -152,11 +156,71 @@ void main() {
     desktopWindow(tester, size: const Size(1024, 640));
     final page = File(p.join(dir.path, 'a page with a rather long file name.png'));
     await tester.runAsync(() => ImageCodec.writeFile(page.path, RgbImage.filled(60, 90, 255, 255, 255)));
-    await tester.pumpWidget(app(fakeSettings()..sourceLanguage = 'Japanese'..targetLanguage = 'Brazilian Portuguese'));
+    await tester.pumpWidget(
+      app(
+        fakeSettings()
+          ..sourceLanguage = 'Japanese'
+          ..targetLanguage = 'Brazilian Portuguese',
+      ),
+    );
     final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
     await tester.runAsync(() => container.read(workspaceProvider.notifier).addInputs([page.path]));
     await tester.pump();
     expect(find.text('Перевести всё'), findsOneWidget);
+  });
+
+  Future<(ProviderContainer, Directory)> openPages(WidgetTester tester, AppSettings settings, int count) async {
+    final pages = Directory(p.join(dir.path, 'pages'))..createSync();
+    await tester.runAsync(() async {
+      for (var i = 1; i <= count; i++) {
+        await ImageCodec.writeFile(p.join(pages.path, 'p$i.png'), RgbImage.filled(120, 80, 255, 255, 255));
+      }
+    });
+    await tester.pumpWidget(app(settings));
+    final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    await tester.runAsync(() => container.read(workspaceProvider.notifier).addInputs([pages.path]));
+    return (container, pages);
+  }
+
+  testWidgets('an internet translator without a key is explained before anything runs', (tester) async {
+    desktopWindow(tester);
+    final (container, _) = await openPages(tester, fakeSettings()..translator = 'fake_cloud', 1);
+    final ui = _YesUi();
+    await tester.runAsync(() => container.read(batchProvider.notifier).run(ui));
+    expect(ui.missingKeys, ['cloud.example']);
+    expect(container.read(workspaceProvider).pages.single.status, PageStatus.pending);
+  });
+
+  testWidgets('the run stops after three translation failures in a row', (tester) async {
+    desktopWindow(tester);
+    final (container, _) = await openPages(tester, fakeSettings()..translator = 'fake_fail', 5);
+    await tester.runAsync(() => container.read(batchProvider.notifier).run(_YesUi()));
+    await tester.pump();
+    final report = (container.read(batchProvider) as BatchIdle).last!;
+    expect(report.translatorFailing, isTrue);
+    expect(report.skipped, hasLength(3));
+    expect(report.skipped.first.reason, isA<TranslationFailedReason>());
+    expect(container.read(workspaceProvider).pages.map((p) => p.status).toList(), [
+      PageStatus.skipped,
+      PageStatus.skipped,
+      PageStatus.skipped,
+      PageStatus.pending,
+      PageStatus.pending,
+    ]);
+  });
+
+  testWidgets('exported pages are not counted as unsaved', (tester) async {
+    desktopWindow(tester);
+    final (container, _) = await openPages(tester, fakeSettings(), 2);
+    await tester.runAsync(() => container.read(batchProvider.notifier).run(_YesUi()));
+    final ws = container.read(workspaceProvider.notifier);
+    expect(container.read(workspaceProvider).unexportedCount, 2);
+    ws.markExported([container.read(workspaceProvider).pages.first.id]);
+    expect(container.read(workspaceProvider).unexportedCount, 1);
+    // A new translation of an exported page is unsaved again.
+    final first = container.read(workspaceProvider).pages.first;
+    ws.updatePage(first.id, (p) => p.copyWith(translatedPath: '${p.translatedPath}.new'));
+    expect(container.read(workspaceProvider).unexportedCount, 2);
   });
 
   testWidgets('a page that cannot be read is skipped and reported', (tester) async {

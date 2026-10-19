@@ -54,6 +54,7 @@ class PageEntry {
     this.cleanPath,
     this.blocks = const [],
     this.renderScale = 1.0,
+    this.exported = false,
   });
 
   final String id;
@@ -84,6 +85,9 @@ class PageEntry {
   /// How much the translated image was enlarged.
   final double renderScale;
 
+  /// The current translation was saved with Export.
+  final bool exported;
+
   bool get isDone => status == PageStatus.done && translatedPath != null;
 
   PageEntry copyWith({
@@ -94,6 +98,7 @@ class PageEntry {
     String? cleanPath,
     List<TextBlock>? blocks,
     double? renderScale,
+    bool? exported,
     bool clearStage = false,
     bool clearReason = false,
   }) => PageEntry(
@@ -108,6 +113,7 @@ class PageEntry {
     cleanPath: cleanPath ?? this.cleanPath,
     blocks: blocks ?? this.blocks,
     renderScale: renderScale ?? this.renderScale,
+    exported: exported ?? (translatedPath != null && translatedPath != this.translatedPath ? false : this.exported),
   );
 }
 
@@ -123,6 +129,9 @@ class WorkspaceState {
 
   PageEntry? get currentPage => pages.isEmpty ? null : pages[current.clamp(0, pages.length - 1)];
   int get doneCount => pages.where((p) => p.isDone).length;
+
+  /// Translated pages that would be lost on closing (not exported yet).
+  int get unexportedCount => pages.where((p) => p.isDone && !p.exported).length;
 
   WorkspaceState copyWith({
     List<PageEntry>? pages,
@@ -242,6 +251,11 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
         // Files still open (images on screen); removed with old sessions later.
       }
     }
+  }
+
+  void markExported(Iterable<String> ids) {
+    final set = ids.toSet();
+    state = state.copyWith(pages: [for (final p in state.pages) set.contains(p.id) ? p.copyWith(exported: true) : p]);
   }
 
   void updatePage(String id, PageEntry Function(PageEntry page) update) {

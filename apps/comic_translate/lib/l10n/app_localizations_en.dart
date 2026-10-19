@@ -218,6 +218,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportNoSkipped => 'Every page went through.';
 
   @override
+  String get reportTranslatorFailing =>
+      'Stopped: the translator failed three pages in a row. Check the API key, the balance and the server address in Settings; the remaining pages were not sent.';
+
+  @override
+  String get missingKeyTitle => 'API key needed';
+
+  @override
+  String missingKeyBody(String name, String host) {
+    return '\"$name\" sends text to $host, which needs an API key. Enter it in Settings → Translator (it is stored in Windows secure storage), or choose a local translator.';
+  }
+
+  @override
+  String get openSettings => 'Open settings';
+
+  @override
+  String get exitTitle => 'Close the program?';
+
+  @override
+  String exitBody(String count) {
+    return '$count translated page(s) were not exported and will be lost.';
+  }
+
+  @override
+  String get exitAnyway => 'Close';
+
+  @override
   String get showInFolder => 'Show in folder';
 
   @override

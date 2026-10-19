@@ -71,7 +71,36 @@ PluginRegistry fakeRegistryWith({Duration detectDelay = Duration.zero}) => Plugi
   )
   ..register(PluginFactory<OcrEngine>(fakeInfo('fake_ocr', PluginKind.ocr), (c, e) async => _FakeOcr()))
   ..register(PluginFactory<Inpainter>(fakeInfo('fake_inpaint', PluginKind.inpainter), (c, e) async => _FakeInpainter()))
-  ..register(mockTranslatorFactory);
+  ..register(mockTranslatorFactory)
+  ..register(
+    PluginFactory<Translator>(fakeInfo('fake_fail', PluginKind.translator), (c, e) async => _FailingTranslator()),
+  )
+  ..register(PluginFactory<Translator>(fakeCloudInfo, (c, e) async => _FailingTranslator()));
+
+/// A translator on an internet service that needs a key.
+const fakeCloudInfo = PluginInfo(
+  id: 'fake_cloud',
+  displayName: 'Cloud translator',
+  kind: PluginKind.translator,
+  privacy: Privacy.cloud,
+  settings: [SecretSetting(key: 'api_key', label: 'API key')],
+  endpoint: _cloudEndpoint,
+);
+
+PluginEndpoint _cloudEndpoint(PluginConfig config) => const PluginEndpoint(Privacy.cloud, 'cloud.example');
+
+/// Fails every page as an out-of-credit server would.
+class _FailingTranslator implements Translator {
+  @override
+  PluginInfo get info => fakeInfo('fake_fail', PluginKind.translator);
+
+  @override
+  Future<void> translate(TranslationRequest request, PluginContext context) async =>
+      throw TranslationException('HTTP 402: insufficient credits');
+
+  @override
+  Future<void> dispose() async {}
+}
 
 PluginRegistry fakeRegistry() => fakeRegistryWith();
 PluginRegistry slowFakeRegistry() => fakeRegistryWith(detectDelay: const Duration(milliseconds: 300));

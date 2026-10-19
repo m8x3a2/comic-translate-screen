@@ -219,6 +219,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get reportNoSkipped => 'Все страницы обработаны.';
 
   @override
+  String get reportTranslatorFailing =>
+      'Остановлено: переводчик три страницы подряд ответил ошибкой. Проверьте в настройках ключ API, баланс и адрес сервера; остальные страницы не отправлялись.';
+
+  @override
+  String get missingKeyTitle => 'Нужен ключ API';
+
+  @override
+  String missingKeyBody(String name, String host) {
+    return '«$name» отправляет текст на $host, а там нужен ключ API. Укажите его в «Настройки → Переводчик» (он хранится в защищённом хранилище Windows) или выберите локальный переводчик.';
+  }
+
+  @override
+  String get openSettings => 'Открыть настройки';
+
+  @override
+  String get exitTitle => 'Закрыть программу?';
+
+  @override
+  String exitBody(String count) {
+    return 'Переведённых, но не экспортированных страниц: $count. Они пропадут.';
+  }
+
+  @override
+  String get exitAnyway => 'Закрыть';
+
+  @override
   String get showInFolder => 'Показать в папке';
 
   @override

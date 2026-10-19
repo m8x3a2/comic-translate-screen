@@ -49,9 +49,6 @@ String formatDuration(Duration d) {
   return s >= 3600 ? '${s ~/ 3600}:${two(s ~/ 60 % 60)}:${two(s % 60)}' : '${s ~/ 60}:${two(s % 60)}';
 }
 
-/// Languages are shown in their own script: «Русский», «日本語».
-String languageLabel(String name) => Languages.byName(name)?.nativeLabel ?? name;
-
 IconData privacyIcon(Privacy p) => switch (p) {
   Privacy.local => Icons.computer,
   Privacy.lan => Icons.lan_outlined,
