@@ -1379,4 +1379,115 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get mouseGrab => 'Пробел или Ctrl + левая кнопка, тянуть';
+
+  @override
+  String get modelDetector => 'Поиск текста и пузырей (RT-DETR)';
+
+  @override
+  String get modelDetectorInfo =>
+      'Находит на странице текст и пузыри. Нужна всегда, для любого языка. Небольшая и быстрая.';
+
+  @override
+  String get modelAot => 'Очистка текста (AOT)';
+
+  @override
+  String get modelAotInfo =>
+      'Стирает исходный текст и дорисовывает фон под ним. Стоит по умолчанию: быстрая, подходит для слабых компьютеров.';
+
+  @override
+  String get modelLama => 'Очистка текста, качественнее (LaMa)';
+
+  @override
+  String get modelLamaInfo =>
+      'Аккуратнее восстанавливает рисунок под текстом, особенно под звукоподражаниями. Медленнее и больше AOT. Выбирается в Настройки → Инструменты.';
+
+  @override
+  String get modelOcrEn => 'Английский';
+
+  @override
+  String get modelOcrEnInfo =>
+      'Распознаёт английский текст (PaddleOCR). Нужна, если оригинал на английском.';
+
+  @override
+  String get modelOcrLatin =>
+      'Французский, немецкий, испанский, итальянский, нидерландский';
+
+  @override
+  String get modelOcrLatinInfo =>
+      'Распознаёт текст на этих языках: латиница с надстрочными знаками (PaddleOCR).';
+
+  @override
+  String get modelOcrEslav => 'Русский';
+
+  @override
+  String get modelOcrEslavInfo =>
+      'Распознаёт русский текст (PaddleOCR, кириллица). Нужна, если оригинал на русском.';
+
+  @override
+  String get modelOcrKorean => 'Корейский';
+
+  @override
+  String get modelOcrKoreanInfo =>
+      'Распознаёт корейский текст (PaddleOCR): манхва и вебтуны.';
+
+  @override
+  String get modelOcrChinese => 'Китайский (и крупный японский текст)';
+
+  @override
+  String get modelOcrChineseInfo =>
+      'Распознаёт китайский текст (PaddleOCR). Для японского тоже нужна, вместе с manga-ocr: читает крупные заголовки и надписи.';
+
+  @override
+  String get modelOcrJapanese => 'Японский (manga-ocr)';
+
+  @override
+  String get modelOcrJapaneseInfo =>
+      'Распознаёт японский текст, в том числе вертикальный; обучена на манге. Работает вместе с китайской моделью.';
+
+  @override
+  String get modelOsd => 'Определение языка';
+
+  @override
+  String get modelOsdInfo =>
+      'Определяет язык оригинала по буквам. Пока не используется.';
+
+  @override
+  String get modelsCore => 'Основные (нужны всегда)';
+
+  @override
+  String get modelsLanguages => 'Распознавание текста по языкам';
+
+  @override
+  String get modelsLanguagesHelp =>
+      'Скачайте только те языки, с которых переводите. Если модели не хватает, программа сама предложит скачать её перед переводом.';
+
+  @override
+  String get modelsExtra => 'Дополнительно';
+
+  @override
+  String modelsNeeded(String language) {
+    return 'Скачать нужные для «$language»';
+  }
+
+  @override
+  String get modelsAll => 'Скачать все';
+
+  @override
+  String get modelsVerifyAll => 'Проверить все';
+
+  @override
+  String get modelsNothingNeeded => 'Всё нужное уже скачано';
+
+  @override
+  String modelsSummary(String count, String total, String size) {
+    return 'Скачано $count из $total · $size на диске';
+  }
+
+  @override
+  String get modelsVerifyAllOk => 'Все скачанные модели в порядке';
+
+  @override
+  String modelsVerifyAllBad(String names) {
+    return 'Повреждены: $names. Скачайте их заново.';
+  }
 }

@@ -2509,6 +2509,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Space or Ctrl + left button, drag'**
   String get mouseGrab;
+
+  /// No description provided for @modelDetector.
+  ///
+  /// In en, this message translates to:
+  /// **'Text and bubble finder (RT-DETR)'**
+  String get modelDetector;
+
+  /// No description provided for @modelDetectorInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Finds the text and the speech bubbles on a page. Needed always, for every language. Small and fast.'**
+  String get modelDetectorInfo;
+
+  /// No description provided for @modelAot.
+  ///
+  /// In en, this message translates to:
+  /// **'Text removal (AOT)'**
+  String get modelAot;
+
+  /// No description provided for @modelAotInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Erases the original text and paints the background under it. The default: fast, fine for weak computers.'**
+  String get modelAotInfo;
+
+  /// No description provided for @modelLama.
+  ///
+  /// In en, this message translates to:
+  /// **'Better text removal (LaMa)'**
+  String get modelLama;
+
+  /// No description provided for @modelLamaInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Restores the drawing under the text more neatly, especially under sound effects. Slower and larger than AOT. Chosen in Settings → Tools.'**
+  String get modelLamaInfo;
+
+  /// No description provided for @modelOcrEn.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get modelOcrEn;
+
+  /// No description provided for @modelOcrEnInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads English text (PaddleOCR). Needed when the original is in English.'**
+  String get modelOcrEnInfo;
+
+  /// No description provided for @modelOcrLatin.
+  ///
+  /// In en, this message translates to:
+  /// **'French, German, Spanish, Italian, Dutch'**
+  String get modelOcrLatin;
+
+  /// No description provided for @modelOcrLatinInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads text in these languages: Latin letters with accents (PaddleOCR).'**
+  String get modelOcrLatinInfo;
+
+  /// No description provided for @modelOcrEslav.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian'**
+  String get modelOcrEslav;
+
+  /// No description provided for @modelOcrEslavInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads Russian text (PaddleOCR, Cyrillic). Needed when the original is in Russian.'**
+  String get modelOcrEslavInfo;
+
+  /// No description provided for @modelOcrKorean.
+  ///
+  /// In en, this message translates to:
+  /// **'Korean'**
+  String get modelOcrKorean;
+
+  /// No description provided for @modelOcrKoreanInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads Korean text (PaddleOCR): manhwa and webtoons.'**
+  String get modelOcrKoreanInfo;
+
+  /// No description provided for @modelOcrChinese.
+  ///
+  /// In en, this message translates to:
+  /// **'Chinese (and large Japanese text)'**
+  String get modelOcrChinese;
+
+  /// No description provided for @modelOcrChineseInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads Chinese text (PaddleOCR). For Japanese it is needed too, with manga-ocr: it reads large titles and captions.'**
+  String get modelOcrChineseInfo;
+
+  /// No description provided for @modelOcrJapanese.
+  ///
+  /// In en, this message translates to:
+  /// **'Japanese (manga-ocr)'**
+  String get modelOcrJapanese;
+
+  /// No description provided for @modelOcrJapaneseInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads Japanese text, also vertical; trained on manga. Works together with the Chinese model.'**
+  String get modelOcrJapaneseInfo;
+
+  /// No description provided for @modelOsd.
+  ///
+  /// In en, this message translates to:
+  /// **'Language detection'**
+  String get modelOsd;
+
+  /// No description provided for @modelOsdInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Tells the language of the original by its letters. Not used yet.'**
+  String get modelOsdInfo;
+
+  /// No description provided for @modelsCore.
+  ///
+  /// In en, this message translates to:
+  /// **'Main (always needed)'**
+  String get modelsCore;
+
+  /// No description provided for @modelsLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Text recognition by language'**
+  String get modelsLanguages;
+
+  /// No description provided for @modelsLanguagesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Download only the languages you translate from. When a model is missing, the program offers to download it before translating.'**
+  String get modelsLanguagesHelp;
+
+  /// No description provided for @modelsExtra.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra'**
+  String get modelsExtra;
+
+  /// No description provided for @modelsNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Download what “{language}” needs'**
+  String modelsNeeded(String language);
+
+  /// No description provided for @modelsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Download all'**
+  String get modelsAll;
+
+  /// No description provided for @modelsVerifyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Check all'**
+  String get modelsVerifyAll;
+
+  /// No description provided for @modelsNothingNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything needed is downloaded'**
+  String get modelsNothingNeeded;
+
+  /// No description provided for @modelsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloaded {count} of {total} · {size} on disk'**
+  String modelsSummary(String count, String total, String size);
+
+  /// No description provided for @modelsVerifyAllOk.
+  ///
+  /// In en, this message translates to:
+  /// **'All downloaded models are fine'**
+  String get modelsVerifyAllOk;
+
+  /// No description provided for @modelsVerifyAllBad.
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged: {names}. Download them again.'**
+  String modelsVerifyAllBad(String names);
 }
 
 class _AppLocalizationsDelegate

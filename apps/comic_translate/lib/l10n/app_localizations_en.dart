@@ -1377,4 +1377,114 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mouseGrab => 'Space or Ctrl + left button, drag';
+
+  @override
+  String get modelDetector => 'Text and bubble finder (RT-DETR)';
+
+  @override
+  String get modelDetectorInfo =>
+      'Finds the text and the speech bubbles on a page. Needed always, for every language. Small and fast.';
+
+  @override
+  String get modelAot => 'Text removal (AOT)';
+
+  @override
+  String get modelAotInfo =>
+      'Erases the original text and paints the background under it. The default: fast, fine for weak computers.';
+
+  @override
+  String get modelLama => 'Better text removal (LaMa)';
+
+  @override
+  String get modelLamaInfo =>
+      'Restores the drawing under the text more neatly, especially under sound effects. Slower and larger than AOT. Chosen in Settings → Tools.';
+
+  @override
+  String get modelOcrEn => 'English';
+
+  @override
+  String get modelOcrEnInfo =>
+      'Reads English text (PaddleOCR). Needed when the original is in English.';
+
+  @override
+  String get modelOcrLatin => 'French, German, Spanish, Italian, Dutch';
+
+  @override
+  String get modelOcrLatinInfo =>
+      'Reads text in these languages: Latin letters with accents (PaddleOCR).';
+
+  @override
+  String get modelOcrEslav => 'Russian';
+
+  @override
+  String get modelOcrEslavInfo =>
+      'Reads Russian text (PaddleOCR, Cyrillic). Needed when the original is in Russian.';
+
+  @override
+  String get modelOcrKorean => 'Korean';
+
+  @override
+  String get modelOcrKoreanInfo =>
+      'Reads Korean text (PaddleOCR): manhwa and webtoons.';
+
+  @override
+  String get modelOcrChinese => 'Chinese (and large Japanese text)';
+
+  @override
+  String get modelOcrChineseInfo =>
+      'Reads Chinese text (PaddleOCR). For Japanese it is needed too, with manga-ocr: it reads large titles and captions.';
+
+  @override
+  String get modelOcrJapanese => 'Japanese (manga-ocr)';
+
+  @override
+  String get modelOcrJapaneseInfo =>
+      'Reads Japanese text, also vertical; trained on manga. Works together with the Chinese model.';
+
+  @override
+  String get modelOsd => 'Language detection';
+
+  @override
+  String get modelOsdInfo =>
+      'Tells the language of the original by its letters. Not used yet.';
+
+  @override
+  String get modelsCore => 'Main (always needed)';
+
+  @override
+  String get modelsLanguages => 'Text recognition by language';
+
+  @override
+  String get modelsLanguagesHelp =>
+      'Download only the languages you translate from. When a model is missing, the program offers to download it before translating.';
+
+  @override
+  String get modelsExtra => 'Extra';
+
+  @override
+  String modelsNeeded(String language) {
+    return 'Download what “$language” needs';
+  }
+
+  @override
+  String get modelsAll => 'Download all';
+
+  @override
+  String get modelsVerifyAll => 'Check all';
+
+  @override
+  String get modelsNothingNeeded => 'Everything needed is downloaded';
+
+  @override
+  String modelsSummary(String count, String total, String size) {
+    return 'Downloaded $count of $total · $size on disk';
+  }
+
+  @override
+  String get modelsVerifyAllOk => 'All downloaded models are fine';
+
+  @override
+  String modelsVerifyAllBad(String names) {
+    return 'Damaged: $names. Download them again.';
+  }
 }

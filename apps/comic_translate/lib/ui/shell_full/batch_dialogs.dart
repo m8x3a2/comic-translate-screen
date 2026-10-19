@@ -41,7 +41,7 @@ class DialogBatchUi implements BatchUi {
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.memory),
-                  title: Text(m.displayName),
+                  title: Text(modelText(l, m).$1),
                   subtitle: Text(
                     l.downloadFrom(
                       formatBytes(m.files.fold(0, (a, f) => a + f.size)),

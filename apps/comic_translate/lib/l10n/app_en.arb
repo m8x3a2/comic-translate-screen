@@ -861,5 +861,63 @@
   },
   "settingsResetAllBody": "Every setting goes back to how it was at first, including the translator's server and model and the approved servers. API keys, the recent projects and downloaded models stay. If the models were in another folder, the program looks in the usual folder again (the files stay where they are).",
   "settingsResetDone": "Settings reset",
-  "mouseGrab": "Space or Ctrl + left button, drag"
+  "mouseGrab": "Space or Ctrl + left button, drag",
+  "modelDetector": "Text and bubble finder (RT-DETR)",
+  "modelDetectorInfo": "Finds the text and the speech bubbles on a page. Needed always, for every language. Small and fast.",
+  "modelAot": "Text removal (AOT)",
+  "modelAotInfo": "Erases the original text and paints the background under it. The default: fast, fine for weak computers.",
+  "modelLama": "Better text removal (LaMa)",
+  "modelLamaInfo": "Restores the drawing under the text more neatly, especially under sound effects. Slower and larger than AOT. Chosen in Settings → Tools.",
+  "modelOcrEn": "English",
+  "modelOcrEnInfo": "Reads English text (PaddleOCR). Needed when the original is in English.",
+  "modelOcrLatin": "French, German, Spanish, Italian, Dutch",
+  "modelOcrLatinInfo": "Reads text in these languages: Latin letters with accents (PaddleOCR).",
+  "modelOcrEslav": "Russian",
+  "modelOcrEslavInfo": "Reads Russian text (PaddleOCR, Cyrillic). Needed when the original is in Russian.",
+  "modelOcrKorean": "Korean",
+  "modelOcrKoreanInfo": "Reads Korean text (PaddleOCR): manhwa and webtoons.",
+  "modelOcrChinese": "Chinese (and large Japanese text)",
+  "modelOcrChineseInfo": "Reads Chinese text (PaddleOCR). For Japanese it is needed too, with manga-ocr: it reads large titles and captions.",
+  "modelOcrJapanese": "Japanese (manga-ocr)",
+  "modelOcrJapaneseInfo": "Reads Japanese text, also vertical; trained on manga. Works together with the Chinese model.",
+  "modelOsd": "Language detection",
+  "modelOsdInfo": "Tells the language of the original by its letters. Not used yet.",
+  "modelsCore": "Main (always needed)",
+  "modelsLanguages": "Text recognition by language",
+  "modelsLanguagesHelp": "Download only the languages you translate from. When a model is missing, the program offers to download it before translating.",
+  "modelsExtra": "Extra",
+  "modelsNeeded": "Download what “{language}” needs",
+  "@modelsNeeded": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsAll": "Download all",
+  "modelsVerifyAll": "Check all",
+  "modelsNothingNeeded": "Everything needed is downloaded",
+  "modelsSummary": "Downloaded {count} of {total} · {size} on disk",
+  "@modelsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsVerifyAllOk": "All downloaded models are fine",
+  "modelsVerifyAllBad": "Damaged: {names}. Download them again.",
+  "@modelsVerifyAllBad": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  }
 }

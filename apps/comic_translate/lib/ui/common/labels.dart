@@ -128,3 +128,34 @@ class PrivacyBadge extends StatelessWidget {
     );
   }
 }
+
+/// Groups of the models screen.
+enum ModelGroup { core, language, extra, hidden }
+
+ModelGroup modelGroupOf(String id) => switch (id) {
+  'rtdetr-v2-int8' || 'aot-inpainting' => ModelGroup.core,
+  'ppocr-v5-rec-en' ||
+  'ppocr-v5-rec-latin' ||
+  'ppocr-v5-rec-eslav' ||
+  'ppocr-v5-rec-korean' ||
+  'ppocr-v6-rec-small' ||
+  'manga-ocr-mobile' => ModelGroup.language,
+  // Nothing uses it before automatic source language (M12).
+  'osd-script-id' => ModelGroup.hidden,
+  _ => ModelGroup.extra,
+};
+
+/// Short name and explanation of a model, in the interface language.
+(String title, String info) modelText(AppLocalizations l, ModelSpec m) => switch (m.id) {
+  'rtdetr-v2-int8' => (l.modelDetector, l.modelDetectorInfo),
+  'aot-inpainting' => (l.modelAot, l.modelAotInfo),
+  'lama-manga' => (l.modelLama, l.modelLamaInfo),
+  'ppocr-v5-rec-en' => (l.modelOcrEn, l.modelOcrEnInfo),
+  'ppocr-v5-rec-latin' => (l.modelOcrLatin, l.modelOcrLatinInfo),
+  'ppocr-v5-rec-eslav' => (l.modelOcrEslav, l.modelOcrEslavInfo),
+  'ppocr-v5-rec-korean' => (l.modelOcrKorean, l.modelOcrKoreanInfo),
+  'ppocr-v6-rec-small' => (l.modelOcrChinese, l.modelOcrChineseInfo),
+  'manga-ocr-mobile' => (l.modelOcrJapanese, l.modelOcrJapaneseInfo),
+  'osd-script-id' => (l.modelOsd, l.modelOsdInfo),
+  _ => (m.displayName, m.purpose),
+};
