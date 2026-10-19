@@ -27,11 +27,19 @@ class SettingsStore {
     }
   }
 
-  Future<void> save(AppSettings settings) async {
-    await file.parent.create(recursive: true);
-    final tmp = File('${file.path}.tmp');
-    await tmp.writeAsString(const JsonEncoder.withIndent('  ').convert(settings.toJson()), flush: true);
-    if (file.existsSync()) await file.delete();
-    await tmp.rename(file.path);
+  Future<void> _queue = Future.value();
+
+  /// Saves run one after another (two at once would share the temporary
+  /// file); the settings are taken as they are when [save] is called.
+  Future<void> save(AppSettings settings) {
+    final json = const JsonEncoder.withIndent('  ').convert(settings.toJson());
+    // A failed save is reported to its caller and does not stop the next.
+    return _queue = _queue.catchError((Object _) {}).then((_) async {
+      await file.parent.create(recursive: true);
+      final tmp = File('${file.path}.tmp');
+      await tmp.writeAsString(json, flush: true);
+      if (file.existsSync()) await file.delete();
+      await tmp.rename(file.path);
+    });
   }
 }
