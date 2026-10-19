@@ -1,6 +1,6 @@
-/// PDF pages as page images, rendered with PDFium (pdfrx_engine). The
-/// original takes the embedded image of single-image pages and renders the
-/// others; here every page is rendered, at 200 dpi.
+/// PDF pages as page images: a page that is one picture (a scan) gives that
+/// picture as it is (`pdf_images.dart`); the others are rendered with PDFium
+/// (pdfrx_engine) at 200 dpi (the original renders them at 72 dpi).
 library;
 
 import 'dart:io';
@@ -10,6 +10,8 @@ import 'dart:typed_data';
 import 'package:ct_core/ct_core.dart';
 import 'package:path/path.dart' as p;
 import 'package:pdfrx_engine/pdfrx_engine.dart';
+
+import 'pdf_images.dart';
 
 const _dpi = 200.0;
 
@@ -29,14 +31,26 @@ Future<List<ImportedPage>> rasterizePdf(String pdf, Directory outDir, CancelToke
   try {
     final pages = <ImportedPage>[];
     final digits = math.max(3, doc.pages.length.toString().length);
+    String number(int i) => (i + 1).toString().padLeft(digits, '0');
+    var pictures = const <int, String>{};
+    try {
+      pictures = extractPageImages(pdf, outDir, number);
+    } on Object {
+      // Every page is rendered then.
+    }
     for (final (i, page) in doc.pages.indexed) {
       cancel.throwIfCancelled();
+      final picture = pictures[i];
+      if (picture != null) {
+        pages.add(ImportedPage(path: picture, name: '${p.basenameWithoutExtension(pdf)} — ${i + 1}', source: pdf));
+        continue;
+      }
       final scale = math.min(_dpi / 72, _maxSide / math.max(page.width, page.height));
       final w = math.max(1, (page.width * scale).round()), h = math.max(1, (page.height * scale).round());
       final image = await page.render(fullWidth: w.toDouble(), fullHeight: h.toDouble(), backgroundColor: 0xFFFFFFFF);
       if (image == null) continue;
       try {
-        final target = p.join(outDir.path, '${(i + 1).toString().padLeft(digits, '0')}.png');
+        final target = p.join(outDir.path, '${number(i)}.png');
         await File(target).writeAsBytes(ImageCodec.encodePng(_bgraToRgb(image)));
         pages.add(ImportedPage(path: target, name: '${p.basenameWithoutExtension(pdf)} — ${i + 1}', source: pdf));
       } finally {
