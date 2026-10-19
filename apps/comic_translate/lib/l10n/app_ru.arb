@@ -154,8 +154,6 @@
   "fixCyrillicHelp": "«HET» станет «НЕТ»; может задеть и латинские слова.",
   "font": "Шрифт",
   "fontDefault": "Pangolin (встроенный)",
-  "fontOther": "Шрифт из Windows",
-  "fontOtherHint": "Название шрифта, например Comic Sans MS",
   "minFontSize": "Наименьший размер (pt)",
   "maxFontSize": "Наибольший размер (pt)",
   "textColor": "Цвет текста",
@@ -382,5 +380,9 @@
   "exportByChapter": "Отдельный файл для каждой главы ({count})",
   "exportStart": "Экспортировать…",
   "exportingPages": "Экспортирую…",
-  "exportSaved": "Сохранено: {path}"
+  "exportSaved": "Сохранено: {path}",
+  "fontAdd": "Добавить шрифт…",
+  "fontAddHelp": "Шрифты копируются в папку программы и появляются во всех списках шрифтов. Проект хранит шрифты, которые использованы в его пузырях.",
+  "fontsAdded": "Добавлено шрифтов: {count}",
+  "fontRemove": "Убрать шрифт"
 }

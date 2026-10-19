@@ -543,12 +543,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get fontDefault => 'Pangolin (встроенный)';
 
   @override
-  String get fontOther => 'Шрифт из Windows';
-
-  @override
-  String get fontOtherHint => 'Название шрифта, например Comic Sans MS';
-
-  @override
   String get minFontSize => 'Наименьший размер (pt)';
 
   @override
@@ -1308,4 +1302,19 @@ class AppLocalizationsRu extends AppLocalizations {
   String exportSaved(String path) {
     return 'Сохранено: $path';
   }
+
+  @override
+  String get fontAdd => 'Добавить шрифт…';
+
+  @override
+  String get fontAddHelp =>
+      'Шрифты копируются в папку программы и появляются во всех списках шрифтов. Проект хранит шрифты, которые использованы в его пузырях.';
+
+  @override
+  String fontsAdded(String count) {
+    return 'Добавлено шрифтов: $count';
+  }
+
+  @override
+  String get fontRemove => 'Убрать шрифт';
 }

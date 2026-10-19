@@ -362,8 +362,6 @@
   "fixCyrillicHelp": "\"HET\" becomes \"НЕТ\"; may also change Latin words.",
   "font": "Font",
   "fontDefault": "Pangolin (built in)",
-  "fontOther": "Font installed in Windows",
-  "fontOtherHint": "Font name, e.g. Comic Sans MS",
   "minFontSize": "Smallest size (pt)",
   "maxFontSize": "Largest size (pt)",
   "textColor": "Text colour",
@@ -800,5 +798,16 @@
         "type": "String"
       }
     }
-  }
+  },
+  "fontAdd": "Add a font…",
+  "fontAddHelp": "Fonts are copied into the program's folder and appear in every font list. A project keeps the fonts its bubbles use.",
+  "fontsAdded": "Fonts added: {count}",
+  "@fontsAdded": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "fontRemove": "Remove the font"
 }

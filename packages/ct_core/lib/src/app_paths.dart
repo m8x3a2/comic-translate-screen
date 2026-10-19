@@ -16,6 +16,9 @@ class AppPaths {
   Directory get models => _dir('models');
   Directory get reports => _dir('reports');
   Directory get cache => _dir('cache');
+
+  /// Font files the user added (Settings → Text).
+  Directory get fonts => _dir('fonts');
   File get settingsFile => File(p.join(root.path, 'settings.json'));
   File get appLog => File(p.join(logs.path, 'app.jsonl'));
 

@@ -542,12 +542,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fontDefault => 'Pangolin (built in)';
 
   @override
-  String get fontOther => 'Font installed in Windows';
-
-  @override
-  String get fontOtherHint => 'Font name, e.g. Comic Sans MS';
-
-  @override
   String get minFontSize => 'Smallest size (pt)';
 
   @override
@@ -1306,4 +1300,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String exportSaved(String path) {
     return 'Saved: $path';
   }
+
+  @override
+  String get fontAdd => 'Add a font…';
+
+  @override
+  String get fontAddHelp =>
+      'Fonts are copied into the program\'s folder and appear in every font list. A project keeps the fonts its bubbles use.';
+
+  @override
+  String fontsAdded(String count) {
+    return 'Fonts added: $count';
+  }
+
+  @override
+  String get fontRemove => 'Remove the font';
 }

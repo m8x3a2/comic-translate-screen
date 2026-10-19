@@ -5,11 +5,14 @@ library;
 import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_info.dart';
 import '../../state/app_state.dart';
+import '../../render/text_renderer.dart' show defaultFontFamily;
+import '../common/fonts.dart';
 import '../common/labels.dart';
 import '../common/plugin_form.dart';
 import '../common/plugin_strings.dart';
@@ -493,7 +496,11 @@ class _TextSection extends ConsumerWidget {
     final l = context.l10n;
     final r = ref.watch(settingsProvider.select((s) => s.render));
     void set(RenderSettings Function(RenderSettings r) f) => _change(ref, (s) => s.render = f(s.render));
-    final custom = r.fontFamily.isNotEmpty && r.fontFamily != 'Pangolin';
+    final added = ref.watch(addedFontsProvider);
+    final choices = [...availableFonts().skip(1), ...added];
+    final font = r.fontFamily == defaultFontFamily ? '' : r.fontFamily;
+    // A family typed by hand in older versions stays in the list.
+    if (font.isNotEmpty && !choices.contains(font)) choices.add(font);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -501,21 +508,42 @@ class _TextSection extends ConsumerWidget {
           children: [
             _Dropdown(
               label: l.font,
-              value: custom ? 'other' : 'default',
-              options: {'default': l.fontDefault, 'other': l.fontOther},
-              onChanged: (v) => set((r) => r.copyWith(fontFamily: v == 'default' ? '' : 'Segoe Print')),
+              value: font,
+              options: {'': l.fontDefault, for (final f in choices) f: fontLabel(f)},
+              onChanged: (v) => set((r) => r.copyWith(fontFamily: v)),
             ),
-            if (custom)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: DebouncedTextField(
-                  key: const ValueKey('font_family'),
-                  value: r.fontFamily,
-                  label: l.fontOther,
-                  hint: l.fontOtherHint,
-                  onChanged: (v) => set((r) => r.copyWith(fontFamily: v.trim().isEmpty ? '' : v.trim())),
-                ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.font_download_outlined),
+                    label: Text(l.fontAdd),
+                    onPressed: () async {
+                      final files = await openFiles(
+                        acceptedTypeGroups: [const XTypeGroup(label: 'Fonts', extensions: fontExtensions)],
+                      );
+                      if (files.isEmpty) return;
+                      final fonts = await ref.read(addedFontsProvider.notifier).add([for (final f in files) f.path]);
+                      if (context.mounted && fonts.isNotEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.fontsAdded('${fonts.length}'))));
+                      }
+                    },
+                  ),
+                  for (final f in added)
+                    InputChip(
+                      label: Text(fontLabel(f)),
+                      onDeleted: () => ref.read(addedFontsProvider.notifier).remove(f),
+                      deleteButtonTooltipMessage: l.fontRemove,
+                    ),
+                ],
               ),
+            ),
+            Text(l.fontAddHelp, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(

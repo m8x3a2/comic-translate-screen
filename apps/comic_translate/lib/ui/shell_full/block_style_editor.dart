@@ -43,7 +43,7 @@ class BlockStyleEditor extends ConsumerWidget {
     final fitted = k >= 0 ? layout!.items[k].fontSizePt : null;
     final angle = s.angle ?? 0;
     final font = s.fontFamily ?? r.fontFamily;
-    final fonts = {...availableFonts(), if (font.isNotEmpty) font};
+    final fonts = {...availableFonts(), ...ref.watch(addedFontsProvider), if (font.isNotEmpty) font};
     final small = theme.textTheme.labelMedium;
 
     Widget row(String label, Widget child) => Padding(
@@ -85,7 +85,7 @@ class BlockStyleEditor extends ConsumerWidget {
                 onPressed: () async {
                   final file = await openFile(
                     acceptedTypeGroups: [
-                      const XTypeGroup(label: 'Fonts', extensions: ['ttf', 'otf', 'ttc']),
+                      const XTypeGroup(label: 'Fonts', extensions: fontExtensions),
                     ],
                   );
                   if (file != null) set((s) => s.copyWith(fontFamily: file.path));

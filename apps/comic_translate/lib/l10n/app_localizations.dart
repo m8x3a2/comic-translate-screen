@@ -1022,18 +1022,6 @@ abstract class AppLocalizations {
   /// **'Pangolin (built in)'**
   String get fontDefault;
 
-  /// No description provided for @fontOther.
-  ///
-  /// In en, this message translates to:
-  /// **'Font installed in Windows'**
-  String get fontOther;
-
-  /// No description provided for @fontOtherHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Font name, e.g. Comic Sans MS'**
-  String get fontOtherHint;
-
   /// No description provided for @minFontSize.
   ///
   /// In en, this message translates to:
@@ -2395,6 +2383,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved: {path}'**
   String exportSaved(String path);
+
+  /// No description provided for @fontAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a font…'**
+  String get fontAdd;
+
+  /// No description provided for @fontAddHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Fonts are copied into the program\'s folder and appear in every font list. A project keeps the fonts its bubbles use.'**
+  String get fontAddHelp;
+
+  /// No description provided for @fontsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Fonts added: {count}'**
+  String fontsAdded(String count);
+
+  /// No description provided for @fontRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the font'**
+  String get fontRemove;
 }
 
 class _AppLocalizationsDelegate
