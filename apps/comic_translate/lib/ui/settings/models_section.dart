@@ -83,6 +83,23 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
     await _refresh();
   }
 
+  Future<void> _delete(ModelSpec spec) async {
+    final l = context.l10n;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        content: Text(l.deleteModelConfirm(spec.displayName)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.delete)),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await _models.delete(spec);
+    await _refresh();
+  }
+
   Future<void> _import() async {
     final files = await openFiles();
     if (files.isEmpty) return;
@@ -191,13 +208,7 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
                   ),
                 if (status != null && status != ModelStatus.missing && progress == null) ...[
                   TextButton(onPressed: () => _verify(spec), child: Text(context.l10n.verify)),
-                  TextButton(
-                    onPressed: () async {
-                      await _models.delete(spec);
-                      await _refresh();
-                    },
-                    child: Text(context.l10n.delete),
-                  ),
+                  TextButton(onPressed: () => _delete(spec), child: Text(context.l10n.delete)),
                 ],
               ],
             ),

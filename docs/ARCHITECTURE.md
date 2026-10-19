@@ -46,6 +46,18 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 - Translation: a reply with stray braces after its JSON is still read (the
   original fails the page); the Authorization header is omitted when no API key
   is set; the length-limit field name is configurable for older servers.
+- Enlarging before drawing (new, setting `upscale`): when the source text
+  lines are thinner than about 20 px, or when many translations do not fit
+  even at the smallest font size, the cleaned page is enlarged (Lanczos, up
+  to 4×) and the translation is drawn on the larger copy, so letters stay
+  sharp. Fixed ×2/×3/×4 and "to width" modes exist; neural upscalers are
+  planned for stage 2. Golden pages ru_E01P02 and ja_E01P02 are enlarged
+  1.5× because their test translations do not fit at the smallest size.
+- GUI: the source and target language in the toolbar apply to all pages
+  (the original also keeps per-page languages); PDF pages are rendered at
+  200 dpi instead of extracting the embedded image; open pages are not
+  restored after a restart and there is no recent-projects list until
+  projects arrive (M9).
 - Rendering: fitted text is centred vertically in its area and placed
   horizontally by the alignment (setting `render.place_in_block`, on by
   default). The original puts it at the area's top-left corner, so short
@@ -59,9 +71,14 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 apps/comic_translate/   Flutter app: GUI and CLI share one Dart entry point
   lib/main.dart         --cts-cli flag → CLI, otherwise GUI
   lib/cli/              cts commands (package:args)
-  lib/gui/              interface shells; "Full" in stage 1, "Simple" in stage 2   (M7+)
+  lib/gui/              GUI start-up (services, settings, error logging)            (M7)
+  lib/ui/               widgets: shell_full/ (main window), settings/, common/      (M7)
+  lib/state/            Riverpod state: settings, open pages, "Translate all"      (M7)
+  lib/import/           PDF pages through PDFium (archives are in ct_core)          (M7)
+  lib/l10n/             interface strings (ARB, Russian and English)               (M7)
   lib/render/           text measurement and drawing with dart:ui                  (M6)
-  lib/pipeline/         one page through every step (CLI now, GUI later)          (M6)
+  lib/pipeline/         one page through every step; pipeline_worker.dart runs the
+                        heavy steps in a background isolate for the GUI          (M6, M7)
   windows/runner/       main.cpp → comic_translate.exe, cli_main.cpp → cts.exe
 packages/ct_core/       pure Dart: models, pipeline, plugin interfaces, registry,
                         image-processing ports, project format, diagnostics
@@ -78,6 +95,23 @@ test_data/              test pages (with licenses), reference outputs, goldens  
 
 `ct_core` never imports Flutter, so its logic is tested with plain `dart test`.
 Code that needs the Flutter engine (dart:ui text rendering, plugins) lives in the app.
+
+## The window and the background worker
+
+The GUI keeps the window responsive by running detection, OCR, translation and
+cleaning in a background isolate (`lib/pipeline/pipeline_worker.dart`). The
+main isolate resolves the plugin configuration (secrets come from the OS
+secure storage, which only the main isolate can reach) into a `PipelineSpec`;
+the worker creates its own plugin instances from it, keeps them loaded for the
+whole run, forwards its log events to the main log and, in test mode, keeps
+the run folder. Drawing the translation needs dart:ui and happens on the main
+isolate; the worker then encodes and writes the files. Pages are processed one
+at a time; "Stop" takes effect at the next step boundary.
+
+Before a run the GUI asks for permission when the translator sends text off
+the computer (once, or always for that server) and offers to download the
+models the chosen plugins need for the source language (plugins list them in
+`PluginInfo.modelsForLanguage`), showing size and source.
 
 ## Why `cts.exe` is a second runner executable
 

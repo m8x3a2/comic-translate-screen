@@ -25,6 +25,7 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | `cts models download <id>... \| --all` | Download models (network access; shows hosts and sizes, resumes interrupted downloads) |
 | `cts models verify <id>... \| --all` | Re-check SHA-256 of downloaded files |
 | `cts models delete <id>...` | Delete downloaded files |
+| `cts models import <file\|folder\|zip>...` | Install model files copied from another computer; files are recognized by size and SHA-256, nothing is downloaded |
 | `cts secrets list` | Names of stored secrets (values are never printed) |
 | `cts secrets set <name>` | Store a secret read from stdin, e.g. `plugin.openai_compatible.api_key` |
 | `cts secrets delete <name>` | Delete a stored secret |
@@ -35,7 +36,7 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | `cts mask <image> --blocks f.json [-o dir]` | Build the text-removal mask from blocks (detect/ocr/translate JSON); writes `<name>.mask.png` |
 | `cts inpaint <image>... [--blocks f.json \| --mask m.png] [--inpainter aot\|lama] [--strategy resize\|crop\|original] [--gpu] [-o dir] [--debug]` | Remove text: uniform bubbles are flat-filled, the rest goes to the inpainting network (by patches or the whole page); without `--blocks`/`--mask` text is detected first; writes `<name>.clean.png` |
 | `cts render <page.png> --blocks f.translated.json [--to lang] [-o dir]` | Draw translations onto a page (usually the cleaned page from `cts inpaint`); writes `<name>.rendered.png` and `<name>.layout.json` |
-| `cts process <image\|folder>... [--from English] [--to Russian] [--translator mock\|openai_compatible] [--allow-network [--remember]] [--gpu] [-o dir] [--debug]` | The whole pipeline: detect, OCR, translate, remove text, draw the translation. Folders are read in natural order (page2 before page10). Writes `<name>.translated.png` and `<name>.json` (blocks, layout, timings) |
+| `cts process <image\|folder\|archive\|pdf>... [--from English] [--to Russian] [--translator mock\|openai_compatible] [--allow-network [--remember]] [--gpu] [-o dir] [--debug]` | The whole pipeline: detect, OCR, translate, remove text, draw the translation. Folders are read in natural order (page2 before page10); archives (cbz, zip, epub, cbt, tar; cbr, rar, cb7, 7z through an installed 7-Zip or WinRAR) and PDF pages (rendered at 200 dpi) are unpacked to a temporary folder, and their pages are named `<archive>_001` …. Small pages are enlarged before drawing (setting `upscale.mode`). Writes `<name>.translated.png` and `<name>.json` (blocks, layout, timings) |
 | `cts compare <a.png> <b.png> [--diff d.png] [--threshold 16] [--min-psnr dB]` | Compare two images (PSNR, largest difference, changed pixels); exit code 0 when identical (or PSNR ≥ `--min-psnr`) |
 | `cts golden check\|update [--dir test_data/golden] [-o dir]` | Re-run the golden pages (default settings, offline mock translator, CPU) and compare blocks, OCR text, layout and picture with the saved results; `update` saves new results after an intended change |
 | `cts bench <image>... [--from] [--to] [--repeat 2] [--gpu]` | Time every stage (mock translator, nothing sent); the first run is shown separately, plus model loading time and peak memory |
@@ -69,12 +70,20 @@ lists. They are stored in the OS secure storage and masked in all logs.
 
 | Command | Milestone |
 |---|---|
-| `cts process` on archives (cbz, zip, pdf …) and projects | M7, M9 |
-| `cts models import` | M7 |
+| `cts process` on projects | M9 |
 
 Parity with the original is checked by the test suites (`dart test`) against
 `test_data/reference/`, not by a CLI command: see
 [tools/reference](../tools/reference/README.md).
+
+## The window's command line
+
+`comic_translate.exe [files...]` opens the given images, folders, archives or
+PDFs (this is what "Open with" in Explorer does). For automated checks of the
+window: `--translate` starts "Translate all" once the files are open, and
+`--settings=<section>` opens the settings at `general`, `translator`,
+`tools`, `text`, `upscale`, `export`, `models` or `about`. With
+`CTS_DATA_DIR` set, the window uses that data folder, as `cts` does.
 
 ## Exit codes
 

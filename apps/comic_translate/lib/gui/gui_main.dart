@@ -40,6 +40,9 @@ Future<void> guiMain(List<String> args) async {
             if (FileSystemEntity.typeSync(a) != FileSystemEntityType.notFound) a,
         ]),
         translateOnStartProvider.overrideWithValue(args.contains('--translate')),
+        settingsOnStartProvider.overrideWithValue(
+          args.where((a) => a.startsWith('--settings=')).map((a) => a.substring(11)).firstOrNull,
+        ),
       ],
       child: const ComicTranslateApp(),
     ),

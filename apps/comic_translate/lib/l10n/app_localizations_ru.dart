@@ -620,6 +620,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get delete => 'Удалить';
 
   @override
+  String deleteModelConfirm(String name) {
+    return 'Удалить «$name»? Её можно будет скачать снова.';
+  }
+
+  @override
   String get verifyOk => 'Файлы в порядке';
 
   @override

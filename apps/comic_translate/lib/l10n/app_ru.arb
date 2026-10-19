@@ -183,6 +183,7 @@
   "modelCorrupt": "Повреждена",
   "verify": "Проверить",
   "delete": "Удалить",
+  "deleteModelConfirm": "Удалить «{name}»? Её можно будет скачать снова.",
   "verifyOk": "Файлы в порядке",
   "verifyBad": "Повреждённые файлы: {files}",
   "aboutIndependent": "Независимый проект на основе ogkalu2/comic-translate, не официальная версия.",

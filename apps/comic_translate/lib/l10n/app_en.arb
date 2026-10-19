@@ -364,6 +364,14 @@
   "modelCorrupt": "Damaged",
   "verify": "Check",
   "delete": "Delete",
+  "deleteModelConfirm": "Delete {name}? It can be downloaded again later.",
+  "@deleteModelConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "verifyOk": "Files are intact",
   "verifyBad": "Damaged files: {files}",
   "@verifyBad": {

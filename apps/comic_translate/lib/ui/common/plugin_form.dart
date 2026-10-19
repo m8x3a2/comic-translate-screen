@@ -232,10 +232,12 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
                 enableSuggestions: false,
                 autocorrect: false,
                 decoration: InputDecoration(
-                  labelText: fieldLabel(context, widget.info, widget.field),
+                  labelText: [
+                    fieldLabel(context, widget.info, widget.field),
+                    if (_saved != null) _saved! ? l.secretSet : l.secretNotSet,
+                  ].join(' · '),
                   helperText: [if (help.isNotEmpty) help, l.savedSecurely].join(' '),
                   helperMaxLines: 3,
-                  suffixText: _saved == null ? null : (_saved! ? l.secretSet : l.secretNotSet),
                 ),
                 onSubmitted: (_) => _save(),
               ),

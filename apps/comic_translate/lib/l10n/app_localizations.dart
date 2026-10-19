@@ -1196,6 +1196,12 @@ abstract class AppLocalizations {
   /// **'Delete'**
   String get delete;
 
+  /// No description provided for @deleteModelConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}? It can be downloaded again later.'**
+  String deleteModelConfirm(String name);
+
   /// No description provided for @verifyOk.
   ///
   /// In en, this message translates to:

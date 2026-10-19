@@ -46,6 +46,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   void initState() {
     super.initState();
+    final section = ref.read(settingsOnStartProvider);
+    if (section != null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _openSettings(SettingsSection.values.asNameMap()[section] ?? SettingsSection.general),
+      );
+    }
     final inputs = ref.read(initialInputsProvider);
     if (inputs.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {

@@ -619,6 +619,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get delete => 'Delete';
 
   @override
+  String deleteModelConfirm(String name) {
+    return 'Delete $name? It can be downloaded again later.';
+  }
+
+  @override
   String get verifyOk => 'Files are intact';
 
   @override

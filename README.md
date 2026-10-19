@@ -24,7 +24,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 | M4 | Translation: the original's LLM protocol, an OpenAI-compatible provider (OpenRouter, OpenAI, local servers), an offline test translator, `cts translate` | done |
 | M5 | Text removal: mask, fast fill of uniform bubbles, AOT and LaMa inpainting (identical output to the original), `cts mask`, `cts inpaint` | done |
 | M6 | Text rendering; the whole pipeline in one command (`cts process`); golden checks and benchmarks | done |
-| M7–M12 | Full GUI, projects and export, webtoon mode, PSD, polish | planned |
+| M7 | The window: open images, folders, comic archives and PDF; page list and viewer; "Translate all" in the background with progress, stop and report; settings; models folder and offline model import; enlarging small pages so the translation stays sharp | done |
+| M8–M12 | Manual mode and editing, projects and export, webtoon mode, PSD, polish | planned |
 
 ## Principles
 
@@ -48,6 +49,12 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
   (works with OpenRouter, OpenAI, DeepSeek, LM Studio, Ollama, llama.cpp server)
   with the original's prompt. Other providers will return one by one. A server
   on `localhost` counts as local; anything else is marked and needs approval.
+- New: small pages (screenshots, low-resolution scans) are enlarged before the
+  translation is drawn, so the letters stay sharp when the result is viewed or
+  printed larger (setting "Enlarging": automatic by default, ×2/×3/×4 or to a
+  width; the neural upscalers are planned for stage 2).
+- Models can live in any folder and can be installed from files copied from
+  another computer (no internet needed).
 - Removed: sign-in, accounts, credits, paid cloud OCR, automatic update checks.
 
 ## Building from source (Windows)

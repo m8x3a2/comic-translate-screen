@@ -22,6 +22,10 @@ final initialInputsProvider = Provider<List<String>>((ref) => const []);
 /// are open (for automated checks of the window).
 final translateOnStartProvider = Provider<bool>((ref) => false);
 
+/// `--settings=<section>`: open the settings at a section on start (for
+/// automated checks of the window).
+final settingsOnStartProvider = Provider<String?>((ref) => null);
+
 /// Settings loaded at startup; set in `ProviderScope.overrides`.
 final initialSettingsProvider = Provider<AppSettings>((ref) => AppSettings());
 
