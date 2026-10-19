@@ -210,4 +210,107 @@ void main() {
     expect(sent, hasLength(2));
     expect([for (final b in blocks) b.translation], ['[ru] Hello', '', '', '[ru] Bye "now"']);
   });
+
+  test('each answered request is counted: tokens and cost from the reply, else estimated', () async {
+    final counted = <ServiceUsage>[];
+    final context = PluginContext(log: EventLog.silent(), onUsage: counted.add);
+    server.handler = (body) => (
+          200,
+          jsonEncode({
+            'choices': [
+              {
+                'message': {'content': '{"block_0": "Привет"}'},
+              },
+            ],
+            'usage': {'prompt_tokens': 812, 'completion_tokens': 9, 'total_tokens': 821, 'cost': 0.000231},
+          }),
+        );
+    final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'deepseek/deepseek-chat-v3.1');
+    await t.translate(request([block('Hello')]), context);
+    final u = counted.single;
+    expect((u.plugin, u.host, u.model), ('openai_compatible', '127.0.0.1', 'deepseek/deepseek-chat-v3.1'));
+    expect((u.requests, u.inputTokens, u.outputTokens, u.cost, u.estimated), (1, 812, 9, 0.000231, false));
+
+    // A local server without `usage`: about 4 characters per token.
+    server.handler = (body) => (200, chatReply('{"block_0": "Привет"}'));
+    await t.translate(request([block('Hello')]), context);
+    final e = counted.last;
+    expect(e.estimated, isTrue);
+    expect(e.cost, isNull);
+    expect(e.inputTokens, greaterThan(100));
+    expect(e.outputTokens, 6);
+
+    // Failed requests cost nothing and are not counted.
+    server.handler = (body) => (401, jsonEncode({'error': 'no'}));
+    await expectLater(t.translate(request([block('Hello')]), context), throwsA(isA<TranslationException>()));
+    expect(counted, hasLength(2));
+  });
+
+  test('OpenRouter key status: only for openrouter.ai, parsed from GET /key', () async {
+    PluginConfig config(String url, {String? key}) => PluginConfig.resolve(
+          openAiCompatibleInfo.settings,
+          {'api_url': url},
+          secrets: {'api_key': ?key},
+        );
+    expect(openAiCompatibleInfo.keyStatus!(config('http://localhost:11434/v1')), isNull);
+    expect(openAiCompatibleInfo.keyStatus!(config('https://api.deepseek.com/v1')), isNull);
+    final query = openAiCompatibleInfo.keyStatus!(config('https://openrouter.ai/api/v1/', key: 'sk-or-1'))!;
+    expect((query.host, query.hasKey), ('openrouter.ai', true));
+    expect(openAiCompatibleInfo.keyStatus!(config('https://openrouter.ai/api/v1'))!.hasKey, isFalse);
+
+    final keyServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => keyServer.close(force: true));
+    final seen = <(String, String, String?)>[];
+    var status = 200;
+    keyServer.listen((req) async {
+      seen.add((req.method, req.uri.path, req.headers.value('authorization')));
+      req.response
+        ..statusCode = status
+        ..headers.contentType = ContentType.json
+        ..write(status == 200
+            ? jsonEncode({
+                'data': {
+                  'label': 'sk-or-v1-0e6...1c4',
+                  'limit': 1,
+                  'limit_reset': null,
+                  'limit_remaining': 0.874,
+                  'usage': 0.126,
+                  'usage_daily': 0.011,
+                  'usage_weekly': 0.05,
+                  'usage_monthly': 0.126,
+                  'is_free_tier': false,
+                  'free_model_daily_requests': {'used': 3, 'limit': 50, 'remaining': 47},
+                },
+              })
+            : jsonEncode({
+                'error': {'message': 'User not found.'},
+              }));
+      await req.response.close();
+    });
+    final uri = Uri.parse('http://127.0.0.1:${keyServer.port}/api/v1/key');
+    final s = await fetchOpenRouterKeyStatus(uri, 'sk-or-secret');
+    expect(seen.single, ('GET', '/api/v1/key', 'Bearer sk-or-secret'));
+    expect((s.limit, s.remaining, s.used, s.usedToday, s.usedThisMonth), (1.0, 0.874, 0.126, 0.011, 0.126));
+    expect(s.limitReset, isNull);
+    expect((s.freeRequestsToday, s.freeRequestsLimit, s.freeRequestsLeft), (3, 50, 47));
+
+    status = 401;
+    await expectLater(
+      fetchOpenRouterKeyStatus(uri, 'sk-or-secret'),
+      throwsA(isA<TranslationException>()
+          .having((e) => e.kind, 'kind', TranslationErrorKind.auth)
+          .having((e) => e.message, 'message', allOf(contains('User not found'), isNot(contains('sk-or-secret'))))),
+    );
+
+    // No limit of its own, but a monthly budget.
+    final budget = parseOpenRouterKeyStatus({
+      'limit': null,
+      'limit_remaining': null,
+      'usage': 2.5,
+      'effective_budget': {'limit_usd': 10, 'spend_usd': 2.5, 'remaining_usd': 7.5, 'reset_interval': 'monthly'},
+    });
+    expect((budget.limit, budget.remaining, budget.limitReset), (10.0, 7.5, LimitReset.monthly));
+    final unlimited = parseOpenRouterKeyStatus({'limit': null, 'usage': 0});
+    expect((unlimited.limit, unlimited.remaining, unlimited.freeRequestsLimit), (null, null, null));
+  });
 }

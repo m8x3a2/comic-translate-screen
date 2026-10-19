@@ -38,6 +38,7 @@ const openAiCompatibleInfo = PluginInfo(
     IntSetting(key: 'timeout', label: 'Timeout (seconds)', defaultValue: 120, min: 5, max: 3600),
   ],
   endpoint: openAiCompatibleEndpoint,
+  keyStatus: openAiCompatibleKeyStatus,
 );
 
 final openAiCompatibleFactory = PluginFactory<Translator>(openAiCompatibleInfo, (config, env) async {
@@ -168,8 +169,17 @@ class OpenAiCompatibleTranslator implements Translator {
         page: context.page);
 
     final sw = Stopwatch()..start();
-    final reply = await _postWithRetries(uri, payload, context.cancel, log);
-    log.info('translate_response', {'ms': sw.elapsedMilliseconds, 'chars': reply.length});
+    final (reply, usage) = await _postWithRetries(uri, payload, context.cancel, log);
+    final used = usageOf(usage, payload, reply, host: uri.host);
+    log.info('translate_response', {
+      'ms': sw.elapsedMilliseconds,
+      'chars': reply.length,
+      'input_tokens': used.inputTokens,
+      'output_tokens': used.outputTokens,
+      if (used.cost != null) 'cost': used.cost,
+      if (used.estimated) 'tokens_estimated': true,
+    });
+    await context.reportUsage(used);
     await context.recorder?.writeJsonArtifact('03_translate', 'response.json', {'content': reply}, page: context.page);
 
     final List<String> warnings;
@@ -193,7 +203,7 @@ class OpenAiCompatibleTranslator implements Translator {
   /// Sends again after temporary failures (rate limit, server error, lost
   /// connection), waiting [retryDelays] (or the server's Retry-After, up to
   /// 30 s) in between. Not in the original, which fails the page at once.
-  Future<String> _postWithRetries(Uri uri, Map<String, Object?> payload, CancelToken cancel, EventLog log) async {
+  Future<(String, Map<String, Object?>?)> _postWithRetries(Uri uri, Map<String, Object?> payload, CancelToken cancel, EventLog log) async {
     for (var attempt = 0;; attempt++) {
       try {
         return await _post(uri, payload, cancel);
@@ -217,7 +227,7 @@ class OpenAiCompatibleTranslator implements Translator {
     return done.future;
   }
 
-  Future<String> _post(Uri uri, Map<String, Object?> payload, CancelToken cancel) async {
+  Future<(String, Map<String, Object?>?)> _post(Uri uri, Map<String, Object?> payload, CancelToken cancel) async {
     final client = _httpClientFactory()..connectionTimeout = timeout;
     if (!identical(cancel, CancelToken.none)) cancel.onCancel(() => client.close(force: true));
     try {
@@ -255,9 +265,43 @@ class OpenAiCompatibleTranslator implements Translator {
     }
   }
 
+  /// What a request used: the `usage` of the reply (tokens, and the cost on
+  /// OpenRouter), or about 4 characters per token when the server sent none
+  /// (some local servers).
+  ServiceUsage usageOf(Map<String, Object?>? usage, Map<String, Object?> payload, String reply, {required String host}) {
+    int? count(String key) => (usage?[key] as num?)?.toInt();
+    final input = count('prompt_tokens'), output = count('completion_tokens');
+    final cost = (usage?['cost'] as num?)?.toDouble();
+    if (input != null && output != null) {
+      return ServiceUsage(
+        plugin: info.id,
+        host: host,
+        model: model,
+        inputTokens: input,
+        outputTokens: output,
+        cost: cost,
+      );
+    }
+    var chars = 0;
+    for (final message in payload['messages'] as List) {
+      for (final part in (message as Map)['content'] as List) {
+        if (part is Map && part['text'] is String) chars += (part['text'] as String).length;
+      }
+    }
+    return ServiceUsage(
+      plugin: info.id,
+      host: host,
+      model: model,
+      inputTokens: (chars / 4).ceil(),
+      outputTokens: (reply.length / 4).ceil(),
+      cost: cost,
+      estimated: true,
+    );
+  }
+
   /// `response["choices"][0]["message"]["content"]` (text parts joined when
-  /// a server returns structured content).
-  static String _content(String body) {
+  /// a server returns structured content) and the reply's `usage`.
+  static (String, Map<String, Object?>?) _content(String body) {
     final Object? json;
     try {
       json = jsonDecode(body);
@@ -267,9 +311,11 @@ class OpenAiCompatibleTranslator implements Translator {
     final choices = json is Map ? json['choices'] : null;
     final message = choices is List && choices.isNotEmpty && choices.first is Map ? (choices.first as Map)['message'] : null;
     final content = message is Map ? message['content'] : null;
-    if (content is String) return content;
+    final usage = json is Map && json['usage'] is Map ? (json['usage'] as Map).cast<String, Object?>() : null;
+    if (content is String) return (content, usage);
     if (content is List) {
-      return [for (final part in content) if (part is Map && part['text'] is String) part['text'] as String].join();
+      final text = [for (final part in content) if (part is Map && part['text'] is String) part['text'] as String].join();
+      return (text, usage);
     }
     throw TranslationException('unexpected reply format: ${_clip(body)}', kind: TranslationErrorKind.badReply);
   }
@@ -315,4 +361,89 @@ class _RetryAfter extends TranslationException {
   _RetryAfter(super.message, {super.kind, super.statusCode, this.retryAfter});
 
   final Duration? retryAfter;
+}
+
+/// OpenRouter tells what is left of a key's limit; other servers have no
+/// such request.
+KeyStatusQuery? openAiCompatibleKeyStatus(PluginConfig config) {
+  final base = config.value<String>('api_url').trim().replaceAll(RegExp(r'/+$'), '');
+  final uri = Uri.tryParse(base);
+  if (uri == null || uri.host.toLowerCase() != 'openrouter.ai') return null;
+  final key = config.secret('api_key') ?? '';
+  return KeyStatusQuery(
+    host: uri.host,
+    hasKey: key.isNotEmpty,
+    run: () => fetchOpenRouterKeyStatus(Uri.parse('$base/key'), key),
+  );
+}
+
+/// `GET /api/v1/key` of OpenRouter: the key's limit, spending and the free
+/// model requests of the day.
+Future<KeyStatus> fetchOpenRouterKeyStatus(
+  Uri uri,
+  String apiKey, {
+  Duration timeout = const Duration(seconds: 20),
+  HttpClient Function()? httpClientFactory,
+}) async {
+  final client = (httpClientFactory ?? OpenAiCompatibleTranslator._defaultClient)()..connectionTimeout = timeout;
+  try {
+    final req = await client.getUrl(uri).timeout(timeout);
+    req.headers.set(HttpHeaders.authorizationHeader, 'Bearer $apiKey');
+    final res = await req.close().timeout(timeout);
+    final body = await res.transform(utf8.decoder).join().timeout(timeout);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      final detail = OpenAiCompatibleTranslator._errorDetail(body);
+      throw TranslationException('${uri.host} answered HTTP ${res.statusCode}$detail',
+          kind: TranslationErrorKind.forStatus(res.statusCode, detail), statusCode: res.statusCode);
+    }
+    final Object? json;
+    try {
+      json = jsonDecode(body);
+    } on FormatException {
+      throw TranslationException('the server reply is not JSON: ${OpenAiCompatibleTranslator._clip(body)}',
+          kind: TranslationErrorKind.badReply);
+    }
+    final data = json is Map ? json['data'] : null;
+    if (data is! Map) {
+      throw TranslationException('unexpected reply format: ${OpenAiCompatibleTranslator._clip(body)}',
+          kind: TranslationErrorKind.badReply);
+    }
+    return parseOpenRouterKeyStatus(data.cast<String, Object?>());
+  } on TimeoutException {
+    throw TranslationException('${uri.host} did not answer within ${timeout.inSeconds} s', kind: TranslationErrorKind.timeout);
+  } on SocketException catch (e) {
+    throw TranslationException('cannot connect to ${uri.host}: ${e.osError?.message ?? e.message}',
+        kind: TranslationErrorKind.network);
+  } on HttpException catch (e) {
+    throw TranslationException('connection to ${uri.host} failed: ${e.message}', kind: TranslationErrorKind.network);
+  } finally {
+    client.close(force: true);
+  }
+}
+
+/// The `data` of OpenRouter's key reply. A key without its own limit may
+/// still be capped by a budget (`effective_budget`).
+KeyStatus parseOpenRouterKeyStatus(Map<String, Object?> data) {
+  double? number(Object? v) => (v as num?)?.toDouble();
+  final budget = data['effective_budget'] is Map ? (data['effective_budget'] as Map).cast<String, Object?>() : null;
+  final free = data['free_model_daily_requests'] is Map
+      ? (data['free_model_daily_requests'] as Map).cast<String, Object?>()
+      : null;
+  final reset = data['limit'] != null ? data['limit_reset'] : budget?['reset_interval'];
+  return KeyStatus(
+    limit: number(data['limit']) ?? number(budget?['limit_usd']),
+    remaining: number(data['limit_remaining']) ?? number(budget?['remaining_usd']),
+    used: number(data['usage']) ?? 0,
+    usedToday: number(data['usage_daily']) ?? 0,
+    usedThisMonth: number(data['usage_monthly']) ?? 0,
+    limitReset: switch (reset) {
+      'daily' => LimitReset.daily,
+      'weekly' => LimitReset.weekly,
+      'monthly' => LimitReset.monthly,
+      _ => null,
+    },
+    freeRequestsToday: (free?['used'] as num?)?.toInt(),
+    freeRequestsLimit: (free?['limit'] as num?)?.toInt(),
+    freeRequestsLeft: (free?['remaining'] as num?)?.toInt(),
+  );
 }
