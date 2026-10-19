@@ -1,0 +1,389 @@
+{
+  "@@locale": "en",
+  "appTitle": "Comic Translate Screen",
+  "homeTagline": "Translate comics on your own computer",
+  "openFiles": "Open files…",
+  "openFolder": "Open folder…",
+  "addPages": "Add pages",
+  "dropHint": "or drag files into this window",
+  "supportedFormats": "Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT) and PDF",
+  "privacyLocal": "Everything runs on this computer; nothing is sent anywhere.",
+  "privacySends": "For translation, the text is sent to {host}",
+  "@privacySends": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "importing": "Opening files…",
+  "importFailed": "Could not open {name}: {error}",
+  "@importFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "skippedFiles": "Skipped (not images, archives or PDF): {names}",
+  "@skippedFiles": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "noPagesFound": "No pages found in the selected files",
+  "closeAll": "Close all pages",
+  "closeAllConfirm": "Close all pages? Translations that were not exported will be lost.",
+  "cancel": "Cancel",
+  "close": "Close",
+  "ok": "OK",
+  "save": "Save",
+  "removePage": "Remove page",
+  "translateAll": "Translate all",
+  "translateAgain": "Translate again",
+  "stop": "Stop",
+  "stopping": "Stopping…",
+  "report": "Report",
+  "export": "Export",
+  "settings": "Settings",
+  "sourceLanguage": "Source language",
+  "targetLanguage": "Target language",
+  "viewOriginal": "Original",
+  "viewTranslated": "Translation",
+  "showBoxes": "Text boxes",
+  "zoomFit": "Fit to window",
+  "zoomActual": "Actual size",
+  "zoomIn": "Zoom in",
+  "zoomOut": "Zoom out",
+  "notTranslatedYet": "This page is not translated yet",
+  "pageEnlarged": "Enlarged ×{factor} for sharp text",
+  "@pageEnlarged": {
+    "placeholders": {
+      "factor": {
+        "type": "String"
+      }
+    }
+  },
+  "textPanel": "Text",
+  "noTextFound": "No text found on this page",
+  "translateToSeeText": "Translate the page to see its text here",
+  "stageLoading": "Loading models",
+  "stageDownloading": "Downloading models: {percent}%",
+  "@stageDownloading": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "stageDetect": "Finding text",
+  "stageOcr": "Reading text",
+  "stageTranslate": "Translating",
+  "stageClean": "Removing text",
+  "stageRender": "Drawing the translation",
+  "stageExport": "Saving",
+  "progressPage": "Page {current} of {total}",
+  "@progressPage": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "remaining": "about {time} left",
+  "@remaining": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pagesSummary": "Pages: {total}, translated: {done}",
+  "@pagesSummary": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      },
+      "done": {
+        "type": "String"
+      }
+    }
+  },
+  "statusSkipped": "Skipped: {reason}",
+  "@statusSkipped": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "statusDone": "Translated",
+  "statusRunning": "In progress",
+  "reportTitle": "Translation report",
+  "reportSummary": "Translated {done} of {total} pages in {time}",
+  "@reportSummary": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "reportCancelled": "Stopped before the end",
+  "reportSkipped": "Skipped pages",
+  "reportExported": "Text and cleaned pages were saved to {path}",
+  "@reportExported": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "reportNoSkipped": "Every page went through.",
+  "showInFolder": "Show in folder",
+  "goToPage": "Go to page",
+  "reasonModelMissing": "model \"{name}\" is not downloaded",
+  "@reasonModelMissing": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonTranslation": "translation failed: {message}",
+  "@reasonTranslation": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonImage": "the image could not be read",
+  "runFailed": "Could not start: {error}",
+  "@runFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "networkTitle": "Send text over the network?",
+  "networkBody": "\"{name}\" sends the recognized text to {host} ({where}).",
+  "@networkBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      },
+      "where": {
+        "type": "String"
+      }
+    }
+  },
+  "networkWhereLan": "a computer on your local network",
+  "networkWhereCloud": "an internet service",
+  "networkBodyImage": "Page images are sent too (setting \"Send page image\").",
+  "networkOffline": "To work fully offline, choose a local translator in Settings.",
+  "allowOnce": "Allow this time",
+  "allowAlways": "Always allow for this server",
+  "downloadTitle": "Download models?",
+  "downloadBody": "These models are needed and not downloaded yet ({size} in total). They are saved on this computer and then work without internet.",
+  "@downloadBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadFrom": "{size}, from {host}",
+  "@downloadFrom": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "download": "Download",
+  "downloadFailed": "Download failed: {error}",
+  "@downloadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "exportTitle": "Choose a folder for the translated pages",
+  "exportDone": "Saved {count} page(s) to {path}",
+  "@exportDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "nothingToExport": "No translated pages yet",
+  "settingsGeneral": "General",
+  "settingsTranslator": "Translator",
+  "settingsTools": "Recognition and cleaning",
+  "settingsText": "Text",
+  "settingsUpscale": "Enlarging",
+  "settingsExport": "Export",
+  "settingsModels": "Models",
+  "settingsAbout": "About",
+  "theme": "Theme",
+  "themeSystem": "As in Windows",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "uiLanguage": "Interface language",
+  "useGpu": "Use the graphics card (DirectML)",
+  "useGpuHelp": "Faster on some computers; if something does not work, the processor is used automatically.",
+  "testMode": "Test mode",
+  "testModeHelp": "Saves every step of each run for bug reports (uses disk space).",
+  "openLogs": "Open logs folder",
+  "bugReport": "Create bug report",
+  "bugReportHelp": "A zip with logs and settings, without keys and without pictures.",
+  "bugReportDone": "Report saved: {path}",
+  "@bugReportDone": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "translator": "Translator",
+  "privacyLocalBadge": "On this computer",
+  "privacyLanBadge": "Local network",
+  "privacyCloudBadge": "Internet",
+  "sendsDataWarning": "Sends text outside this computer: {host}",
+  "@sendsDataWarning": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "savedSecurely": "Stored in Windows secure storage, never in files or logs.",
+  "secretSet": "Saved",
+  "secretNotSet": "Not set",
+  "secretRemove": "Remove",
+  "approvals": "Allowed servers",
+  "approvalsNone": "None yet; the app asks before sending anything.",
+  "revoke": "Revoke",
+  "extraContext": "Extra context for the translator",
+  "extraContextHelp": "For example names, setting or tone of the comic.",
+  "sendPageImage": "Send page image",
+  "sendPageImageHelp": "Helps some models understand the scene; the whole page is sent to the translator.",
+  "detector": "Text detection",
+  "ocr": "Text recognition",
+  "inpainter": "Text removal",
+  "hdStrategy": "Large pages",
+  "hdResize": "Resize",
+  "hdCrop": "In pieces",
+  "hdOriginal": "Original size",
+  "resizeLimit": "Resize limit (px)",
+  "cropMargin": "Piece margin (px)",
+  "cropTrigger": "Use pieces from (px)",
+  "upscaleSmallText": "Enlarge small text before reading",
+  "fixCyrillic": "Fix Latin look-alikes in Cyrillic text",
+  "fixCyrillicHelp": "\"HET\" becomes \"НЕТ\"; may also change Latin words.",
+  "font": "Font",
+  "fontDefault": "Pangolin (built in)",
+  "fontOther": "Font installed in Windows",
+  "fontOtherHint": "Font name, e.g. Comic Sans MS",
+  "minFontSize": "Smallest size (pt)",
+  "maxFontSize": "Largest size (pt)",
+  "textColor": "Text colour",
+  "outline": "Outline",
+  "outlineColor": "Outline colour",
+  "outlineWidth": "Outline width",
+  "upperCase": "Upper case",
+  "alignment": "Alignment",
+  "alignLeft": "Left",
+  "alignCenter": "Centre",
+  "alignRight": "Right",
+  "placeInBlock": "Centre the text in its bubble",
+  "lineSpacing": "Line spacing",
+  "bold": "Bold",
+  "italic": "Italic",
+  "underline": "Underline",
+  "upscaleHelp": "On small pages the translation is drawn on an enlarged copy, so the letters stay sharp. The method only affects the picture.",
+  "upscaleMode": "When to enlarge",
+  "upscaleAuto": "Automatically (small pages)",
+  "upscaleOff": "Never",
+  "upscaleWidth": "To width",
+  "upscaleWidthValue": "Width (px)",
+  "upscaleMethod": "Method",
+  "upscaleFast": "Fast (Lanczos)",
+  "upscaleGood": "Good (neural network) — coming later",
+  "upscaleBest": "Best (larger neural network) — coming later",
+  "imageFormat": "Image format",
+  "formatSource": "Same as the original",
+  "autoExport": "After \"Translate all\", also save",
+  "autoExportHelp": "Into a comic_translate_<date> folder next to the original files.",
+  "exportRawText": "Recognized text",
+  "exportTranslatedText": "Translated text",
+  "exportCleaned": "Cleaned pages",
+  "modelsFolder": "Models folder",
+  "modelsFolderHelp": "Models already downloaded are not moved; copy them or use Import.",
+  "changeFolder": "Change…",
+  "defaultFolder": "Default",
+  "open": "Open",
+  "importModels": "Import from disk…",
+  "importModelsHelp": "Model files or zip archives copied from another computer; they are recognized by checksum.",
+  "importModelsDone": "Installed model files: {count}",
+  "@importModelsDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "modelInstalled": "Downloaded",
+  "modelMissing": "Not downloaded",
+  "modelCorrupt": "Damaged",
+  "verify": "Check",
+  "delete": "Delete",
+  "verifyOk": "Files are intact",
+  "verifyBad": "Damaged files: {files}",
+  "@verifyBad": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutIndependent": "An independent project based on ogkalu2/comic-translate; not the official version.",
+  "aboutPrivacy": "No accounts, no telemetry. Data leaves this computer only for a translator you choose, and the app asks first.",
+  "license": "License: Apache 2.0",
+  "dataFolder": "Data folder",
+  "thirdPartyLicenses": "Third-party licenses",
+  "version": "Version {version}",
+  "@version": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  }
+}

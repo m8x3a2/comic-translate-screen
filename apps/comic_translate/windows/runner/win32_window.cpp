@@ -150,7 +150,8 @@ bool Win32Window::Create(const std::wstring& title,
 }
 
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNORMAL);
+  // Pages need room; the default size can exceed small laptop screens.
+  return ShowWindow(window_handle_, SW_SHOWMAXIMIZED);
 }
 
 // static

@@ -70,6 +70,14 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;
+    case WM_GETMINMAXINFO: {
+      // Page list, page and text panel need room side by side.
+      const UINT dpi = GetDpiForWindow(hwnd);
+      auto* info = reinterpret_cast<MINMAXINFO*>(lparam);
+      info->ptMinTrackSize.x = MulDiv(1024, dpi, 96);
+      info->ptMinTrackSize.y = MulDiv(640, dpi, 96);
+      return 0;
+    }
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);

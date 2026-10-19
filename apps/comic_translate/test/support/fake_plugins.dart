@@ -1,0 +1,77 @@
+/// Plugins that need no models, for pipeline and GUI tests.
+library;
+
+import 'package:ct_core/ct_core.dart';
+import 'package:ct_providers/ct_providers.dart';
+
+/// Settings that select the fake plugins and the offline mock translator.
+AppSettings fakeSettings() =>
+    AppSettings(detector: 'fake_det', ocr: 'fake_ocr', translator: 'mock', inpainter: 'fake_inpaint');
+
+PluginInfo fakeInfo(String id, PluginKind kind) =>
+    PluginInfo(id: id, displayName: id, kind: kind, privacy: Privacy.local);
+
+class _FakeDetector implements TextDetector {
+  _FakeDetector({this.delay = Duration.zero});
+
+  final Duration delay;
+
+  @override
+  PluginInfo get info => fakeInfo('fake_det', PluginKind.detector);
+
+  @override
+  Future<List<TextBlock>> detect(RgbImage image, PluginContext context) async {
+    await Future<void>.delayed(delay);
+    return [TextBlock(xyxy: const BBox(10, 10, 90, 40), bubbleXyxy: const BBox(5, 5, 95, 45))];
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
+class _FakeOcr implements OcrEngine {
+  @override
+  PluginInfo get info => fakeInfo('fake_ocr', PluginKind.ocr);
+
+  @override
+  Future<void> recognize(
+    RgbImage image,
+    List<TextBlock> blocks, {
+    required String sourceLanguage,
+    required PluginContext context,
+  }) async {
+    context.log.info('fake_ocr_ran');
+    for (final b in blocks) {
+      b.text = 'HELLO';
+    }
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
+class _FakeInpainter implements Inpainter {
+  @override
+  PluginInfo get info => fakeInfo('fake_inpaint', PluginKind.inpainter);
+
+  @override
+  Future<RgbImage> inpaint(RgbImage image, GrayImage mask, InpaintConfig config, PluginContext context) async =>
+      image.clone();
+
+  @override
+  Future<void> dispose() async {}
+}
+
+PluginRegistry fakeRegistryWith({Duration detectDelay = Duration.zero}) => PluginRegistry()
+  ..register(
+    PluginFactory<TextDetector>(
+      fakeInfo('fake_det', PluginKind.detector),
+      (c, e) async => _FakeDetector(delay: detectDelay),
+    ),
+  )
+  ..register(PluginFactory<OcrEngine>(fakeInfo('fake_ocr', PluginKind.ocr), (c, e) async => _FakeOcr()))
+  ..register(PluginFactory<Inpainter>(fakeInfo('fake_inpaint', PluginKind.inpainter), (c, e) async => _FakeInpainter()))
+  ..register(mockTranslatorFactory);
+
+PluginRegistry fakeRegistry() => fakeRegistryWith();
+PluginRegistry slowFakeRegistry() => fakeRegistryWith(detectDelay: const Duration(milliseconds: 300));

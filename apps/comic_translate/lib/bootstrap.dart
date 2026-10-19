@@ -17,6 +17,7 @@ class AppServices {
     required this.secrets,
     required this.models,
     required this.settingsStore,
+    required this.registry,
   });
 
   final AppPaths paths;
@@ -32,8 +33,8 @@ class AppServices {
   ModelManager models;
   final SettingsStore settingsStore;
 
-  /// All built-in plugins and their live instances.
-  final PluginRegistry registry = builtInRegistry();
+  /// All plugins and their live instances.
+  final PluginRegistry registry;
   final JsonlFileSink _appLogSink;
 
   /// Resolves the configuration of plugin [id]: stored values from
@@ -68,6 +69,7 @@ class AppServices {
     String? dataDirOverride,
     List<LogSink Function(Redactor redactor)> extraSinks = const [],
     SecretStore? secretStore,
+    PluginRegistry? registry,
   }) {
     final paths = AppPaths.resolve(override: dataDirOverride);
     final redactor = Redactor(homeDir: AppPaths.homeDir());
@@ -81,6 +83,7 @@ class AppServices {
       secrets: RedactingSecretStore(secretStore ?? SecureSecretStore(), redactor),
       models: ModelManager(paths.models, log: log),
       settingsStore: SettingsStore(paths.settingsFile, log: log),
+      registry: registry ?? builtInRegistry(),
     );
   }
 
