@@ -42,4 +42,7 @@ class SettingsStore {
       await tmp.rename(file.path);
     });
   }
+
+  /// Completes when the saves started so far are written (failed or not).
+  Future<void> flush() => _queue.catchError((Object _) {});
 }

@@ -62,6 +62,9 @@ void main() {
       c.dispose();
     }
     containers.clear();
+    // A project remembered just before the end is still being written to the
+    // settings; the folder goes only after that.
+    await services.settingsStore.flush();
     await services.dispose();
     try {
       dir.deleteSync(recursive: true);

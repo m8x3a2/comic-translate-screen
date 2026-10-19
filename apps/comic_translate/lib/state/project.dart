@@ -229,10 +229,12 @@ class ProjectNotifier extends Notifier<ProjectState> {
         'save_as': to != null,
       });
       state = ProjectState(path: path, dirty: _revision != revision, savedAt: DateTime.now());
+      // Remembered at once, with the state: the settings save is queued
+      // before anyone sees the project as saved.
+      remember(path);
       _recovery?.cancel();
       _recovery = null;
       await discardRecovery();
-      remember(path);
       if (state.dirty) _changed();
       return true;
     } on Object catch (e, st) {
