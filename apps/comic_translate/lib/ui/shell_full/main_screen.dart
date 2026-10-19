@@ -764,11 +764,26 @@ class _LanguagePickers extends ConsumerWidget {
     final l = context.l10n;
     final settings = ref.watch(settingsProvider);
     final running = ref.watch(batchProvider) is BatchRunning;
+    final ws = ref.watch(workspaceProvider);
+    final page = ws.currentPage;
+    final source = page?.sourceOf(settings) ?? settings.sourceLanguage;
+    final target = page?.targetOf(settings) ?? settings.targetLanguage;
+    final differ = ws.pages.any((p) => p.sourceOf(settings) != source || p.targetOf(settings) != target);
+    // The pickers show the current page's languages (original); new pages
+    // take them too.
+    void choose({String? source, String? target}) {
+      ref.read(settingsProvider.notifier).change((s) {
+        if (source != null) s.sourceLanguage = source;
+        if (target != null) s.targetLanguage = target;
+      });
+      ref.read(workspaceProvider.notifier).setLanguages(source: source, target: target);
+    }
+
     Widget picker(
       String tooltip,
       String value,
       Iterable<Language> options,
-      void Function(AppSettings s, String v) apply,
+      void Function(String v) apply,
     ) => Tooltip(
       message: tooltip,
       child: SizedBox(
@@ -785,26 +800,24 @@ class _LanguagePickers extends ConsumerWidget {
                 child: Text(lang.nativeLabel, overflow: TextOverflow.ellipsis),
               ),
           ],
-          onChanged: running ? null : (v) => ref.read(settingsProvider.notifier).change((s) => apply(s, v!)),
+          onChanged: running ? null : (v) => apply(v!),
         ),
       ),
     );
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        picker(
-          l.sourceLanguage,
-          settings.sourceLanguage,
-          Languages.all.where((x) => x.source),
-          (s, v) => s.sourceLanguage = v,
-        ),
+        picker(l.sourceLanguage, source, Languages.all.where((x) => x.source), (v) => choose(source: v)),
         const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Icon(Icons.arrow_forward, size: 18)),
-        picker(
-          l.targetLanguage,
-          settings.targetLanguage,
-          Languages.all.where((x) => x.target),
-          (s, v) => s.targetLanguage = v,
-        ),
+        picker(l.targetLanguage, target, Languages.all.where((x) => x.target), (v) => choose(target: v)),
+        if (ws.pages.length > 1)
+          IconButton(
+            tooltip: l.languagesForAll,
+            onPressed: differ && !running
+                ? () => ref.read(workspaceProvider.notifier).setLanguages(source: source, target: target, all: true)
+                : null,
+            icon: const Icon(Icons.playlist_add_check),
+          ),
       ],
     );
   }

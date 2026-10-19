@@ -2431,6 +2431,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete all boxes of the page'**
   String get boxesDeleteAll;
+
+  /// No description provided for @languagesForAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this page\'s languages for all pages'**
+  String get languagesForAll;
 }
 
 class _AppLocalizationsDelegate

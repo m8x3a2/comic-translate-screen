@@ -123,6 +123,7 @@ class StepsNotifier extends Notifier<StepState> {
         ui,
         cancel,
         parts: parts,
+        sourceLanguages: {start.sourceOf(ref.read(settingsProvider))},
         onProgress: (f) => state = state.copyWith(stage: 'download', download: f),
       );
       if (!ready) return;
@@ -148,7 +149,7 @@ class StepsNotifier extends Notifier<StepState> {
             final found = await worker.detect(
               page.name,
               path: page.path,
-              sourceLanguage: settings.sourceLanguage,
+              sourceLanguage: page.sourceOf(settings),
               cancel: cancel,
             );
             commit((p) => p.copyWith(blocks: found));
@@ -164,7 +165,7 @@ class StepsNotifier extends Notifier<StepState> {
               page.name,
               path: page.path,
               blocks: [for (final i in which) page.blocks[i].copy()],
-              sourceLanguage: settings.sourceLanguage,
+              sourceLanguage: page.sourceOf(settings),
               cancel: cancel,
             );
             commit((p) => p.copyWith(blocks: _replace(p.blocks, which, read, (old, b) => old.copy()..text = b.text)));
@@ -178,8 +179,8 @@ class StepsNotifier extends Notifier<StepState> {
               page.name,
               path: page.path,
               blocks: [for (final i in which) page.blocks[i].copy()],
-              sourceLanguage: settings.sourceLanguage,
-              targetLanguage: settings.targetLanguage,
+              sourceLanguage: page.sourceOf(settings),
+              targetLanguage: page.targetOf(settings),
               cancel: cancel,
             );
             commit(

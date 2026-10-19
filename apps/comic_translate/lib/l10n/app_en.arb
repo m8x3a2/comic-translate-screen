@@ -827,5 +827,6 @@
       }
     }
   },
-  "boxesDeleteAll": "Delete all boxes of the page"
+  "boxesDeleteAll": "Delete all boxes of the page",
+  "languagesForAll": "Use this page's languages for all pages"
 }

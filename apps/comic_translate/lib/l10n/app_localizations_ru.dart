@@ -1333,4 +1333,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get boxesDeleteAll => 'Удалить все рамки страницы';
+
+  @override
+  String get languagesForAll => 'Языки этой страницы — для всех страниц';
 }

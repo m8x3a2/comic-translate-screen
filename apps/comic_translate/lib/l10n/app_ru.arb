@@ -388,5 +388,6 @@
   "boxesAll": "Все рамки",
   "boxesGrow": "Все рамки больше на {px} px",
   "boxesShrink": "Все рамки меньше на {px} px",
-  "boxesDeleteAll": "Удалить все рамки страницы"
+  "boxesDeleteAll": "Удалить все рамки страницы",
+  "languagesForAll": "Языки этой страницы — для всех страниц"
 }

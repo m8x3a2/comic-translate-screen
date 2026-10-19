@@ -71,6 +71,8 @@ class PageEntry {
     this.blocks = const [],
     this.renderScale = 1.0,
     this.exported = false,
+    this.sourceLanguage,
+    this.targetLanguage,
   });
 
   final String id;
@@ -114,6 +116,14 @@ class PageEntry {
   /// The current translation was saved with Export.
   final bool exported;
 
+  /// Languages of this page (original `image_states[...]['source_lang']`);
+  /// null: the defaults of the settings.
+  final String? sourceLanguage;
+  final String? targetLanguage;
+
+  String sourceOf(AppSettings settings) => sourceLanguage ?? settings.sourceLanguage;
+  String targetOf(AppSettings settings) => targetLanguage ?? settings.targetLanguage;
+
   /// Something was translated or cleaned: the page can be exported.
   bool get isDone => cleanPath != null || blocks.any((b) => hasTranslatableContent(b.translation));
 
@@ -136,6 +146,8 @@ class PageEntry {
     List<TextBlock>? blocks,
     double? renderScale,
     bool? exported,
+    Object? sourceLanguage = _keep,
+    Object? targetLanguage = _keep,
   }) {
     T? pick<T>(Object? v, T? old) => identical(v, _keep) ? old : v as T?;
     final rendered = pick<String>(translatedPath, this.translatedPath);
@@ -154,6 +166,8 @@ class PageEntry {
       blocks: blocks ?? this.blocks,
       renderScale: renderScale ?? this.renderScale,
       exported: exported ?? (rendered != null && rendered != this.translatedPath ? false : this.exported),
+      sourceLanguage: pick(sourceLanguage, this.sourceLanguage),
+      targetLanguage: pick(targetLanguage, this.targetLanguage),
     );
   }
 }
@@ -357,9 +371,17 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
         onError: (input, e) => errors[input] = e,
       );
       final wasEmpty = state.pages.isEmpty;
+      final settings = ref.read(settingsProvider);
       final added = [
         for (final page in imported)
-          PageEntry(id: '${_nextId++}', name: page.name, path: page.path, source: page.source),
+          PageEntry(
+            id: '${_nextId++}',
+            name: page.name,
+            path: page.path,
+            source: page.source,
+            sourceLanguage: settings.sourceLanguage,
+            targetLanguage: settings.targetLanguage,
+          ),
       ];
       state = state.copyWith(pages: [...state.pages, ...added], current: wasEmpty ? 0 : null);
       ref.read(servicesProvider).appLog.info('pages_opened', {
@@ -522,6 +544,26 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   }
 
   /// Removes the mask and the strokes of the current page.
+  /// Sets the languages of the current page, or of every page with [all]
+  /// (original "Set for all"). Not an undo step, as in the original.
+  void setLanguages({String? source, String? target, bool all = false}) {
+    final current = state.currentPage;
+    if (current == null) return;
+    state = state.copyWith(
+      pages: [
+        for (final p in state.pages)
+          if (all || p.id == current.id)
+            p.copyWith(
+              sourceLanguage: source ?? p.sourceLanguage,
+              targetLanguage: target ?? p.targetLanguage,
+              translatedPath: target != null && target != p.targetLanguage ? null : p.translatedPath,
+            )
+          else
+            p,
+      ],
+    );
+  }
+
   /// Makes every box of the current page [by] pixels larger on each side
   /// (smaller when negative; original "Increase / Reduce the size of all
   /// blocks"). Boxes never get smaller than 4 px.

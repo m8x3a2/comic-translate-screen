@@ -24,15 +24,16 @@ final pageSizeProvider = FutureProvider.family<Size, String>((ref, path) async {
 final _enginesKeyProvider = Provider<String>((ref) {
   final settings = ref.watch(settingsProvider);
   final blocks = ref.watch(workspaceProvider.select((s) => s.currentPage?.blocks)) ?? const [];
+  final target = ref.watch(workspaceProvider.select((s) => s.currentPage?.targetOf(settings))) ?? settings.targetLanguage;
   final fonts = {for (final b in blocks) ?b.style?.fontFamily}.toList()..sort();
-  return jsonEncode([settings.render.toJson(), settings.targetLanguage, fonts]);
+  return jsonEncode([settings.render.toJson(), target, fonts]);
 });
 
 final textEnginesProvider = FutureProvider<TextEngines>((ref) async {
   ref.watch(_enginesKeyProvider);
   final settings = ref.read(settingsProvider);
-  final blocks = ref.read(workspaceProvider).currentPage?.blocks ?? const [];
-  return loadTextEngines(settings, settings.targetLanguage, blocks);
+  final page = ref.read(workspaceProvider).currentPage;
+  return loadTextEngines(settings, page?.targetOf(settings) ?? settings.targetLanguage, page?.blocks ?? const []);
 });
 
 final _layoutCacheProvider = Provider<LayoutCache>((ref) => LayoutCache());
@@ -52,7 +53,7 @@ final pageLayoutProvider = Provider<RenderLayout?>((ref) {
     page.blocks,
     settings,
     engines,
-    targetLanguage: settings.targetLanguage,
+    targetLanguage: page.targetOf(settings),
     cache: ref.read(_layoutCacheProvider),
   );
 });

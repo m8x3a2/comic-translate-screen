@@ -35,7 +35,7 @@ Future<List<PageEntry>> drawMissingPages(
     onProgress?.call(i, todo.length);
     final base = page.basePath;
     final image = await Isolate.run(() => ImageCodec.readFile(base));
-    final render = await renderPage(image, page.blocks, settings, targetLanguage: settings.targetLanguage);
+    final render = await renderPage(image, page.blocks, settings, targetLanguage: page.targetOf(settings));
     final file = p.join(workspace.pageDir(page.id).path, 'translated_${DateTime.now().microsecondsSinceEpoch}.png');
     final rendered = render.image;
     await Isolate.run(() => File(file).writeAsBytes(ImageCodec.encodePng(rendered), flush: true));

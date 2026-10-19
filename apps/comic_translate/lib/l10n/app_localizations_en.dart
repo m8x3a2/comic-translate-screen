@@ -1331,4 +1331,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get boxesDeleteAll => 'Delete all boxes of the page';
+
+  @override
+  String get languagesForAll => 'Use this page\'s languages for all pages';
 }

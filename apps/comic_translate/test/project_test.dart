@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:comic_translate/bootstrap.dart';
 import 'package:comic_translate/state/app_state.dart';
+import 'package:comic_translate/state/batch.dart';
 import 'package:comic_translate/state/project.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:ct_core/ct_core.dart';
@@ -12,6 +13,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 import 'support/fake_plugins.dart';
+
+class _YesUi implements BatchUi {
+  @override
+  Future<void> explainMissingKey(PluginInfo translator, String host) async {}
+
+  @override
+  Future<bool> confirmDownload(List<ModelSpec> models) async => true;
+
+  @override
+  Future<NetworkChoice> confirmNetwork(PluginInfo translator, PluginEndpoint endpoint, {required bool sendsImage}) async =>
+      NetworkChoice.once;
+
+  @override
+  void showError(Object error) => fail('$error');
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -167,6 +183,33 @@ void main() {
     // Saving it as a project removes the copy.
     expect(await next.read(projectProvider.notifier).save(to: p.join(dir.path, 'saved.ctsproj')), isTrue);
     expect(next.read(projectProvider.notifier).findRecovery(), isNull);
+  });
+
+  test('each page keeps its languages: translate all uses them, the project keeps them', () async {
+    final c = start();
+    await openPages(c);
+    final ws = c.read(workspaceProvider.notifier);
+    expect(c.read(workspaceProvider).pages.map((x) => x.targetLanguage), ['Russian', 'Russian']);
+    ws.select(1);
+    ws.setLanguages(target: 'German');
+    expect(c.read(workspaceProvider).pages.map((x) => x.targetLanguage), ['Russian', 'German']);
+
+    await c.read(batchProvider.notifier).run(_YesUi());
+    final pages = c.read(workspaceProvider).pages;
+    expect(pages.first.blocks.single.translation, startsWith('[ru]'));
+    expect(pages.last.blocks.single.translation, startsWith('[de]'));
+
+    final path = p.join(dir.path, 'langs.ctsproj');
+    await c.read(projectProvider.notifier).save(to: path);
+    await c.read(projectProvider.notifier).open(path);
+    expect(c.read(workspaceProvider).pages.map((x) => x.targetLanguage), ['Russian', 'German']);
+
+    // "For all pages".
+    ws.setLanguages(source: 'Japanese', target: 'English', all: true);
+    expect(c.read(workspaceProvider).pages.map((x) => '${x.sourceLanguage}>${x.targetLanguage}'), [
+      'Japanese>English',
+      'Japanese>English',
+    ]);
   });
 
   test('skip reasons survive a project file', () {

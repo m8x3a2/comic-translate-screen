@@ -203,6 +203,7 @@ class BatchNotifier extends Notifier<BatchState> {
         ref,
         ui,
         cancel,
+        sourceLanguages: {for (final page in todo) page.sourceOf(ref.read(settingsProvider))},
         onProgress: (f) => _update((s) => s.copyWith(stage: 'download', download: f)),
       );
       if (!ready) {
@@ -231,8 +232,8 @@ class BatchNotifier extends Notifier<BatchState> {
           final cleaned = await worker.prepare(
             page.name,
             path: page.path,
-            sourceLanguage: settings.sourceLanguage,
-            targetLanguage: settings.targetLanguage,
+            sourceLanguage: page.sourceOf(settings),
+            targetLanguage: page.targetOf(settings),
             cancel: cancel,
             onStage: stage,
           );
@@ -243,7 +244,7 @@ class BatchNotifier extends Notifier<BatchState> {
             cleaned.clean,
             cleaned.blocks,
             settings,
-            targetLanguage: settings.targetLanguage,
+            targetLanguage: page.targetOf(settings),
           );
           final renderMs = renderWatch.elapsedMilliseconds;
           final dir = workspace.pageDir(page.id);
@@ -256,8 +257,8 @@ class BatchNotifier extends Notifier<BatchState> {
               ImageOutput(clean, cleaned.clean),
               JsonOutput(p.join(dir.path, 'page.json'), {
                 'image': page.path,
-                'source_language': settings.sourceLanguage,
-                'target_language': settings.targetLanguage,
+                'source_language': page.sourceOf(settings),
+                'target_language': page.targetOf(settings),
                 'render_scale': render.scale,
                 'blocks': [for (final b in cleaned.blocks) b.toJson()],
                 'timings_ms': {...cleaned.timingsMs, '06_render': renderMs},
@@ -418,11 +419,18 @@ Future<bool> ensureModels(
   BatchUi ui,
   CancelToken cancel, {
   Set<PipelinePart> parts = const {...PipelinePart.values},
+  Set<String>? sourceLanguages,
   void Function(double fraction)? onProgress,
 }) async {
   final services = ref.read(servicesProvider);
   final settings = ref.read(settingsProvider);
-  final missing = await missingModels(services.registry, services.models, settings, parts: parts);
+  final missing = await missingModels(
+    services.registry,
+    services.models,
+    settings,
+    parts: parts,
+    sourceLanguages: sourceLanguages,
+  );
   if (missing.isEmpty) return true;
   if (!await ui.confirmDownload(missing)) return false;
   final total = missing.fold<int>(0, (a, m) => a + m.files.fold(0, (b, f) => b + f.size));
@@ -439,13 +447,15 @@ Future<bool> ensureModels(
   return true;
 }
 
-/// Models that [parts] of the plugins chosen in [settings] need and that are
+/// Models that [parts] of the plugins chosen in [settings] need for
+/// [sourceLanguages] (default: the settings' source language) and that are
 /// not downloaded.
 Future<List<ModelSpec>> missingModels(
   PluginRegistry registry,
   ModelManager models,
   AppSettings settings, {
   Set<PipelinePart> parts = const {...PipelinePart.values},
+  Set<String>? sourceLanguages,
 }) async {
   final chosen = [
     if (parts.contains(PipelinePart.detector)) settings.detector,
@@ -453,9 +463,11 @@ Future<List<ModelSpec>> missingModels(
     if (parts.contains(PipelinePart.translator)) settings.translator,
     if (parts.contains(PipelinePart.inpainter)) settings.inpainter,
   ];
+  final languages = sourceLanguages ?? {settings.sourceLanguage};
   final ids = <String>{
     for (final id in chosen)
-      if (registry.contains(id)) ...registry.info(id).requiredModels(settings.sourceLanguage),
+      if (registry.contains(id))
+        for (final language in languages) ...registry.info(id).requiredModels(language),
   };
   return [
     for (final id in ids)

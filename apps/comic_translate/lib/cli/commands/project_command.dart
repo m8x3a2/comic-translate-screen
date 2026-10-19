@@ -71,7 +71,7 @@ class ExportCommand extends CtsCommand {
           help: 'Pages with the translation, cleaned pages, recognized text, translations (JSON).')
       ..addOption('image-format', allowed: ExportSettings.formats, defaultsTo: 'source')
       ..addFlag('by-chapter', negatable: false, help: 'One file per chapter (source archive or PDF); --output is then a folder.')
-      ..addOption('to', help: 'Language of the translation, for drawing it (default from settings).');
+      ..addOption('to', help: 'Language of the translation, for drawing it (default: that of each page, else settings).');
   }
 
   @override
@@ -104,7 +104,9 @@ class ExportCommand extends CtsCommand {
       byChapter: args.flag('by-chapter'),
     );
     final settings = await ctx.services.settingsStore.load();
-    final target = args.option('to') ?? settings.targetLanguage;
+    // Each page has its language (--to overrides it).
+    String targetOf(ProjectPage page) =>
+        args.option('to') ?? (page.state['target_language'] as String?) ?? settings.targetLanguage;
     final work = Directory.systemTemp.createTempSync('cts_export_');
     try {
       final ProjectData data;
@@ -120,7 +122,7 @@ class ExportCommand extends CtsCommand {
         String? translated;
         if (options.translated) {
           final base = await ImageCodec.readFile(page.cleanImage ?? page.image);
-          final render = await renderPage(base, page.blocks, settings, targetLanguage: target);
+          final render = await renderPage(base, page.blocks, settings, targetLanguage: targetOf(page));
           translated = p.join(work.path, 'drawn', '$i.png');
           File(translated)
             ..parent.createSync(recursive: true)

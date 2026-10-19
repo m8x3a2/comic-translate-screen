@@ -66,6 +66,8 @@ ProjectPage projectPageOf(PageEntry page) => ProjectPage(
     if (page.reason != null) 'reason': skipReasonToJson(page.reason!),
     if (page.renderScale != 1) 'render_scale': page.renderScale,
     if (page.exported) 'exported': true,
+    'source_language': ?page.sourceLanguage,
+    'target_language': ?page.targetLanguage,
   },
 );
 
@@ -86,6 +88,8 @@ PageEntry pageEntryOf(ProjectPage page) => PageEntry(
   blocks: page.blocks,
   renderScale: (page.state['render_scale'] as num?)?.toDouble() ?? 1,
   exported: page.state['exported'] == true,
+  sourceLanguage: page.state['source_language'] as String?,
+  targetLanguage: page.state['target_language'] as String?,
 );
 
 ProjectData projectDataOf(WorkspaceState ws, {Map<String, Object?> extra = const {}}) => ProjectData(
