@@ -66,6 +66,21 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   200 dpi instead of extracting the embedded image; open pages are not
   restored after a restart and there is no recent-projects list until
   projects arrive (M9).
+- Manual mode (M8): there is no Manual/Automatic switch; the single steps
+  are always above the page and act on the current page (the original can
+  also run them on several selected pages). A step does the steps it needs
+  first (translating a fresh page detects and reads it). There is no
+  "Render" step: the translation is always drawn live, exactly as export
+  will draw it. Text formatting applies to a whole bubble (the original also
+  formats selected characters inside a text item); text is typed in the
+  side panel, not on the page. Line breaks typed by the user are kept (the
+  original wraps them away). "Preserve case" of find and replace is not
+  ported. The generated mask is a raster, and brush and eraser strokes are
+  kept as strokes over it (the original turns the mask into vector paths).
+  Cleaning starts from the current cleaned page, as in the original.
+- `renderPage` does not change the blocks (the original leaves the render
+  areas and case-adjusted translations in them), so a page can be edited
+  and drawn again; golden pages now store the detected boxes.
 - Rendering: fitted text is centred vertically in its area and placed
   horizontally by the alignment (setting `render.place_in_block`, on by
   default). The original puts it at the area's top-left corner, so short
@@ -115,6 +130,22 @@ whole run, forwards its log events to the main log and, in test mode, keeps
 the run folder. Drawing the translation needs dart:ui and happens on the main
 isolate; the worker then encodes and writes the files. Pages are processed one
 at a time; "Stop" takes effect at the next step boundary.
+
+One worker is shared by "Translate all" and the editor's single steps
+(`lib/state/worker_pool.dart`): plugins load when a step first needs them and
+stay loaded, so a step after another costs no loading time; an idle worker is
+released after three minutes (memory is tight on small laptops), and a change
+of plugins or their settings starts a new one.
+
+Pages are immutable values (`lib/state/workspace.dart`): every change makes
+new `PageEntry` and `TextBlock` objects, and the undo history of a page is the
+list of its previous values (typing and dragging merge into one step; each run
+of a step is one step). A bubble's own look is a `BlockStyle` on its block
+(font, size, colours, outline, alignment, spacing, vertical text, rotation,
+text box), honoured by the shared layout, so the viewer, export and `cts
+render` draw the same thing. The viewer lays the page out with a per-block
+cache and draws the text live; export draws the pages changed since they were
+last drawn.
 
 Before a run the GUI asks for permission when the translator sends text off
 the computer (once, or always for that server) and offers to download the

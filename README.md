@@ -25,7 +25,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 | M5 | Text removal: mask, fast fill of uniform bubbles, AOT and LaMa inpainting (identical output to the original), `cts mask`, `cts inpaint` | done |
 | M6 | Text rendering; the whole pipeline in one command (`cts process`); golden checks and benchmarks | done |
 | M7 | The window: open images, folders, comic archives and PDF; page list and viewer; "Translate all" in the background with progress, stop and report; settings; models folder and offline model import; enlarging small pages so the translation stays sharp | done |
-| M8–M12 | Manual mode and editing, projects and export, webtoon mode, PSD, polish | planned |
+| M8 | Manual mode: single steps on a page (find text, recognize, translate, mask, clean); boxes, brush and eraser; moving, resizing and turning the translation; per-bubble font, size, colours and outline; undo/redo; find and replace; keyboard shortcuts | done |
+| M9–M12 | Projects and export, webtoon mode, PSD, polish | planned |
 
 ## Principles
 
