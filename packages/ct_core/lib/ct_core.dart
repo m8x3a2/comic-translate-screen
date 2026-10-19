@@ -39,6 +39,7 @@ export 'src/ocr/reading_scale.dart';
 export 'src/ocr/script_fix.dart';
 export 'src/models/model_manager.dart';
 export 'src/plugins/engines.dart';
+export 'src/project/project_file.dart';
 export 'src/plugins/plugin.dart';
 export 'src/plugins/registry.dart';
 export 'src/plugins/settings_schema.dart';
