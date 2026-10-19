@@ -96,7 +96,8 @@ class BlockStyleEditor extends ConsumerWidget {
         ),
         row(
           l.fontSize,
-          Row(
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FilterChip(
                 label: Text(l.sizeAuto),
@@ -104,7 +105,6 @@ class BlockStyleEditor extends ConsumerWidget {
                 visualDensity: VisualDensity.compact,
                 onSelected: (auto) => set((s) => s.copyWith(fontSizePt: auto ? null : (fitted ?? r.maxFontSize))),
               ),
-              const SizedBox(width: 4),
               IconButton(
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.remove, size: 18),
@@ -164,7 +164,7 @@ class BlockStyleEditor extends ConsumerWidget {
           ),
         row(
           l.alignment,
-          Row(
+          Wrap(
             children: [
               SegmentedButton<TextAlignment>(
                 segments: const [
@@ -182,7 +182,7 @@ class BlockStyleEditor extends ConsumerWidget {
         ),
         row(
           l.textStyle,
-          Row(
+          Wrap(
             children: [
               _Toggle(Icons.format_bold, l.bold, r.bold, (v) => set((s) => s.copyWith(bold: v))),
               _Toggle(Icons.format_italic, l.italic, r.italic, (v) => set((s) => s.copyWith(italic: v))),

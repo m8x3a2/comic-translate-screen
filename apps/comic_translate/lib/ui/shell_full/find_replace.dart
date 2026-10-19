@@ -244,11 +244,12 @@ class _FindReplacePanelState extends ConsumerState<FindReplacePanel> {
             const SizedBox(height: 8),
             TextField(controller: _replace, decoration: deco(l.replaceHint)),
             const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              alignment: WrapAlignment.end,
+              spacing: 4,
+              runSpacing: 4,
               children: [
                 TextButton(onPressed: matches.isEmpty ? null : _replaceOne, child: Text(l.replace)),
-                const SizedBox(width: 4),
                 FilledButton.tonal(onPressed: matches.isEmpty ? null : _replaceEverywhere, child: Text(l.replaceAll)),
               ],
             ),

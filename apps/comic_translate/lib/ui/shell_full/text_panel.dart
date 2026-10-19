@@ -61,8 +61,9 @@ class _TextPanelState extends ConsumerState<TextPanel> {
       if (i == null) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final c = _keys[i]?.currentContext;
-        if (c != null && c.mounted)
+        if (c != null && c.mounted) {
           Scrollable.ensureVisible(c, duration: const Duration(milliseconds: 200), alignment: 0.1);
+        }
       });
     });
     return Column(

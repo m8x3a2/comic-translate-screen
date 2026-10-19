@@ -79,6 +79,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   _Drag? _drag;
   Offset? _hover;
 
+  /// The last click on a text, to notice a double click.
+  (int, DateTime)? _lastTextClick;
+
   @override
   void dispose() {
     _mask?.dispose();
@@ -276,7 +279,6 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     _drag = null;
     if (d == null) return;
     final ws = ref.read(workspaceProvider.notifier);
-    final page = widget.page;
     switch (d.mode) {
       case _Mode.pan:
         break;
@@ -301,9 +303,15 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         final box = d.draft == null ? null : _boxOf(d.draft!);
         if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
           ws.styleBlock(d.index!, (s) => s.copyWith(textBox: box));
-        } else if (!d.moved && e.kind == PointerDeviceKind.mouse && page.blocks.isNotEmpty) {
-          // A click on a text: its translation can be typed in the panel.
-          ref.read(focusTranslationProvider.notifier).request();
+        } else if (!d.moved) {
+          // A double click on a text: type its translation in the panel.
+          final now = DateTime.now(), last = _lastTextClick;
+          if (last != null && last.$1 == d.index && now.difference(last.$2) < kDoubleTapTimeout * 1.5) {
+            ref.read(focusTranslationProvider.notifier).request();
+            _lastTextClick = null;
+          } else {
+            _lastTextClick = (d.index!, now);
+          }
         }
       case _Mode.rotateText:
         if (d.moved) ws.styleBlock(d.index!, (s) => s.copyWith(angle: d.draftAngle == 0 ? null : d.draftAngle));

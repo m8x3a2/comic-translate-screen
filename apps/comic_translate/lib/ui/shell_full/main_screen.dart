@@ -71,6 +71,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onHardwareKey);
     _lifecycle.dispose();
     super.dispose();
   }
@@ -78,6 +79,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   void initState() {
     super.initState();
+    HardwareKeyboard.instance.addHandler(_onHardwareKey);
     _lifecycle;
     final section = ref.read(settingsOnStartProvider);
     if (section != null) {
@@ -239,7 +241,6 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final running = ref.watch(batchProvider) is BatchRunning;
     return Focus(
       autofocus: true,
-      onKeyEvent: (_, e) => _onKey(e) ? KeyEventResult.handled : KeyEventResult.ignored,
       child: DropTarget(
         onDragEntered: (_) => setState(() => _dragging = true),
         onDragExited: (_) => setState(() => _dragging = false),
@@ -299,6 +300,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       ),
     );
   }
+
+  /// Shortcuts work wherever the focus is, but only on this screen (not in
+  /// the settings or under a dialog).
+  bool _onHardwareKey(KeyEvent e) => mounted && (ModalRoute.of(context)?.isCurrent ?? true) && _onKey(e);
 
   /// Keyboard shortcuts of the window (original `app/shortcuts.py` plus the
   /// tools). Letters and editing keys do nothing while a text field has the
