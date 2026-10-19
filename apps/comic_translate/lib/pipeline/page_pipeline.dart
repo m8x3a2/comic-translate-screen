@@ -32,7 +32,10 @@ class RenderedPage {
 /// auto mode enlarges the page further.
 const _overflowShare = 0.2;
 
-bool _overflows(TextItem i) => i.width > i.block.xyxy.width + 0.5 || i.height > i.block.xyxy.height + 0.5;
+/// A bubble styled by hand that does not fit is the user's choice: it does
+/// not enlarge the page, which would resize every other bubble.
+bool _overflows(TextItem i) =>
+    i.block.style == null && (i.width > i.block.xyxy.width + 0.5 || i.height > i.block.xyxy.height + 0.5);
 
 /// Where the translations go on a page and how much it is enlarged first.
 class RenderLayout {
