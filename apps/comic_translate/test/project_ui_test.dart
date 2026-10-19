@@ -137,4 +137,27 @@ void main() {
     expect(choice!.settings.container, ExportContainer.cbz);
     expect(choice!.currentOnly, isFalse);
   });
+
+  for (final width in [1024.0, 1280.0]) {
+    testWidgets('different page languages: "for all pages" fits the toolbar at $width px', (tester) async {
+      final container = await start(tester, fakeSettings());
+      tester.view.physicalSize = Size(width, 720);
+      await tester.runAsync(() async {
+        final images = [for (final n in ['a.png', 'b.png']) p.join(dir.path, n)];
+        for (final i in images) {
+          await ImageCodec.writeFile(i, RgbImage.filled(20, 20, 255, 255, 255));
+        }
+        await container.read(workspaceProvider.notifier).addInputs(images);
+      });
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Языки этой страницы — для всех страниц'), findsNothing, reason: 'same languages');
+      container.read(workspaceProvider.notifier).setLanguages(target: 'German');
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byTooltip('Языки этой страницы — для всех страниц'));
+      await tester.pumpAndSettle();
+      expect(container.read(workspaceProvider).pages.map((x) => x.targetLanguage), ['German', 'German']);
+      expect(find.byTooltip('Языки этой страницы — для всех страниц'), findsNothing);
+    });
+  }
 }

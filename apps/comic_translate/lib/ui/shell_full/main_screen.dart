@@ -787,7 +787,7 @@ class _LanguagePickers extends ConsumerWidget {
     ) => Tooltip(
       message: tooltip,
       child: SizedBox(
-        width: 150,
+        width: 136,
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
@@ -810,13 +810,15 @@ class _LanguagePickers extends ConsumerWidget {
         picker(l.sourceLanguage, source, Languages.all.where((x) => x.source), (v) => choose(source: v)),
         const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Icon(Icons.arrow_forward, size: 18)),
         picker(l.targetLanguage, target, Languages.all.where((x) => x.target), (v) => choose(target: v)),
-        if (ws.pages.length > 1)
+        // Only while the pages have different languages.
+        if (differ)
           IconButton(
             tooltip: l.languagesForAll,
-            onPressed: differ && !running
-                ? () => ref.read(workspaceProvider.notifier).setLanguages(source: source, target: target, all: true)
-                : null,
-            icon: const Icon(Icons.playlist_add_check),
+            visualDensity: VisualDensity.compact,
+            onPressed: running
+                ? null
+                : () => ref.read(workspaceProvider.notifier).setLanguages(source: source, target: target, all: true),
+            icon: const Icon(Icons.playlist_add_check, size: 20),
           ),
       ],
     );
