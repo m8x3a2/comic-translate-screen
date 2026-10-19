@@ -1317,4 +1317,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get fontRemove => 'Убрать шрифт';
+
+  @override
+  String get boxesAll => 'Все рамки';
+
+  @override
+  String boxesGrow(String px) {
+    return 'Все рамки больше на $px px';
+  }
+
+  @override
+  String boxesShrink(String px) {
+    return 'Все рамки меньше на $px px';
+  }
+
+  @override
+  String get boxesDeleteAll => 'Удалить все рамки страницы';
 }

@@ -809,5 +809,23 @@
       }
     }
   },
-  "fontRemove": "Remove the font"
+  "fontRemove": "Remove the font",
+  "boxesAll": "All boxes",
+  "boxesGrow": "Make all boxes larger by {px} px",
+  "@boxesGrow": {
+    "placeholders": {
+      "px": {
+        "type": "String"
+      }
+    }
+  },
+  "boxesShrink": "Make all boxes smaller by {px} px",
+  "@boxesShrink": {
+    "placeholders": {
+      "px": {
+        "type": "String"
+      }
+    }
+  },
+  "boxesDeleteAll": "Delete all boxes of the page"
 }

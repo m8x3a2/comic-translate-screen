@@ -2407,6 +2407,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove the font'**
   String get fontRemove;
+
+  /// No description provided for @boxesAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All boxes'**
+  String get boxesAll;
+
+  /// No description provided for @boxesGrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Make all boxes larger by {px} px'**
+  String boxesGrow(String px);
+
+  /// No description provided for @boxesShrink.
+  ///
+  /// In en, this message translates to:
+  /// **'Make all boxes smaller by {px} px'**
+  String boxesShrink(String px);
+
+  /// No description provided for @boxesDeleteAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all boxes of the page'**
+  String get boxesDeleteAll;
 }
 
 class _AppLocalizationsDelegate

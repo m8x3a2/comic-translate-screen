@@ -242,6 +242,10 @@ class _PageViewerState extends ConsumerState<PageViewer> {
 }
 
 /// View, tools, brush size, undo and redo.
+/// Pixels the "all boxes" menu adds or takes on each side (the original's
+/// default).
+const allBoxesStep = 3;
+
 class _ToolBar extends ConsumerWidget {
   const _ToolBar();
 
@@ -308,6 +312,33 @@ class _ToolBar extends ConsumerWidget {
                     icon: const Icon(Icons.layers_clear_outlined),
                   ),
                 ],
+                if (editor.tool == EditorTool.boxes)
+                  MenuAnchor(
+                    menuChildren: [
+                      MenuItemButton(
+                        leadingIcon: const Icon(Icons.zoom_out_map),
+                        onPressed: () => ref.read(workspaceProvider.notifier).growAllBlocks(allBoxesStep),
+                        child: Text(l.boxesGrow('$allBoxesStep')),
+                      ),
+                      MenuItemButton(
+                        leadingIcon: const Icon(Icons.zoom_in_map),
+                        onPressed: () => ref.read(workspaceProvider.notifier).growAllBlocks(-allBoxesStep),
+                        child: Text(l.boxesShrink('$allBoxesStep')),
+                      ),
+                      MenuItemButton(
+                        leadingIcon: const Icon(Icons.delete_sweep_outlined),
+                        onPressed: () => ref.read(workspaceProvider.notifier).deleteAllBlocks(),
+                        child: Text(l.boxesDeleteAll),
+                      ),
+                    ],
+                    builder: (context, controller, _) => TextButton.icon(
+                      onPressed: page == null || page.blocks.isEmpty
+                          ? null
+                          : () => controller.isOpen ? controller.close() : controller.open(),
+                      icon: const Icon(Icons.select_all),
+                      label: Text(l.boxesAll),
+                    ),
+                  ),
                 if (editor.tool == EditorTool.pan)
                   FilterChip(
                     label: Text(l.showBoxes),

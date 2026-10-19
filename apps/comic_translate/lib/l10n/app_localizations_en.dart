@@ -1315,4 +1315,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fontRemove => 'Remove the font';
+
+  @override
+  String get boxesAll => 'All boxes';
+
+  @override
+  String boxesGrow(String px) {
+    return 'Make all boxes larger by $px px';
+  }
+
+  @override
+  String boxesShrink(String px) {
+    return 'Make all boxes smaller by $px px';
+  }
+
+  @override
+  String get boxesDeleteAll => 'Delete all boxes of the page';
 }

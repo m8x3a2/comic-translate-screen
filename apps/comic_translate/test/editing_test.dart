@@ -121,6 +121,25 @@ void main() {
     expect(page().isDone, isTrue, reason: 'a translated block is something to export');
   });
 
+  test('all boxes grow, shrink and go at once; one undo step each', () {
+    ws().addBlock(const BBox(10, 10, 40, 30));
+    ws().addBlock(const BBox(50, 20, 52, 22));
+    ws().growAllBlocks(3);
+    expect(page().blocks.map((b) => b.xyxy.toJson()), [
+      [7, 7, 43, 33],
+      [47, 17, 55, 25],
+    ]);
+    ws().growAllBlocks(-6);
+    expect(page().blocks.first.xyxy.toJson(), [13, 13, 37, 27]);
+    expect(page().blocks.last.xyxy.toJson(), [49, 19, 53, 23], reason: 'never smaller than 4 px');
+    ws().deleteAllBlocks();
+    expect(page().blocks, isEmpty);
+    ws().undo();
+    expect(page().blocks, hasLength(2));
+    ws().undo();
+    expect(page().blocks.first.xyxy.toJson(), [7, 7, 43, 33]);
+  });
+
   test('step plans do what is missing first', () {
     final fresh = page();
     expect(StepsNotifier.plan(ManualStep.translate, fresh), [

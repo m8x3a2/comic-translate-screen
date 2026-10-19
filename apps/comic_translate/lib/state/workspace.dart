@@ -522,6 +522,38 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   }
 
   /// Removes the mask and the strokes of the current page.
+  /// Makes every box of the current page [by] pixels larger on each side
+  /// (smaller when negative; original "Increase / Reduce the size of all
+  /// blocks"). Boxes never get smaller than 4 px.
+  void growAllBlocks(int by) {
+    final page = state.currentPage;
+    if (page == null || page.blocks.isEmpty || by == 0) return;
+    edit(
+      page.id,
+      (p) => p.copyWith(
+        blocks: [
+          for (final b in p.blocks)
+            b.copy()
+              ..xyxy = () {
+                final r = b.xyxy;
+                var (x1, y1, x2, y2) = (r.x1 - by, r.y1 - by, r.x2 + by, r.y2 + by);
+                if (x2 - x1 < 4) (x1, x2) = ((r.x1 + r.x2) ~/ 2 - 2, (r.x1 + r.x2) ~/ 2 + 2);
+                if (y2 - y1 < 4) (y1, y2) = ((r.y1 + r.y2) ~/ 2 - 2, (r.y1 + r.y2) ~/ 2 + 2);
+                return BBox(x1, y1, x2, y2);
+              }(),
+        ],
+      ),
+    );
+  }
+
+  /// Removes every box of the current page (original "Remove all the boxes").
+  void deleteAllBlocks() {
+    final page = state.currentPage;
+    if (page == null || page.blocks.isEmpty) return;
+    edit(page.id, (p) => p.copyWith(blocks: const []));
+    state = state.copyWith(clearBlock: true);
+  }
+
   void clearMask() {
     final page = state.currentPage;
     if (page != null && page.hasMask) edit(page.id, (p) => p.copyWith(maskPath: null, strokes: const []));
