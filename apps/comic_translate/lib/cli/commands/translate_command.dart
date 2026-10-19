@@ -104,7 +104,7 @@ class TranslateCommand extends CtsCommand {
             pageImage: pageImage,
             extraContext: settings.extraContext,
           ),
-          PluginContext(log: pageLog, recorder: recorder, page: page),
+          PluginContext(log: pageLog, recorder: recorder, page: page, onUsage: services.usage.record),
         );
         setUpperCase(ordered, settings.upperCase);
         final ms = sw.elapsedMilliseconds;

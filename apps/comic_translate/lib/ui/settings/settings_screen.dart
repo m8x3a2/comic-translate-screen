@@ -15,6 +15,7 @@ import '../common/plugin_form.dart';
 import '../common/plugin_strings.dart';
 import '../shell_full/main_screen.dart' show showInExplorer;
 import 'models_section.dart';
+import 'usage_section.dart';
 
 enum SettingsSection { general, translator, tools, text, upscale, export, models, about }
 
@@ -334,6 +335,7 @@ class _TranslatorSection extends ConsumerWidget {
     final s = ref.watch(settingsProvider);
     final services = ref.watch(servicesProvider);
     final info = services.registry.contains(s.translator) ? services.registry.info(s.translator) : null;
+    final keyStatus = info?.keyStatus?.call(PluginConfig.resolve(info.settings, s.pluginValues(info.id)));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -346,6 +348,8 @@ class _TranslatorSection extends ConsumerWidget {
               onChanged: (v) => _change(ref, (s) => s.translator = v),
             ),
             if (info != null) PluginSettingsForm(info, key: ValueKey(info.id)),
+            if (info != null && keyStatus != null)
+              KeyStatusPanel(info, host: keyStatus.host, key: ValueKey('key_status.${info.id}.${keyStatus.host}')),
           ],
         ),
         SettingsGroup(
@@ -367,6 +371,7 @@ class _TranslatorSection extends ConsumerWidget {
             ),
           ],
         ),
+        SettingsGroup(title: l.usageTitle, children: const [UsagePanel()]),
         SettingsGroup(
           title: l.approvals,
           children: [

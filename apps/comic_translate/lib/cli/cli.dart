@@ -18,6 +18,7 @@ import 'commands/quality_command.dart';
 import 'commands/selftest_command.dart';
 import 'commands/settings_command.dart';
 import 'commands/translate_command.dart';
+import 'commands/usage_command.dart';
 import 'commands/version_command.dart';
 
 /// Holds the context created after global options are parsed; commands read
@@ -64,6 +65,7 @@ CommandRunner<int> buildRunner(CliContextHolder holder) {
     ..addCommand(BenchCommand(holder))
     ..addCommand(SettingsCommand(holder))
     ..addCommand(SecretsCommand(holder))
+    ..addCommand(UsageCommand(holder))
     ..addCommand(ReportCommand(holder));
   return runner;
 }

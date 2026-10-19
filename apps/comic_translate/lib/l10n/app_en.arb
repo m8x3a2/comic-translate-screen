@@ -347,10 +347,10 @@
       }
     }
   },
-  "savedSecurely": "Stored in Windows secure storage, never in files or logs.",
+  "savedSecurely": "Stored in Windows secure storage, never in files or logs. Each translator (and later each online text recognizer) keeps its own key. A saved key is never shown in full, only its last 4 characters.",
   "secretSet": "Saved",
   "secretNotSet": "Not set",
-  "secretRemove": "Remove",
+  "secretRemove": "Delete key",
   "approvals": "Allowed servers",
   "approvalsNone": "None yet; the app asks before sending anything.",
   "revoke": "Revoke",
@@ -563,5 +563,143 @@
   "mouseMiddleHelp": "Move the page with any tool",
   "mouseDouble": "Double click on a translation",
   "mouseDoubleHelp": "Edit its text in the right panel (Translation tool)",
-  "keysNote": "Letter keys do nothing while you type in a text field. They work with any keyboard layout."
+  "keysNote": "Letter keys do nothing while you type in a text field. They work with any keyboard layout.",
+  "keysGroupWindow": "Window",
+  "keyHelp": "This list of keys",
+  "keyFullScreen": "Full screen on and off",
+  "fullScreenOn": "Full screen. Press F11 to leave it.",
+  "secretSavedTail": "Saved: …{tail}",
+  "@secretSavedTail": {
+    "placeholders": {
+      "tail": {
+        "type": "String"
+      }
+    }
+  },
+  "secretShow": "Show what you typed",
+  "secretHide": "Hide",
+  "secretReplace": "Replace",
+  "secretReplaceHint": "Paste a new key to replace the saved one",
+  "secretRemoveTitle": "Delete the key?",
+  "secretRemoveBody": "The saved key is removed from Windows secure storage. To translate with this service again, paste the key anew. The key itself stays valid on the service's site: revoke it there if you no longer need it.",
+  "keyStatusCheck": "Check balance",
+  "keyStatusHelp": "Asks {host} what is left of the key's limit. Only the key is sent, and only when you press the button.",
+  "@keyStatusHelp": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "keyStatusNeedsKey": "Save the API key first",
+  "keyStatusChecking": "Checking…",
+  "keyStatusLimit": "Limit {limit}, spent {used}, left {left}",
+  "@keyStatusLimit": {
+    "placeholders": {
+      "limit": {
+        "type": "String"
+      },
+      "used": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "keyStatusNoLimit": "The key has no limit. Spent: {used}",
+  "@keyStatusNoLimit": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      }
+    }
+  },
+  "keyStatusToday": "Spent today (UTC): {today}, this month: {month}",
+  "@keyStatusToday": {
+    "placeholders": {
+      "today": {
+        "type": "String"
+      },
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "keyStatusResetDaily": "The limit starts again every day.",
+  "keyStatusResetWeekly": "The limit starts again every week.",
+  "keyStatusResetMonthly": "The limit starts again every month.",
+  "keyStatusFree": "Free models today: {used} of {limit} requests, {left} left",
+  "@keyStatusFree": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "keyStatusFreeNote": "Free models also allow about 20 requests per minute; the server does not report that limit in advance.",
+  "keyStatusFailed": "Could not check: {reason}",
+  "@keyStatusFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "keyStatusAt": "Checked at {time}",
+  "@keyStatusAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "usageTitle": "Usage on this computer",
+  "usageHelp": "The program counts the requests from the servers' replies. The counter is kept only on this computer and is never sent anywhere. Tokens marked ≈ are estimated: that server does not report them.",
+  "usageNone": "No requests to translation servers yet.",
+  "usageModel": "Model",
+  "usageToday": "Today",
+  "usageTotal": "Total",
+  "usageRequests": "requests: {count}",
+  "@usageRequests": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "usageTokens": "tokens: {count}",
+  "@usageTokens": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "usageCost": "cost: {cost}",
+  "@usageCost": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "usageSince": "Counted since {date}",
+  "@usageSince": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "usageReset": "Reset the counter",
+  "usageResetTitle": "Reset the counter?",
+  "usageResetBody": "The local counter starts from zero. Nothing changes on the servers or in your account.",
+  "reset": "Reset"
 }

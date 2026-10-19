@@ -107,6 +107,36 @@ void main() {
     expect(bad.code, ExitCodes.failure, reason: 'use_gpu must be a boolean');
   });
 
+  test('usage shows the local counter; --balance only for OpenRouter and with a key; --reset', () async {
+    final empty = await cts(['usage'], dataDir);
+    expect(empty.code, ExitCodes.ok);
+    expect(empty.out, contains('No requests'));
+    await UsageLog(File(p.join(dataDir.path, 'usage.json'))).record(const ServiceUsage(
+      plugin: 'openai_compatible',
+      host: 'openrouter.ai',
+      model: 'deepseek/deepseek-chat-v3.1',
+      inputTokens: 900,
+      outputTokens: 100,
+      cost: 0.0004,
+    ));
+    final r = await cts(['--json', 'usage'], dataDir);
+    final entry = ((jsonDecode(r.out) as Map)['entries'] as List).single as Map;
+    expect(entry['model'], 'deepseek/deepseek-chat-v3.1');
+    expect((entry['total'] as Map)['cost'], 0.0004);
+    expect((await cts(['usage'], dataDir)).out, contains('1 request(s), 1000 tokens (in 900, out 100), \$0.0004'));
+
+    final noServer = await cts(['usage', '--balance', '--translator', 'mock'], dataDir);
+    expect(noServer.code, ExitCodes.failure);
+    expect(noServer.err, contains('cannot tell'));
+    await cts(['settings', 'set', 'plugins.openai_compatible.api_url', 'https://openrouter.ai/api/v1'], dataDir);
+    final noKey = await cts(['usage', '--balance', '--translator', 'openai_compatible'], dataDir);
+    expect(noKey.code, ExitCodes.failure);
+    expect(noKey.err, contains('No API key saved'));
+
+    await cts(['usage', '--reset'], dataDir);
+    expect((await cts(['usage'], dataDir)).out, contains('No requests'));
+  });
+
   group('translate', () {
     late String ocrJson;
     setUp(() {

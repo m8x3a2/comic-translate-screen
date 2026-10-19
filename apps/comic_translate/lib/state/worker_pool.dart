@@ -106,6 +106,7 @@ Future<(WorkerSetup, String)> currentWorkerSetup(Ref ref) async {
     homeDir: AppPaths.homeDir(),
     registry: ref.read(workerRegistryProvider),
     preload: const {},
+    usageFile: services.paths.usageFile.path,
   );
   return (setup, '${spec.fingerprint}|${services.models.root.path}|${runs ?? ''}');
 }

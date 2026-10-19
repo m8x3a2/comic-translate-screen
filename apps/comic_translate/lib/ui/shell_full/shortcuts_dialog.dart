@@ -34,6 +34,10 @@ Future<void> showShortcuts(BuildContext context) {
       (l.mouseMiddle, l.mouseMiddleHelp),
       (l.mouseDouble, l.mouseDoubleHelp),
     ]),
+    (l.keysGroupWindow, [
+      ('F1', l.keyHelp),
+      ('F11', l.keyFullScreen),
+    ]),
   ];
   return showDialog<void>(
     context: context,

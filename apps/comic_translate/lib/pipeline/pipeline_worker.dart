@@ -35,6 +35,7 @@ class WorkerSetup {
     this.homeDir,
     this.registry = builtInRegistry,
     this.preload = const {...PipelinePart.values},
+    this.usageFile,
   });
 
   final PipelineSpec spec;
@@ -57,6 +58,9 @@ class WorkerSetup {
   /// Plugins loaded before [PipelineWorker.start] returns (its errors, like
   /// a missing model, come from there); the others load when first needed.
   final Set<PipelinePart> preload;
+
+  /// The local usage counter ([UsageLog]); translations are counted there.
+  final String? usageFile;
 }
 
 /// A file the worker writes after a page is drawn.
@@ -473,6 +477,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
   }
   final registry = setup.registry();
   final settings = setup.spec.settings;
+  final usage = setup.usageFile == null ? null : UsageLog(File(setup.usageFile!));
   RunRecorder? recorder;
   late final EventLog log;
   late final LazyPlugins plugins;
@@ -530,6 +535,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
       cancel: token,
       recorder: recorder,
       page: m.page,
+      onUsage: usage?.record,
     );
     final blocks = m.blocks ?? const <TextBlock>[];
     switch (m.op) {

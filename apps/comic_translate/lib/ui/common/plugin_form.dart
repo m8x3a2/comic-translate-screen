@@ -168,7 +168,13 @@ class _DebouncedTextFieldState extends State<DebouncedTextField> {
   );
 }
 
-/// A secret (API key): shows only whether it is saved.
+/// The last 4 characters of a saved key, to tell keys apart; nothing for
+/// short values, where 4 characters would give away too much.
+String secretTail(String? value) => value == null || value.length < 12 ? '' : value.substring(value.length - 4);
+
+/// A secret (API key): shows only whether it is saved and its last 4
+/// characters. What the user types can be shown before saving; the saved
+/// key never is.
 class _SecretField extends ConsumerStatefulWidget {
   const _SecretField(this.info, this.field);
 
@@ -182,6 +188,8 @@ class _SecretField extends ConsumerStatefulWidget {
 class _SecretFieldState extends ConsumerState<_SecretField> {
   final _controller = TextEditingController();
   bool? _saved;
+  String _tail = '';
+  bool _show = false;
 
   String get _key => pluginSecretKey(widget.info.id, widget.field.key);
 
@@ -193,18 +201,37 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
 
   Future<void> _refresh() async {
     final value = await ref.read(servicesProvider).secrets.read(_key);
-    if (mounted) setState(() => _saved = value != null && value.isNotEmpty);
+    if (!mounted) return;
+    setState(() {
+      _saved = value != null && value.isNotEmpty;
+      _tail = secretTail(value);
+    });
   }
 
+  /// Saving over a saved key replaces it.
   Future<void> _save() async {
     final value = _controller.text.trim();
     if (value.isEmpty) return;
     await ref.read(servicesProvider).secrets.write(_key, value);
     _controller.clear();
+    _show = false;
     await _refresh();
   }
 
   Future<void> _remove() async {
+    final l = context.l10n;
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(l.secretRemoveTitle),
+        content: Text(l.secretRemoveBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.delete)),
+        ],
+      ),
+    );
+    if (yes != true || !mounted) return;
     await ref.read(servicesProvider).secrets.delete(_key);
     await _refresh();
   }
@@ -219,6 +246,7 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final help = fieldHelp(context, widget.info, widget.field);
+    final saved = _saved ?? false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -228,16 +256,23 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
             Expanded(
               child: TextField(
                 controller: _controller,
-                obscureText: true,
+                obscureText: !_show,
                 enableSuggestions: false,
                 autocorrect: false,
                 decoration: InputDecoration(
                   labelText: [
                     fieldLabel(context, widget.info, widget.field),
-                    if (_saved != null) _saved! ? l.secretSet : l.secretNotSet,
+                    if (_saved != null)
+                      saved ? (_tail.isEmpty ? l.secretSet : l.secretSavedTail(_tail)) : l.secretNotSet,
                   ].join(' · '),
+                  hintText: saved ? l.secretReplaceHint : null,
                   helperText: [if (help.isNotEmpty) help, l.savedSecurely].join(' '),
-                  helperMaxLines: 3,
+                  helperMaxLines: 4,
+                  suffixIcon: IconButton(
+                    tooltip: _show ? l.secretHide : l.secretShow,
+                    icon: Icon(_show ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                    onPressed: () => setState(() => _show = !_show),
+                  ),
                 ),
                 onSubmitted: (_) => _save(),
               ),
@@ -245,9 +280,9 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
             const SizedBox(width: 8),
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: FilledButton.tonal(onPressed: _save, child: Text(l.save)),
+              child: FilledButton.tonal(onPressed: _save, child: Text(saved ? l.secretReplace : l.save)),
             ),
-            if (_saved ?? false)
+            if (saved)
               Padding(
                 padding: const EdgeInsets.only(top: 8, left: 4),
                 child: TextButton(onPressed: _remove, child: Text(l.secretRemove)),

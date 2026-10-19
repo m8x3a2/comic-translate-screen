@@ -172,7 +172,7 @@ class ProcessCommand extends CtsCommand {
       final page = input.source == null ? p.basename(input.path) : '$stem${p.extension(input.path)}';
       final origin = input.source ?? input.path;
       final pageLog = log.child(page: page);
-      final context = PluginContext(log: pageLog, recorder: recorder, page: page);
+      final context = PluginContext(log: pageLog, recorder: recorder, page: page, onUsage: ctx.services.usage.record);
       try {
         final sw = Stopwatch()..start();
         final image = await ImageCodec.readFile(input.path);

@@ -130,6 +130,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Горячие клавиши'), findsOneWidget);
     expect(find.text('Ctrl+Z'), findsOneWidget);
+    expect(find.text('F11'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

@@ -1,5 +1,6 @@
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +8,7 @@ import '../app_info.dart';
 import '../bootstrap.dart';
 import '../l10n/app_localizations.dart';
 import '../state/app_state.dart';
+import '../state/window_mode.dart';
 import 'shell_full/main_screen.dart';
 
 /// Shows messages from outside the widget tree (unexpected errors).
@@ -48,13 +50,46 @@ void notifyUnexpectedError(AppServices services) {
   WidgetsBinding.instance.scheduleFrame();
 }
 
-class ComicTranslateApp extends ConsumerWidget {
+class ComicTranslateApp extends ConsumerStatefulWidget {
   const ComicTranslateApp({super.key});
 
+  @override
+  ConsumerState<ComicTranslateApp> createState() => _ComicTranslateAppState();
+}
+
+class _ComicTranslateAppState extends ConsumerState<ComicTranslateApp> {
   static const _seed = Color(0xFF3B6FE0);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_onKey);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    super.dispose();
+  }
+
+  /// F11 works everywhere: on every screen and under dialogs.
+  bool _onKey(KeyEvent e) {
+    if (e is! KeyDownEvent || e.logicalKey != LogicalKeyboardKey.f11) return false;
+    final keyboard = HardwareKeyboard.instance;
+    if (keyboard.isControlPressed || keyboard.isAltPressed || keyboard.isShiftPressed) return false;
+    ref.read(fullScreenProvider.notifier).toggle().then((on) {
+      final messenger = appMessengerKey.currentState;
+      final context = appMessengerKey.currentContext;
+      if (!on || messenger == null || context == null || !context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).fullScreenOn), duration: const Duration(seconds: 3)),
+      );
+    });
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = ref.watch(settingsProvider.select((s) => s.theme));
     final language = ref.watch(settingsProvider.select((s) => s.uiLanguage));
     return MaterialApp(

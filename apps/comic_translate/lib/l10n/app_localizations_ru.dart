@@ -477,7 +477,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get savedSecurely =>
-      'Хранится в защищённом хранилище Windows, никогда в файлах и логах.';
+      'Хранится в защищённом хранилище Windows, никогда в файлах и журналах. У каждого переводчика (а позже и у каждого облачного распознавания) свой ключ. Сохранённый ключ целиком не показывается — только последние 4 символа.';
 
   @override
   String get secretSet => 'Сохранён';
@@ -486,7 +486,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get secretNotSet => 'Не задан';
 
   @override
-  String get secretRemove => 'Удалить';
+  String get secretRemove => 'Удалить ключ';
 
   @override
   String get approvals => 'Разрешённые серверы';
@@ -1001,4 +1001,150 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get keysNote =>
       'Буквенные клавиши не срабатывают, пока вы печатаете в поле. Работают при любой раскладке.';
+
+  @override
+  String get keysGroupWindow => 'Окно';
+
+  @override
+  String get keyHelp => 'Этот список клавиш';
+
+  @override
+  String get keyFullScreen => 'Во весь экран и обратно';
+
+  @override
+  String get fullScreenOn => 'Полноэкранный режим. Выйти — F11.';
+
+  @override
+  String secretSavedTail(String tail) {
+    return 'Сохранён: …$tail';
+  }
+
+  @override
+  String get secretShow => 'Показать введённое';
+
+  @override
+  String get secretHide => 'Скрыть';
+
+  @override
+  String get secretReplace => 'Заменить';
+
+  @override
+  String get secretReplaceHint =>
+      'Вставьте новый ключ, чтобы заменить сохранённый';
+
+  @override
+  String get secretRemoveTitle => 'Удалить ключ?';
+
+  @override
+  String get secretRemoveBody =>
+      'Сохранённый ключ будет удалён из защищённого хранилища Windows. Чтобы снова переводить через этот сервис, вставьте ключ заново. Сам ключ на сайте сервиса продолжит действовать: если он больше не нужен, отзовите его там.';
+
+  @override
+  String get keyStatusCheck => 'Проверить остаток';
+
+  @override
+  String keyStatusHelp(String host) {
+    return 'Спрашивает у $host, сколько осталось по лимиту ключа. Отправляется только ключ и только по нажатию.';
+  }
+
+  @override
+  String get keyStatusNeedsKey => 'Сначала сохраните ключ API';
+
+  @override
+  String get keyStatusChecking => 'Проверяю…';
+
+  @override
+  String keyStatusLimit(String limit, String used, String left) {
+    return 'Лимит $limit, потрачено $used, осталось $left';
+  }
+
+  @override
+  String keyStatusNoLimit(String used) {
+    return 'У ключа нет лимита. Потрачено: $used';
+  }
+
+  @override
+  String keyStatusToday(String today, String month) {
+    return 'Потрачено сегодня (по UTC): $today, за месяц: $month';
+  }
+
+  @override
+  String get keyStatusResetDaily => 'Лимит обновляется каждый день.';
+
+  @override
+  String get keyStatusResetWeekly => 'Лимит обновляется каждую неделю.';
+
+  @override
+  String get keyStatusResetMonthly => 'Лимит обновляется каждый месяц.';
+
+  @override
+  String keyStatusFree(String used, String limit, String left) {
+    return 'Бесплатные модели сегодня: $used из $limit запросов, осталось $left';
+  }
+
+  @override
+  String get keyStatusFreeNote =>
+      'У бесплатных моделей есть ещё предел — около 20 запросов в минуту; заранее сервер его не сообщает.';
+
+  @override
+  String keyStatusFailed(String reason) {
+    return 'Не удалось проверить: $reason';
+  }
+
+  @override
+  String keyStatusAt(String time) {
+    return 'Проверено в $time';
+  }
+
+  @override
+  String get usageTitle => 'Расход на этом компьютере';
+
+  @override
+  String get usageHelp =>
+      'Программа считает запросы по ответам серверов. Счётчик хранится только на этом компьютере и никуда не отправляется. Токены со значком ≈ посчитаны примерно: этот сервер их не сообщает.';
+
+  @override
+  String get usageNone => 'Запросов к серверам перевода ещё не было.';
+
+  @override
+  String get usageModel => 'Модель';
+
+  @override
+  String get usageToday => 'Сегодня';
+
+  @override
+  String get usageTotal => 'Всего';
+
+  @override
+  String usageRequests(String count) {
+    return 'запросов: $count';
+  }
+
+  @override
+  String usageTokens(String count) {
+    return 'токенов: $count';
+  }
+
+  @override
+  String usageCost(String cost) {
+    return 'стоимость: $cost';
+  }
+
+  @override
+  String usageSince(String date) {
+    return 'Считается с $date';
+  }
+
+  @override
+  String get usageReset => 'Сбросить счётчик';
+
+  @override
+  String get usageResetTitle => 'Сбросить счётчик?';
+
+  @override
+  String get usageResetBody =>
+      'Счётчик на этом компьютере начнётся с нуля. На серверах и в вашем аккаунте ничего не изменится.';
+
+  @override
+  String get reset => 'Сбросить';
 }

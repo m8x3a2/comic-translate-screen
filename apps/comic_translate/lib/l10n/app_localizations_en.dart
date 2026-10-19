@@ -476,7 +476,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get savedSecurely =>
-      'Stored in Windows secure storage, never in files or logs.';
+      'Stored in Windows secure storage, never in files or logs. Each translator (and later each online text recognizer) keeps its own key. A saved key is never shown in full, only its last 4 characters.';
 
   @override
   String get secretSet => 'Saved';
@@ -485,7 +485,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get secretNotSet => 'Not set';
 
   @override
-  String get secretRemove => 'Remove';
+  String get secretRemove => 'Delete key';
 
   @override
   String get approvals => 'Allowed servers';
@@ -999,4 +999,149 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get keysNote =>
       'Letter keys do nothing while you type in a text field. They work with any keyboard layout.';
+
+  @override
+  String get keysGroupWindow => 'Window';
+
+  @override
+  String get keyHelp => 'This list of keys';
+
+  @override
+  String get keyFullScreen => 'Full screen on and off';
+
+  @override
+  String get fullScreenOn => 'Full screen. Press F11 to leave it.';
+
+  @override
+  String secretSavedTail(String tail) {
+    return 'Saved: …$tail';
+  }
+
+  @override
+  String get secretShow => 'Show what you typed';
+
+  @override
+  String get secretHide => 'Hide';
+
+  @override
+  String get secretReplace => 'Replace';
+
+  @override
+  String get secretReplaceHint => 'Paste a new key to replace the saved one';
+
+  @override
+  String get secretRemoveTitle => 'Delete the key?';
+
+  @override
+  String get secretRemoveBody =>
+      'The saved key is removed from Windows secure storage. To translate with this service again, paste the key anew. The key itself stays valid on the service\'s site: revoke it there if you no longer need it.';
+
+  @override
+  String get keyStatusCheck => 'Check balance';
+
+  @override
+  String keyStatusHelp(String host) {
+    return 'Asks $host what is left of the key\'s limit. Only the key is sent, and only when you press the button.';
+  }
+
+  @override
+  String get keyStatusNeedsKey => 'Save the API key first';
+
+  @override
+  String get keyStatusChecking => 'Checking…';
+
+  @override
+  String keyStatusLimit(String limit, String used, String left) {
+    return 'Limit $limit, spent $used, left $left';
+  }
+
+  @override
+  String keyStatusNoLimit(String used) {
+    return 'The key has no limit. Spent: $used';
+  }
+
+  @override
+  String keyStatusToday(String today, String month) {
+    return 'Spent today (UTC): $today, this month: $month';
+  }
+
+  @override
+  String get keyStatusResetDaily => 'The limit starts again every day.';
+
+  @override
+  String get keyStatusResetWeekly => 'The limit starts again every week.';
+
+  @override
+  String get keyStatusResetMonthly => 'The limit starts again every month.';
+
+  @override
+  String keyStatusFree(String used, String limit, String left) {
+    return 'Free models today: $used of $limit requests, $left left';
+  }
+
+  @override
+  String get keyStatusFreeNote =>
+      'Free models also allow about 20 requests per minute; the server does not report that limit in advance.';
+
+  @override
+  String keyStatusFailed(String reason) {
+    return 'Could not check: $reason';
+  }
+
+  @override
+  String keyStatusAt(String time) {
+    return 'Checked at $time';
+  }
+
+  @override
+  String get usageTitle => 'Usage on this computer';
+
+  @override
+  String get usageHelp =>
+      'The program counts the requests from the servers\' replies. The counter is kept only on this computer and is never sent anywhere. Tokens marked ≈ are estimated: that server does not report them.';
+
+  @override
+  String get usageNone => 'No requests to translation servers yet.';
+
+  @override
+  String get usageModel => 'Model';
+
+  @override
+  String get usageToday => 'Today';
+
+  @override
+  String get usageTotal => 'Total';
+
+  @override
+  String usageRequests(String count) {
+    return 'requests: $count';
+  }
+
+  @override
+  String usageTokens(String count) {
+    return 'tokens: $count';
+  }
+
+  @override
+  String usageCost(String cost) {
+    return 'cost: $cost';
+  }
+
+  @override
+  String usageSince(String date) {
+    return 'Counted since $date';
+  }
+
+  @override
+  String get usageReset => 'Reset the counter';
+
+  @override
+  String get usageResetTitle => 'Reset the counter?';
+
+  @override
+  String get usageResetBody =>
+      'The local counter starts from zero. Nothing changes on the servers or in your account.';
+
+  @override
+  String get reset => 'Reset';
 }

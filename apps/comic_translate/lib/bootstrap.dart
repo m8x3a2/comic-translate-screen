@@ -18,6 +18,7 @@ class AppServices {
     required this.models,
     required this.settingsStore,
     required this.registry,
+    required this.usage,
   });
 
   final AppPaths paths;
@@ -35,6 +36,9 @@ class AppServices {
 
   /// All plugins and their live instances.
   final PluginRegistry registry;
+
+  /// The local usage counter of paid services (`usage.json`).
+  final UsageLog usage;
   final JsonlFileSink _appLogSink;
 
   /// Resolves the configuration of plugin [id]: stored values from
@@ -84,6 +88,7 @@ class AppServices {
       models: ModelManager(paths.models, log: log),
       settingsStore: SettingsStore(paths.settingsFile, log: log),
       registry: registry ?? builtInRegistry(),
+      usage: UsageLog(paths.usageFile),
     );
   }
 

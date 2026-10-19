@@ -893,7 +893,7 @@ abstract class AppLocalizations {
   /// No description provided for @savedSecurely.
   ///
   /// In en, this message translates to:
-  /// **'Stored in Windows secure storage, never in files or logs.'**
+  /// **'Stored in Windows secure storage, never in files or logs. Each translator (and later each online text recognizer) keeps its own key. A saved key is never shown in full, only its last 4 characters.'**
   String get savedSecurely;
 
   /// No description provided for @secretSet.
@@ -911,7 +911,7 @@ abstract class AppLocalizations {
   /// No description provided for @secretRemove.
   ///
   /// In en, this message translates to:
-  /// **'Remove'**
+  /// **'Delete key'**
   String get secretRemove;
 
   /// No description provided for @approvals.
@@ -1879,6 +1879,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Letter keys do nothing while you type in a text field. They work with any keyboard layout.'**
   String get keysNote;
+
+  /// No description provided for @keysGroupWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Window'**
+  String get keysGroupWindow;
+
+  /// No description provided for @keyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'This list of keys'**
+  String get keyHelp;
+
+  /// No description provided for @keyFullScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Full screen on and off'**
+  String get keyFullScreen;
+
+  /// No description provided for @fullScreenOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Full screen. Press F11 to leave it.'**
+  String get fullScreenOn;
+
+  /// No description provided for @secretSavedTail.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved: …{tail}'**
+  String secretSavedTail(String tail);
+
+  /// No description provided for @secretShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show what you typed'**
+  String get secretShow;
+
+  /// No description provided for @secretHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get secretHide;
+
+  /// No description provided for @secretReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get secretReplace;
+
+  /// No description provided for @secretReplaceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a new key to replace the saved one'**
+  String get secretReplaceHint;
+
+  /// No description provided for @secretRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the key?'**
+  String get secretRemoveTitle;
+
+  /// No description provided for @secretRemoveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The saved key is removed from Windows secure storage. To translate with this service again, paste the key anew. The key itself stays valid on the service\'s site: revoke it there if you no longer need it.'**
+  String get secretRemoveBody;
+
+  /// No description provided for @keyStatusCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Check balance'**
+  String get keyStatusCheck;
+
+  /// No description provided for @keyStatusHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks {host} what is left of the key\'s limit. Only the key is sent, and only when you press the button.'**
+  String keyStatusHelp(String host);
+
+  /// No description provided for @keyStatusNeedsKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the API key first'**
+  String get keyStatusNeedsKey;
+
+  /// No description provided for @keyStatusChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get keyStatusChecking;
+
+  /// No description provided for @keyStatusLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Limit {limit}, spent {used}, left {left}'**
+  String keyStatusLimit(String limit, String used, String left);
+
+  /// No description provided for @keyStatusNoLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'The key has no limit. Spent: {used}'**
+  String keyStatusNoLimit(String used);
+
+  /// No description provided for @keyStatusToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent today (UTC): {today}, this month: {month}'**
+  String keyStatusToday(String today, String month);
+
+  /// No description provided for @keyStatusResetDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'The limit starts again every day.'**
+  String get keyStatusResetDaily;
+
+  /// No description provided for @keyStatusResetWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'The limit starts again every week.'**
+  String get keyStatusResetWeekly;
+
+  /// No description provided for @keyStatusResetMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'The limit starts again every month.'**
+  String get keyStatusResetMonthly;
+
+  /// No description provided for @keyStatusFree.
+  ///
+  /// In en, this message translates to:
+  /// **'Free models today: {used} of {limit} requests, {left} left'**
+  String keyStatusFree(String used, String limit, String left);
+
+  /// No description provided for @keyStatusFreeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Free models also allow about 20 requests per minute; the server does not report that limit in advance.'**
+  String get keyStatusFreeNote;
+
+  /// No description provided for @keyStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check: {reason}'**
+  String keyStatusFailed(String reason);
+
+  /// No description provided for @keyStatusAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked at {time}'**
+  String keyStatusAt(String time);
+
+  /// No description provided for @usageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Usage on this computer'**
+  String get usageTitle;
+
+  /// No description provided for @usageHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The program counts the requests from the servers\' replies. The counter is kept only on this computer and is never sent anywhere. Tokens marked ≈ are estimated: that server does not report them.'**
+  String get usageHelp;
+
+  /// No description provided for @usageNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests to translation servers yet.'**
+  String get usageNone;
+
+  /// No description provided for @usageModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get usageModel;
+
+  /// No description provided for @usageToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get usageToday;
+
+  /// No description provided for @usageTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get usageTotal;
+
+  /// No description provided for @usageRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'requests: {count}'**
+  String usageRequests(String count);
+
+  /// No description provided for @usageTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'tokens: {count}'**
+  String usageTokens(String count);
+
+  /// No description provided for @usageCost.
+  ///
+  /// In en, this message translates to:
+  /// **'cost: {cost}'**
+  String usageCost(String cost);
+
+  /// No description provided for @usageSince.
+  ///
+  /// In en, this message translates to:
+  /// **'Counted since {date}'**
+  String usageSince(String date);
+
+  /// No description provided for @usageReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset the counter'**
+  String get usageReset;
+
+  /// No description provided for @usageResetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset the counter?'**
+  String get usageResetTitle;
+
+  /// No description provided for @usageResetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The local counter starts from zero. Nothing changes on the servers or in your account.'**
+  String get usageResetBody;
+
+  /// No description provided for @reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
 }
 
 class _AppLocalizationsDelegate

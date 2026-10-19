@@ -2,7 +2,9 @@
 #define RUNNER_FLUTTER_WINDOW_H_
 
 #include <flutter/dart_project.h>
+#include <flutter/encodable_value.h>
 #include <flutter/flutter_view_controller.h>
+#include <flutter/method_channel.h>
 
 #include <memory>
 
@@ -27,6 +29,10 @@ class FlutterWindow : public Win32Window {
                          LPARAM const lparam) noexcept override;
 
  private:
+  // Full screen (F11): no frame, covering the whole monitor and the taskbar.
+  // The window's style, position and maximized state come back on exit.
+  void SetFullScreen(bool full_screen);
+
   // The project to run.
   flutter::DartProject project_;
 
@@ -35,6 +41,16 @@ class FlutterWindow : public Win32Window {
 
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
+
+  // "comic_translate/window": full screen on and off from Dart.
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>
+      window_channel_;
+
+  bool full_screen_ = false;
+  bool was_maximized_ = false;
+  LONG saved_style_ = 0;
+  LONG saved_ex_style_ = 0;
+  RECT saved_rect_{};
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_
