@@ -162,6 +162,8 @@ class TextItem {
     required this.color,
     required this.vertical,
     required this.block,
+    this.angle = 0,
+    this.settings,
   });
 
   final String text;
@@ -176,6 +178,13 @@ class TextItem {
   final bool vertical;
   final TextBlock block;
 
+  /// Rotation in degrees (clockwise) around the box centre.
+  final double angle;
+
+  /// Font, outline and spacing of this item when its block has its own
+  /// style; null = the page's render settings.
+  final RenderSettings? settings;
+
   Map<String, Object?> toJson() => {
         'text': text,
         'font_size_pt': fontSizePt,
@@ -185,6 +194,7 @@ class TextItem {
         'height': height,
         'color': '#${(color & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}',
         'vertical': vertical,
+        if (angle != 0) 'angle': angle,
       };
 }
 
@@ -299,7 +309,12 @@ FittedText fitText(
     }
 
     final maxSide = vertical ? roiHeight : roiWidth;
-    final wrapped = noSpaceLanguage ? wrapNoSpaceTextGreedily(text, side, maxSide) : wrapTextGreedily(text, side, maxSide);
+    String wrap(String t) =>
+        noSpaceLanguage ? wrapNoSpaceTextGreedily(t, side, maxSide) : wrapTextGreedily(t, side, maxSide);
+    // Line breaks typed by the user are kept (the original wraps them away).
+    final wrapped = !noSpaceLanguage && text.contains('\n')
+        ? text.replaceAll('\r\n', '\n').split('\n').map(wrap).join('\n')
+        : wrap(text);
     final m = metrics(wrapped, size);
     return (wrapped, m.width, m.height);
   }
@@ -370,6 +385,10 @@ int smartTextColor(List<int>? detected, int settingColor) {
 /// The text-rendering step of the original batch run: upper case, render
 /// areas, fitting and colours. [blocks] are modified (translation case,
 /// render area); returns what to draw.
+///
+/// Blocks with a [BlockStyle] get their own font, size, colours and text
+/// box; [measurerFor] measures text in such a block's settings (default:
+/// [measurer]).
 List<TextItem> layoutPage(
   List<TextBlock> blocks,
   int imageWidth,
@@ -377,29 +396,34 @@ List<TextItem> layoutPage(
   TextMeasurer measurer, {
   required RenderSettings settings,
   required String targetLanguage,
+  TextMeasurer Function(RenderSettings settings)? measurerFor,
 }) {
   final code = Languages.byName(targetLanguage)?.code ?? '';
   setUpperCase(blocks, settings.upperCase);
+  final chosen = [for (final b in blocks) b.style?.textBox];
   adjustRenderAreas(blocks, imageWidth, imageHeight);
   final noSpace = _isNoSpace(code);
   final items = <TextItem>[];
-  for (final b in blocks) {
+  for (final (i, b) in blocks.indexed) {
     if (!hasTranslatableContent(b.translation)) continue;
-    final vertical = isVerticalBlock(b, code);
+    final style = b.style;
+    final s = style == null ? settings : style.applyTo(settings);
+    final area = chosen[i] ?? b.xyxy;
+    final vertical = style?.vertical ?? isVerticalBlock(b, code);
     final fit = fitText(
       b.translation,
-      measurer,
-      b.xyxy.width.toDouble(),
-      b.xyxy.height.toDouble(),
-      settings: settings,
+      style == null || measurerFor == null ? measurer : measurerFor(s),
+      area.width.toDouble(),
+      area.height.toDouble(),
+      settings: s,
       vertical: vertical,
       noSpaceLanguage: noSpace,
     );
-    var x = b.xyxy.x1.toDouble(), y = b.xyxy.y1.toDouble();
-    if (settings.placeInBlock) {
-      final spareW = math.max(0.0, b.xyxy.width - fit.width);
-      final spareH = math.max(0.0, b.xyxy.height - fit.height);
-      x += switch (settings.alignment) {
+    var x = area.x1.toDouble(), y = area.y1.toDouble();
+    if (s.placeInBlock) {
+      final spareW = math.max(0.0, area.width - fit.width);
+      final spareH = math.max(0.0, area.height - fit.height);
+      x += switch (s.alignment) {
         TextAlignment.left => 0.0,
         TextAlignment.center => spareW / 2,
         TextAlignment.right => spareW,
@@ -413,9 +437,11 @@ List<TextItem> layoutPage(
       y: y,
       width: fit.width,
       height: fit.height,
-      color: smartTextColor(b.fontColor, settings.color),
+      color: style?.color ?? smartTextColor(b.fontColor, settings.color),
       vertical: vertical,
       block: b,
+      angle: style?.angle ?? b.angle,
+      settings: style == null ? null : s,
     ));
   }
   return items;

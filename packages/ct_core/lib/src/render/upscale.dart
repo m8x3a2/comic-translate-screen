@@ -127,6 +127,7 @@ List<TextBlock> scaleBlocks(List<TextBlock> blocks, int srcWidth, int srcHeight,
       b.copy()
         ..xyxy = scaleBox(b.xyxy, sx, sy)
         ..bubbleXyxy = b.bubbleXyxy == null ? null : scaleBox(b.bubbleXyxy!, sx, sy)
-        ..lines = [for (final l in b.lines) scaleLine(l, sx, sy)],
+        ..lines = [for (final l in b.lines) scaleLine(l, sx, sy)]
+        ..style = b.style?.scaled(sx, sy),
   ];
 }

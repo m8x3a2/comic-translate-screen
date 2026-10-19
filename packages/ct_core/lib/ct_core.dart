@@ -42,6 +42,8 @@ export 'src/plugins/engines.dart';
 export 'src/plugins/plugin.dart';
 export 'src/plugins/registry.dart';
 export 'src/plugins/settings_schema.dart';
+export 'src/inpainting/mask_stroke.dart';
+export 'src/render/block_style.dart';
 export 'src/render/layout.dart';
 export 'src/render/upscale.dart';
 export 'src/settings/app_settings.dart';

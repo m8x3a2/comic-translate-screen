@@ -1,3 +1,4 @@
+import '../render/block_style.dart';
 import 'geometry.dart';
 
 /// Where a block of text sits on the page.
@@ -60,6 +61,7 @@ class TextBlock {
     this.maxFontSize = 0,
     this.fontColor,
     this.direction = TextDirection.unknown,
+    this.style,
   })  : lines = lines ?? [],
         texts = texts ?? [],
         skippedSmallTexts = skippedSmallTexts ?? [],
@@ -106,6 +108,9 @@ class TextBlock {
   List<int>? fontColor;
   TextDirection direction;
 
+  /// How the translation is drawn when the user changed it by hand.
+  BlockStyle? style;
+
   BBox get bbox => xyxy;
   Point2 get center => xyxy.center;
 
@@ -134,6 +139,7 @@ class TextBlock {
         maxFontSize: maxFontSize,
         fontColor: fontColor == null ? null : List.of(fontColor!),
         direction: direction,
+        style: style,
       )..text = text;
 
   /// JSON with the original attribute names, so artifacts can be compared
@@ -160,6 +166,7 @@ class TextBlock {
         'max_font_size': maxFontSize,
         'font_color': fontColor,
         'direction': direction.id,
+        if (style != null && !style!.isEmpty) 'style': style!.toJson(),
       };
 
   factory TextBlock.fromJson(Map<String, Object?> json) {
@@ -187,6 +194,7 @@ class TextBlock {
       maxFontSize: (json['max_font_size'] as num?)?.toInt() ?? 0,
       fontColor: parseColor(json['font_color']),
       direction: TextDirection.parse(json['direction'] as String?),
+      style: json['style'] is Map ? BlockStyle.fromJson((json['style'] as Map).cast<String, Object?>()) : null,
     );
     // `text` is stored explicitly; it may differ from texts.join(' ').
     block.text = json['text'] as String? ?? block.text;
