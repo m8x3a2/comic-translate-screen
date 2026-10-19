@@ -15,11 +15,11 @@ final usageReportProvider = FutureProvider.autoDispose<UsageReport>((ref) => ref
 
 String _locale(BuildContext context) => Localizations.localeOf(context).toString();
 
-/// `0,87 $`; small sums keep 4 decimals so a cent fraction is still seen.
+/// `0,9962 $`: fractions of a cent stay visible ([moneyDecimals]).
 String formatMoney(BuildContext context, double v) => NumberFormat.currency(
   locale: _locale(context),
   symbol: r'$',
-  decimalDigits: v != 0 && v.abs() < 0.01 ? 4 : 2,
+  decimalDigits: moneyDecimals(v),
 ).format(v);
 
 String _number(BuildContext context, int v) => NumberFormat.decimalPattern(_locale(context)).format(v);
@@ -93,6 +93,7 @@ class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
         else
           l.keyStatusNoLimit(money(s.used)),
         l.keyStatusToday(money(s.usedToday), money(s.usedThisMonth)),
+        l.keyStatusDelay,
         if (s.limit != null)
           ...switch (s.limitReset) {
             LimitReset.daily => [l.keyStatusResetDaily],

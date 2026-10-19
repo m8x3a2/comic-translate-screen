@@ -1066,6 +1066,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get keyStatusDelay =>
+      'The service updates these numbers a few minutes late; the usage below is counted at once.';
+
+  @override
   String get keyStatusResetDaily => 'The limit starts again every day.';
 
   @override

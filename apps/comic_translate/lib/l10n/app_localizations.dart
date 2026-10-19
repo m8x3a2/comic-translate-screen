@@ -1988,6 +1988,12 @@ abstract class AppLocalizations {
   /// **'Spent today (UTC): {today}, this month: {month}'**
   String keyStatusToday(String today, String month);
 
+  /// No description provided for @keyStatusDelay.
+  ///
+  /// In en, this message translates to:
+  /// **'The service updates these numbers a few minutes late; the usage below is counted at once.'**
+  String get keyStatusDelay;
+
   /// No description provided for @keyStatusResetDaily.
   ///
   /// In en, this message translates to:

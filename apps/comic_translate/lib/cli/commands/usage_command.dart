@@ -99,7 +99,7 @@ class UsageCommand extends CtsCommand {
       return ExitCodes.ok;
     }
 
-    String money(double v) => '\$${v.toStringAsFixed(v != 0 && v.abs() < 0.01 ? 4 : 2)}';
+    String money(double v) => '\$${v.toStringAsFixed(moneyDecimals(v))}';
     String totals(UsageTotals t) => [
           '${t.requests} request(s)',
           '${t.estimated ? '~' : ''}${t.tokens} tokens (in ${t.inputTokens}, out ${t.outputTokens})',

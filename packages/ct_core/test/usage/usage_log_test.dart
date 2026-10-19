@@ -76,4 +76,8 @@ void main() {
     final page = PluginContext(log: EventLog.silent(), onUsage: (_) {}).forPage('p1');
     expect(page.onUsage, isNotNull);
   });
+
+  test('sums of money keep fractions of a cent visible', () {
+    expect([for (final v in [1.0, 0.0, 0.5, 0.126, 0.9962, 0.0021, 0.00002]) moneyDecimals(v)], [2, 2, 2, 3, 4, 4, 6]);
+  });
 }

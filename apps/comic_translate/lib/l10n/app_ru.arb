@@ -315,6 +315,7 @@
   "keyStatusLimit": "Лимит {limit}, потрачено {used}, осталось {left}",
   "keyStatusNoLimit": "У ключа нет лимита. Потрачено: {used}",
   "keyStatusToday": "Потрачено сегодня (по UTC): {today}, за месяц: {month}",
+  "keyStatusDelay": "Сервер обновляет эти цифры с задержкой в несколько минут; расход ниже считается сразу.",
   "keyStatusResetDaily": "Лимит обновляется каждый день.",
   "keyStatusResetWeekly": "Лимит обновляется каждую неделю.",
   "keyStatusResetMonthly": "Лимит обновляется каждый месяц.",

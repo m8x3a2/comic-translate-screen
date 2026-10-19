@@ -53,3 +53,13 @@ class KeyStatusQuery {
   /// Throws `TranslationException` (refused key, no connection, ...).
   final Future<KeyStatus> Function() run;
 }
+
+/// Decimals that show a sum of credits without hiding fractions of a cent:
+/// 1 → 2 (`1.00`), 0.126 → 3, 0.9962 → 4, 0.00002 → 6.
+int moneyDecimals(double v) {
+  final tenThousandths = (v.abs() * 10000).round();
+  if (v != 0 && tenThousandths == 0) return 6;
+  if (tenThousandths % 100 == 0) return 2;
+  if (tenThousandths % 10 == 0) return 3;
+  return 4;
+}

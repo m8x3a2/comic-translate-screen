@@ -626,6 +626,7 @@
       }
     }
   },
+  "keyStatusDelay": "The service updates these numbers a few minutes late; the usage below is counted at once.",
   "keyStatusResetDaily": "The limit starts again every day.",
   "keyStatusResetWeekly": "The limit starts again every week.",
   "keyStatusResetMonthly": "The limit starts again every month.",

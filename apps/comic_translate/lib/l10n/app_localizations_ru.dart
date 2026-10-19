@@ -1069,6 +1069,10 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get keyStatusDelay =>
+      'Сервер обновляет эти цифры с задержкой в несколько минут; расход ниже считается сразу.';
+
+  @override
   String get keyStatusResetDaily => 'Лимит обновляется каждый день.';
 
   @override
