@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:ct_core/ct_core.dart';
 import 'package:path/path.dart' as p;
 
+import '../../import/pdf_pages.dart';
 import '../../pipeline/page_pipeline.dart';
 import '../cli.dart';
 import '../cli_context.dart';
@@ -91,14 +92,12 @@ class ProcessCommand extends CtsCommand {
       'Writes <name>.translated.png and <name>.json.';
 
   @override
-  String get invocation => 'cts process <image|folder>... [--to Russian] [--translator mock] [--allow-network] [-o dir]';
+  String get invocation => 'cts process <image|folder|archive|pdf>... [--to Russian] [--translator mock] [--allow-network] [-o dir]';
 
   @override
   Future<int> run() async {
     final args = argResults!;
-    if (args.rest.isEmpty) usageException('Give at least one image or folder.');
-    final inputs = expandImageInputs(args.rest);
-    if (inputs.isEmpty) usageException('No images found (.png, .jpg, .jpeg, .webp, .bmp).');
+    if (args.rest.isEmpty) usageException('Give at least one image, folder, archive or PDF.');
     final services = ctx.services;
     final settings = await services.settingsStore.load();
     final source = args.option('from') ?? settings.sourceLanguage;
@@ -106,12 +105,40 @@ class ProcessCommand extends CtsCommand {
     if (Languages.byName(target) == null) usageException('Unknown target language "$target".');
     if (source != 'Auto' && Languages.byName(source) == null) usageException('Unknown source language "$source".');
     final translatorId = args.option('translator') ?? settings.translator;
-    final useGpu = args.wasParsed('gpu') ? args.flag('gpu') : null;
     if (!await checkTranslatorNetwork(ctx, translatorId, settings,
         allowNetwork: args.flag('allow-network'), remember: args.flag('remember'), usageException: usageException)) {
       return ExitCodes.failure;
     }
 
+    // Archives and PDFs are unpacked into a temporary folder for this run.
+    final importDir = Directory(p.join(services.paths.cache.path, 'import-${DateTime.now().microsecondsSinceEpoch}'));
+    try {
+      final skipped = <String>[];
+      final List<ImportedPage> inputs;
+      try {
+        inputs = await importPages(args.rest, cacheDir: importDir, pdf: rasterizePdf, skipped: skipped);
+      } on Exception catch (e) {
+        ctx.err.writeln(e);
+        return ExitCodes.failure;
+      }
+      for (final s in skipped) {
+        ctx.err.writeln('Skipped (not an image, folder, archive or PDF): $s');
+      }
+      if (inputs.isEmpty) {
+        usageException('No pages found (images: .png .jpg .jpeg .webp .bmp; archives: .cbz .zip .epub .cbr .rar .cb7 '
+            '.7z .cbt .tar; .pdf).');
+      }
+      return await _process(inputs, settings, source: source, target: target, translatorId: translatorId);
+    } finally {
+      if (importDir.existsSync()) importDir.deleteSync(recursive: true);
+    }
+  }
+
+  Future<int> _process(List<ImportedPage> inputs, AppSettings settings,
+      {required String source, required String target, required String translatorId}) async {
+    final args = argResults!;
+    final services = ctx.services;
+    final useGpu = args.wasParsed('gpu') ? args.flag('gpu') : null;
     RunRecorder? recorder;
     if (args.flag('debug') || settings.testMode) {
       recorder = await RunRecorder.start(
@@ -138,30 +165,41 @@ class ProcessCommand extends CtsCommand {
     final results = <Map<String, Object?>>[];
     var ok = true;
     for (final input in inputs) {
-      final page = p.basename(input);
+      // Pages from archives and PDFs are named after the archive: book_001.
+      final stem = input.source == null
+          ? p.basenameWithoutExtension(input.path)
+          : '${p.basenameWithoutExtension(input.source!)}_${p.basenameWithoutExtension(input.path)}';
+      final page = input.source == null ? p.basename(input.path) : '$stem${p.extension(input.path)}';
+      final origin = input.source ?? input.path;
       final pageLog = log.child(page: page);
       final context = PluginContext(log: pageLog, recorder: recorder, page: page);
       try {
         final sw = Stopwatch()..start();
-        final image = await ImageCodec.readFile(input);
+        final image = await ImageCodec.readFile(input.path);
         final decodeMs = sw.elapsedMilliseconds;
         final r = await pipeline.run(image, context);
         final timings = {'00_decode': decodeMs, ...r.timingsMs};
-        final stem = p.basenameWithoutExtension(input);
         final outPng = File(p.join(outDir.path, '$stem.translated.png'))..writeAsBytesSync(ImageCodec.encodePng(r.rendered));
         final outJson = File(p.join(outDir.path, '$stem.json'))
           ..writeAsStringSync(const JsonEncoder.withIndent('  ')
               .convert({...r.toJson(image: page, source: source, target: target), 'timings_ms': timings}));
         final total = timings.values.fold(0, (a, b) => a + b);
         pageLog.log(LogLevel.info, 'process_done', durMs: total, data: {'blocks': r.blocks.length, 'timings': timings});
-        results.add({'image': input, 'output': outPng.path, 'json': outJson.path, 'blocks': r.blocks.length, 'timings_ms': timings});
+        results.add({
+          'image': origin,
+          'page': input.name,
+          'output': outPng.path,
+          'json': outJson.path,
+          'blocks': r.blocks.length,
+          'timings_ms': timings,
+        });
         ctx.say('$page: ${r.blocks.length} block(s), ${r.inpaintReport.fastFilledBlocks} bubble(s) flat-filled, '
             '${r.items.length} text item(s)${r.renderScale == 1.0 ? '' : ', enlarged ×${r.renderScale.toStringAsFixed(2)}'}, '
             '$total ms → ${outPng.path}');
       } catch (e, st) {
         ok = false;
         pageLog.error('process_failed', e, st);
-        results.add({'image': input, 'error': e.toString()});
+        results.add({'image': origin, 'page': input.name, 'error': e.toString()});
         ctx.err.writeln('$page: $e');
       }
     }
@@ -169,36 +207,4 @@ class ProcessCommand extends CtsCommand {
     if (ctx.json) ctx.printJson({'ok': ok, 'run': recorder?.runId, 'results': results});
     return ok ? ExitCodes.ok : ExitCodes.failure;
   }
-}
-
-const _imageExtensions = {'.png', '.jpg', '.jpeg', '.webp', '.bmp'};
-
-/// Files as given; folders become their images (not recursive), in natural
-/// order so page2 comes before page10.
-List<String> expandImageInputs(List<String> args) => [
-      for (final a in args)
-        if (FileSystemEntity.isDirectorySync(a))
-          ...(Directory(a)
-                  .listSync()
-                  .whereType<File>()
-                  .map((f) => f.path)
-                  .where((f) => _imageExtensions.contains(p.extension(f).toLowerCase()))
-                  .toList()
-                ..sort(naturalCompare))
-        else
-          a,
-    ];
-
-final _chunks = RegExp(r'\d+|\D+');
-
-/// Compares strings treating digit runs as numbers, case-insensitively.
-int naturalCompare(String a, String b) {
-  final ca = _chunks.allMatches(a.toLowerCase()).map((m) => m[0]!).toList();
-  final cb = _chunks.allMatches(b.toLowerCase()).map((m) => m[0]!).toList();
-  for (var i = 0; i < ca.length && i < cb.length; i++) {
-    final na = int.tryParse(ca[i]), nb = int.tryParse(cb[i]);
-    final c = na != null && nb != null ? na.compareTo(nb) : ca[i].compareTo(cb[i]);
-    if (c != 0) return c;
-  }
-  return ca.length.compareTo(cb.length);
 }

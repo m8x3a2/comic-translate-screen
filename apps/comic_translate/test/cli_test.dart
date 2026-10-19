@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:comic_translate/cli/cli.dart';
 import 'package:comic_translate/cli/cli_context.dart';
-import 'package:comic_translate/cli/commands/process_command.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -230,7 +229,8 @@ void main() {
       for (final n in ['page10.png', 'page2.jpg', 'Page1.webp', 'notes.txt']) {
         File(p.join(dir.path, n)).writeAsStringSync('');
       }
-      expect(expandImageInputs([dir.path, 'x.png']).map(p.basename), ['Page1.webp', 'page2.jpg', 'page10.png', 'x.png']);
+      final pages = await importPages([dir.path, 'x.png'], cacheDir: Directory(p.join(dataDir.path, 'cache')));
+      expect(pages.map((e) => e.name), ['Page1.webp', 'page2.jpg', 'page10.png', 'x.png']);
     });
 
     test('process refuses a cloud translator without permission', () async {
