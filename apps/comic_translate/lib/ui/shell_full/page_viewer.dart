@@ -407,6 +407,18 @@ class _StepStrip extends ConsumerWidget {
             ),
           );
         }
+        final picked = ref.watch(workspaceProvider.select((s) => s.selectedPages.length));
+        if (steps.running && steps.pages > 1) {
+          children.add(Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Text(l.progressPage('${steps.page}', '${steps.pages}'), style: Theme.of(context).textTheme.labelMedium),
+          ));
+        } else if (picked > 1) {
+          children.add(Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Text(l.stepsForPicked('$picked'), style: Theme.of(context).textTheme.labelMedium),
+          ));
+        }
         return Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
           child: SingleChildScrollView(

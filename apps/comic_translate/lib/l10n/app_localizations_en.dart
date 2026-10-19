@@ -1334,4 +1334,23 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get languagesForAll => 'Use this page\'s languages for all pages';
+
+  @override
+  String pagesPicked(String count) {
+    return 'Pages selected: $count (Ctrl or Shift + click)';
+  }
+
+  @override
+  String get pagesPickedClear => 'Clear the selection';
+
+  @override
+  String stepsForPicked(String count) {
+    return 'for $count selected pages';
+  }
+
+  @override
+  String get mousePickPages => 'Ctrl / Shift + click on a page';
+
+  @override
+  String get keyPickPages => 'Select several pages for the steps';
 }

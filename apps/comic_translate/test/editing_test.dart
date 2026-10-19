@@ -140,6 +140,33 @@ void main() {
     expect(page().blocks.first.xyxy.toJson(), [7, 7, 43, 33]);
   });
 
+  test('pages picked with Ctrl or Shift: a step runs on each, one undo step per page', () async {
+    final more = [for (final n in ['p2.png', 'p3.png']) p.join(dir.path, n)];
+    for (final f in more) {
+      await ImageCodec.writeFile(f, RgbImage.filled(100, 60, 255, 255, 255));
+    }
+    await ws().addInputs(more);
+    expect(container.read(workspaceProvider).stepPages.map((x) => x.name), ['page.png'], reason: 'only the current');
+
+    ws().select(2, range: true);
+    expect(container.read(workspaceProvider).selectedPages, hasLength(3));
+    ws().select(1, toggle: true);
+    expect(container.read(workspaceProvider).stepPages.map((x) => x.name), ['page.png', 'p3.png']);
+
+    final ui = _YesUi();
+    await container.read(stepsProvider.notifier).run(ManualStep.translate, ui);
+    expect(ui.errors, isEmpty);
+    final pages = container.read(workspaceProvider).pages;
+    expect([for (final x in pages) x.blocks.isNotEmpty], [true, false, true]);
+    expect(pages.first.blocks.single.translation, contains('HELLO'));
+    for (final x in [pages.first, pages.last]) {
+      expect(container.read(workspaceProvider).history[x.id]!.undo, hasLength(1));
+    }
+
+    ws().select(0);
+    expect(container.read(workspaceProvider).selectedPages, isEmpty, reason: 'a plain click clears the selection');
+  });
+
   test('step plans do what is missing first', () {
     final fresh = page();
     expect(StepsNotifier.plan(ManualStep.translate, fresh), [

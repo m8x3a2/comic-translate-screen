@@ -228,6 +228,7 @@ class WorkspaceState {
     this.importing = false,
     this.selectedBlock,
     this.history = const {},
+    this.selectedPages = const {},
   });
 
   final List<PageEntry> pages;
@@ -240,6 +241,19 @@ class WorkspaceState {
 
   /// Page id → its undo history.
   final Map<String, PageHistory> history;
+
+  /// Pages picked with Ctrl or Shift in the page list for the steps (the
+  /// current page among them); empty: only the current page.
+  final Set<String> selectedPages;
+
+  /// The pages the steps work on, in page order.
+  List<PageEntry> get stepPages {
+    if (selectedPages.length < 2) return [?currentPage];
+    return [
+      for (final p in pages)
+        if (selectedPages.contains(p.id)) p,
+    ];
+  }
 
   PageEntry? get currentPage => pages.isEmpty ? null : pages[current.clamp(0, pages.length - 1)];
   int get doneCount => pages.where((p) => p.isDone).length;
@@ -270,12 +284,14 @@ class WorkspaceState {
     int? selectedBlock,
     bool clearBlock = false,
     Map<String, PageHistory>? history,
+    Set<String>? selectedPages,
   }) => WorkspaceState(
     pages: pages ?? this.pages,
     current: current ?? this.current,
     importing: importing ?? this.importing,
     selectedBlock: clearBlock ? null : (selectedBlock ?? this.selectedBlock),
     history: history ?? this.history,
+    selectedPages: selectedPages ?? this.selectedPages,
   );
 }
 
@@ -395,21 +411,46 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     }
   }
 
-  void select(int index) {
+  /// Goes to page [index]. With [toggle] (Ctrl) the page is added to or
+  /// taken out of the selected pages; with [range] (Shift) every page from
+  /// the current one to it is selected. A plain click clears the selection.
+  void select(int index, {bool toggle = false, bool range = false}) {
     if (index < 0 || index >= state.pages.length) return;
-    state = state.copyWith(current: index, clearBlock: true);
+    final id = state.pages[index].id;
+    Set<String> picked;
+    if (range) {
+      final from = state.current.clamp(0, state.pages.length - 1);
+      final (a, b) = from <= index ? (from, index) : (index, from);
+      picked = {...state.selectedPages, for (var i = a; i <= b; i++) state.pages[i].id};
+    } else if (toggle) {
+      final current = state.currentPage?.id;
+      picked = {...state.selectedPages, ?current};
+      if (!picked.remove(id) || picked.isEmpty) picked.add(id);
+    } else {
+      picked = const {};
+    }
+    // Ctrl on the only selected page takes it out: go to another selected one.
+    var go = index;
+    if (toggle && !picked.contains(id) && picked.isNotEmpty) {
+      go = state.pages.indexWhere((p) => picked.contains(p.id));
+    }
+    state = state.copyWith(current: go, clearBlock: true, selectedPages: picked.length < 2 ? const {} : picked);
   }
+
+  void clearPageSelection() => state = state.copyWith(selectedPages: const {});
 
   void selectBlock(int? index) =>
       state = index == null ? state.copyWith(clearBlock: true) : state.copyWith(selectedBlock: index);
 
   void remove(String id) {
     final pages = [...state.pages]..removeWhere((p) => p.id == id);
+    final picked = {...state.selectedPages}..remove(id);
     state = state.copyWith(
       pages: pages,
       current: state.current.clamp(0, pages.isEmpty ? 0 : pages.length - 1),
       clearBlock: true,
       history: {...state.history}..remove(id),
+      selectedPages: picked.length < 2 ? const {} : picked,
     );
   }
 

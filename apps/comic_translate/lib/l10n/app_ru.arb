@@ -389,5 +389,10 @@
   "boxesGrow": "Все рамки больше на {px} px",
   "boxesShrink": "Все рамки меньше на {px} px",
   "boxesDeleteAll": "Удалить все рамки страницы",
-  "languagesForAll": "Языки этой страницы — для всех страниц"
+  "languagesForAll": "Языки этой страницы — для всех страниц",
+  "pagesPicked": "Выбрано страниц: {count} (Ctrl или Shift + щелчок)",
+  "pagesPickedClear": "Снять выбор",
+  "stepsForPicked": "для выбранных страниц: {count}",
+  "mousePickPages": "Ctrl / Shift + щелчок по странице",
+  "keyPickPages": "Выбрать несколько страниц для шагов"
 }

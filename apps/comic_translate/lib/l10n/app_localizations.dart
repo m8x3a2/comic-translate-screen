@@ -2437,6 +2437,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use this page\'s languages for all pages'**
   String get languagesForAll;
+
+  /// No description provided for @pagesPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages selected: {count} (Ctrl or Shift + click)'**
+  String pagesPicked(String count);
+
+  /// No description provided for @pagesPickedClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the selection'**
+  String get pagesPickedClear;
+
+  /// No description provided for @stepsForPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'for {count} selected pages'**
+  String stepsForPicked(String count);
+
+  /// No description provided for @mousePickPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl / Shift + click on a page'**
+  String get mousePickPages;
+
+  /// No description provided for @keyPickPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Select several pages for the steps'**
+  String get keyPickPages;
 }
 
 class _AppLocalizationsDelegate

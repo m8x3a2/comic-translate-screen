@@ -1336,4 +1336,23 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get languagesForAll => 'Языки этой страницы — для всех страниц';
+
+  @override
+  String pagesPicked(String count) {
+    return 'Выбрано страниц: $count (Ctrl или Shift + щелчок)';
+  }
+
+  @override
+  String get pagesPickedClear => 'Снять выбор';
+
+  @override
+  String stepsForPicked(String count) {
+    return 'для выбранных страниц: $count';
+  }
+
+  @override
+  String get mousePickPages => 'Ctrl / Shift + щелчок по странице';
+
+  @override
+  String get keyPickPages => 'Выбрать несколько страниц для шагов';
 }

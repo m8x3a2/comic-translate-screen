@@ -828,5 +828,24 @@
     }
   },
   "boxesDeleteAll": "Delete all boxes of the page",
-  "languagesForAll": "Use this page's languages for all pages"
+  "languagesForAll": "Use this page's languages for all pages",
+  "pagesPicked": "Pages selected: {count} (Ctrl or Shift + click)",
+  "@pagesPicked": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pagesPickedClear": "Clear the selection",
+  "stepsForPicked": "for {count} selected pages",
+  "@stepsForPicked": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "mousePickPages": "Ctrl / Shift + click on a page",
+  "keyPickPages": "Select several pages for the steps"
 }

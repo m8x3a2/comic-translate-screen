@@ -4,6 +4,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/batch.dart';
@@ -26,10 +27,35 @@ class PageList extends ConsumerWidget {
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 6),
             itemCount: ws.pages.length,
-            itemBuilder: (context, i) =>
-                _PageTile(page: ws.pages[i], index: i, selected: i == ws.current, canRemove: !running),
+            itemBuilder: (context, i) => _PageTile(
+              page: ws.pages[i],
+              index: i,
+              selected: i == ws.current,
+              picked: ws.selectedPages.contains(ws.pages[i].id),
+              canRemove: !running,
+            ),
           ),
         ),
+        if (ws.selectedPages.length > 1)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 4, 4, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.l10n.pagesPicked('${ws.selectedPages.length}'),
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
+                ),
+                IconButton(
+                  tooltip: context.l10n.pagesPickedClear,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => ref.read(workspaceProvider.notifier).clearPageSelection(),
+                  icon: const Icon(Icons.close, size: 18),
+                ),
+              ],
+            ),
+          ),
         const Divider(height: 1),
         Padding(
           padding: const EdgeInsets.all(8),
@@ -50,11 +76,20 @@ class PageList extends ConsumerWidget {
 }
 
 class _PageTile extends ConsumerWidget {
-  const _PageTile({required this.page, required this.index, required this.selected, required this.canRemove});
+  const _PageTile({
+    required this.page,
+    required this.index,
+    required this.selected,
+    required this.picked,
+    required this.canRemove,
+  });
 
   final PageEntry page;
   final int index;
   final bool selected;
+
+  /// Among the pages selected for the steps.
+  final bool picked;
   final bool canRemove;
 
   @override
@@ -101,11 +136,26 @@ class _PageTile extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Material(
-          color: selected ? theme.colorScheme.secondaryContainer : Colors.transparent,
+          color: selected
+              ? theme.colorScheme.secondaryContainer
+              : picked
+              ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.45)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
+          shape: picked
+              ? RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+                )
+              : null,
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
-            onTap: () => ref.read(workspaceProvider.notifier).select(index),
+            onTap: () {
+              final keys = HardwareKeyboard.instance;
+              ref
+                  .read(workspaceProvider.notifier)
+                  .select(index, toggle: keys.isControlPressed, range: keys.isShiftPressed);
+            },
             child: Padding(
               padding: const EdgeInsets.all(6),
               child: Row(
