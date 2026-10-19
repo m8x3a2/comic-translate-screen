@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:comic_translate/app_info.dart';
 import 'package:comic_translate/bootstrap.dart';
+import 'package:comic_translate/import/pdf_pages.dart';
 import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/state/batch.dart';
+import 'package:comic_translate/state/export.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:comic_translate/ui/app.dart';
 import 'package:comic_translate/ui/settings/settings_screen.dart';
@@ -146,10 +148,23 @@ void main() {
     expect(find.textContaining('[ru] HELLO'), findsOneWidget, reason: 'text panel shows the translation');
 
     // Export writes the translated pages under their original names.
-    final out = Directory(p.join(dir.path, 'out'))..createSync();
-    final count = await tester.runAsync(() => exportTranslatedPages(ws.pages, out.path, 'jpg'));
-    expect(count, 2);
+    final out = Directory(p.join(dir.path, 'out'));
+    final ids = [for (final page in ws.pages) page.id];
+    final result = await tester.runAsync(
+      () => exportOpenPages(container.read, ids, const ExportOptions(imageFormat: 'jpg'), out.path, bookName: 'chapter'),
+    );
+    expect(result!.pages, 2);
     expect(out.listSync().map((f) => p.basename(f.path)).toList()..sort(), ['page1.jpg', 'page2.jpg']);
+
+    // A PDF of the chapter opens again as its pages (PDFium reads it).
+    final pdf = p.join(dir.path, 'chapter.pdf');
+    await tester.runAsync(
+      () => exportOpenPages(container.read, ids, const ExportOptions(container: ExportContainer.pdf), pdf, bookName: 'c'),
+    );
+    final back = await tester.runAsync(
+      () => importPages([pdf], cacheDir: Directory(p.join(dir.path, 'reopen')), pdf: rasterizePdf),
+    );
+    expect(back, hasLength(2));
   });
 
   testWidgets('the smallest window still fits the toolbar and panels', (tester) async {

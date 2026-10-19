@@ -3,8 +3,6 @@
 /// `batch_processor.py` and `batch_report.py`).
 library;
 
-import 'dart:io';
-import 'dart:isolate';
 
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -474,33 +472,4 @@ String _stamp(DateTime t) {
 String _writableExtension(String path) {
   final ext = p.extension(path).toLowerCase();
   return const {'.png', '.jpg', '.jpeg', '.webp', '.bmp'}.contains(ext) ? ext : '.png';
-}
-
-/// Saves the drawn translated pages into [dir] (in a background isolate),
-/// named after the original files; returns how many were written. Pages
-/// changed since they were drawn need [drawMissingPages] first.
-Future<int> exportTranslatedPages(List<PageEntry> pages, String dir, String format) async {
-  final jobs = <(String, String)>[];
-  final used = <String>{};
-  for (final page in pages.where((p) => p.isDone && p.translatedPath != null)) {
-    final ext = format == 'source' ? _writableExtension(page.path) : '.$format';
-    final stem = page.source == null
-        ? p.basenameWithoutExtension(page.path)
-        : '${p.basenameWithoutExtension(page.source!)}_${p.basenameWithoutExtension(page.path)}';
-    var name = '$stem$ext';
-    for (var n = 2; !used.add(name.toLowerCase()); n++) {
-      name = '${stem}_$n$ext';
-    }
-    jobs.add((page.translatedPath!, p.join(dir, name)));
-  }
-  return Isolate.run(() async {
-    for (final (from, to) in jobs) {
-      if (p.extension(to).toLowerCase() == '.png') {
-        await File(from).copy(to);
-      } else {
-        await ImageCodec.writeFile(to, await ImageCodec.readFile(from));
-      }
-    }
-    return jobs.length;
-  });
 }

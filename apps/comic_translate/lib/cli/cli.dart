@@ -14,6 +14,7 @@ import 'commands/ocr_command.dart';
 import 'commands/report_command.dart';
 import 'commands/secrets_command.dart';
 import 'commands/process_command.dart';
+import 'commands/project_command.dart';
 import 'commands/quality_command.dart';
 import 'commands/selftest_command.dart';
 import 'commands/settings_command.dart';
@@ -66,6 +67,8 @@ CommandRunner<int> buildRunner(CliContextHolder holder) {
     ..addCommand(SettingsCommand(holder))
     ..addCommand(SecretsCommand(holder))
     ..addCommand(UsageCommand(holder))
+    ..addCommand(ProjectCommand(holder))
+    ..addCommand(ExportCommand(holder))
     ..addCommand(ReportCommand(holder));
   return runner;
 }

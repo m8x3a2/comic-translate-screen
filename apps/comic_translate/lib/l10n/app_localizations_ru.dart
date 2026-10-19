@@ -1249,4 +1249,63 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keySaveAs => 'Сохранить проект в новый файл';
+
+  @override
+  String get exportWhat => 'Что сохранить';
+
+  @override
+  String get exportTranslatedPages => 'Страницы с переводом';
+
+  @override
+  String get exportCleanedPages => 'Очищенные страницы (без текста)';
+
+  @override
+  String get exportRecognizedJson => 'Распознанный текст (JSON)';
+
+  @override
+  String get exportTranslatedJson => 'Перевод текстом (JSON)';
+
+  @override
+  String get exportWhere => 'Сохранить как';
+
+  @override
+  String get exportFolder => 'Папка';
+
+  @override
+  String get exportReaderNote =>
+      'CBZ, CB7 и PDF — для читалок комиксов: в них только картинки одного вида (с переводом, если он выбран), без текстов.';
+
+  @override
+  String get exportNeeds7zip => 'Для CB7 нужен установленный 7-Zip';
+
+  @override
+  String get exportPdfFormat =>
+      'В PDF формат PNG сохраняет картинку без потерь, остальные становятся JPEG.';
+
+  @override
+  String get exportWhich => 'Страницы';
+
+  @override
+  String exportAllPages(String count) {
+    return 'Все готовые ($count)';
+  }
+
+  @override
+  String get exportCurrentPage => 'Только текущая';
+
+  @override
+  String exportByChapter(String count) {
+    return 'Отдельный файл для каждой главы ($count)';
+  }
+
+  @override
+  String get exportStart => 'Экспортировать…';
+
+  @override
+  String get exportingPages => 'Экспортирую…';
+
+  @override
+  String exportSaved(String path) {
+    return 'Сохранено: $path';
+  }
 }

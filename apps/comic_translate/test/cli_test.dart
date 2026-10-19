@@ -137,6 +137,49 @@ void main() {
     expect((await cts(['usage'], dataDir)).out, contains('No requests'));
   });
 
+  test('project info and export: a project becomes a CBZ, a folder of texts, or chapters', () async {
+    final page = p.join(dataDir.path, 'src', '001.png');
+    Directory(p.dirname(page)).createSync();
+    await ImageCodec.writeFile(page, RgbImage.filled(120, 80, 255, 255, 255));
+    final project = p.join(dataDir.path, 'Book.ctsproj');
+    ProjectFile.save(
+      project,
+      ProjectData(
+        pages: [
+          for (final (i, chapter) in ['vol1.cbz', 'vol1.cbz', 'vol2.cbz'].indexed)
+            ProjectPage(
+              id: '$i',
+              name: '00${i + 1}.png',
+              source: chapter,
+              image: page,
+              cleanImage: page,
+              blocks: [TextBlock(xyxy: const BBox(10, 10, 110, 70), text: 'Hi', translation: 'Привет')],
+              state: const {'status': 'done'},
+            ),
+        ],
+      ),
+    );
+    final info = await cts(['--json', 'project', 'info', project], dataDir);
+    expect((jsonDecode(info.out) as Map)['pages'], 3);
+    final bad = await cts(['project', 'info', p.join(dataDir.path, 'src', '001.png')], dataDir);
+    expect(bad.code, ExitCodes.failure);
+
+    final cbz = p.join(dataDir.path, 'out', 'book.cbz');
+    final r = await cts(['export', project, '-o', cbz, '--image-format', 'jpg'], dataDir);
+    expect(r.code, ExitCodes.ok, reason: r.err);
+    expect(r.out, contains('3 page(s)'));
+    expect(File(cbz).existsSync(), isTrue);
+
+    final texts = p.join(dataDir.path, 'out', 'texts');
+    await cts(['export', project, '-o', texts, '--what', 'raw,translations'], dataDir);
+    expect(File(p.join(texts, 'translated_texts', '001_translated.json')).readAsStringSync(), contains('Привет'));
+
+    final chapters = p.join(dataDir.path, 'out', 'chapters');
+    final split = await cts(['export', project, '-o', chapters, '--as', 'pdf', '--by-chapter'], dataDir);
+    expect(split.code, ExitCodes.ok, reason: split.err);
+    expect(Directory(chapters).listSync().map((f) => p.basename(f.path)).toList()..sort(), ['vol1.pdf', 'vol2.pdf']);
+  });
+
   group('translate', () {
     late String ocrJson;
     setUp(() {

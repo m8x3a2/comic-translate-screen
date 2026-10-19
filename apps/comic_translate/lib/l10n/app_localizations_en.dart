@@ -1247,4 +1247,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keySaveAs => 'Save the project as a new file';
+
+  @override
+  String get exportWhat => 'What to save';
+
+  @override
+  String get exportTranslatedPages => 'Pages with the translation';
+
+  @override
+  String get exportCleanedPages => 'Cleaned pages (text removed)';
+
+  @override
+  String get exportRecognizedJson => 'Recognized text (JSON)';
+
+  @override
+  String get exportTranslatedJson => 'Translation as text (JSON)';
+
+  @override
+  String get exportWhere => 'Save as';
+
+  @override
+  String get exportFolder => 'Folder';
+
+  @override
+  String get exportReaderNote =>
+      'CBZ, CB7 and PDF are for comic readers: they hold pictures of one kind (with the translation if it is chosen), without texts.';
+
+  @override
+  String get exportNeeds7zip => 'CB7 needs 7-Zip installed';
+
+  @override
+  String get exportPdfFormat =>
+      'In a PDF, PNG keeps every pixel; the other formats become JPEG.';
+
+  @override
+  String get exportWhich => 'Pages';
+
+  @override
+  String exportAllPages(String count) {
+    return 'All finished pages ($count)';
+  }
+
+  @override
+  String get exportCurrentPage => 'Only the current page';
+
+  @override
+  String exportByChapter(String count) {
+    return 'A separate file for each chapter ($count)';
+  }
+
+  @override
+  String get exportStart => 'Export…';
+
+  @override
+  String get exportingPages => 'Exporting…';
+
+  @override
+  String exportSaved(String path) {
+    return 'Saved: $path';
+  }
 }

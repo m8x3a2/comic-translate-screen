@@ -1,3 +1,4 @@
+import '../export/export_pages.dart';
 import '../plugins/engines.dart';
 import '../render/layout.dart';
 import '../render/upscale.dart';
@@ -206,13 +207,21 @@ class AppSettings {
 
 /// How results are saved. As in the original, a batch run can also save the
 /// recognized text, the translations and the cleaned pages automatically, to
-/// `comic_translate_<timestamp>` next to the input.
+/// `comic_translate_<timestamp>` next to the input ([rawText],
+/// [translatedText], [cleanedImage]). The other fields remember the last
+/// choices of the Export window.
 class ExportSettings {
   const ExportSettings({
     this.imageFormat = 'source',
     this.rawText = false,
     this.translatedText = false,
     this.cleanedImage = false,
+    this.container = ExportContainer.folder,
+    this.withTranslated = true,
+    this.withCleaned = false,
+    this.withRawText = false,
+    this.withTranslatedText = false,
+    this.byChapter = true,
   });
 
   static const formats = ['source', 'png', 'jpg', 'webp'];
@@ -223,14 +232,51 @@ class ExportSettings {
   final bool translatedText;
   final bool cleanedImage;
 
+  final ExportContainer container;
+  final bool withTranslated;
+  final bool withCleaned;
+  final bool withRawText;
+  final bool withTranslatedText;
+
+  /// One file per chapter (source archive) when there are several.
+  final bool byChapter;
+
   bool get anyAutomatic => rawText || translatedText || cleanedImage;
 
-  ExportSettings copyWith({String? imageFormat, bool? rawText, bool? translatedText, bool? cleanedImage}) =>
+  /// The Export window's choices.
+  ExportOptions get options => ExportOptions(
+        container: container,
+        imageFormat: imageFormat,
+        translated: withTranslated,
+        cleaned: withCleaned,
+        recognizedText: withRawText,
+        translatedText: withTranslatedText,
+        byChapter: byChapter,
+      );
+
+  ExportSettings copyWith({
+    String? imageFormat,
+    bool? rawText,
+    bool? translatedText,
+    bool? cleanedImage,
+    ExportContainer? container,
+    bool? withTranslated,
+    bool? withCleaned,
+    bool? withRawText,
+    bool? withTranslatedText,
+    bool? byChapter,
+  }) =>
       ExportSettings(
         imageFormat: imageFormat ?? this.imageFormat,
         rawText: rawText ?? this.rawText,
         translatedText: translatedText ?? this.translatedText,
         cleanedImage: cleanedImage ?? this.cleanedImage,
+        container: container ?? this.container,
+        withTranslated: withTranslated ?? this.withTranslated,
+        withCleaned: withCleaned ?? this.withCleaned,
+        withRawText: withRawText ?? this.withRawText,
+        withTranslatedText: withTranslatedText ?? this.withTranslatedText,
+        byChapter: byChapter ?? this.byChapter,
       );
 
   Map<String, Object?> toJson() => {
@@ -238,6 +284,12 @@ class ExportSettings {
         'raw_text': rawText,
         'translated_text': translatedText,
         'cleaned_image': cleanedImage,
+        'container': container.name,
+        'with_translated': withTranslated,
+        'with_cleaned': withCleaned,
+        'with_raw_text': withRawText,
+        'with_translated_text': withTranslatedText,
+        'by_chapter': byChapter,
       };
 
   factory ExportSettings.fromJson(Map<String, Object?> json) {
@@ -249,6 +301,12 @@ class ExportSettings {
       rawText: flag('raw_text', d.rawText),
       translatedText: flag('translated_text', d.translatedText),
       cleanedImage: flag('cleaned_image', d.cleanedImage),
+      container: ExportContainer.parse(json['container'] as String?),
+      withTranslated: flag('with_translated', d.withTranslated),
+      withCleaned: flag('with_cleaned', d.withCleaned),
+      withRawText: flag('with_raw_text', d.withRawText),
+      withTranslatedText: flag('with_translated_text', d.withTranslatedText),
+      byChapter: flag('by_chapter', d.byChapter),
     );
   }
 }

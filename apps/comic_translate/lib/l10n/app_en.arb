@@ -762,5 +762,43 @@
   "projectAutosaveHelp": "A project that has a file saves itself a couple of seconds after every change and after every page of “Translate all”. Work that is not saved in a project yet is copied every 2 minutes, so it can be restored after a crash.",
   "openingProject": "Opening the project…",
   "keySave": "Save the project",
-  "keySaveAs": "Save the project as a new file"
+  "keySaveAs": "Save the project as a new file",
+  "exportWhat": "What to save",
+  "exportTranslatedPages": "Pages with the translation",
+  "exportCleanedPages": "Cleaned pages (text removed)",
+  "exportRecognizedJson": "Recognized text (JSON)",
+  "exportTranslatedJson": "Translation as text (JSON)",
+  "exportWhere": "Save as",
+  "exportFolder": "Folder",
+  "exportReaderNote": "CBZ, CB7 and PDF are for comic readers: they hold pictures of one kind (with the translation if it is chosen), without texts.",
+  "exportNeeds7zip": "CB7 needs 7-Zip installed",
+  "exportPdfFormat": "In a PDF, PNG keeps every pixel; the other formats become JPEG.",
+  "exportWhich": "Pages",
+  "exportAllPages": "All finished pages ({count})",
+  "@exportAllPages": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "exportCurrentPage": "Only the current page",
+  "exportByChapter": "A separate file for each chapter ({count})",
+  "@exportByChapter": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "exportStart": "Export…",
+  "exportingPages": "Exporting…",
+  "exportSaved": "Saved: {path}",
+  "@exportSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  }
 }

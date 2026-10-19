@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:ct_core/ct_core.dart';
 import 'package:path/path.dart' as p;
 
+import '../../app_info.dart';
 import '../../import/pdf_pages.dart';
 import '../../pipeline/page_pipeline.dart';
 import '../cli.dart';
@@ -81,7 +82,8 @@ class ProcessCommand extends CtsCommand {
       ..addFlag('allow-network', negatable: false, help: 'Allow this run to send the text to the configured translator.')
       ..addFlag('remember', negatable: false, help: 'With --allow-network: remember the approval for this server.')
       ..addFlag('gpu', help: 'Use the GPU (DirectML). Default from settings.', defaultsTo: null)
-      ..addFlag('debug', negatable: false, help: 'Test mode: save every stage (blocks, masks, images, timings).');
+      ..addFlag('debug', negatable: false, help: 'Test mode: save every stage (blocks, masks, images, timings).')
+      ..addOption('project', help: 'Also save the results as a project (.ctsproj) to open in the window.');
   }
 
   @override
@@ -164,7 +166,10 @@ class ProcessCommand extends CtsCommand {
     final outDir = Directory(args.option('output')!)..createSync(recursive: true);
     final results = <Map<String, Object?>>[];
     var ok = true;
-    for (final input in inputs) {
+    final projectPath = args.option('project');
+    final projectPages = <ProjectPage>[];
+    final cleanDir = projectPath == null ? null : Directory.systemTemp.createTempSync('cts_project_');
+    for (final (index, input) in inputs.indexed) {
       // Pages from archives and PDFs are named after the archive: book_001.
       final stem = input.source == null
           ? p.basenameWithoutExtension(input.path)
@@ -183,6 +188,18 @@ class ProcessCommand extends CtsCommand {
         final outJson = File(p.join(outDir.path, '$stem.json'))
           ..writeAsStringSync(const JsonEncoder.withIndent('  ')
               .convert({...r.toJson(image: page, source: source, target: target), 'timings_ms': timings}));
+        if (cleanDir != null) {
+          final clean = File(p.join(cleanDir.path, '$index.png'))..writeAsBytesSync(ImageCodec.encodePng(r.clean));
+          projectPages.add(ProjectPage(
+            id: '$index',
+            name: input.name,
+            source: input.source,
+            image: input.path,
+            cleanImage: clean.path,
+            blocks: r.blocks,
+            state: {'status': 'done', if (r.renderScale != 1) 'render_scale': r.renderScale},
+          ));
+        }
         final total = timings.values.fold(0, (a, b) => a + b);
         pageLog.log(LogLevel.info, 'process_done', durMs: total, data: {'blocks': r.blocks.length, 'timings': timings});
         results.add({
@@ -201,6 +218,18 @@ class ProcessCommand extends CtsCommand {
         pageLog.error('process_failed', e, st);
         results.add({'image': origin, 'page': input.name, 'error': e.toString()});
         ctx.err.writeln('$page: $e');
+        projectPages.add(ProjectPage(
+          id: '$index',
+          name: input.name,
+          source: input.source,
+          image: input.path,
+          state: {
+            'status': 'skipped',
+            'reason': e is TranslationException
+                ? {'kind': 'translation', 'error': e.kind.name, 'message': e.message}
+                : {'kind': 'other', 'message': '$e'},
+          },
+        ));
         // Every following page would fail the same way (key, balance,
         // address, connection): stop instead of sending them.
         if (e is TranslationException && e.kind.stopsRun) {
@@ -209,8 +238,19 @@ class ProcessCommand extends CtsCommand {
         }
       }
     }
+    if (projectPath != null && projectPages.isNotEmpty) {
+      try {
+        ProjectFile.save(projectPath, ProjectData(pages: projectPages), appVersion: AppInfo.version, replace: true);
+        ctx.say('Project: $projectPath (${projectPages.length} page(s))');
+      } catch (e, st) {
+        ok = false;
+        log.error('project_save_failed', e, st);
+        ctx.err.writeln('Could not save the project: $e');
+      }
+    }
+    if (cleanDir != null && cleanDir.existsSync()) cleanDir.deleteSync(recursive: true);
     await recorder?.finish(success: ok, summary: {'pages': results.length});
-    if (ctx.json) ctx.printJson({'ok': ok, 'run': recorder?.runId, 'results': results});
+    if (ctx.json) ctx.printJson({'ok': ok, 'run': recorder?.runId, 'results': results, 'project': ?projectPath});
     return ok ? ExitCodes.ok : ExitCodes.failure;
   }
 }

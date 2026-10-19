@@ -18,7 +18,7 @@ import '../../app_info.dart';
 import '../../state/app_state.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
-import '../../state/page_render.dart';
+import '../../state/export.dart';
 import '../../state/project.dart';
 import '../../state/steps.dart';
 import '../../state/window_mode.dart';
@@ -27,6 +27,7 @@ import '../common/labels.dart';
 import '../common/plugin_strings.dart';
 import '../settings/settings_screen.dart';
 import 'batch_dialogs.dart';
+import 'export_dialog.dart';
 import 'home_view.dart';
 import 'page_list.dart';
 import 'page_viewer.dart';
@@ -288,39 +289,84 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     }
   }
 
+  /// The Export window, then the files.
   Future<void> _export() async {
     final l = context.l10n;
-    final pages = ref.read(workspaceProvider).pages;
-    if (!pages.any((p) => p.isDone)) {
+    final ws = ref.read(workspaceProvider);
+    final done = [
+      for (final page in ws.pages)
+        if (page.isDone) page,
+    ];
+    if (done.isEmpty) {
       _snack(l.nothingToExport);
       return;
     }
-    final dir = await getDirectoryPath(confirmButtonText: l.export);
-    if (dir == null || !mounted) return;
-    final int count;
-    try {
-      final ids = [
-        for (final p in pages)
-          if (p.isDone) p.id,
-      ];
-      final drawn = await _withProgress(
-        l.drawingPages,
-        (progress) => drawMissingPages(ref.read, ids, onProgress: progress),
+    final current = ws.currentPage;
+    final choice = await showExportDialog(
+      context,
+      initial: ref.read(settingsProvider).export,
+      pageCount: done.length,
+      chapters: chapterCount(done),
+      currentAvailable: current != null && current.isDone,
+      hasSevenZip: findSevenZip() != null,
+    );
+    if (choice == null || !mounted) return;
+    await ref.read(settingsProvider.notifier).change((s) => s.export = choice.settings);
+    final pages = choice.currentOnly ? [current!] : done;
+    final options = choice.settings.options;
+    final split = options.byChapter && chapterCount(pages) > 1;
+    final chapter = chapterOf(pages.first);
+    final book =
+        ref.read(projectProvider).name ??
+        (chapter.isNotEmpty ? chapter : (choice.currentOnly ? p.basenameWithoutExtension(pages.first.name) : 'comic'));
+    String? target;
+    if (options.container == ExportContainer.folder || split) {
+      target = await getDirectoryPath(confirmButtonText: l.export);
+    } else {
+      final ext = options.container.extension;
+      final location = await getSaveLocation(
+        acceptedTypeGroups: [
+          XTypeGroup(label: ext.substring(1).toUpperCase(), extensions: [ext.substring(1)]),
+        ],
+        suggestedName: '${safeFileStem(book)}$ext',
+        confirmButtonText: l.export,
       );
-      count = await exportTranslatedPages(drawn, dir, ref.read(settingsProvider).export.imageFormat);
+      target = location == null
+          ? null
+          : location.path.toLowerCase().endsWith(ext)
+          ? location.path
+          : '${location.path}$ext';
+    }
+    if (target == null || !mounted) return;
+    final ids = [for (final page in pages) page.id];
+    final ExportResult result;
+    try {
+      result = await _withProgress(
+        options.translated ? l.drawingPages : l.exportingPages,
+        (progress) => exportOpenPages(ref.read, ids, options, target!, bookName: book, onProgress: progress),
+      );
     } catch (e, st) {
-      ref.read(servicesProvider).appLog.error('export_failed', e, st, {'dir': dir});
-      if (mounted) _snack(l.exportFailed(e is FileSystemException ? (e.osError?.message ?? e.message) : '$e'));
+      ref.read(servicesProvider).appLog.error('export_failed', e, st, {'container': options.container.name});
+      if (mounted) {
+        _snack(switch (e) {
+          ArchiveToolMissingException() => l.exportNeeds7zip,
+          FileSystemException(:final osError, :final message) => l.exportFailed(osError?.message ?? message),
+          _ => l.exportFailed('$e'),
+        });
+      }
       return;
     }
-    ref.read(workspaceProvider.notifier).markExported([
-      for (final p in pages)
-        if (p.isDone) p.id,
-    ]);
+    ref.read(servicesProvider).appLog.info('exported', {
+      'container': options.container.name,
+      'pages': result.pages,
+      'files': result.outputs.length,
+    });
+    if (options.translated) ref.read(workspaceProvider.notifier).markExported(ids);
     if (mounted) {
+      final shown = result.outputs.length == 1 ? result.outputs.single : target;
       _snack(
-        l.exportDone('$count', dir),
-        action: SnackBarAction(label: l.showInFolder, onPressed: () => showInExplorer(dir)),
+        l.exportSaved(shown),
+        action: SnackBarAction(label: l.showInFolder, onPressed: () => showInExplorer(shown)),
       );
     }
   }

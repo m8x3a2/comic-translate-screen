@@ -2293,6 +2293,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save the project as a new file'**
   String get keySaveAs;
+
+  /// No description provided for @exportWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What to save'**
+  String get exportWhat;
+
+  /// No description provided for @exportTranslatedPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages with the translation'**
+  String get exportTranslatedPages;
+
+  /// No description provided for @exportCleanedPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaned pages (text removed)'**
+  String get exportCleanedPages;
+
+  /// No description provided for @exportRecognizedJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognized text (JSON)'**
+  String get exportRecognizedJson;
+
+  /// No description provided for @exportTranslatedJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation as text (JSON)'**
+  String get exportTranslatedJson;
+
+  /// No description provided for @exportWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as'**
+  String get exportWhere;
+
+  /// No description provided for @exportFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder'**
+  String get exportFolder;
+
+  /// No description provided for @exportReaderNote.
+  ///
+  /// In en, this message translates to:
+  /// **'CBZ, CB7 and PDF are for comic readers: they hold pictures of one kind (with the translation if it is chosen), without texts.'**
+  String get exportReaderNote;
+
+  /// No description provided for @exportNeeds7zip.
+  ///
+  /// In en, this message translates to:
+  /// **'CB7 needs 7-Zip installed'**
+  String get exportNeeds7zip;
+
+  /// No description provided for @exportPdfFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'In a PDF, PNG keeps every pixel; the other formats become JPEG.'**
+  String get exportPdfFormat;
+
+  /// No description provided for @exportWhich.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get exportWhich;
+
+  /// No description provided for @exportAllPages.
+  ///
+  /// In en, this message translates to:
+  /// **'All finished pages ({count})'**
+  String exportAllPages(String count);
+
+  /// No description provided for @exportCurrentPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the current page'**
+  String get exportCurrentPage;
+
+  /// No description provided for @exportByChapter.
+  ///
+  /// In en, this message translates to:
+  /// **'A separate file for each chapter ({count})'**
+  String exportByChapter(String count);
+
+  /// No description provided for @exportStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Export…'**
+  String get exportStart;
+
+  /// No description provided for @exportingPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Exporting…'**
+  String get exportingPages;
+
+  /// No description provided for @exportSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved: {path}'**
+  String exportSaved(String path);
 }
 
 class _AppLocalizationsDelegate

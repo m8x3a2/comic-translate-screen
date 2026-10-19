@@ -7,6 +7,7 @@ import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/state/project.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:comic_translate/ui/app.dart';
+import 'package:comic_translate/ui/shell_full/export_dialog.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -100,5 +101,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(container.read(workspaceProvider).pages, isEmpty);
     expect(container.read(projectProvider).dirty, isFalse);
+  });
+
+  testWidgets('the export window: reader formats take pictures only; choices come back', (tester) async {
+    await start(tester, fakeSettings());
+    final context = tester.element(find.byType(Scaffold).first);
+    ExportChoice? choice;
+    var closed = false;
+    showExportDialog(
+      context,
+      initial: const ExportSettings(withRawText: true),
+      pageCount: 5,
+      chapters: 2,
+      currentAvailable: true,
+      hasSevenZip: false,
+    ).then((c) {
+      choice = c;
+      closed = true;
+    });
+    await tester.pumpAndSettle();
+    expect(find.text('Все готовые (5)'), findsOneWidget);
+    expect(find.text('Отдельный файл для каждой главы (2)'), findsOneWidget);
+
+    await tester.tap(find.text('CBZ'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('для читалок комиксов'), findsOneWidget);
+    final raw = tester.widget<CheckboxListTile>(find.widgetWithText(CheckboxListTile, 'Распознанный текст (JSON)'));
+    expect(raw.onChanged, isNull, reason: 'no texts in a CBZ');
+    final cb7 = tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'CB7'));
+    expect(cb7.onSelected, isNull, reason: '7-Zip is not installed');
+
+    await tester.tap(find.text('Экспортировать…'));
+    await tester.pumpAndSettle();
+    expect(closed, isTrue);
+    expect(choice!.settings.container, ExportContainer.cbz);
+    expect(choice!.currentOnly, isFalse);
   });
 }
