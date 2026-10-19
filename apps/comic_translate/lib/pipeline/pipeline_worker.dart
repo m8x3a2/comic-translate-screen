@@ -1,0 +1,427 @@
+/// Runs the heavy part of the page pipeline ([PagePipeline.prepare]) in a
+/// background isolate, so the window stays responsive while models work.
+///
+/// Plugins are created inside the worker from a [PipelineSpec] resolved on
+/// the main isolate (the OS secure storage is only reachable there). Log
+/// events are forwarded to the main isolate's log; in test mode the worker
+/// also keeps the run folder. Drawing text needs dart:ui and stays on the
+/// main isolate ([renderPage]); the worker writes the resulting files.
+library;
+
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:isolate';
+
+import 'package:ct_core/ct_core.dart';
+import 'package:ct_providers/ct_providers.dart';
+
+import 'page_pipeline.dart';
+
+/// What a worker needs to start.
+class WorkerSetup {
+  WorkerSetup({
+    required this.spec,
+    required this.modelsDir,
+    this.runsDir,
+    this.environment = const {},
+    this.runLabel,
+    this.homeDir,
+    this.registry = builtInRegistry,
+  });
+
+  final PipelineSpec spec;
+  final String modelsDir;
+
+  /// Test mode: a run folder with every stage's artifacts is created here.
+  final String? runsDir;
+
+  /// `env.json` of the run folder.
+  final Map<String, Object?> environment;
+  final String? runLabel;
+
+  /// Masked in the run folder's log.
+  final String? homeDir;
+
+  /// Builds the plugin registry inside the worker (a top-level function;
+  /// tests pass fakes).
+  final PluginRegistry Function() registry;
+}
+
+/// A file the worker writes after a page is drawn.
+sealed class WorkerOutput {
+  const WorkerOutput(this.path);
+
+  final String path;
+}
+
+/// An image, encoded by the file extension (png, jpg, webp, bmp).
+class ImageOutput extends WorkerOutput {
+  const ImageOutput(super.path, this.image);
+
+  final RgbImage image;
+}
+
+class JsonOutput extends WorkerOutput {
+  const JsonOutput(super.path, this.json);
+
+  final Object? json;
+}
+
+/// The worker failed in a way that cannot be sent back as the original
+/// exception.
+class WorkerException implements Exception {
+  WorkerException(this.message, this.type, this.remoteStack);
+
+  final String message;
+  final String type;
+  final String remoteStack;
+
+  @override
+  String toString() => message;
+}
+
+/// Main-isolate handle of a background pipeline.
+class PipelineWorker {
+  PipelineWorker._(this._isolate, this._toWorker, this._fromWorker, this.runDir, this.runId);
+
+  final Isolate _isolate;
+  final SendPort _toWorker;
+  final ReceivePort _fromWorker;
+
+  /// Test mode: the run folder kept by the worker.
+  final String? runDir;
+  final String? runId;
+
+  final Map<int, _Pending> _pending = {};
+  final Completer<void> _closed = Completer();
+  var _nextId = 0;
+  var _disposed = false;
+
+  /// Starts a worker and loads the plugins of [setup]. Throws what loading
+  /// threw (e.g. [ModelNotInstalledException]).
+  static Future<PipelineWorker> start(WorkerSetup setup, {required EventLog log}) async {
+    final port = ReceivePort();
+    // The exit message (null) also arrives when the isolate dies on an
+    // uncaught error, so nothing waits forever.
+    final isolate = await Isolate.spawn(_workerMain, (port.sendPort, setup),
+        debugName: 'pipeline', onExit: port.sendPort, onError: port.sendPort);
+    final ready = Completer<_Ready>();
+    PipelineWorker? worker;
+    port.listen((message) {
+      switch (message) {
+        case _Log(:final line):
+          log.write(LogEvent.fromJson((jsonDecode(line) as Map).cast<String, Object?>()));
+        case _Ready r:
+          ready.complete(r);
+        case _Failed f when worker == null:
+          ready.completeError(f.error, StackTrace.fromString(f.stack));
+        case null:
+          if (!ready.isCompleted) ready.completeError(WorkerException('The pipeline worker stopped', 'exit', ''));
+          worker?._onClosed();
+        case [final error, final stack]:
+          log.log(LogLevel.error, 'worker_crash', data: {'error': '$error', 'stack': '$stack'});
+        default:
+          worker?._onMessage(message);
+      }
+    });
+    try {
+      final r = await ready.future;
+      return worker = PipelineWorker._(isolate, r.inbox, port, r.runDir, r.runId);
+    } catch (_) {
+      port.close();
+      isolate.kill();
+      rethrow;
+    }
+  }
+
+  /// Detection, OCR, translation and cleaning of the image at [path] (or of
+  /// [image]). [onStage] reports each stage as it starts. Cancelling [cancel]
+  /// stops at the next step boundary with [CancelledException].
+  Future<CleanPage> prepare(
+    String page, {
+    String? path,
+    RgbImage? image,
+    required String sourceLanguage,
+    required String targetLanguage,
+    CancelToken? cancel,
+    void Function(String stage)? onStage,
+  }) async {
+    assert((path == null) != (image == null), 'pass either path or image');
+    final id = _nextId++;
+    final pending = _Pending<CleanPage>(onStage);
+    _send(id, pending, _Prepare(id, page, path, image, sourceLanguage, targetLanguage));
+    cancel?.onCancel(() {
+      if (_pending.containsKey(id)) _toWorker.send(_Cancel(id));
+    });
+    return pending.completer.future;
+  }
+
+  /// Writes [outputs] and, in test mode, records the render step of [page].
+  Future<void> save(List<WorkerOutput> outputs, {String? page, RenderedPage? render, int renderMs = 0}) {
+    final id = _nextId++;
+    final pending = _Pending<void>(null);
+    _send(id, pending, _Save(id, outputs, page, render?.image, [for (final i in render?.items ?? const <TextItem>[]) i.toJson()], renderMs));
+    return pending.completer.future;
+  }
+
+  void _send(int id, _Pending pending, Object message) {
+    if (_disposed) throw StateError('The pipeline worker is closed');
+    _pending[id] = pending;
+    _toWorker.send(message);
+  }
+
+  void _onMessage(Object? message) {
+    switch (message) {
+      case _Stage(:final id, :final stage):
+        _pending[id]?.onStage?.call(stage);
+      case _Prepared(:final id, :final page):
+        _pending.remove(id)?.completer.complete(page);
+      case _Saved(:final id):
+        _pending.remove(id)?.completer.complete();
+      case _Failed(:final id, :final error, :final stack):
+        _pending.remove(id)?.completer.completeError(error, StackTrace.fromString(stack));
+    }
+  }
+
+  void _onClosed() {
+    _disposed = true;
+    _fromWorker.close();
+    if (!_closed.isCompleted) _closed.complete();
+    for (final p in _pending.values) {
+      p.completer.completeError(WorkerException('The pipeline worker stopped', 'exit', ''));
+    }
+    _pending.clear();
+  }
+
+  /// Releases the models, finishes the run folder and stops the isolate.
+  /// Work still in progress is cancelled.
+  Future<void> dispose({bool success = true, Map<String, Object?>? summary}) async {
+    if (_disposed) return;
+    _disposed = true;
+    for (final id in _pending.keys) {
+      _toWorker.send(_Cancel(id));
+    }
+    _toWorker.send(_Shutdown(success, summary));
+    await _closed.future.timeout(const Duration(seconds: 30), onTimeout: () {
+      _isolate.kill(priority: Isolate.immediate);
+      _onClosed();
+    });
+  }
+}
+
+class _Pending<T> {
+  _Pending(this.onStage);
+
+  final Completer<T> completer = Completer();
+  final void Function(String stage)? onStage;
+}
+
+// Messages main → worker.
+
+class _Prepare {
+  _Prepare(this.id, this.page, this.path, this.image, this.source, this.target);
+
+  final int id;
+  final String page;
+  final String? path;
+  final RgbImage? image;
+  final String source;
+  final String target;
+}
+
+class _Cancel {
+  _Cancel(this.id);
+
+  final int id;
+}
+
+class _Save {
+  _Save(this.id, this.outputs, this.page, this.rendered, this.items, this.renderMs);
+
+  final int id;
+  final List<WorkerOutput> outputs;
+  final String? page;
+  final RgbImage? rendered;
+  final List<Map<String, Object?>> items;
+  final int renderMs;
+}
+
+class _Shutdown {
+  _Shutdown(this.success, this.summary);
+
+  final bool success;
+  final Map<String, Object?>? summary;
+}
+
+// Messages worker → main.
+
+class _Ready {
+  _Ready(this.inbox, this.runDir, this.runId);
+
+  final SendPort inbox;
+  final String? runDir;
+  final String? runId;
+}
+
+class _Log {
+  _Log(this.line);
+
+  final String line;
+}
+
+class _Stage {
+  _Stage(this.id, this.stage);
+
+  final int id;
+  final String stage;
+}
+
+class _Prepared {
+  _Prepared(this.id, this.page);
+
+  final int id;
+  final CleanPage page;
+}
+
+class _Saved {
+  _Saved(this.id);
+
+  final int id;
+}
+
+class _Failed {
+  _Failed(this.id, this.error, this.stack);
+
+  final int id;
+  final Object error;
+  final String stack;
+}
+
+/// Forwards log events to the main isolate (redacted there).
+class _PortSink implements LogSink {
+  _PortSink(this._port);
+
+  final SendPort _port;
+
+  @override
+  void write(LogEvent event) => _port.send(_Log(jsonEncode(event.toJson(), toEncodable: (o) => o.toString())));
+
+  @override
+  Future<void> flush() async {}
+
+  @override
+  Future<void> close() async {}
+}
+
+/// Exceptions the main isolate handles by type are sent as they are; others
+/// as text, since they may hold resources that cannot cross isolates.
+Object _sendable(Object e) => switch (e) {
+      CancelledException() || ModelNotInstalledException() || TranslationException() || ImageDecodeException() => e,
+      _ => WorkerException(e.toString(), e.runtimeType.toString(), ''),
+    };
+
+Future<void> _workerMain((SendPort, WorkerSetup) args) async {
+  final (toMain, setup) = args;
+  final inbox = ReceivePort();
+  final forward = _PortSink(toMain);
+  final redactor = Redactor(homeDir: setup.homeDir);
+  for (final config in setup.spec.configs.values) {
+    config.secrets.values.forEach(redactor.addSecret);
+  }
+  final registry = setup.registry();
+  RunRecorder? recorder;
+  late final EventLog log;
+  late final PagePipeline pipeline;
+
+  void fail(int id, Object e, StackTrace st) {
+    try {
+      toMain.send(_Failed(id, _sendable(e), st.toString()));
+    } on ArgumentError {
+      toMain.send(_Failed(id, WorkerException(e.toString(), e.runtimeType.toString(), ''), st.toString()));
+    }
+  }
+
+  try {
+    if (setup.runsDir != null) {
+      recorder = await RunRecorder.start(
+        runsDir: Directory(setup.runsDir!),
+        redactor: redactor,
+        environment: setup.environment,
+        extraSinks: [forward],
+        label: setup.runLabel,
+      );
+    }
+    log = recorder?.log ?? EventLog([forward]);
+    pipeline = await PagePipeline.create(registry, ModelManager(Directory(setup.modelsDir), log: log), setup.spec, log);
+  } catch (e, st) {
+    await recorder?.finish(success: false, summary: {'error': e.toString()});
+    await registry.disposeInstances();
+    fail(-1, e, st);
+    inbox.close();
+    return;
+  }
+  toMain.send(_Ready(inbox.sendPort, recorder?.dir.path, recorder?.runId));
+
+  // One page at a time (memory); cancel messages are handled in between.
+  final cancels = <int, CancelToken>{};
+  var queue = Future<void>.value();
+  void enqueue(int id, Future<void> Function() job) {
+    queue = queue.then((_) async {
+      try {
+        await job();
+      } catch (e, st) {
+        fail(id, e, st);
+      } finally {
+        cancels.remove(id);
+      }
+    });
+  }
+
+  await for (final message in inbox) {
+    switch (message) {
+      case _Prepare m:
+        final token = cancels[m.id] = CancelToken();
+        enqueue(m.id, () async {
+          token.throwIfCancelled();
+          final image = m.image ?? await ImageCodec.readFile(m.path!);
+          final context = PluginContext(log: log.child(page: m.page), cancel: token, recorder: recorder, page: m.page);
+          final page = await pipeline
+              .withLanguages(m.source, m.target)
+              .prepare(image, context, onStage: (stage) => toMain.send(_Stage(m.id, stage)));
+          toMain.send(_Prepared(m.id, page));
+        });
+      case _Cancel m:
+        cancels[m.id]?.cancel();
+      case _Save m:
+        enqueue(m.id, () async {
+          for (final o in m.outputs) {
+            await File(o.path).parent.create(recursive: true);
+            final bytes = switch (o) {
+              ImageOutput(:final image, :final path) => ImageCodec.encodeByExtension(image, _extension(path)),
+              JsonOutput(:final json) => utf8.encode(const JsonEncoder.withIndent('  ').convert(json)),
+            };
+            await File(o.path).writeAsBytes(bytes, flush: true);
+          }
+          final rendered = m.rendered;
+          final rec = recorder;
+          if (rec != null && rendered != null) {
+            rec.recordTiming('06_render', Duration(milliseconds: m.renderMs), page: m.page);
+            await rec.writeArtifact('06_render', 'final.png', ImageCodec.encodePng(rendered), page: m.page);
+            await rec.writeJsonArtifact('06_render', 'layout.json', m.items, page: m.page);
+          }
+          toMain.send(_Saved(m.id));
+        });
+      case _Shutdown m:
+        await queue;
+        await registry.disposeInstances();
+        await recorder?.finish(success: m.success, summary: m.summary);
+        inbox.close();
+    }
+  }
+}
+
+String _extension(String path) {
+  final dot = path.lastIndexOf('.');
+  return dot < 0 ? '.png' : path.substring(dot).toLowerCase();
+}

@@ -42,15 +42,29 @@ class RenderCommand extends CtsCommand {
     final page = await ImageCodec.readFile(input);
     final blocks = loadBlocksJson(blocksPath);
     final sw = Stopwatch()..start();
-    final (rendered, items) = await renderPage(page, blocks, settings, targetLanguage: target);
+    final render = await renderPage(page, blocks, settings, targetLanguage: target);
+    final items = render.items;
     final ms = sw.elapsedMilliseconds;
     final outDir = Directory(args.option('output')!)..createSync(recursive: true);
     final stem = p.basenameWithoutExtension(input).replaceAll(RegExp(r'\.clean$'), '');
-    final png = File(p.join(outDir.path, '$stem.rendered.png'))..writeAsBytesSync(ImageCodec.encodePng(rendered));
+    final png = File(p.join(outDir.path, '$stem.rendered.png'))..writeAsBytesSync(ImageCodec.encodePng(render.image));
     final layout = File(p.join(outDir.path, '$stem.layout.json'))
-      ..writeAsStringSync(const JsonEncoder.withIndent('  ').convert({'items': [for (final i in items) i.toJson()]}));
-    ctx.say('${p.basename(input)}: ${items.length} text item(s), $ms ms → ${png.path}');
-    if (ctx.json) ctx.printJson({'ok': true, 'image': png.path, 'layout': layout.path, 'items': items.length, 'ms': ms});
+      ..writeAsStringSync(const JsonEncoder.withIndent('  ').convert({
+        'render_scale': render.scale,
+        'items': [for (final i in items) i.toJson()],
+      }));
+    final enlarged = render.scale == 1.0 ? '' : ', enlarged ×${render.scale.toStringAsFixed(2)}';
+    ctx.say('${p.basename(input)}: ${items.length} text item(s)$enlarged, $ms ms → ${png.path}');
+    if (ctx.json) {
+      ctx.printJson({
+        'ok': true,
+        'image': png.path,
+        'layout': layout.path,
+        'items': items.length,
+        'render_scale': render.scale,
+        'ms': ms,
+      });
+    }
     return ExitCodes.ok;
   }
 }
@@ -142,7 +156,8 @@ class ProcessCommand extends CtsCommand {
         pageLog.log(LogLevel.info, 'process_done', durMs: total, data: {'blocks': r.blocks.length, 'timings': timings});
         results.add({'image': input, 'output': outPng.path, 'json': outJson.path, 'blocks': r.blocks.length, 'timings_ms': timings});
         ctx.say('$page: ${r.blocks.length} block(s), ${r.inpaintReport.fastFilledBlocks} bubble(s) flat-filled, '
-            '${r.items.length} text item(s), $total ms → ${outPng.path}');
+            '${r.items.length} text item(s)${r.renderScale == 1.0 ? '' : ', enlarged ×${r.renderScale.toStringAsFixed(2)}'}, '
+            '$total ms → ${outPng.path}');
       } catch (e, st) {
         ok = false;
         pageLog.error('process_failed', e, st);

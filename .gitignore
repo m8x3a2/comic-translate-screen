@@ -31,3 +31,6 @@ __pycache__/
 
 # Downloaded native binaries and models are fetched by build hooks / model manager
 /third_party/_downloads/
+
+# Default output folder of cts golden/process runs
+cts_out/

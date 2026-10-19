@@ -169,6 +169,7 @@ class _GoldenRun extends Command<int> {
   }
 
   static Map<String, Object?> _summary(PageResult r) => {
+        'render_scale': double.parse(r.renderScale.toStringAsFixed(3)),
         'blocks': [
           for (final b in r.blocks)
             {
@@ -197,6 +198,8 @@ class _GoldenRun extends Command<int> {
       if (iou < minIou) problems.add('block $i moved (IoU ${iou.toStringAsFixed(3)})');
       if (a[i]['text'] != b[i]['text']) problems.add('block $i text "${b[i]['text']}", saved "${a[i]['text']}"');
     }
+    final scale = (now['render_scale'] as num?) ?? 1, savedScale = (saved['render_scale'] as num?) ?? 1;
+    if ((scale - savedScale).abs() > 0.01) problems.add('page enlarged ×$scale, saved ×$savedScale');
     final ia = (saved['items'] as List).cast<Map<String, Object?>>();
     final ib = (now['items'] as List).cast<Map<String, Object?>>();
     if (ia.length != ib.length) problems.add('${ib.length} text items, saved ${ia.length}');

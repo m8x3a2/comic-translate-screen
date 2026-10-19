@@ -67,7 +67,7 @@ class ReadingPage {
     for (final (i, b) in blocks.indexed) {
       b.xyxy = _boxes[i];
       b.bubbleXyxy = _bubbles[i];
-      b.lines = [for (final l in b.lines) _scaleLine(l, 1 / scaleX, 1 / scaleY)];
+      b.lines = [for (final l in b.lines) scaleLine(l, 1 / scaleX, 1 / scaleY)];
     }
   }
 }
@@ -85,19 +85,21 @@ ReadingPage prepareReading(RgbImage image, List<TextBlock> blocks, {String sourc
   final sx = w / image.width, sy = h / image.height;
   final scaledImage = pilResize(image, w, h, filter: PilFilter.lanczos);
   for (final b in blocks) {
-    b.xyxy = _scaleBox(b.xyxy, sx, sy);
+    b.xyxy = scaleBox(b.xyxy, sx, sy);
     final bubble = b.bubbleXyxy;
-    if (bubble != null) b.bubbleXyxy = _scaleBox(bubble, sx, sy);
+    if (bubble != null) b.bubbleXyxy = scaleBox(bubble, sx, sy);
     b.lines = [];
   }
   annotateBlocksWithHeuristicLines(scaledImage, blocks, sourceLanguage: sourceLanguageCode);
   return ReadingPage._(scaledImage, blocks, sx, sy, boxes, bubbles);
 }
 
-BBox _scaleBox(BBox b, double sx, double sy) =>
+/// [b] scaled outwards (the result covers the scaled box).
+BBox scaleBox(BBox b, double sx, double sy) =>
     BBox((b.x1 * sx).floor(), (b.y1 * sy).floor(), (b.x2 * sx).ceil(), (b.y2 * sy).ceil());
 
-TextLine _scaleLine(TextLine l, double sx, double sy) {
+/// [l] with every coordinate scaled and rounded.
+TextLine scaleLine(TextLine l, double sx, double sy) {
   final p = l.polygon;
   if (p != null) {
     return TextLine.polygon([for (final q in p) Point2((q.x * sx).roundToDouble(), (q.y * sy).roundToDouble())]);

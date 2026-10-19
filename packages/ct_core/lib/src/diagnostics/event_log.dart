@@ -130,6 +130,15 @@ class EventLog {
     }
   }
 
+  /// Passes an event built elsewhere (e.g. in a background isolate) to the
+  /// sinks unchanged.
+  void write(LogEvent event) {
+    if (event.level.index < minLevel.index) return;
+    for (final sink in _sinks) {
+      sink.write(event);
+    }
+  }
+
   void debug(String event, [Map<String, Object?>? data]) => log(LogLevel.debug, event, data: data);
   void info(String event, [Map<String, Object?>? data]) => log(LogLevel.info, event, data: data);
   void warn(String event, [Map<String, Object?>? data]) => log(LogLevel.warn, event, data: data);

@@ -1,4 +1,5 @@
 {
+  "render_scale": 1.684,
   "blocks": [
     {
       "xyxy": [
@@ -24,15 +25,15 @@
   "items": [
     {
       "text": "[en] ах..\nидеально",
-      "font_size_pt": 11,
-      "x": 862,
-      "y": 117
+      "font_size_pt": 21,
+      "x": 1448,
+      "y": 195
     },
     {
       "text": "[en] HET! Даже\nне думай об\nэтом",
-      "font_size_pt": 13,
-      "x": 613,
-      "y": 600
+      "font_size_pt": 23,
+      "x": 1031,
+      "y": 1012
     }
   ]
 }

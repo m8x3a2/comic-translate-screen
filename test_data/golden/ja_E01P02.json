@@ -1,4 +1,5 @@
 {
+  "render_scale": 1.5,
   "blocks": [
     {
       "xyxy": [
@@ -24,15 +25,15 @@
   "items": [
     {
       "text": "[en]\nうん．．．カンペキ",
-      "font_size_pt": 9,
-      "x": 854,
-      "y": 117
+      "font_size_pt": 11,
+      "x": 1284,
+      "y": 181
     },
     {
       "text": "[en]\nダメ！そんなことしちゃだめなんだから",
-      "font_size_pt": 9,
-      "x": 602,
-      "y": 610
+      "font_size_pt": 12,
+      "x": 906,
+      "y": 920
     }
   ]
 }

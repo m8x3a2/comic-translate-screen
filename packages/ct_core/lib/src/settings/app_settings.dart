@@ -1,5 +1,6 @@
 import '../plugins/engines.dart';
 import '../render/layout.dart';
+import '../render/upscale.dart';
 
 /// User settings stored in `settings.json` (never secrets).
 ///
@@ -21,6 +22,7 @@ class AppSettings {
     this.extraContext = '',
     this.sendPageImage = false,
     this.render = const RenderSettings(),
+    this.upscale = const UpscaleSettings(),
     this.theme = 'dark',
     this.uiLanguage = 'ru',
     this.testMode = false,
@@ -72,6 +74,10 @@ class AppSettings {
   bool get upperCase => render.upperCase;
   set upperCase(bool value) => render = render.copyWith(upperCase: value);
 
+  /// Enlarging small pages before the translation is drawn, so the letters
+  /// stay readable. New in this project.
+  UpscaleSettings upscale;
+
   /// `dark`, `light` or `system`.
   String theme;
   String uiLanguage;
@@ -105,6 +111,7 @@ class AppSettings {
         'languages': {'source': sourceLanguage, 'target': targetLanguage},
         'llm': {'extra_context': extraContext, 'send_page_image': sendPageImage},
         'render': render.toJson(),
+        'upscale': upscale.toJson(),
         'ui': {'theme': theme, 'language': uiLanguage},
         'test_mode': testMode,
         'plugins': plugins,
@@ -125,8 +132,9 @@ class AppSettings {
     final llm = group('llm');
     final ui = group('ui');
     final render = group('render');
+    final upscale = group('upscale');
     const known = {
-      'schema_version', 'tools', 'inpaint', 'languages', 'llm', 'render', 'ui', 'test_mode', 'plugins', //
+      'schema_version', 'tools', 'inpaint', 'languages', 'llm', 'render', 'upscale', 'ui', 'test_mode', 'plugins', //
       'approved_network_plugins',
     };
     final strategyName = pick<String>(inpaint, 'strategy', defaults.inpaint.strategy.name);
@@ -149,6 +157,7 @@ class AppSettings {
       extraContext: pick(llm, 'extra_context', defaults.extraContext),
       sendPageImage: pick(llm, 'send_page_image', defaults.sendPageImage),
       render: RenderSettings.fromJson(render),
+      upscale: UpscaleSettings.fromJson(upscale),
       theme: pick(ui, 'theme', defaults.theme),
       uiLanguage: pick(ui, 'language', defaults.uiLanguage),
       testMode: pick(json, 'test_mode', defaults.testMode),
