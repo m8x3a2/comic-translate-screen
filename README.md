@@ -26,6 +26,7 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 | M6 | Text rendering; the whole pipeline in one command (`cts process`); golden checks and benchmarks | done |
 | M7 | The window: open images, folders, comic archives and PDF; page list and viewer; "Translate all" in the background with progress, stop and report; settings; models folder and offline model import; enlarging small pages so the translation stays sharp | done |
 | M8 | Manual mode: single steps on a page (find text, recognize, translate, mask, clean); boxes, brush and eraser; moving, resizing and turning the translation; per-bubble font, size, colours and outline; undo/redo; find and replace; keyboard shortcuts | done |
+| M8.1 | Full screen (F11); API keys: show what you typed, the last 4 characters of a saved key, replace and delete; OpenRouter key balance on request; a per-model usage counter kept on this computer | done |
 | M9–M12 | Projects and export, webtoon mode, PSD, polish | planned |
 
 ## Principles
@@ -56,6 +57,9 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
   width; the neural upscalers are planned for stage 2).
 - Models can live in any folder and can be installed from files copied from
   another computer (no internet needed).
+- New: for OpenRouter, a button shows what is left of the key's limit, and the program
+  keeps its own per-model usage counter (requests, tokens, cost, today and in total),
+  stored only on this computer and never sent anywhere.
 - Removed: sign-in, accounts, credits, paid cloud OCR, automatic update checks.
 
 ## Building from source (Windows)
@@ -80,7 +84,7 @@ The build produces two executables in `apps/comic_translate/build/windows/x64/ru
 - [Architecture](docs/ARCHITECTURE.md)
 - [Command-line interface](docs/CLI.md)
 - [Test mode and bug reports](docs/DIAGNOSTICS.md)
-- [How to test and report bugs](docs/TESTING.ru.md) (Russian); F1 in the app lists the keyboard shortcuts
+- [How to test and report bugs](docs/TESTING.ru.md) (Russian); F1 in the app lists the keyboard shortcuts, F11 switches full screen
 - [Contributing](CONTRIBUTING.md)
 
 ## License

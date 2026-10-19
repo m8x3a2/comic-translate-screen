@@ -54,6 +54,13 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 - Translation: a reply with stray braces after its JSON is still read (the
   original fails the page); the Authorization header is omitted when no API key
   is set; the length-limit field name is configurable for older servers.
+- Usage and key balance (new, M8.1): every answered request is reported through
+  `PluginContext.reportUsage` (tokens and cost from the reply's `usage`, or about
+  4 characters per token when a server sends none) and counted in `usage.json`
+  by `UsageLog`, per plugin, server and model, today and in total, from the GUI
+  worker and from `cts`. Plugins whose service can tell what is left of a key
+  declare `PluginInfo.keyStatus`; for `openai_compatible` that is OpenRouter's
+  `GET /api/v1/key`, sent only when the user presses "Check balance".
 - Enlarging before drawing (new, setting `upscale`): when the source text
   lines are thinner than about 20 px, or when many translations do not fit
   even at the smallest font size, the cleaned page is enlarged (Lanczos, up
@@ -171,6 +178,8 @@ Rule: no neural-network inference in pure Dart.
 - **OpenCV** through `dartcv4` for classical image processing. The original's `imkit`
   mirrors the cv2 API, so ports map almost one-to-one.
 - **Windows.Media.Ocr** through a small C++/WinRT library with a C ABI.
+- **Full screen** (F11): the Windows runner (`windows/runner/flutter_window.cpp`) answers the
+  `comic_translate/window` method channel, as Chromium does it (no frame, the whole monitor).
 
 ## Plugins
 
@@ -189,6 +198,11 @@ one file in `ct_providers/lib/src/<kind>/` and one line in its registry. See
 - API keys live in the OS secure storage (`flutter_secure_storage`: DPAPI/Credential
   Manager on Windows, Keystore on Android). Every value read from it is registered
   with the `Redactor`, which masks it in all logs, artifacts and bug reports.
+  Each plugin has its own keys (`plugin.<id>.<key>`). The settings show only whether
+  a key is saved and its last 4 characters (keys shorter than 12 characters: none);
+  what the user types can be shown before saving.
+- The usage counter (`usage.json`) stays on this computer; it holds model names and
+  numbers only.
 - There is no telemetry and no automatic network access (the original's update check
   was removed).
 
@@ -208,6 +222,7 @@ runs/<run_id>/     test-mode runs
 models/            downloaded models
 reports/           bug reports, self-test output
 settings.json      settings (no secrets)
+usage.json         usage counter of paid services (requests, tokens, cost)
 ```
 
 ## Stage 1 milestones

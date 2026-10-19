@@ -41,6 +41,7 @@ cts [--data-dir DIR] [--json] [-v] <command> [options]
 | `cts golden check\|update [--dir test_data/golden] [-o dir]` | Re-run the golden pages (default settings, offline mock translator, CPU) and compare blocks, OCR text, layout and picture with the saved results; `update` saves new results after an intended change |
 | `cts bench <image>... [--from] [--to] [--repeat 2] [--gpu]` | Time every stage (mock translator, nothing sent); the first run is shown separately, plus model loading time and peak memory |
 | `cts report [--run ID] [--with-images] [--note TEXT] [-o file.zip]` | Build a bug report |
+| `cts usage [--balance [--translator id]] [--reset]` | The usage of paid services counted on this computer: requests, tokens and cost per model, today and in total (`usage.json`, never sent anywhere). `--balance` asks the translator's service what is left of the API key (sends the key; OpenRouter only) |
 
 Example: translate with OpenRouter
 
