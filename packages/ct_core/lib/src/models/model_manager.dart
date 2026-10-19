@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
@@ -131,6 +132,84 @@ class ModelManager {
     _log.info('model_delete', {'model': spec.id});
   }
 
+  /// Installs model files from disk, for computers without internet: every
+  /// file (also inside folders and zip archives) whose size and SHA-256 match
+  /// a file of [catalog] is copied into place. Other files are reported as
+  /// not matching.
+  Future<List<ModelImportResult>> importFiles(List<String> paths, {List<ModelSpec> catalog = ModelCatalog.all}) async {
+    final bySize = <int, List<(ModelSpec, ModelFile)>>{};
+    for (final spec in catalog) {
+      for (final f in spec.files) {
+        (bySize[f.size] ??= []).add((spec, f));
+      }
+    }
+    final results = <ModelImportResult>[];
+    final staging = Directory(p.join(root.path, '_import'));
+
+    Future<void> offer(File file, String label) async {
+      final candidates = bySize[await file.length()];
+      if (candidates == null) {
+        results.add(ModelImportResult(label, error: 'not a known model file'));
+        return;
+      }
+      final hash = await _sha256(file);
+      for (final (spec, f) in candidates) {
+        if (f.sha256 != hash) continue;
+        final target = fileOf(spec, f.name);
+        await target.parent.create(recursive: true);
+        final part = File('${target.path}.importing');
+        await file.copy(part.path);
+        if (target.existsSync()) await target.delete();
+        await part.rename(target.path);
+        await _writeMarker(target, f);
+        _log.info('model_import', {'model': spec.id, 'file': f.name});
+        results.add(ModelImportResult(label, model: spec.id, file: f.name));
+        return;
+      }
+      results.add(ModelImportResult(label, error: 'checksum does not match any known model file'));
+    }
+
+    try {
+      for (final path in paths) {
+        if (FileSystemEntity.isDirectorySync(path)) {
+          for (final f in Directory(path).listSync(recursive: true).whereType<File>()) {
+            await offer(f, f.path);
+          }
+        } else if (p.extension(path).toLowerCase() == '.zip') {
+          final input = InputFileStream(path);
+          try {
+            for (final entry in ZipDecoder().decodeStream(input).files) {
+              if (!entry.isFile) continue;
+              if (!bySize.containsKey(entry.size)) {
+                results.add(ModelImportResult('$path/${entry.name}', error: 'not a known model file'));
+                continue;
+              }
+              await staging.create(recursive: true);
+              final tmp = File(p.join(staging.path, 'entry'));
+              final out = OutputFileStream(tmp.path);
+              try {
+                entry.writeContent(out);
+              } finally {
+                await out.close();
+              }
+              await offer(tmp, '$path/${entry.name}');
+              await tmp.delete();
+            }
+          } finally {
+            await input.close();
+          }
+        } else if (File(path).existsSync()) {
+          await offer(File(path), path);
+        } else {
+          results.add(ModelImportResult(path, error: 'file not found'));
+        }
+      }
+    } finally {
+      if (staging.existsSync()) await staging.delete(recursive: true);
+    }
+    return results;
+  }
+
   /// Downloads missing or broken files, resuming partial downloads.
   Future<void> download(ModelSpec spec, {void Function(DownloadProgress)? onProgress, CancelToken? cancel}) async {
     final token = cancel ?? CancelToken.none;
@@ -255,4 +334,21 @@ String formatBytes(int bytes) {
     i++;
   }
   return '${v.toStringAsFixed(v >= 100 ? 0 : 1)} ${units[i]}';
+}
+
+/// What [ModelManager.importFiles] did with one file.
+class ModelImportResult {
+  const ModelImportResult(this.path, {this.model, this.file, this.error});
+
+  /// The file given, or `archive.zip/entry` for files inside a zip.
+  final String path;
+
+  /// Id and file name of the model file it was installed as.
+  final String? model;
+  final String? file;
+
+  /// Why it was not installed.
+  final String? error;
+
+  bool get imported => model != null;
 }

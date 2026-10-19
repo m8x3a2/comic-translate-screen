@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:ct_core/ct_core.dart';
+import 'package:path/path.dart' as p;
 import 'package:ct_providers/ct_providers.dart';
 
 import 'app_info.dart';
@@ -24,7 +27,9 @@ class AppServices {
 
   /// Secure storage; every secret read or written is masked in diagnostics.
   final RedactingSecretStore secrets;
-  final ModelManager models;
+
+  /// Downloaded models; the folder follows `AppSettings.modelsDir`.
+  ModelManager models;
   final SettingsStore settingsStore;
 
   /// All built-in plugins and their live instances.
@@ -79,13 +84,23 @@ class AppServices {
     );
   }
 
-  /// Masks all stored secrets from the start; call once after creation.
+  /// Masks all stored secrets from the start and applies the models folder
+  /// setting; call once after creation.
   Future<void> init() async {
     try {
       await secrets.primeRedactor();
     } catch (e, st) {
       appLog.error('secret_store_unavailable', e, st);
     }
+    useModelsDir((await settingsStore.load()).modelsDir);
+  }
+
+  /// Switches to the models folder [dir] (empty: the default folder).
+  void useModelsDir(String dir) {
+    final root = dir.trim().isEmpty ? paths.models : Directory(dir.trim());
+    if (p.equals(root.path, models.root.path)) return;
+    models = ModelManager(root, log: appLog);
+    appLog.info('models_dir', {'path': root.path});
   }
 
   Map<String, Object?> environment([Map<String, Object?> extra = const {}]) => EnvInfo.collect(

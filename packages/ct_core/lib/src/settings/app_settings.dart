@@ -23,6 +23,8 @@ class AppSettings {
     this.sendPageImage = false,
     this.render = const RenderSettings(),
     this.upscale = const UpscaleSettings(),
+    this.export = const ExportSettings(),
+    this.modelsDir = '',
     this.theme = 'dark',
     this.uiLanguage = 'ru',
     this.testMode = false,
@@ -78,6 +80,12 @@ class AppSettings {
   /// stay readable. New in this project.
   UpscaleSettings upscale;
 
+  /// Saving results (GUI export and the automatic export after a batch run).
+  ExportSettings export;
+
+  /// Folder with downloaded models; empty = `models` in the data folder.
+  String modelsDir;
+
   /// `dark`, `light` or `system`.
   String theme;
   String uiLanguage;
@@ -112,6 +120,8 @@ class AppSettings {
         'llm': {'extra_context': extraContext, 'send_page_image': sendPageImage},
         'render': render.toJson(),
         'upscale': upscale.toJson(),
+        'export': export.toJson(),
+        'models': {'dir': modelsDir},
         'ui': {'theme': theme, 'language': uiLanguage},
         'test_mode': testMode,
         'plugins': plugins,
@@ -133,8 +143,10 @@ class AppSettings {
     final ui = group('ui');
     final render = group('render');
     final upscale = group('upscale');
+    final export = group('export');
+    final models = group('models');
     const known = {
-      'schema_version', 'tools', 'inpaint', 'languages', 'llm', 'render', 'upscale', 'ui', 'test_mode', 'plugins', //
+      'schema_version', 'tools', 'inpaint', 'languages', 'llm', 'render', 'upscale', 'export', 'models', 'ui', 'test_mode', 'plugins', //
       'approved_network_plugins',
     };
     final strategyName = pick<String>(inpaint, 'strategy', defaults.inpaint.strategy.name);
@@ -158,6 +170,8 @@ class AppSettings {
       sendPageImage: pick(llm, 'send_page_image', defaults.sendPageImage),
       render: RenderSettings.fromJson(render),
       upscale: UpscaleSettings.fromJson(upscale),
+      export: ExportSettings.fromJson(export),
+      modelsDir: pick(models, 'dir', defaults.modelsDir),
       theme: pick(ui, 'theme', defaults.theme),
       uiLanguage: pick(ui, 'language', defaults.uiLanguage),
       testMode: pick(json, 'test_mode', defaults.testMode),
@@ -170,6 +184,55 @@ class AppSettings {
         for (final e in json.entries)
           if (!known.contains(e.key)) e.key: e.value,
       },
+    );
+  }
+}
+
+/// How results are saved. As in the original, a batch run can also save the
+/// recognized text, the translations and the cleaned pages automatically, to
+/// `comic_translate_<timestamp>` next to the input.
+class ExportSettings {
+  const ExportSettings({
+    this.imageFormat = 'source',
+    this.rawText = false,
+    this.translatedText = false,
+    this.cleanedImage = false,
+  });
+
+  static const formats = ['source', 'png', 'jpg', 'webp'];
+
+  /// `source` (same as the input page), `png`, `jpg` or `webp`.
+  final String imageFormat;
+  final bool rawText;
+  final bool translatedText;
+  final bool cleanedImage;
+
+  bool get anyAutomatic => rawText || translatedText || cleanedImage;
+
+  ExportSettings copyWith({String? imageFormat, bool? rawText, bool? translatedText, bool? cleanedImage}) =>
+      ExportSettings(
+        imageFormat: imageFormat ?? this.imageFormat,
+        rawText: rawText ?? this.rawText,
+        translatedText: translatedText ?? this.translatedText,
+        cleanedImage: cleanedImage ?? this.cleanedImage,
+      );
+
+  Map<String, Object?> toJson() => {
+        'image_format': imageFormat,
+        'raw_text': rawText,
+        'translated_text': translatedText,
+        'cleaned_image': cleanedImage,
+      };
+
+  factory ExportSettings.fromJson(Map<String, Object?> json) {
+    const d = ExportSettings();
+    bool flag(String key, bool fallback) => json[key] is bool ? json[key] as bool : fallback;
+    final format = json['image_format'];
+    return ExportSettings(
+      imageFormat: format is String && formats.contains(format) ? format : d.imageFormat,
+      rawText: flag('raw_text', d.rawText),
+      translatedText: flag('translated_text', d.translatedText),
+      cleanedImage: flag('cleaned_image', d.cleanedImage),
     );
   }
 }

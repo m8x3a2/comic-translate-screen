@@ -10,6 +10,7 @@ class ModelsCommand extends Command<int> {
     addSubcommand(_ModelsDownload(holder));
     addSubcommand(_ModelsVerify(holder));
     addSubcommand(_ModelsDelete(holder));
+    addSubcommand(_ModelsImport(holder));
   }
 
   @override
@@ -170,5 +171,40 @@ class _ModelsDelete extends _ModelsSubcommand {
       ctx.say('${spec.id}: deleted');
     }
     return ExitCodes.ok;
+  }
+}
+
+class _ModelsImport extends _ModelsSubcommand {
+  _ModelsImport(super.holder);
+
+  @override
+  String get name => 'import';
+
+  @override
+  String get description => 'Install model files copied from another computer (files, folders or zip archives); '
+      'files are recognized by their checksum. Nothing is downloaded.';
+
+  @override
+  String get invocation => 'cts models import <file|folder|zip>...';
+
+  @override
+  Future<int> run() async {
+    final args = argResults!;
+    if (args.rest.isEmpty) usageException('Name at least one file, folder or zip archive.');
+    final results = await manager.importFiles(args.rest);
+    final imported = results.where((r) => r.imported).toList();
+    if (ctx.json) {
+      ctx.printJson({
+        'ok': imported.isNotEmpty,
+        'imported': [for (final r in imported) {'path': r.path, 'model': r.model, 'file': r.file}],
+        'skipped': [for (final r in results.where((r) => !r.imported)) {'path': r.path, 'reason': r.error}],
+      });
+    } else {
+      for (final r in results) {
+        ctx.say(r.imported ? '${r.path}: installed as ${r.model}/${r.file}' : '${r.path}: skipped (${r.error})');
+      }
+      ctx.say('${imported.length} model file(s) installed into ${manager.root.path}');
+    }
+    return imported.isNotEmpty ? ExitCodes.ok : ExitCodes.failure;
   }
 }

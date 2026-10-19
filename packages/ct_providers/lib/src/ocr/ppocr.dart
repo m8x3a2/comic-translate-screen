@@ -17,6 +17,7 @@ const ppocrInfo = PluginInfo(
   privacy: Privacy.local,
   platforms: {PlatformId.windows, PlatformId.android, PlatformId.linux, PlatformId.macos},
   models: ['ppocr-v5-rec-en'],
+  modelsForLanguage: ppocrModelsFor,
 );
 
 final ppocrFactory = PluginFactory<OcrEngine>(ppocrInfo, (config, env) async {
@@ -44,6 +45,9 @@ String ppocrLanguageFor(String sourceLanguage) => switch (sourceLanguage) {
       'Auto' => throw UnsupportedError('Automatic source language detection is not available yet; choose the language.'),
       _ => throw UnsupportedError('No OCR model for source language "$sourceLanguage".'),
     };
+
+/// The recognizer model for [sourceLanguage].
+List<String> ppocrModelsFor(String sourceLanguage) => [ppocrRecModels[ppocrLanguageFor(sourceLanguage)]!.$1.id];
 
 /// Sets every block's source language code, as the original OCR processor
 /// does before recognition.

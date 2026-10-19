@@ -63,6 +63,7 @@ class PluginInfo {
     this.platforms = const {...PlatformId.values},
     this.settings = const [],
     this.models = const [],
+    this.modelsForLanguage,
     this.endpoint,
   });
 
@@ -79,6 +80,21 @@ class PluginInfo {
 
   /// Ids of models (see `ModelCatalog`) required before first use.
   final List<String> models;
+
+  /// For engines with one model per script (OCR): the models needed for a
+  /// source language, used instead of [models].
+  final List<String> Function(String sourceLanguage)? modelsForLanguage;
+
+  /// Every model needed to run with [sourceLanguage].
+  List<String> requiredModels(String sourceLanguage) {
+    final forLanguage = modelsForLanguage;
+    if (forLanguage == null) return models;
+    try {
+      return forLanguage(sourceLanguage);
+    } on UnsupportedError {
+      return models;
+    }
+  }
 
   /// For plugins whose destination depends on their settings (e.g. a server
   /// URL): where a configuration sends data. Defaults to [privacy].

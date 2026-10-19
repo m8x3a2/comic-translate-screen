@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
 import 'package:ct_core/ct_core.dart';
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 /// Serves [payload] at /model.bin, honouring Range requests; can drop the
@@ -76,6 +78,40 @@ void main() {
   tearDown(() async {
     await server.stop();
     tmp.deleteSync(recursive: true);
+  });
+
+  test('model files are imported from disk, folders and zip archives without network access', () async {
+    final manager = ModelManager(Directory(p.join(tmp.path, 'models')));
+    final spec = specFor(server.url, payload);
+    final src = Directory(p.join(tmp.path, 'usb'))..createSync();
+    final file = File(p.join(src.path, 'whatever-name.onnx'))..writeAsBytesSync(payload);
+    final other = File(p.join(src.path, 'notes.txt'))..writeAsStringSync('hello');
+    final sameSize = File(p.join(src.path, 'fake.onnx'))..writeAsBytesSync(Uint8List(payload.length));
+
+    var results = await manager.importFiles([sameSize.path, other.path, p.join(src.path, 'nope.bin')], catalog: [spec]);
+    expect(results.map((r) => r.imported), [false, false, false]);
+    expect(results.first.error, contains('checksum'));
+    expect(await manager.status(spec), ModelStatus.missing);
+
+    results = await manager.importFiles([file.path], catalog: [spec]);
+    expect(results.single.model, 'test-model');
+    expect(results.single.file, 'model.bin');
+    expect(await manager.status(spec), ModelStatus.installed);
+
+    await manager.delete(spec);
+    final zip = File(p.join(tmp.path, 'models.zip'))
+      ..writeAsBytesSync(ZipEncoder().encode(Archive()
+        ..add(ArchiveFile.bytes('pack/model.bin', payload))
+        ..add(ArchiveFile.bytes('pack/readme.txt', 'hi'.codeUnits))));
+    results = await manager.importFiles([zip.path], catalog: [spec]);
+    expect(results.where((r) => r.imported).single.path, endsWith('pack/model.bin'));
+    expect(await manager.status(spec), ModelStatus.installed);
+    expect(Directory(p.join(tmp.path, 'models', '_import')).existsSync(), isFalse);
+
+    await manager.delete(spec);
+    results = await manager.importFiles([src.path], catalog: [spec]);
+    expect(results.where((r) => r.imported), hasLength(1));
+    expect(server.requests, 0);
   });
 
   test('missing model is not downloaded without permission', () async {

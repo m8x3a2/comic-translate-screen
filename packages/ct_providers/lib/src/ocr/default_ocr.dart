@@ -17,7 +17,12 @@ const defaultOcrInfo = PluginInfo(
   privacy: Privacy.local,
   platforms: {PlatformId.windows, PlatformId.android, PlatformId.linux, PlatformId.macos},
   models: ['ppocr-v5-rec-en'],
+  modelsForLanguage: _defaultOcrModels,
 );
+
+/// Japanese: manga-ocr, plus PaddleOCR for large free text.
+List<String> _defaultOcrModels(String sourceLanguage) =>
+    sourceLanguage == 'Japanese' ? ['manga-ocr-mobile', ...ppocrModelsFor('Japanese')] : ppocrModelsFor(sourceLanguage);
 
 final defaultOcrFactory = PluginFactory<OcrEngine>(defaultOcrInfo, (config, env) async {
   final device = env.useGpu ? OrtDevice.directml : OrtDevice.cpu;
