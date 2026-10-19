@@ -222,15 +222,24 @@ Future<ExportResult> exportPages(
         if (r.exitCode != 0) throw ExportException('7-Zip could not write ${p.basename(file)}: ${'${r.stderr}'.trim()}');
       } else {
         final zip = ZipFileEncoder()..create(file);
+        final streams = <InputFileStream>[];
         try {
           final files = staging.listSync(recursive: true).whereType<File>().toList()
             ..sort((a, b) => naturalCompare(a.path, b.path));
           for (final f in files) {
             // Pictures are compressed already: stored as they are.
-            zip.addFileSync(f, p.relative(f.path, from: staging.path).replaceAll(r'\', '/'), 0);
+            final stream = InputFileStream(f.path);
+            streams.add(stream);
+            zip.addArchiveFile(
+              ArchiveFile.stream(p.relative(f.path, from: staging.path).replaceAll(r'\', '/'), stream)
+                ..compression = CompressionType.none,
+            );
           }
         } finally {
           zip.closeSync();
+          for (final s in streams) {
+            s.closeSync();
+          }
         }
       }
       outputs.add(file);

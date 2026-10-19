@@ -82,8 +82,11 @@ void main() {
       file,
     );
     expect(r.outputs, [file]);
-    final zip = ZipDecoder().decodeBytes(File(file).readAsBytesSync());
+    final bytes = File(file).readAsBytesSync();
+    final zip = ZipDecoder().decodeBytes(bytes);
     expect([for (final f in zip.files) f.name], ['1.png', '2.png']);
+    expect(bytes[8] | bytes[9] << 8, 0, reason: 'method 0 (stored) in the first local header');
+    expect(zip.files.first.content, File(p.join(dir.path, 'src', '_1_t.png')).readAsBytesSync());
   });
 
   test('one file per chapter; chapter names become file names', () async {
