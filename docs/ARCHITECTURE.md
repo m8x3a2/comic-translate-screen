@@ -68,14 +68,17 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   sharp. Fixed ×2/×3/×4 and "to width" modes exist; neural upscalers are
   planned for stage 2. Golden pages ru_E01P02 and ja_E01P02 are enlarged
   1.5× because their test translations do not fit at the smallest size.
-- GUI: the source and target language in the toolbar apply to all pages
-  (the original also keeps per-page languages); PDF pages are rendered at
-  200 dpi instead of extracting the embedded image; open pages are not
-  restored after a restart and there is no recent-projects list until
-  projects arrive (M9).
+- PDF import: a page that is one picture covering it, with nothing visible
+  drawn over it (invisible OCR text is allowed), gives that picture as it is
+  stored (a JPEG stays the same file) or at its own resolution; the original
+  takes the first picture of any page, which loses text drawn over it. Other
+  pages are rendered at 200 dpi (the original: 72 dpi).
+- Projects (M9): autosave is on by default (the original's is off); the undo
+  history is not kept in a project file (the original keeps image history).
+  Recovery copies are made only by the first window of the program.
 - Manual mode (M8): there is no Manual/Automatic switch; the single steps
-  are always above the page and act on the current page (the original can
-  also run them on several selected pages). A step does the steps it needs
+  are always above the page and act on the current page, or on the pages
+  picked with Ctrl / Shift in the page list (as the original). A step does the steps it needs
   first (translating a fresh page detects and reads it). There is no
   "Render" step: the translation is always drawn live, exactly as export
   will draw it. Text formatting applies to a whole bubble (the original also
@@ -154,6 +157,23 @@ render` draw the same thing. The viewer lays the page out with a per-block
 cache and draws the text live; export draws the pages changed since they were
 last drawn.
 
+Projects (`lib/state/project.dart`, file format in `ct_core`
+`src/project/project_file.dart`): a `.ctsproj` is SQLite, as the original's
+`.ctpr`: `meta` (format version, program version, saved time), `project`
+(current page), `pages` (one JSON row per page: name, source, file references,
+blocks with styles, strokes, status, languages), `blobs` (every file once, by
+SHA-256: originals, cleaned pages, masks, the fonts of block styles) and
+`fingerprints` (path, size, time → hash, so unchanged files are not read
+again). A save writes only the pages that changed, removes files no page uses
+and runs an incremental vacuum; it runs in a background isolate. Opening
+unpacks the files into a new session folder. The project notifier watches the
+pages: a change marks the project unsaved and either schedules an autosave
+(2 s) or, without a file, a recovery copy (`autosave/recovery.ctsproj`, every
+2 minutes, guarded by a lock file so only one window keeps it). Export
+(`ct_core` `src/export/`) writes folders, ZIP/CBZ (pictures stored, not
+recompressed), CB7 through 7-Zip and PDF through a small writer of
+picture pages.
+
 Before a run the GUI asks for permission when the translator sends text off
 the computer (once, or always for that server) and offers to download the
 models the chosen plugins need for the source language (plugins list them in
@@ -223,6 +243,8 @@ models/            downloaded models
 reports/           bug reports, self-test output
 settings.json      settings (no secrets)
 usage.json         usage counter of paid services (requests, tokens, cost)
+autosave/          recovery copy of unsaved work (recovery.ctsproj)
+fonts/             fonts the user added
 ```
 
 ## Stage 1 milestones

@@ -27,7 +27,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 | M7 | The window: open images, folders, comic archives and PDF; page list and viewer; "Translate all" in the background with progress, stop and report; settings; models folder and offline model import; enlarging small pages so the translation stays sharp | done |
 | M8 | Manual mode: single steps on a page (find text, recognize, translate, mask, clean); boxes, brush and eraser; moving, resizing and turning the translation; per-bubble font, size, colours and outline; undo/redo; find and replace; keyboard shortcuts | done |
 | M8.1 | Full screen (F11); API keys: show what you typed, the last 4 characters of a saved key, replace and delete; OpenRouter key balance on request; a per-model usage counter kept on this computer | done |
-| M9–M12 | Projects and export, webtoon mode, PSD, polish | planned |
+| M9 | Projects `.ctsproj` (save, open, recent, autosave, crash recovery); export to a folder, ZIP, CBZ, CB7, PDF: translations, cleaned pages, texts, by chapter; added fonts; languages per page; steps on several pages; all-boxes tools; embedded PDF pictures | done |
+| M10–M12 | Webtoon mode, PSD, polish | planned |
 
 ## Principles
 
@@ -57,6 +58,11 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
   width; the neural upscalers are planned for stage 2).
 - Models can live in any folder and can be installed from files copied from
   another computer (no internet needed).
+- Projects save themselves by default (the original's autosave is off by
+  default); the undo history is not kept in a project. A PDF page gives its
+  embedded picture only when it is one picture with nothing visible drawn over
+  it (the original takes the first picture of any page and could lose text);
+  other pages are rendered at 200 dpi (the original: 72).
 - New: for OpenRouter, a button shows what is left of the key's limit, and the program
   keeps its own per-model usage counter (requests, tokens, cost, today and in total),
   stored only on this computer and never sent anywhere.
