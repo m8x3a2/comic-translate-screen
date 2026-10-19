@@ -61,8 +61,18 @@ class UiTextEngine implements TextMeasurer {
     TextAlignment.right => ui.TextAlign.right,
   };
 
-  ui.TextStyle _style(int pt, {int? color, double? lineHeight}) => ui.TextStyle(
-    color: ui.Color(color ?? settings.color),
+  /// [outline] > 0: the glyph contours stroked that wide on each side, in
+  /// [color], instead of filled.
+  ui.TextStyle _style(int pt, {int? color, double? lineHeight, double outline = 0}) => ui.TextStyle(
+    color: outline > 0 ? null : ui.Color(color ?? settings.color),
+    foreground: outline > 0
+        ? (ui.Paint()
+            ..color = ui.Color(color ?? settings.outlineColor)
+            ..style = ui.PaintingStyle.stroke
+            ..strokeWidth = 2 * outline
+            ..strokeJoin = ui.StrokeJoin.round
+            ..strokeCap = ui.StrokeCap.round)
+        : null,
     fontFamily: fontFamily,
     fontFamilyFallback: const ['Segoe UI', 'Yu Gothic UI', 'Microsoft YaHei UI', 'Malgun Gothic', 'Noto Sans'],
     fontSize: ptToPx(pt),
@@ -78,14 +88,21 @@ class UiTextEngine implements TextMeasurer {
     return p.height / ptToPx(pt);
   });
 
-  ui.Paragraph _build(String text, int pt, {int? color, bool natural = false, double width = double.infinity}) {
+  ui.Paragraph _build(
+    String text,
+    int pt, {
+    int? color,
+    bool natural = false,
+    double width = double.infinity,
+    double outline = 0,
+  }) {
     final spacing = settings.lineSpacing;
     final lineHeight = natural || spacing == 1.0 ? null : _ratio(pt) * spacing;
     final builder =
         ui.ParagraphBuilder(
             ui.ParagraphStyle(textAlign: _align, textDirection: rtl ? ui.TextDirection.rtl : ui.TextDirection.ltr),
           )
-          ..pushStyle(_style(pt, color: color, lineHeight: lineHeight))
+          ..pushStyle(_style(pt, color: color, lineHeight: lineHeight, outline: outline))
           ..addText(text);
     return builder.build()..layout(ui.ParagraphConstraints(width: width));
   }
@@ -131,36 +148,29 @@ class UiTextEngine implements TextMeasurer {
     canvas.restore();
   }
 
+  /// The outline is the glyph contours stroked under the text. (The original
+  /// draws the text eight more times, shifted by the width: at wide outlines
+  /// the copies show as smeared letters.)
   void _draw(ui.Canvas canvas, TextItem item) {
-    final outline = settings.outline && settings.outlineWidth > 0;
-    final w = settings.outlineWidth;
-    final offsets = outline
-        ? [
-            for (final dx in [-w, 0.0, w])
-              for (final dy in [-w, 0.0, w])
-                if (dx != 0 || dy != 0) ui.Offset(dx, dy),
-          ]
-        : const <ui.Offset>[];
+    final w = settings.outline ? settings.outlineWidth : 0.0;
     if (item.vertical) {
-      for (final o in offsets) {
-        _drawVertical(canvas, item, settings.outlineColor, o);
-      }
-      _drawVertical(canvas, item, item.color, ui.Offset.zero);
+      if (w > 0) _drawVertical(canvas, item, settings.outlineColor, outline: w);
+      _drawVertical(canvas, item, item.color);
       return;
     }
     final layoutWidth = math.max(1.0, item.width - 2 * documentMargin) + 0.5;
     final origin = ui.Offset(item.x + documentMargin, item.y + documentMargin);
-    for (final o in offsets) {
+    if (w > 0) {
       canvas.drawParagraph(
-        _build(item.text, item.fontSizePt, color: settings.outlineColor, width: layoutWidth),
-        origin + o,
+        _build(item.text, item.fontSizePt, color: settings.outlineColor, width: layoutWidth, outline: w),
+        origin,
       );
     }
     canvas.drawParagraph(_build(item.text, item.fontSizePt, color: item.color, width: layoutWidth), origin);
   }
 
   /// Columns right to left, characters top to bottom.
-  void _drawVertical(ui.Canvas canvas, TextItem item, int color, ui.Offset shift) {
+  void _drawVertical(ui.Canvas canvas, TextItem item, int color, {double outline = 0}) {
     final pt = item.fontSizePt;
     final cell = _cell(pt), advance = _columnAdvance(pt);
     final columns = item.text.split('\n');
@@ -170,10 +180,10 @@ class UiTextEngine implements TextMeasurer {
       var y = item.y + documentMargin;
       for (final r in column.runes) {
         final ch = String.fromCharCode(r);
-        final p = _build(ch, pt, color: color, natural: true);
+        final p = _build(ch, pt, color: color, natural: true, outline: outline);
         final rotate = _rotateInVertical.hasMatch(ch);
         canvas.save();
-        canvas.translate(cx + shift.dx, y + cell / 2 + shift.dy);
+        canvas.translate(cx, y + cell / 2);
         if (rotate) canvas.rotate(math.pi / 2);
         canvas.drawParagraph(p, ui.Offset(-p.maxIntrinsicWidth / 2, -p.height / 2));
         canvas.restore();

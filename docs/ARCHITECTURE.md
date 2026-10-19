@@ -68,6 +68,9 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   sharp. Fixed ×2/×3/×4 and "to width" modes exist; neural upscalers are
   planned for stage 2. Golden pages ru_E01P02 and ja_E01P02 are enlarged
   1.5× because their test translations do not fit at the smallest size.
+- Text outline: the glyph contours are stroked under the text (width on each
+  side of the contour). The original draws the text eight more times, shifted
+  by the width, which shows as smeared copies of the letters at wide outlines.
 - PDF import: a page that is one picture covering it, with nothing visible
   drawn over it (invisible OCR text is allowed), gives that picture as it is
   stored (a JPEG stays the same file) or at its own resolution; the original
