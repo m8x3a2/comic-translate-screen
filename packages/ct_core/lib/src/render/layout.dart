@@ -362,6 +362,16 @@ void adjustRenderAreas(List<TextBlock> blocks, int imageWidth, int imageHeight) 
   }
 }
 
+/// Where the translation of `blocks[index]` goes: the text box chosen by
+/// hand, else the block's box as [adjustRenderAreas] shrinks it for the page.
+BBox textAreaOf(List<TextBlock> blocks, int index, int imageWidth, int imageHeight) {
+  final b = blocks[index];
+  if (b.style?.textBox case final box?) return box;
+  final one = [b.copy()..sourceLang = blocks.first.sourceLang];
+  adjustRenderAreas(one, imageWidth, imageHeight);
+  return one.single.xyxy;
+}
+
 /// `is_vertical_block`: vertical source text rendered vertically when the
 /// target language is written vertically.
 bool isVerticalBlock(TextBlock block, String targetLanguageCode) =>

@@ -15,6 +15,7 @@ WorkerSetup _setup(
   String detector = 'fake_det',
   PluginRegistry Function() registry = fakeRegistry,
   bool testMode = false,
+  Set<PipelinePart> preload = const {...PipelinePart.values},
 }) {
   final settings = AppSettings(detector: detector, ocr: 'fake_ocr', translator: 'mock', inpainter: 'fake_inpaint');
   return WorkerSetup(
@@ -34,6 +35,7 @@ WorkerSetup _setup(
     modelsDir: p.join(dir.path, 'models'),
     runsDir: testMode ? p.join(dir.path, 'runs') : null,
     registry: registry,
+    preload: preload,
   );
 }
 
@@ -105,6 +107,37 @@ void main() {
     );
     expect(page.blocks, hasLength(1));
     await worker.dispose();
+  });
+
+  test('single steps load their plugins when first needed', () async {
+    final sink = MemorySink(Redactor());
+    // A detector that does not exist: only a step that needs it fails.
+    final worker = await PipelineWorker.start(
+      _setup(dir, detector: 'nope', preload: {}),
+      log: EventLog([sink]),
+    );
+    final image = RgbImage.filled(100, 60, 255, 255, 255);
+    await expectLater(
+      worker.detect('p', image: image, sourceLanguage: 'English'),
+      throwsA(isA<WorkerException>().having((e) => e.message, 'message', contains('nope'))),
+    );
+    final blocks = [TextBlock(xyxy: const BBox(10, 10, 90, 40))];
+    final read = await worker.recognize('p', image: image, blocks: blocks, sourceLanguage: 'English');
+    expect(read.single.text, 'HELLO');
+    final translated = await worker.translate(
+      'p',
+      image: image,
+      blocks: read,
+      sourceLanguage: 'English',
+      targetLanguage: 'Russian',
+    );
+    expect(translated.single.translation, contains('HELLO'));
+    final mask = await worker.makeMask('p', image: image, blocks: translated);
+    expect([mask.width, mask.height], [100, 60]);
+    final clean = await worker.inpaint('p', image: image, mask: mask, blocks: translated);
+    expect([clean.width, clean.height], [100, 60]);
+    await worker.dispose();
+    expect(worker.isClosed, isTrue);
   });
 
   test('loading errors reach the caller', () async {

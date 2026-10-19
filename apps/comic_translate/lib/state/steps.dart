@@ -1,0 +1,253 @@
+/// Single steps on the current page (original `manual_workflow.py`): detect
+/// boxes, recognize text, translate, make the mask, clean. A step does the
+/// steps before it that are missing (translating a fresh page detects and
+/// reads it first). Results are undo steps of the page.
+library;
+
+import 'dart:io';
+import 'dart:isolate';
+
+import 'package:ct_core/ct_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+
+import '../pipeline/pipeline_worker.dart';
+import '../render/mask_raster.dart';
+import 'app_state.dart';
+import 'batch.dart';
+import 'editor.dart';
+import 'worker_pool.dart';
+import 'workspace.dart';
+
+enum ManualStep { detect, recognize, translate, mask, clean }
+
+class StepState {
+  const StepState({this.pageId, this.step, this.stage, this.download});
+
+  /// The page the step works on.
+  final String? pageId;
+  final ManualStep? step;
+
+  /// `loading`, `download` or a pipeline stage (`01_detect` …).
+  final String? stage;
+
+  /// Model download progress 0…1.
+  final double? download;
+
+  bool get running => step != null;
+
+  StepState copyWith({String? stage, double? download}) =>
+      StepState(pageId: pageId, step: step, stage: stage ?? this.stage, download: download ?? this.download);
+}
+
+final stepsProvider = NotifierProvider<StepsNotifier, StepState>(StepsNotifier.new);
+
+/// One run of a step changes the page as one undo step, even when it takes
+/// longer than the usual merge window.
+const _stepMergeWindow = Duration(days: 1);
+
+class StepsNotifier extends Notifier<StepState> {
+  CancelToken? _cancel;
+  var _runs = 0;
+
+  @override
+  StepState build() => const StepState();
+
+  void cancel() => _cancel?.cancel();
+
+  /// The steps [step] needs on [page], in order.
+  static List<ManualStep> plan(ManualStep step, PageEntry page, {int? block}) {
+    final noBlocks = page.blocks.isEmpty;
+    return switch (step) {
+      ManualStep.detect => [ManualStep.detect],
+      ManualStep.recognize => [if (noBlocks) ManualStep.detect, ManualStep.recognize],
+      ManualStep.translate => [
+        if (noBlocks) ManualStep.detect,
+        if (noBlocks || _unread(page, block).isNotEmpty) ManualStep.recognize,
+        ManualStep.translate,
+      ],
+      ManualStep.mask => [if (noBlocks) ManualStep.detect, ManualStep.mask],
+      ManualStep.clean => [
+        if (!page.hasMask) ...[if (noBlocks) ManualStep.detect, ManualStep.mask],
+        ManualStep.clean,
+      ],
+    };
+  }
+
+  /// Blocks (or block [only]) without recognized text.
+  static List<int> _unread(PageEntry page, int? only) => [
+    for (final (i, b) in page.blocks.indexed)
+      if ((only == null || only == i) && b.text.trim().isEmpty) i,
+  ];
+
+  static PipelinePart? _part(ManualStep s) => switch (s) {
+    ManualStep.detect => PipelinePart.detector,
+    ManualStep.recognize => PipelinePart.ocr,
+    ManualStep.translate => PipelinePart.translator,
+    ManualStep.clean => PipelinePart.inpainter,
+    ManualStep.mask => null,
+  };
+
+  static String _stage(ManualStep s) => switch (s) {
+    ManualStep.detect => '01_detect',
+    ManualStep.recognize => '02_ocr',
+    ManualStep.translate => '03_translate',
+    ManualStep.mask => '04_mask',
+    ManualStep.clean => '05_inpaint',
+  };
+
+  /// Runs [step] on the current page; [block] limits recognizing and
+  /// translating to one block. Errors are shown with [ui].
+  Future<void> run(ManualStep step, BatchUi ui, {int? block}) async {
+    if (state.running || ref.read(batchProvider) is BatchRunning) return;
+    final start = ref.read(workspaceProvider).currentPage;
+    if (start == null) return;
+    final id = start.id;
+    final steps = plan(step, start, block: block);
+    final parts = {...steps.map(_part).nonNulls};
+    final services = ref.read(servicesProvider);
+    final workspace = ref.read(workspaceProvider.notifier);
+    final log = services.appLog.child(stage: 'edit');
+    final merge = 'step:${_runs++}';
+    if (steps.contains(ManualStep.translate) &&
+        (!await checkTranslatorKey(ref, ui) || !await approveTranslatorNetwork(ref, ui))) {
+      return;
+    }
+    final cancel = _cancel = CancelToken();
+    state = StepState(pageId: id, step: step, stage: 'loading');
+    final pool = ref.read(workerPoolProvider);
+    PipelineWorker? worker;
+    try {
+      final ready = await ensureModels(
+        ref,
+        ui,
+        cancel,
+        parts: parts,
+        onProgress: (f) => state = state.copyWith(stage: 'download', download: f),
+      );
+      if (!ready) return;
+      state = state.copyWith(stage: 'loading');
+      final (setup, key) = await currentWorkerSetup(ref);
+      worker = await pool.acquire(setup, key, log);
+      await worker.load(parts);
+      final settings = ref.read(settingsProvider);
+      log.info('step_start', {
+        'step': step.name,
+        'steps': [for (final s in steps) s.name],
+        'page': start.name,
+      });
+      for (final s in steps) {
+        cancel.throwIfCancelled();
+        state = state.copyWith(stage: _stage(s));
+        final page = ref.read(workspaceProvider).byId(id);
+        if (page == null) return;
+        void commit(PageEntry Function(PageEntry p) change) =>
+            workspace.edit(id, change, mergeKey: merge, mergeWindow: _stepMergeWindow);
+        switch (s) {
+          case ManualStep.detect:
+            final found = await worker.detect(
+              page.name,
+              path: page.path,
+              sourceLanguage: settings.sourceLanguage,
+              cancel: cancel,
+            );
+            commit((p) => p.copyWith(blocks: found));
+            workspace.selectBlock(null);
+          case ManualStep.recognize:
+            final which = block != null
+                ? [block]
+                : step == ManualStep.translate
+                ? _unread(page, null)
+                : [for (var i = 0; i < page.blocks.length; i++) i];
+            if (which.isEmpty) continue;
+            final read = await worker.recognize(
+              page.name,
+              path: page.path,
+              blocks: [for (final i in which) page.blocks[i].copy()],
+              sourceLanguage: settings.sourceLanguage,
+              cancel: cancel,
+            );
+            commit((p) => p.copyWith(blocks: _replace(p.blocks, which, read, (old, b) => old.copy()..text = b.text)));
+          case ManualStep.translate:
+            final which = [
+              for (final (i, b) in page.blocks.indexed)
+                if ((block == null || block == i) && b.text.trim().isNotEmpty) i,
+            ];
+            if (which.isEmpty) continue;
+            final done = await worker.translate(
+              page.name,
+              path: page.path,
+              blocks: [for (final i in which) page.blocks[i].copy()],
+              sourceLanguage: settings.sourceLanguage,
+              targetLanguage: settings.targetLanguage,
+              cancel: cancel,
+            );
+            commit(
+              (p) => p.copyWith(
+                blocks: _replace(p.blocks, which, done, (old, b) => old.copy()..translation = b.translation),
+              ),
+            );
+          case ManualStep.mask:
+            final mask = await worker.makeMask(page.name, path: page.path, blocks: page.blocks);
+            final file = p.join(workspace.pageDir(id).path, 'mask_${_stamp()}.png');
+            await worker.save([MaskOutput(file, mask)]);
+            commit((p) => p.copyWith(maskPath: file));
+            if (step == ManualStep.mask) ref.read(editorProvider.notifier).setTool(EditorTool.brush);
+          case ManualStep.clean:
+            final mask = await _currentMask(page);
+            final clean = await worker.inpaint(
+              page.name,
+              path: page.basePath,
+              mask: mask,
+              blocks: page.blocks,
+              cancel: cancel,
+            );
+            final file = p.join(workspace.pageDir(id).path, 'clean_${_stamp()}.png');
+            await worker.save([ImageOutput(file, clean)]);
+            commit((p) => p.copyWith(cleanPath: file, maskPath: null, strokes: const []));
+            ref.read(editorProvider.notifier).setView(ViewMode.result);
+        }
+      }
+      workspace.updatePage(
+        id,
+        (p) => p.status == PageStatus.skipped ? p.copyWith(status: PageStatus.pending, reason: null) : p,
+      );
+      log.info('step_done', {'step': step.name});
+    } on CancelledException {
+      log.info('step_cancelled', {'step': step.name});
+    } catch (e, st) {
+      log.error('step_failed', e, st, {'step': step.name, 'page': start.name});
+      ui.showError(e);
+    } finally {
+      if (worker != null) pool.release();
+      _cancel = null;
+      state = const StepState();
+    }
+  }
+
+  /// The generated mask plus the strokes, at the page's size.
+  Future<GrayImage> _currentMask(PageEntry page) async {
+    final maskPath = page.maskPath;
+    final base = maskPath == null
+        ? null
+        : await Isolate.run(() async => ImageCodec.decodeGray(await File(maskPath).readAsBytes()));
+    final (w, h) = base == null ? await imageFileSize(page.path) : (base.width, base.height);
+    return rasterizeMask(w, h, base: base, strokes: page.strokes);
+  }
+}
+
+/// [blocks] with the blocks at [indexes] updated from [results] by [apply].
+List<TextBlock> _replace(
+  List<TextBlock> blocks,
+  List<int> indexes,
+  List<TextBlock> results,
+  TextBlock Function(TextBlock old, TextBlock result) apply,
+) {
+  final out = [...blocks];
+  for (final (k, i) in indexes.indexed) {
+    if (i < out.length && k < results.length) out[i] = apply(out[i], results[k]);
+  }
+  return out;
+}
+
+String _stamp() => '${DateTime.now().microsecondsSinceEpoch}';

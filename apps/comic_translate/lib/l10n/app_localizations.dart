@@ -1387,6 +1387,330 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Version {version}'**
   String version(String version);
+
+  /// No description provided for @drawingPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawing the edited pages…'**
+  String get drawingPages;
+
+  /// No description provided for @toolPan.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand: move the page, click a bubble to select it (H)'**
+  String get toolPan;
+
+  /// No description provided for @toolBoxes.
+  ///
+  /// In en, this message translates to:
+  /// **'Boxes: draw a box around text, move or resize it (R)'**
+  String get toolBoxes;
+
+  /// No description provided for @toolText.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation: move, resize and turn the text (T)'**
+  String get toolText;
+
+  /// No description provided for @toolBrush.
+  ///
+  /// In en, this message translates to:
+  /// **'Brush: paint what to clean (B)'**
+  String get toolBrush;
+
+  /// No description provided for @toolEraser.
+  ///
+  /// In en, this message translates to:
+  /// **'Eraser: remove parts of the mask (E)'**
+  String get toolEraser;
+
+  /// No description provided for @brushSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Brush size ([ and ])'**
+  String get brushSize;
+
+  /// No description provided for @clearMask.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the whole mask'**
+  String get clearMask;
+
+  /// No description provided for @undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo (Ctrl+Z)'**
+  String get undo;
+
+  /// No description provided for @redo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo (Ctrl+Y)'**
+  String get redo;
+
+  /// No description provided for @stepDetect.
+  ///
+  /// In en, this message translates to:
+  /// **'Find text'**
+  String get stepDetect;
+
+  /// No description provided for @stepDetectHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'finds the text on this page and puts boxes around it'**
+  String get stepDetectHelp;
+
+  /// No description provided for @stepRecognize.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize'**
+  String get stepRecognize;
+
+  /// No description provided for @stepRecognizeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'reads the text in the boxes'**
+  String get stepRecognizeHelp;
+
+  /// No description provided for @stepTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get stepTranslate;
+
+  /// No description provided for @stepTranslateHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'translates the recognized text of this page (finds and reads it first if needed)'**
+  String get stepTranslateHelp;
+
+  /// No description provided for @stepMask.
+  ///
+  /// In en, this message translates to:
+  /// **'Mask'**
+  String get stepMask;
+
+  /// No description provided for @stepMaskHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'marks the letters to remove in red; correct it with the brush and the eraser'**
+  String get stepMaskHelp;
+
+  /// No description provided for @stepClean.
+  ///
+  /// In en, this message translates to:
+  /// **'Clean'**
+  String get stepClean;
+
+  /// No description provided for @stepCleanHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'removes the marked text from the picture'**
+  String get stepCleanHelp;
+
+  /// No description provided for @fontFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Font file…'**
+  String get fontFile;
+
+  /// No description provided for @fontSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size'**
+  String get fontSize;
+
+  /// No description provided for @sizeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get sizeAuto;
+
+  /// No description provided for @colorAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'As in the original'**
+  String get colorAuto;
+
+  /// No description provided for @textStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Style'**
+  String get textStyle;
+
+  /// No description provided for @verticalText.
+  ///
+  /// In en, this message translates to:
+  /// **'Vertical text'**
+  String get verticalText;
+
+  /// No description provided for @rotation.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotation'**
+  String get rotation;
+
+  /// No description provided for @styleToAll.
+  ///
+  /// In en, this message translates to:
+  /// **'To all on the page'**
+  String get styleToAll;
+
+  /// No description provided for @styleReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get styleReset;
+
+  /// No description provided for @findReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Find and replace (Ctrl+F)'**
+  String get findReplace;
+
+  /// No description provided for @noBlocksHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No text boxes on this page yet. Use “Find text” above the page, “Translate all”, or draw boxes with the Boxes tool.'**
+  String get noBlocksHint;
+
+  /// No description provided for @recognizeBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize this box again'**
+  String get recognizeBlock;
+
+  /// No description provided for @translateBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate this box again'**
+  String get translateBlock;
+
+  /// No description provided for @deleteBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the box (Delete)'**
+  String get deleteBlock;
+
+  /// No description provided for @deselect.
+  ///
+  /// In en, this message translates to:
+  /// **'Close (Esc)'**
+  String get deselect;
+
+  /// No description provided for @sourceText.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognized text'**
+  String get sourceText;
+
+  /// No description provided for @translationText.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation'**
+  String get translationText;
+
+  /// No description provided for @textLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Look of the text'**
+  String get textLook;
+
+  /// No description provided for @findHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Find'**
+  String get findHint;
+
+  /// No description provided for @matchCase.
+  ///
+  /// In en, this message translates to:
+  /// **'Match case'**
+  String get matchCase;
+
+  /// No description provided for @wholeWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole words'**
+  String get wholeWord;
+
+  /// No description provided for @useRegex.
+  ///
+  /// In en, this message translates to:
+  /// **'Regular expression'**
+  String get useRegex;
+
+  /// No description provided for @previousMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous (Shift+Enter)'**
+  String get previousMatch;
+
+  /// No description provided for @nextMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Next (Enter)'**
+  String get nextMatch;
+
+  /// No description provided for @searchInTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'In translations'**
+  String get searchInTranslation;
+
+  /// No description provided for @searchInSource.
+  ///
+  /// In en, this message translates to:
+  /// **'In recognized text'**
+  String get searchInSource;
+
+  /// No description provided for @searchAllPages.
+  ///
+  /// In en, this message translates to:
+  /// **'All pages'**
+  String get searchAllPages;
+
+  /// No description provided for @searchThisPage.
+  ///
+  /// In en, this message translates to:
+  /// **'This page'**
+  String get searchThisPage;
+
+  /// No description provided for @badRegex.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a valid regular expression: {error}'**
+  String badRegex(String error);
+
+  /// No description provided for @matchesSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Found: {count} on {pages} page(s)'**
+  String matchesSummary(String count, String pages);
+
+  /// No description provided for @replaceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace with'**
+  String get replaceHint;
+
+  /// No description provided for @replace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get replace;
+
+  /// No description provided for @replaceAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace all'**
+  String get replaceAll;
+
+  /// No description provided for @replacedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaced: {count}'**
+  String replacedCount(String count);
 }
 
 class _AppLocalizationsDelegate

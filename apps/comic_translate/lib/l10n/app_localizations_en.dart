@@ -740,4 +740,177 @@ class AppLocalizationsEn extends AppLocalizations {
   String version(String version) {
     return 'Version $version';
   }
+
+  @override
+  String get drawingPages => 'Drawing the edited pages…';
+
+  @override
+  String get toolPan => 'Hand: move the page, click a bubble to select it (H)';
+
+  @override
+  String get toolBoxes =>
+      'Boxes: draw a box around text, move or resize it (R)';
+
+  @override
+  String get toolText => 'Translation: move, resize and turn the text (T)';
+
+  @override
+  String get toolBrush => 'Brush: paint what to clean (B)';
+
+  @override
+  String get toolEraser => 'Eraser: remove parts of the mask (E)';
+
+  @override
+  String get brushSize => 'Brush size ([ and ])';
+
+  @override
+  String get clearMask => 'Remove the whole mask';
+
+  @override
+  String get undo => 'Undo (Ctrl+Z)';
+
+  @override
+  String get redo => 'Redo (Ctrl+Y)';
+
+  @override
+  String get stepDetect => 'Find text';
+
+  @override
+  String get stepDetectHelp =>
+      'finds the text on this page and puts boxes around it';
+
+  @override
+  String get stepRecognize => 'Recognize';
+
+  @override
+  String get stepRecognizeHelp => 'reads the text in the boxes';
+
+  @override
+  String get stepTranslate => 'Translate';
+
+  @override
+  String get stepTranslateHelp =>
+      'translates the recognized text of this page (finds and reads it first if needed)';
+
+  @override
+  String get stepMask => 'Mask';
+
+  @override
+  String get stepMaskHelp =>
+      'marks the letters to remove in red; correct it with the brush and the eraser';
+
+  @override
+  String get stepClean => 'Clean';
+
+  @override
+  String get stepCleanHelp => 'removes the marked text from the picture';
+
+  @override
+  String get fontFile => 'Font file…';
+
+  @override
+  String get fontSize => 'Size';
+
+  @override
+  String get sizeAuto => 'Auto';
+
+  @override
+  String get colorAuto => 'As in the original';
+
+  @override
+  String get textStyle => 'Style';
+
+  @override
+  String get verticalText => 'Vertical text';
+
+  @override
+  String get rotation => 'Rotation';
+
+  @override
+  String get styleToAll => 'To all on the page';
+
+  @override
+  String get styleReset => 'Reset';
+
+  @override
+  String get findReplace => 'Find and replace (Ctrl+F)';
+
+  @override
+  String get noBlocksHint =>
+      'No text boxes on this page yet. Use “Find text” above the page, “Translate all”, or draw boxes with the Boxes tool.';
+
+  @override
+  String get recognizeBlock => 'Recognize this box again';
+
+  @override
+  String get translateBlock => 'Translate this box again';
+
+  @override
+  String get deleteBlock => 'Delete the box (Delete)';
+
+  @override
+  String get deselect => 'Close (Esc)';
+
+  @override
+  String get sourceText => 'Recognized text';
+
+  @override
+  String get translationText => 'Translation';
+
+  @override
+  String get textLook => 'Look of the text';
+
+  @override
+  String get findHint => 'Find';
+
+  @override
+  String get matchCase => 'Match case';
+
+  @override
+  String get wholeWord => 'Whole words';
+
+  @override
+  String get useRegex => 'Regular expression';
+
+  @override
+  String get previousMatch => 'Previous (Shift+Enter)';
+
+  @override
+  String get nextMatch => 'Next (Enter)';
+
+  @override
+  String get searchInTranslation => 'In translations';
+
+  @override
+  String get searchInSource => 'In recognized text';
+
+  @override
+  String get searchAllPages => 'All pages';
+
+  @override
+  String get searchThisPage => 'This page';
+
+  @override
+  String badRegex(String error) {
+    return 'Not a valid regular expression: $error';
+  }
+
+  @override
+  String matchesSummary(String count, String pages) {
+    return 'Found: $count on $pages page(s)';
+  }
+
+  @override
+  String get replaceHint => 'Replace with';
+
+  @override
+  String get replace => 'Replace';
+
+  @override
+  String get replaceAll => 'Replace all';
+
+  @override
+  String replacedCount(String count) {
+    return 'Replaced: $count';
+  }
 }

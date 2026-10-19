@@ -741,4 +741,178 @@ class AppLocalizationsRu extends AppLocalizations {
   String version(String version) {
     return 'Версия $version';
   }
+
+  @override
+  String get drawingPages => 'Рисую изменённые страницы…';
+
+  @override
+  String get toolPan => 'Рука: двигать страницу, щелчок выбирает пузырь (H)';
+
+  @override
+  String get toolBoxes =>
+      'Рамки: обвести текст рамкой, двигать и менять размер (R)';
+
+  @override
+  String get toolText =>
+      'Перевод: двигать, растягивать и поворачивать текст (T)';
+
+  @override
+  String get toolBrush => 'Кисть: закрасить то, что нужно очистить (B)';
+
+  @override
+  String get toolEraser => 'Ластик: стереть лишнее из маски (E)';
+
+  @override
+  String get brushSize => 'Размер кисти ([ и ])';
+
+  @override
+  String get clearMask => 'Убрать всю маску';
+
+  @override
+  String get undo => 'Отменить (Ctrl+Z)';
+
+  @override
+  String get redo => 'Повторить (Ctrl+Y)';
+
+  @override
+  String get stepDetect => 'Найти текст';
+
+  @override
+  String get stepDetectHelp =>
+      'находит текст на странице и обводит его рамками';
+
+  @override
+  String get stepRecognize => 'Распознать';
+
+  @override
+  String get stepRecognizeHelp => 'читает текст в рамках';
+
+  @override
+  String get stepTranslate => 'Перевести';
+
+  @override
+  String get stepTranslateHelp =>
+      'переводит распознанный текст страницы (если нужно, сначала находит и читает его)';
+
+  @override
+  String get stepMask => 'Маска';
+
+  @override
+  String get stepMaskHelp =>
+      'отмечает красным буквы, которые нужно убрать; поправьте кистью и ластиком';
+
+  @override
+  String get stepClean => 'Очистить';
+
+  @override
+  String get stepCleanHelp => 'убирает отмеченный текст с картинки';
+
+  @override
+  String get fontFile => 'Файл шрифта…';
+
+  @override
+  String get fontSize => 'Размер';
+
+  @override
+  String get sizeAuto => 'Авто';
+
+  @override
+  String get colorAuto => 'Как в оригинале';
+
+  @override
+  String get textStyle => 'Начертание';
+
+  @override
+  String get verticalText => 'Вертикальный текст';
+
+  @override
+  String get rotation => 'Поворот';
+
+  @override
+  String get styleToAll => 'Ко всем на странице';
+
+  @override
+  String get styleReset => 'Сбросить';
+
+  @override
+  String get findReplace => 'Поиск и замена (Ctrl+F)';
+
+  @override
+  String get noBlocksHint =>
+      'На этой странице ещё нет рамок с текстом. Нажмите «Найти текст» над страницей или «Перевести всё», либо нарисуйте рамки инструментом «Рамки».';
+
+  @override
+  String get recognizeBlock => 'Распознать эту рамку заново';
+
+  @override
+  String get translateBlock => 'Перевести эту рамку заново';
+
+  @override
+  String get deleteBlock => 'Удалить рамку (Delete)';
+
+  @override
+  String get deselect => 'Свернуть (Esc)';
+
+  @override
+  String get sourceText => 'Распознанный текст';
+
+  @override
+  String get translationText => 'Перевод';
+
+  @override
+  String get textLook => 'Оформление текста';
+
+  @override
+  String get findHint => 'Найти';
+
+  @override
+  String get matchCase => 'С учётом регистра';
+
+  @override
+  String get wholeWord => 'Слово целиком';
+
+  @override
+  String get useRegex => 'Регулярное выражение';
+
+  @override
+  String get previousMatch => 'Предыдущее (Shift+Enter)';
+
+  @override
+  String get nextMatch => 'Следующее (Enter)';
+
+  @override
+  String get searchInTranslation => 'В переводе';
+
+  @override
+  String get searchInSource => 'В распознанном тексте';
+
+  @override
+  String get searchAllPages => 'Все страницы';
+
+  @override
+  String get searchThisPage => 'Эта страница';
+
+  @override
+  String badRegex(String error) {
+    return 'Ошибка в регулярном выражении: $error';
+  }
+
+  @override
+  String matchesSummary(String count, String pages) {
+    return 'Найдено: $count, страниц: $pages';
+  }
+
+  @override
+  String get replaceHint => 'Заменить на';
+
+  @override
+  String get replace => 'Заменить';
+
+  @override
+  String get replaceAll => 'Заменить все';
+
+  @override
+  String replacedCount(String count) {
+    return 'Заменено: $count';
+  }
 }

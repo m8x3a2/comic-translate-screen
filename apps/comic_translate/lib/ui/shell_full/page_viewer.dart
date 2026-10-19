@@ -1,16 +1,21 @@
-/// The page canvas: original or translation, zoom and pan, text boxes
-/// (original `image_viewer.py`; editing comes in M8).
+/// The page viewer: tools, the single steps, zoom and pan around the page
+/// canvas (original `image_viewer.py` and the manual-mode buttons of
+/// `main_window/builders/workspace.py`).
 library;
 
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:ct_core/ct_core.dart' hide TextDirection;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../state/batch.dart';
+import '../../state/editor.dart';
+import '../../state/steps.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
+import 'batch_dialogs.dart';
+import 'page_canvas.dart';
 
 class PageViewer extends ConsumerStatefulWidget {
   const PageViewer({super.key});
@@ -21,12 +26,9 @@ class PageViewer extends ConsumerStatefulWidget {
 
 class _PageViewerState extends ConsumerState<PageViewer> {
   final _transform = TransformationController();
-  bool _showTranslation = true;
-  bool _showBoxes = false;
   Size? _imageSize;
   Size _viewport = Size.zero;
   String? _shownPath;
-  double _shownScale = 1.0;
   ImageStream? _stream;
   ImageStreamListener? _listener;
 
@@ -43,34 +45,23 @@ class _PageViewerState extends ConsumerState<PageViewer> {
     _listener = null;
   }
 
-  /// Reads the image size (to fit it into the window) when the shown file
-  /// changes.
+  /// Reads the page size (to fit it into the window) when the page changes.
   void _watchImage(String path) {
     if (path == _shownPath) return;
-    final firstPage = _shownPath == null;
-    final samePage = _shownPath != null && _imageSize != null;
     _shownPath = path;
     _detach();
     final stream = FileImage(File(path)).resolve(ImageConfiguration.empty);
     _listener = ImageStreamListener((info, _) {
       if (!mounted) return;
-      final size = Size(info.image.width.toDouble(), info.image.height.toDouble());
-      final old = _imageSize;
-      setState(() => _imageSize = size);
-      // Switching between original and an enlarged translation keeps the view.
-      if (samePage && !firstPage && old != null && old != size) {
-        final k = old.width / size.width;
-        _transform.value = _transform.value.clone()..multiply(Matrix4.diagonal3Values(k, k, 1));
-      } else {
-        WidgetsBinding.instance.addPostFrameCallback((_) => _fit());
-      }
+      setState(() => _imageSize = Size(info.image.width.toDouble(), info.image.height.toDouble()));
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fit());
     }, onError: (_, _) {});
     _stream = stream..addListener(_listener!);
   }
 
   void _fit() {
     final size = _imageSize;
-    if (size == null || _viewport.isEmpty) return;
+    if (size == null || _viewport.isEmpty || !mounted) return;
     final s = math.min(_viewport.width / size.width, _viewport.height / size.height) * 0.98;
     final dx = (_viewport.width - size.width * s) / 2, dy = (_viewport.height - size.height * s) / 2;
     _transform.value = Matrix4.identity()
@@ -89,11 +80,10 @@ class _PageViewerState extends ConsumerState<PageViewer> {
     setState(() {});
   }
 
-  /// Screen pixels per image pixel of the shown image, times the
-  /// enlargement of a translated page: zoom relative to the original page.
-  double _percent(double dpr) => _transform.value.entry(0, 0) * dpr * _shownScale * 100;
+  /// Screen pixels per page pixel, in percent.
+  double _percent(double dpr) => _transform.value.entry(0, 0) * dpr * 100;
 
-  /// One original page pixel per screen pixel.
+  /// One page pixel per screen pixel.
   void _actualSize() => _zoom(100 / _percent(MediaQuery.devicePixelRatioOf(context)));
 
   @override
@@ -106,47 +96,19 @@ class _PageViewerState extends ConsumerState<PageViewer> {
       _shownPath = null;
       _imageSize = null;
     });
-    final translated = _showTranslation && page.isDone;
-    final path = translated ? page.translatedPath! : page.path;
-    _watchImage(path);
-    final scale = translated ? page.renderScale : 1.0;
-    _shownScale = scale;
+    _watchImage(page.path);
+    final editor = ref.watch(editorProvider);
+    final steps = ref.watch(stepsProvider);
+    final batchRunning = ref.watch(batchProvider) is BatchRunning;
+    final stepHere = steps.running && steps.pageId == page.id;
+    final readOnly = batchRunning || stepHere || page.status == PageStatus.running;
     final percent = _percent(MediaQuery.devicePixelRatioOf(context));
     final theme = Theme.of(context);
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              SegmentedButton<bool>(
-                segments: [
-                  ButtonSegment(value: false, label: Text(l.viewOriginal)),
-                  ButtonSegment(value: true, label: Text(l.viewTranslated), enabled: page.isDone),
-                ],
-                selected: {translated},
-                onSelectionChanged: (s) => setState(() => _showTranslation = s.first),
-                showSelectedIcon: false,
-              ),
-              FilterChip(
-                label: Text(l.showBoxes),
-                selected: _showBoxes,
-                onSelected: page.blocks.isEmpty ? null : (v) => setState(() => _showBoxes = v),
-              ),
-              if (translated && page.renderScale > 1.0)
-                Tooltip(
-                  message: l.pageEnlarged(page.renderScale.toStringAsFixed(1)),
-                  child: Chip(
-                    avatar: const Icon(Icons.zoom_out_map, size: 16),
-                    label: Text('×${page.renderScale.toStringAsFixed(1)}'),
-                  ),
-                ),
-            ],
-          ),
-        ),
+        const _ToolBar(),
+        _StepStrip(page: page),
+        const Divider(height: 1),
         Expanded(
           child: ClipRect(
             child: ColoredBox(
@@ -166,7 +128,8 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                         transformationController: _transform,
                         constrained: false,
                         minScale: 0.02,
-                        maxScale: 16,
+                        maxScale: 32,
+                        panEnabled: editor.tool == EditorTool.pan || readOnly,
                         boundaryMargin: const EdgeInsets.all(double.infinity),
                         onInteractionUpdate: (_) => setState(() {}),
                         child: size == null
@@ -174,30 +137,12 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                             : SizedBox(
                                 width: size.width,
                                 height: size.height,
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: Image.file(
-                                        File(path),
-                                        key: ValueKey(path),
-                                        gaplessPlayback: true,
-                                        filterQuality: FilterQuality.medium,
-                                        errorBuilder: (_, _, _) =>
-                                            const Center(child: Icon(Icons.broken_image_outlined, size: 64)),
-                                      ),
-                                    ),
-                                    if (_showBoxes)
-                                      Positioned.fill(
-                                        child: CustomPaint(
-                                          painter: _BoxesPainter(
-                                            page.blocks,
-                                            scale,
-                                            ws.selectedBlock,
-                                            theme.colorScheme,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
+                                child: PageCanvas(
+                                  key: ValueKey(page.id),
+                                  page: page,
+                                  size: size,
+                                  transform: _transform,
+                                  readOnly: readOnly,
                                 ),
                               ),
                       ),
@@ -233,13 +178,13 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                           ),
                         ),
                       ),
-                      if (page.status == PageStatus.running)
+                      if (page.status == PageStatus.running || stepHere)
                         Positioned(
                           left: 12,
                           top: 12,
                           child: Card(
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -249,13 +194,25 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(stageLabel(l, page.stage)),
+                                  Text(
+                                    stepHere && steps.stage == 'download'
+                                        ? l.stageDownloading('${((steps.download ?? 0) * 100).round()}')
+                                        : stageLabel(l, stepHere ? steps.stage : page.stage),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  if (stepHere)
+                                    TextButton(
+                                      onPressed: () => ref.read(stepsProvider.notifier).cancel(),
+                                      child: Text(l.cancel),
+                                    )
+                                  else
+                                    const SizedBox(width: 8, height: 40),
                                 ],
                               ),
                             ),
                           ),
                         ),
-                      if (page.status == PageStatus.skipped)
+                      if (page.status == PageStatus.skipped && !stepHere)
                         Positioned(
                           left: 12,
                           right: 12,
@@ -283,42 +240,144 @@ class _PageViewerState extends ConsumerState<PageViewer> {
   }
 }
 
-class _BoxesPainter extends CustomPainter {
-  _BoxesPainter(this.blocks, this.scale, this.selected, this.colors);
-
-  final List<TextBlock> blocks;
-  final double scale;
-  final int? selected;
-  final ColorScheme colors;
+/// View, tools, brush size, undo and redo.
+class _ToolBar extends ConsumerWidget {
+  const _ToolBar();
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final stroke = math.max(2.0, size.width / 600);
-    for (final (i, b) in blocks.indexed) {
-      final r = Rect.fromLTRB(b.xyxy.x1 * scale, b.xyxy.y1 * scale, b.xyxy.x2 * scale, b.xyxy.y2 * scale);
-      final isSelected = i == selected;
-      canvas.drawRect(
-        r,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = isSelected ? stroke * 2 : stroke
-          ..color = isSelected ? colors.tertiary : colors.primary,
-      );
-      final label = TextPainter(
-        text: TextSpan(
-          text: '${i + 1}',
-          style: TextStyle(
-            color: colors.onPrimary,
-            fontSize: math.max(12, stroke * 7),
-            backgroundColor: colors.primary,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final editor = ref.watch(editorProvider);
+    final ws = ref.watch(workspaceProvider);
+    final page = ws.currentPage;
+    final notifier = ref.read(editorProvider.notifier);
+    Widget tool(EditorTool t, IconData icon, String tip) => IconButton(
+      tooltip: tip,
+      isSelected: editor.tool == t,
+      onPressed: () => notifier.setTool(t),
+      icon: Icon(icon),
+      style: IconButton.styleFrom(
+        backgroundColor: editor.tool == t ? Theme.of(context).colorScheme.secondaryContainer : null,
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                SegmentedButton<ViewMode>(
+                  segments: [
+                    ButtonSegment(value: ViewMode.original, label: Text(l.viewOriginal)),
+                    ButtonSegment(value: ViewMode.result, label: Text(l.viewTranslated)),
+                  ],
+                  selected: {editor.view},
+                  onSelectionChanged: (s) => notifier.setView(s.first),
+                  showSelectedIcon: false,
+                ),
+                const SizedBox(width: 8),
+                tool(EditorTool.pan, Icons.pan_tool_outlined, l.toolPan),
+                tool(EditorTool.boxes, Icons.crop_free, l.toolBoxes),
+                tool(EditorTool.text, Icons.text_fields_outlined, l.toolText),
+                tool(EditorTool.brush, Icons.brush_outlined, l.toolBrush),
+                tool(EditorTool.eraser, Icons.auto_fix_off_outlined, l.toolEraser),
+                if (editor.paints) ...[
+                  Tooltip(
+                    message: l.brushSize,
+                    child: SizedBox(
+                      width: 150,
+                      child: Slider(
+                        value: editor.brushSize,
+                        min: minBrushSize,
+                        max: maxBrushSize,
+                        onChanged: notifier.setBrushSize,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 44, child: Text('${editor.brushSize.round()} px')),
+                  IconButton(
+                    tooltip: l.clearMask,
+                    onPressed: page != null && page.hasMask
+                        ? () => ref.read(workspaceProvider.notifier).clearMask()
+                        : null,
+                    icon: const Icon(Icons.layers_clear_outlined),
+                  ),
+                ],
+                if (editor.tool == EditorTool.pan)
+                  FilterChip(
+                    label: Text(l.showBoxes),
+                    selected: editor.showBoxes,
+                    onSelected: (_) => notifier.toggleBoxes(),
+                  ),
+              ],
+            ),
           ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      label.paint(canvas, r.topLeft);
-    }
+          IconButton(
+            tooltip: l.undo,
+            onPressed: ws.canUndo ? () => ref.read(workspaceProvider.notifier).undo() : null,
+            icon: const Icon(Icons.undo),
+          ),
+          IconButton(
+            tooltip: l.redo,
+            onPressed: ws.canRedo ? () => ref.read(workspaceProvider.notifier).redo() : null,
+            icon: const Icon(Icons.redo),
+          ),
+        ],
+      ),
+    );
   }
+}
+
+/// The steps of the manual mode, in order.
+class _StepStrip extends ConsumerWidget {
+  const _StepStrip({required this.page});
+
+  final PageEntry page;
 
   @override
-  bool shouldRepaint(_BoxesPainter old) => old.blocks != blocks || old.scale != scale || old.selected != selected;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final steps = ref.watch(stepsProvider);
+    final busy = steps.running || ref.watch(batchProvider) is BatchRunning || page.status == PageStatus.running;
+    final items = [
+      (ManualStep.detect, Icons.document_scanner_outlined, l.stepDetect, l.stepDetectHelp),
+      (ManualStep.recognize, Icons.abc, l.stepRecognize, l.stepRecognizeHelp),
+      (ManualStep.translate, Icons.translate, l.stepTranslate, l.stepTranslateHelp),
+      (ManualStep.mask, Icons.layers_outlined, l.stepMask, l.stepMaskHelp),
+      (ManualStep.clean, Icons.cleaning_services_outlined, l.stepClean, l.stepCleanHelp),
+    ];
+    return LayoutBuilder(
+      builder: (context, c) {
+        final compact = c.maxWidth < 720;
+        final children = <Widget>[];
+        for (final (i, (step, icon, label, help)) in items.indexed) {
+          if (i > 0) children.add(Icon(Icons.chevron_right, size: 18, color: Theme.of(context).disabledColor));
+          final running = steps.step == step && steps.pageId == page.id;
+          final onPressed = busy ? null : () => ref.read(stepsProvider.notifier).run(step, DialogBatchUi(context));
+          final iconWidget = running
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : Icon(icon, size: 20);
+          children.add(
+            Tooltip(
+              message: '$label — $help',
+              child: compact
+                  ? IconButton(onPressed: onPressed, icon: iconWidget)
+                  : TextButton.icon(onPressed: onPressed, icon: iconWidget, label: Text(label)),
+            ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: children),
+          ),
+        );
+      },
+    );
+  }
 }

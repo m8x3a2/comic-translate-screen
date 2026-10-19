@@ -1,8 +1,11 @@
-/// Runs the heavy part of the page pipeline ([PagePipeline.prepare]) in a
-/// background isolate, so the window stays responsive while models work.
+/// Runs the heavy steps of the page pipeline in a background isolate, so the
+/// window stays responsive while models work: whole pages
+/// ([PagePipeline.prepare]) and the single steps of the editor (detect,
+/// recognize, translate, mask, clean).
 ///
 /// Plugins are created inside the worker from a [PipelineSpec] resolved on
-/// the main isolate (the OS secure storage is only reachable there). Log
+/// the main isolate (the OS secure storage is only reachable there), when a
+/// step first needs them, and stay loaded until the worker is disposed. Log
 /// events are forwarded to the main isolate's log; in test mode the worker
 /// also keeps the run folder. Drawing text needs dart:ui and stays on the
 /// main isolate ([renderPage]); the worker writes the resulting files.
@@ -18,6 +21,9 @@ import 'package:ct_providers/ct_providers.dart';
 
 import 'page_pipeline.dart';
 
+/// The plugins of a pipeline.
+enum PipelinePart { detector, ocr, translator, inpainter }
+
 /// What a worker needs to start.
 class WorkerSetup {
   WorkerSetup({
@@ -28,6 +34,7 @@ class WorkerSetup {
     this.runLabel,
     this.homeDir,
     this.registry = builtInRegistry,
+    this.preload = const {...PipelinePart.values},
   });
 
   final PipelineSpec spec;
@@ -46,6 +53,10 @@ class WorkerSetup {
   /// Builds the plugin registry inside the worker (a top-level function;
   /// tests pass fakes).
   final PluginRegistry Function() registry;
+
+  /// Plugins loaded before [PipelineWorker.start] returns (its errors, like
+  /// a missing model, come from there); the others load when first needed.
+  final Set<PipelinePart> preload;
 }
 
 /// A file the worker writes after a page is drawn.
@@ -66,6 +77,13 @@ class JsonOutput extends WorkerOutput {
   const JsonOutput(super.path, this.json);
 
   final Object? json;
+}
+
+/// A grayscale image (masks), saved as PNG.
+class MaskOutput extends WorkerOutput {
+  const MaskOutput(super.path, this.mask);
+
+  final GrayImage mask;
 }
 
 /// The worker failed in a way that cannot be sent back as the original
@@ -98,14 +116,22 @@ class PipelineWorker {
   var _nextId = 0;
   var _disposed = false;
 
-  /// Starts a worker and loads the plugins of [setup]. Throws what loading
-  /// threw (e.g. [ModelNotInstalledException]).
+  /// Disposed, or stopped on its own (crash).
+  bool get isClosed => _disposed;
+
+  /// Starts a worker and loads the plugins of [WorkerSetup.preload]. Throws
+  /// what loading threw (e.g. [ModelNotInstalledException]).
   static Future<PipelineWorker> start(WorkerSetup setup, {required EventLog log}) async {
     final port = ReceivePort();
     // The exit message (null) also arrives when the isolate dies on an
     // uncaught error, so nothing waits forever.
-    final isolate = await Isolate.spawn(_workerMain, (port.sendPort, setup),
-        debugName: 'pipeline', onExit: port.sendPort, onError: port.sendPort);
+    final isolate = await Isolate.spawn(
+      _workerMain,
+      (port.sendPort, setup),
+      debugName: 'pipeline',
+      onExit: port.sendPort,
+      onError: port.sendPort,
+    );
     final ready = Completer<_Ready>();
     PipelineWorker? worker;
     port.listen((message) {
@@ -146,11 +172,102 @@ class PipelineWorker {
     required String targetLanguage,
     CancelToken? cancel,
     void Function(String stage)? onStage,
-  }) async {
-    assert((path == null) != (image == null), 'pass either path or image');
+  }) async => await _job(
+    _Op.prepare,
+    page,
+    path: path,
+    image: image,
+    source: sourceLanguage,
+    target: targetLanguage,
+    cancel: cancel,
+    onStage: onStage,
+  ) as CleanPage;
+
+  /// Loads [parts] now (errors such as a missing model come from here).
+  Future<void> load(Set<PipelinePart> parts) => _job(_Op.load, '', parts: parts);
+
+  /// Text blocks found on the page, in reading order.
+  Future<List<TextBlock>> detect(
+    String page, {
+    String? path,
+    RgbImage? image,
+    required String sourceLanguage,
+    CancelToken? cancel,
+  }) async => (await _job(_Op.detect, page, path: path, image: image, source: sourceLanguage, cancel: cancel) as List)
+      .cast<TextBlock>();
+
+  /// [blocks] with their text read.
+  Future<List<TextBlock>> recognize(
+    String page, {
+    String? path,
+    RgbImage? image,
+    required List<TextBlock> blocks,
+    required String sourceLanguage,
+    CancelToken? cancel,
+  }) async => (await _job(
+    _Op.recognize,
+    page,
+    path: path,
+    image: image,
+    blocks: blocks,
+    source: sourceLanguage,
+    cancel: cancel,
+  ) as List).cast<TextBlock>();
+
+  /// [blocks] with their translations.
+  Future<List<TextBlock>> translate(
+    String page, {
+    String? path,
+    RgbImage? image,
+    required List<TextBlock> blocks,
+    required String sourceLanguage,
+    required String targetLanguage,
+    CancelToken? cancel,
+  }) async => (await _job(
+    _Op.translate,
+    page,
+    path: path,
+    image: image,
+    blocks: blocks,
+    source: sourceLanguage,
+    target: targetLanguage,
+    cancel: cancel,
+  ) as List).cast<TextBlock>();
+
+  /// The text-removal mask of [blocks] (every block, as the original's
+  /// manual "Segment").
+  Future<GrayImage> makeMask(String page, {String? path, RgbImage? image, required List<TextBlock> blocks}) async =>
+      await _job(_Op.mask, page, path: path, image: image, blocks: blocks) as GrayImage;
+
+  /// The image with the [mask]ed parts cleaned; uniform bubbles of [blocks]
+  /// are filled without the network.
+  Future<RgbImage> inpaint(
+    String page, {
+    String? path,
+    RgbImage? image,
+    required GrayImage mask,
+    List<TextBlock> blocks = const [],
+    CancelToken? cancel,
+  }) async =>
+      await _job(_Op.inpaint, page, path: path, image: image, mask: mask, blocks: blocks, cancel: cancel) as RgbImage;
+
+  Future<Object?> _job(
+    _Op op,
+    String page, {
+    String? path,
+    RgbImage? image,
+    List<TextBlock>? blocks,
+    GrayImage? mask,
+    String source = '',
+    String target = '',
+    Set<PipelinePart> parts = const {},
+    CancelToken? cancel,
+    void Function(String stage)? onStage,
+  }) {
+    assert(op == _Op.load || (path == null) != (image == null), 'pass either path or image');
     final id = _nextId++;
-    final pending = _Pending<CleanPage>(onStage);
-    _send(id, pending, _Prepare(id, page, path, image, sourceLanguage, targetLanguage));
+    final pending = _Pending<Object?>(onStage);
+    _send(id, pending, _Job(id, op, page, path, image, blocks, mask, source, target, parts));
     cancel?.onCancel(() {
       if (_pending.containsKey(id)) _toWorker.send(_Cancel(id));
     });
@@ -161,12 +278,18 @@ class PipelineWorker {
   Future<void> save(List<WorkerOutput> outputs, {String? page, RenderedPage? render, int renderMs = 0}) {
     final id = _nextId++;
     final pending = _Pending<void>(null);
-    _send(id, pending, _Save(id, outputs, page, render?.image, [for (final i in render?.items ?? const <TextItem>[]) i.toJson()], renderMs));
+    _send(
+      id,
+      pending,
+      _Save(id, outputs, page, render?.image, [
+        for (final i in render?.items ?? const <TextItem>[]) i.toJson(),
+      ], renderMs),
+    );
     return pending.completer.future;
   }
 
   void _send(int id, _Pending pending, Object message) {
-    if (_disposed) throw StateError('The pipeline worker is closed');
+    if (_disposed) throw WorkerException('The pipeline worker stopped', 'exit', '');
     _pending[id] = pending;
     _toWorker.send(message);
   }
@@ -175,10 +298,8 @@ class PipelineWorker {
     switch (message) {
       case _Stage(:final id, :final stage):
         _pending[id]?.onStage?.call(stage);
-      case _Prepared(:final id, :final page):
-        _pending.remove(id)?.completer.complete(page);
-      case _Saved(:final id):
-        _pending.remove(id)?.completer.complete();
+      case _Done(:final id, :final result):
+        _pending.remove(id)?.completer.complete(result);
       case _Failed(:final id, :final error, :final stack):
         _pending.remove(id)?.completer.completeError(error, StackTrace.fromString(stack));
     }
@@ -194,6 +315,13 @@ class PipelineWorker {
     _pending.clear();
   }
 
+  /// Stops the isolate at once (the app is closing): no run folder summary.
+  void kill() {
+    if (_disposed) return;
+    _isolate.kill(priority: Isolate.immediate);
+    _onClosed();
+  }
+
   /// Releases the models, finishes the run folder and stops the isolate.
   /// Work still in progress is cancelled.
   Future<void> dispose({bool success = true, Map<String, Object?>? summary}) async {
@@ -203,10 +331,13 @@ class PipelineWorker {
       _toWorker.send(_Cancel(id));
     }
     _toWorker.send(_Shutdown(success, summary));
-    await _closed.future.timeout(const Duration(seconds: 30), onTimeout: () {
-      _isolate.kill(priority: Isolate.immediate);
-      _onClosed();
-    });
+    await _closed.future.timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        _isolate.kill(priority: Isolate.immediate);
+        _onClosed();
+      },
+    );
   }
 }
 
@@ -217,17 +348,34 @@ class _Pending<T> {
   final void Function(String stage)? onStage;
 }
 
+enum _Op { prepare, load, detect, recognize, translate, mask, inpaint }
+
 // Messages main → worker.
 
-class _Prepare {
-  _Prepare(this.id, this.page, this.path, this.image, this.source, this.target);
+class _Job {
+  _Job(
+    this.id,
+    this.op,
+    this.page,
+    this.path,
+    this.image,
+    this.blocks,
+    this.mask,
+    this.source,
+    this.target,
+    this.parts,
+  );
 
   final int id;
+  final _Op op;
   final String page;
   final String? path;
   final RgbImage? image;
+  final List<TextBlock>? blocks;
+  final GrayImage? mask;
   final String source;
   final String target;
+  final Set<PipelinePart> parts;
 }
 
 class _Cancel {
@@ -277,17 +425,11 @@ class _Stage {
   final String stage;
 }
 
-class _Prepared {
-  _Prepared(this.id, this.page);
+class _Done {
+  _Done(this.id, this.result);
 
   final int id;
-  final CleanPage page;
-}
-
-class _Saved {
-  _Saved(this.id);
-
-  final int id;
+  final Object? result;
 }
 
 class _Failed {
@@ -317,9 +459,9 @@ class _PortSink implements LogSink {
 /// Exceptions the main isolate handles by type are sent as they are; others
 /// as text, since they may hold resources that cannot cross isolates.
 Object _sendable(Object e) => switch (e) {
-      CancelledException() || ModelNotInstalledException() || TranslationException() || ImageDecodeException() => e,
-      _ => WorkerException(e.toString(), e.runtimeType.toString(), ''),
-    };
+  CancelledException() || ModelNotInstalledException() || TranslationException() || ImageDecodeException() => e,
+  _ => WorkerException(e.toString(), e.runtimeType.toString(), ''),
+};
 
 Future<void> _workerMain((SendPort, WorkerSetup) args) async {
   final (toMain, setup) = args;
@@ -330,15 +472,27 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
     config.secrets.values.forEach(redactor.addSecret);
   }
   final registry = setup.registry();
+  final settings = setup.spec.settings;
   RunRecorder? recorder;
   late final EventLog log;
-  late final PagePipeline pipeline;
+  late final LazyPlugins plugins;
 
   void fail(int id, Object e, StackTrace st) {
     try {
       toMain.send(_Failed(id, _sendable(e), st.toString()));
     } on ArgumentError {
       toMain.send(_Failed(id, WorkerException(e.toString(), e.runtimeType.toString(), ''), st.toString()));
+    }
+  }
+
+  Future<void> load(Set<PipelinePart> parts) async {
+    for (final part in PipelinePart.values.where(parts.contains)) {
+      await switch (part) {
+        PipelinePart.detector => plugins.detector,
+        PipelinePart.ocr => plugins.ocr,
+        PipelinePart.translator => plugins.translator,
+        PipelinePart.inpainter => plugins.inpainter,
+      };
     }
   }
 
@@ -353,7 +507,8 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
       );
     }
     log = recorder?.log ?? EventLog([forward]);
-    pipeline = await PagePipeline.create(registry, ModelManager(Directory(setup.modelsDir), log: log), setup.spec, log);
+    plugins = LazyPlugins(registry, ModelManager(Directory(setup.modelsDir), log: log), setup.spec, log);
+    await load(setup.preload);
   } catch (e, st) {
     await recorder?.finish(success: false, summary: {'error': e.toString()});
     await registry.disposeInstances();
@@ -363,7 +518,59 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
   }
   toMain.send(_Ready(inbox.sendPort, recorder?.dir.path, recorder?.runId));
 
-  // One page at a time (memory); cancel messages are handled in between.
+  Future<Object?> run(_Job m, CancelToken token) async {
+    if (m.op == _Op.load) {
+      await load(m.parts);
+      return null;
+    }
+    token.throwIfCancelled();
+    final image = m.image ?? await ImageCodec.readFile(m.path!);
+    final context = PluginContext(
+      log: log.child(page: m.page),
+      cancel: token,
+      recorder: recorder,
+      page: m.page,
+    );
+    final blocks = m.blocks ?? const <TextBlock>[];
+    switch (m.op) {
+      case _Op.prepare:
+        final pipeline = await plugins.pipeline(m.source, m.target);
+        return pipeline.prepare(image, context, onStage: (stage) => toMain.send(_Stage(m.id, stage)));
+      case _Op.detect:
+        final found = await (await plugins.detector).detect(image, context);
+        return sortBlocks(found, rightToLeft: m.source == 'Japanese');
+      case _Op.recognize:
+        await recognizeBlocks(await plugins.ocr, image, blocks, settings, context, sourceLanguage: m.source);
+        return blocks;
+      case _Op.translate:
+        await translatePageBlocks(
+          await plugins.translator,
+          image,
+          blocks,
+          settings,
+          context,
+          sourceLanguage: m.source,
+          targetLanguage: m.target,
+        );
+        return blocks;
+      case _Op.mask:
+        return generateMask(image, blocks);
+      case _Op.inpaint:
+        final inpainter = await plugins.inpainter;
+        return inpaintPage(
+          image,
+          m.mask!,
+          settings.inpaint,
+          (img, mask) => inpainter.inpaint(img, mask, settings.inpaint, context),
+          blocks: blocks,
+          report: InpaintReport(),
+        );
+      case _Op.load:
+        return null;
+    }
+  }
+
+  // One job at a time (memory); cancel messages are handled in between.
   final cancels = <int, CancelToken>{};
   var queue = Future<void>.value();
   void enqueue(int id, Future<void> Function() job) {
@@ -380,17 +587,9 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
 
   await for (final message in inbox) {
     switch (message) {
-      case _Prepare m:
+      case _Job m:
         final token = cancels[m.id] = CancelToken();
-        enqueue(m.id, () async {
-          token.throwIfCancelled();
-          final image = m.image ?? await ImageCodec.readFile(m.path!);
-          final context = PluginContext(log: log.child(page: m.page), cancel: token, recorder: recorder, page: m.page);
-          final page = await pipeline
-              .withLanguages(m.source, m.target)
-              .prepare(image, context, onStage: (stage) => toMain.send(_Stage(m.id, stage)));
-          toMain.send(_Prepared(m.id, page));
-        });
+        enqueue(m.id, () async => toMain.send(_Done(m.id, await run(m, token))));
       case _Cancel m:
         cancels[m.id]?.cancel();
       case _Save m:
@@ -399,6 +598,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
             await File(o.path).parent.create(recursive: true);
             final bytes = switch (o) {
               ImageOutput(:final image, :final path) => ImageCodec.encodeByExtension(image, _extension(path)),
+              MaskOutput(:final mask) => ImageCodec.encodeGrayPng(mask),
               JsonOutput(:final json) => utf8.encode(const JsonEncoder.withIndent('  ').convert(json)),
             };
             await File(o.path).writeAsBytes(bytes, flush: true);
@@ -410,7 +610,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
             await rec.writeArtifact('06_render', 'final.png', ImageCodec.encodePng(rendered), page: m.page);
             await rec.writeJsonArtifact('06_render', 'layout.json', m.items, page: m.page);
           }
-          toMain.send(_Saved(m.id));
+          toMain.send(_Done(m.id, null));
         });
       case _Shutdown m:
         await queue;

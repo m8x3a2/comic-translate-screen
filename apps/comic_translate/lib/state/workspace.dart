@@ -1,5 +1,9 @@
-/// The open pages (until projects arrive in M9, a session lives in a cache
-/// folder and is not restored after restart).
+/// The open pages and their edit history (until projects arrive in M9, a
+/// session lives in a cache folder and is not restored after restart).
+///
+/// Pages are immutable values: every change makes new [PageEntry] and
+/// [TextBlock] objects (blocks are never changed in place), so an undo step
+/// is just the previous value.
 library;
 
 import 'dart:io';
@@ -48,6 +52,8 @@ class OtherReason extends SkipReason {
   final String message;
 }
 
+const Object _keep = Object();
+
 /// One open page and what was done to it.
 class PageEntry {
   const PageEntry({
@@ -60,6 +66,8 @@ class PageEntry {
     this.reason,
     this.translatedPath,
     this.cleanPath,
+    this.maskPath,
+    this.strokes = const [],
     this.blocks = const [],
     this.renderScale = 1.0,
     this.exported = false,
@@ -83,57 +91,141 @@ class PageEntry {
   /// Why the page was skipped.
   final SkipReason? reason;
 
+  /// The page drawn with its translation (a cache: cleared when the page
+  /// changes, drawn again for export).
   final String? translatedPath;
+
+  /// The page with the text removed.
   final String? cleanPath;
+
+  /// Generated text-removal mask (PNG), before cleaning.
+  final String? maskPath;
+
+  /// Brush and eraser strokes over [maskPath], in page pixels.
+  final List<MaskStroke> strokes;
 
   /// Detected blocks with text and translation, in original page
   /// coordinates.
   final List<TextBlock> blocks;
 
-  /// How much the translated image was enlarged.
+  /// How much [translatedPath] was enlarged.
   final double renderScale;
 
   /// The current translation was saved with Export.
   final bool exported;
 
-  bool get isDone => status == PageStatus.done && translatedPath != null;
+  /// Something was translated or cleaned: the page can be exported.
+  bool get isDone => cleanPath != null || blocks.any((b) => hasTranslatableContent(b.translation));
 
+  /// The image the translation is drawn on.
+  String get basePath => cleanPath ?? path;
+
+  /// There is a mask to clean with.
+  bool get hasMask => maskPath != null || strokes.any((s) => !s.erase);
+
+  /// A copy with the given fields changed; pass null to clear a nullable
+  /// field.
   PageEntry copyWith({
     PageStatus? status,
-    String? stage,
-    SkipReason? reason,
-    String? translatedPath,
-    String? cleanPath,
+    Object? stage = _keep,
+    Object? reason = _keep,
+    Object? translatedPath = _keep,
+    Object? cleanPath = _keep,
+    Object? maskPath = _keep,
+    List<MaskStroke>? strokes,
     List<TextBlock>? blocks,
     double? renderScale,
     bool? exported,
-    bool clearStage = false,
-    bool clearReason = false,
-  }) => PageEntry(
-    id: id,
-    name: name,
-    path: path,
-    source: source,
-    status: status ?? this.status,
-    stage: clearStage ? null : (stage ?? this.stage),
-    reason: clearReason ? null : (reason ?? this.reason),
-    translatedPath: translatedPath ?? this.translatedPath,
-    cleanPath: cleanPath ?? this.cleanPath,
-    blocks: blocks ?? this.blocks,
-    renderScale: renderScale ?? this.renderScale,
-    exported: exported ?? (translatedPath != null && translatedPath != this.translatedPath ? false : this.exported),
+  }) {
+    T? pick<T>(Object? v, T? old) => identical(v, _keep) ? old : v as T?;
+    final rendered = pick<String>(translatedPath, this.translatedPath);
+    return PageEntry(
+      id: id,
+      name: name,
+      path: path,
+      source: source,
+      status: status ?? this.status,
+      stage: pick(stage, this.stage),
+      reason: pick(reason, this.reason),
+      translatedPath: rendered,
+      cleanPath: pick(cleanPath, this.cleanPath),
+      maskPath: pick(maskPath, this.maskPath),
+      strokes: strokes ?? this.strokes,
+      blocks: blocks ?? this.blocks,
+      renderScale: renderScale ?? this.renderScale,
+      exported: exported ?? (rendered != null && rendered != this.translatedPath ? false : this.exported),
+    );
+  }
+}
+
+/// The editable part of a page, kept for undo.
+class PageSnapshot {
+  PageSnapshot.of(PageEntry p)
+    : blocks = [for (final b in p.blocks) b.copy()],
+      cleanPath = p.cleanPath,
+      maskPath = p.maskPath,
+      strokes = p.strokes,
+      translatedPath = p.translatedPath,
+      renderScale = p.renderScale;
+
+  final List<TextBlock> blocks;
+  final String? cleanPath;
+  final String? maskPath;
+  final List<MaskStroke> strokes;
+  final String? translatedPath;
+  final double renderScale;
+
+  PageEntry applyTo(PageEntry p) => p.copyWith(
+    blocks: [for (final b in blocks) b.copy()],
+    cleanPath: cleanPath,
+    maskPath: maskPath,
+    strokes: strokes,
+    translatedPath: translatedPath,
+    renderScale: renderScale,
+    exported: false,
   );
 }
 
+/// Undo and redo steps of one page.
+class PageHistory {
+  const PageHistory({this.undo = const [], this.redo = const [], this.mergeKey, this.at});
+
+  static const empty = PageHistory();
+
+  /// Most recent last.
+  final List<PageSnapshot> undo;
+  final List<PageSnapshot> redo;
+
+  /// Key and time of the last change, to merge typing into one step.
+  final String? mergeKey;
+  final DateTime? at;
+}
+
+/// Undo steps kept per page.
+const maxUndoSteps = 100;
+
+/// Changes with the same merge key closer than this become one undo step.
+const defaultMergeWindow = Duration(seconds: 2);
+
 class WorkspaceState {
-  const WorkspaceState({this.pages = const [], this.current = 0, this.importing = false, this.selectedBlock});
+  const WorkspaceState({
+    this.pages = const [],
+    this.current = 0,
+    this.importing = false,
+    this.selectedBlock,
+    this.history = const {},
+  });
 
   final List<PageEntry> pages;
   final int current;
   final bool importing;
 
-  /// Block highlighted in the viewer (index into the current page's blocks).
+  /// Block selected in the viewer and the text panel (index into the
+  /// current page's blocks).
   final int? selectedBlock;
+
+  /// Page id → its undo history.
+  final Map<String, PageHistory> history;
 
   PageEntry? get currentPage => pages.isEmpty ? null : pages[current.clamp(0, pages.length - 1)];
   int get doneCount => pages.where((p) => p.isDone).length;
@@ -141,17 +233,35 @@ class WorkspaceState {
   /// Translated pages that would be lost on closing (not exported yet).
   int get unexportedCount => pages.where((p) => p.isDone && !p.exported).length;
 
+  /// The selected block of the current page.
+  TextBlock? get selected {
+    final page = currentPage, i = selectedBlock;
+    return page == null || i == null || i < 0 || i >= page.blocks.length ? null : page.blocks[i];
+  }
+
+  bool get canUndo => history[currentPage?.id]?.undo.isNotEmpty ?? false;
+  bool get canRedo => history[currentPage?.id]?.redo.isNotEmpty ?? false;
+
+  PageEntry? byId(String id) {
+    for (final p in pages) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+
   WorkspaceState copyWith({
     List<PageEntry>? pages,
     int? current,
     bool? importing,
     int? selectedBlock,
     bool clearBlock = false,
+    Map<String, PageHistory>? history,
   }) => WorkspaceState(
     pages: pages ?? this.pages,
     current: current ?? this.current,
     importing: importing ?? this.importing,
     selectedBlock: clearBlock ? null : (selectedBlock ?? this.selectedBlock),
+    history: history ?? this.history,
   );
 }
 
@@ -245,6 +355,7 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
       pages: pages,
       current: state.current.clamp(0, pages.isEmpty ? 0 : pages.length - 1),
       clearBlock: true,
+      history: {...state.history}..remove(id),
     );
   }
 
@@ -266,7 +377,144 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     state = state.copyWith(pages: [for (final p in state.pages) set.contains(p.id) ? p.copyWith(exported: true) : p]);
   }
 
+  /// Changes page [id] without an undo step (progress, status).
   void updatePage(String id, PageEntry Function(PageEntry page) update) {
     state = state.copyWith(pages: [for (final p in state.pages) p.id == id ? update(p) : p]);
+  }
+
+  /// Changes page [id] as one undo step. Changes with the same [mergeKey]
+  /// within [mergeWindow] of each other (typing in a field, dragging) become
+  /// one step. The
+  /// drawn page is cleared unless [change] brings a new one, and the page
+  /// counts as not exported.
+  void edit(
+    String id,
+    PageEntry Function(PageEntry page) change, {
+    String? mergeKey,
+    Duration mergeWindow = defaultMergeWindow,
+  }) {
+    final page = state.byId(id);
+    if (page == null) return;
+    final h = state.history[id] ?? PageHistory.empty;
+    final now = DateTime.now();
+    final merge =
+        mergeKey != null &&
+        h.mergeKey == mergeKey &&
+        h.undo.isNotEmpty &&
+        h.at != null &&
+        now.difference(h.at!) < mergeWindow;
+    final undo = merge ? h.undo : [...h.undo, PageSnapshot.of(page)];
+    final history = PageHistory(
+      undo: undo.length > maxUndoSteps ? undo.sublist(undo.length - maxUndoSteps) : undo,
+      mergeKey: mergeKey,
+      at: now,
+    );
+    var next = change(page);
+    if (next.translatedPath == page.translatedPath) next = next.copyWith(translatedPath: null);
+    next = next.copyWith(exported: false);
+    state = state.copyWith(
+      pages: [for (final p in state.pages) p.id == id ? next : p],
+      history: {...state.history, id: history},
+    );
+  }
+
+  /// Changes block [index] of page [id] (a copy of it) as one undo step.
+  void editBlock(String id, int index, void Function(TextBlock block) change, {String? mergeKey}) => edit(id, (p) {
+    if (index < 0 || index >= p.blocks.length) return p;
+    final blocks = [...p.blocks];
+    blocks[index] = blocks[index].copy();
+    change(blocks[index]);
+    return p.copyWith(blocks: blocks);
+  }, mergeKey: mergeKey);
+
+  // Editing the current page.
+
+  /// Adds a block with [box] (page pixels) and selects it.
+  void addBlock(BBox box) {
+    final page = state.currentPage;
+    if (page == null) return;
+    edit(
+      page.id,
+      (p) => p.copyWith(
+        blocks: [
+          ...p.blocks,
+          TextBlock(xyxy: box),
+        ],
+      ),
+    );
+    state = state.copyWith(selectedBlock: page.blocks.length);
+  }
+
+  void deleteBlock(int index) {
+    final page = state.currentPage;
+    if (page == null || index < 0 || index >= page.blocks.length) return;
+    edit(page.id, (p) => p.copyWith(blocks: [...p.blocks]..removeAt(index)));
+    state = state.copyWith(clearBlock: true);
+  }
+
+  /// Changes block [index] of the current page (a copy of it).
+  void changeBlock(int index, void Function(TextBlock block) change, {String? mergeKey}) {
+    final page = state.currentPage;
+    if (page != null) editBlock(page.id, index, change, mergeKey: mergeKey);
+  }
+
+  /// Changes the style of block [index] of the current page.
+  void styleBlock(int index, BlockStyle Function(BlockStyle style) change, {String? mergeKey}) =>
+      changeBlock(index, (b) {
+        final s = change(b.style ?? const BlockStyle());
+        b.style = s.isEmpty ? null : s;
+      }, mergeKey: mergeKey);
+
+  /// Applies [change] to the style of every block of the current page.
+  void styleAll(BlockStyle Function(BlockStyle style) change) {
+    final page = state.currentPage;
+    if (page == null || page.blocks.isEmpty) return;
+    edit(
+      page.id,
+      (p) => p.copyWith(
+        blocks: [
+          for (final b in p.blocks)
+            b.copy()
+              ..style = (() {
+                final s = change(b.style ?? const BlockStyle());
+                return s.isEmpty ? null : s;
+              })(),
+        ],
+      ),
+    );
+  }
+
+  void addStroke(MaskStroke stroke) {
+    final page = state.currentPage;
+    if (page != null) edit(page.id, (p) => p.copyWith(strokes: [...p.strokes, stroke]));
+  }
+
+  /// Removes the mask and the strokes of the current page.
+  void clearMask() {
+    final page = state.currentPage;
+    if (page != null && page.hasMask) edit(page.id, (p) => p.copyWith(maskPath: null, strokes: const []));
+  }
+
+  void undo() => _step(back: true);
+
+  void redo() => _step(back: false);
+
+  void _step({required bool back}) {
+    final page = state.currentPage;
+    if (page == null) return;
+    final h = state.history[page.id] ?? PageHistory.empty;
+    final from = back ? h.undo : h.redo;
+    if (from.isEmpty) return;
+    final target = from.last;
+    final rest = from.sublist(0, from.length - 1);
+    final other = [...(back ? h.redo : h.undo), PageSnapshot.of(page)];
+    final history = back ? PageHistory(undo: rest, redo: other) : PageHistory(undo: other, redo: rest);
+    final restored = target.applyTo(page);
+    final selected = state.selectedBlock;
+    state = state.copyWith(
+      pages: [for (final p in state.pages) p.id == page.id ? restored : p],
+      history: {...state.history, page.id: history},
+      clearBlock: selected == null || selected >= restored.blocks.length,
+    );
   }
 }

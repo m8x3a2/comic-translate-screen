@@ -7,6 +7,9 @@
 /// the translation with dart:ui and stays on the main isolate.
 library;
 
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:ct_core/ct_core.dart';
 
 import '../bootstrap.dart';
@@ -31,30 +34,82 @@ const _overflowShare = 0.2;
 
 bool _overflows(TextItem i) => i.width > i.block.xyxy.width + 0.5 || i.height > i.block.xyxy.height + 0.5;
 
-/// Lays out and draws translations over [clean]. The page is enlarged first
-/// when [AppSettings.upscale] asks for it (auto: small source text, or many
-/// translations that do not fit even at the smallest font size).
-///
-/// As in the original, [blocks] end up with their render areas and the
-/// case-adjusted translations, in [clean] coordinates.
-Future<RenderedPage> renderPage(
-  RgbImage clean,
+/// Where the translations go on a page and how much it is enlarged first.
+class RenderLayout {
+  RenderLayout(this.scale, this.items, [this.blockIndex = const []]);
+
+  /// Enlargement of the page (1 = none).
+  final double scale;
+
+  /// Laid-out text, in enlarged page coordinates.
+  final List<TextItem> items;
+
+  /// The block of each item (index into the laid-out blocks).
+  final List<int> blockIndex;
+}
+
+/// Laid-out text of single blocks, kept between edits so that the editor
+/// lays out only the blocks that changed.
+class LayoutCache {
+  final _items = <String, TextItem?>{};
+
+  TextItem? _lookup(String key, TextItem? Function() make) {
+    if (_items.containsKey(key)) return _items[key];
+    if (_items.length > 2000) _items.clear();
+    return _items[key] = make();
+  }
+
+  void clear() => _items.clear();
+}
+
+/// The text engines for drawing [blocks] (their fonts loaded).
+Future<TextEngines> loadTextEngines(AppSettings settings, String targetLanguage, Iterable<TextBlock> blocks) =>
+    TextEngines.load(settings.render, rtl: Languages.isRtlName(targetLanguage), blocks: blocks);
+
+/// Lays out the translations of [blocks] on a [width]×[height] page. The
+/// page is enlarged first when [AppSettings.upscale] asks for it (auto:
+/// small source text, or many translations that do not fit even at the
+/// smallest font size). [blocks] are not changed.
+RenderLayout layoutRender(
+  int width,
+  int height,
   List<TextBlock> blocks,
-  AppSettings settings, {
+  AppSettings settings,
+  TextEngines engines, {
   required String targetLanguage,
-}) async {
-  final family = await resolveFontFamily(settings.render.fontFamily);
-  final engine = UiTextEngine(settings.render, fontFamily: family, rtl: Languages.isRtlName(targetLanguage));
-  final w0 = clean.width, h0 = clean.height;
+  LayoutCache? cache,
+}) {
+  final w0 = width, h0 = height;
   (int, int) sizeAt(double f) => (((w0 * f).round()), ((h0 * f).round()));
+  List<TextItem> layoutBlocks(List<TextBlock> copies, int w, int h) => layoutPage(
+    copies,
+    w,
+    h,
+    engines.main,
+    settings: settings.render,
+    targetLanguage: targetLanguage,
+    measurerFor: engines.of,
+  );
   List<TextItem> layoutAt(double f) {
     final (w, h) = sizeAt(f);
     final copies = f == 1.0 ? [for (final b in blocks) b.copy()] : scaleBlocks(blocks, w0, h0, w, h);
-    return layoutPage(copies, w, h, engine, settings: settings.render, targetLanguage: targetLanguage);
+    if (cache == null || copies.isEmpty) return layoutBlocks(copies, w, h);
+    // Block by block: the page's first block decides the render areas.
+    final first = copies.first.sourceLang;
+    final prefix = '$w|$h|$first|$targetLanguage|${jsonEncode(settings.render.toJson())}|';
+    return [
+      for (final c in copies)
+        ?cache._lookup('$prefix${jsonEncode(c.toJson())}', () {
+          final one = layoutBlocks([c..sourceLang = first], w, h);
+          return one.isEmpty ? null : one.single;
+        }),
+    ];
   }
 
   final upscale = settings.upscale;
-  var scale = upscale.mode == UpscaleMode.auto ? autoUpscaleFactor(blocks, w0, h0) : fixedUpscaleFactor(upscale, w0, h0);
+  var scale = upscale.mode == UpscaleMode.auto
+      ? autoUpscaleFactor(blocks, w0, h0)
+      : fixedUpscaleFactor(upscale, w0, h0);
   var items = layoutAt(scale);
   if (upscale.mode == UpscaleMode.auto && items.isNotEmpty) {
     final limit = (items.length * _overflowShare).ceil();
@@ -66,11 +121,28 @@ Future<RenderedPage> renderPage(
       items = layoutAt(scale);
     }
   }
-  setUpperCase(blocks, settings.render.upperCase);
-  adjustRenderAreas(blocks, w0, h0);
+  final index = [
+    for (final (i, b) in blocks.indexed)
+      if (hasTranslatableContent(b.translation)) i,
+  ];
+  return RenderLayout(scale, items, index.length == items.length ? index : const []);
+}
 
-  final page = scale == 1.0 ? clean : upscaleImage(clean, scale, method: upscale.method);
-  return RenderedPage(await renderTextOnPage(page, items, engine), items, scale);
+/// Lays out and draws the translations of [blocks] over [clean] (see
+/// [layoutRender]). Unlike the original, [blocks] keep their detected boxes
+/// and the translations as written, so the page can be edited and drawn
+/// again.
+Future<RenderedPage> renderPage(
+  RgbImage clean,
+  List<TextBlock> blocks,
+  AppSettings settings, {
+  required String targetLanguage,
+}) async {
+  final engines = await loadTextEngines(settings, targetLanguage, blocks);
+  final layout = layoutRender(clean.width, clean.height, blocks, settings, engines, targetLanguage: targetLanguage);
+  final scale = layout.scale;
+  final page = scale == 1.0 ? clean : upscaleImage(clean, scale, method: settings.upscale.method);
+  return RenderedPage(await renderTextOnPage(page, layout.items, engines), layout.items, scale);
 }
 
 /// The page after the heavy steps: blocks with text and translation, and the
@@ -107,16 +179,16 @@ class PageResult {
   });
 
   PageResult.of(CleanPage page, RenderedPage render, int renderMs)
-      : this(
-          blocks: page.blocks,
-          mask: page.mask,
-          clean: page.clean,
-          rendered: render.image,
-          items: render.items,
-          renderScale: render.scale,
-          inpaintReport: page.inpaintReport,
-          timingsMs: {...page.timingsMs, '06_render': renderMs},
-        );
+    : this(
+        blocks: page.blocks,
+        mask: page.mask,
+        clean: page.clean,
+        rendered: render.image,
+        items: render.items,
+        renderScale: render.scale,
+        inpaintReport: page.inpaintReport,
+        timingsMs: {...page.timingsMs, '06_render': renderMs},
+      );
 
   final List<TextBlock> blocks;
   final GrayImage mask;
@@ -132,14 +204,14 @@ class PageResult {
   int get totalMs => timingsMs.values.fold(0, (a, b) => a + b);
 
   Map<String, Object?> toJson({required String image, required String source, required String target}) => {
-        'image': image,
-        'source_language': source,
-        'target_language': target,
-        'blocks': [for (final b in blocks) b.toJson()],
-        'items': [for (final i in items) i.toJson()],
-        'render_scale': renderScale,
-        'timings_ms': timingsMs,
-      };
+    'image': image,
+    'source_language': source,
+    'target_language': target,
+    'blocks': [for (final b in blocks) b.toJson()],
+    'items': [for (final i in items) i.toJson()],
+    'render_scale': renderScale,
+    'timings_ms': timingsMs,
+  };
 }
 
 /// Saves the render step of [page] in test mode.
@@ -171,6 +243,28 @@ class PipelineSpec {
 
   /// Plugin id → resolved configuration (secrets included; never logged).
   final Map<String, PluginConfig> configs;
+
+  /// Changes when the plugins or their configuration change (not with the
+  /// languages, which every job brings). A hash, so secrets never show.
+  String get fingerprint {
+    final s = settings.toJson()
+      ..remove('languages')
+      ..remove('render')
+      ..remove('upscale')
+      ..remove('export')
+      ..remove('ui')
+      ..remove('approved_network_plugins');
+    final configs = {
+      for (final e in this.configs.entries) e.key: {'values': e.value.values, 'secrets': e.value.secrets},
+    };
+    final text = jsonEncode({
+      'settings': s,
+      'translator': translatorId,
+      'gpu': useGpu,
+      'configs': configs,
+    }, toEncodable: (o) => o.toString());
+    return sha256.convert(utf8.encode(text)).toString();
+  }
 
   static Future<PipelineSpec> resolve(
     AppServices services,
@@ -226,13 +320,24 @@ class PagePipeline {
     bool? useGpu,
     EventLog? log,
   }) async {
-    final spec = await PipelineSpec.resolve(services, settings,
-        sourceLanguage: sourceLanguage, targetLanguage: targetLanguage, translatorId: translatorId, useGpu: useGpu);
+    final spec = await PipelineSpec.resolve(
+      services,
+      settings,
+      sourceLanguage: sourceLanguage,
+      targetLanguage: targetLanguage,
+      translatorId: translatorId,
+      useGpu: useGpu,
+    );
     return create(services.registry, services.models, spec, log ?? services.appLog);
   }
 
   /// Creates the plugins of [spec] from [registry] (any isolate).
-  static Future<PagePipeline> create(PluginRegistry registry, ModelManager models, PipelineSpec spec, EventLog log) async {
+  static Future<PagePipeline> create(
+    PluginRegistry registry,
+    ModelManager models,
+    PipelineSpec spec,
+    EventLog log,
+  ) async {
     final env = PluginEnvironment(models: models, log: log, useGpu: spec.useGpu);
     final s = spec.settings;
     Future<T> make<T extends Plugin>(String id) => registry.instance<T>(id, spec.configs[id]!, env);
@@ -249,16 +354,14 @@ class PagePipeline {
 
   /// The same plugins with other page languages.
   PagePipeline withLanguages(String source, String target) => PagePipeline(
-        settings: settings,
-        sourceLanguage: source,
-        targetLanguage: target,
-        detector: detector,
-        ocr: ocr,
-        translator: translator,
-        inpainter: inpainter,
-      );
-
-  String get _sourceCode => Languages.byName(sourceLanguage)?.code ?? '';
+    settings: settings,
+    sourceLanguage: source,
+    targetLanguage: target,
+    detector: detector,
+    ocr: ocr,
+    translator: translator,
+    inpainter: inpainter,
+  );
 
   /// Detection, OCR, translation and cleaning of [image]. [onStage] is called
   /// as each stage starts. Stage artifacts go to the context's recorder (test
@@ -285,28 +388,20 @@ class PagePipeline {
     await recorder?.writeJsonArtifact('01_detect', 'blocks.json', [for (final b in blocks) b.toJson()], page: page);
 
     start('02_ocr');
-    final reading = prepareReading(image, blocks, sourceLanguageCode: _sourceCode, enabled: settings.upscaleSmallText);
-    try {
-      await ocr.recognize(reading.image, blocks, sourceLanguage: sourceLanguage, context: context);
-    } finally {
-      reading.restore();
-    }
-    if (settings.fixCyrillicLookalikes) fixOcrScript(blocks, _sourceCode);
+    await recognizeBlocks(ocr, image, blocks, settings, context, sourceLanguage: sourceLanguage);
     blocks = sortBlocks(blocks, rightToLeft: sourceLanguage == 'Japanese');
     lap('02_ocr');
     await recorder?.writeJsonArtifact('02_ocr', 'blocks.json', [for (final b in blocks) b.toJson()], page: page);
 
     start('03_translate');
-    await translateBlocks(
+    await translatePageBlocks(
       translator,
-      TranslationRequest(
-        blocks: blocks,
-        sourceLanguage: sourceLanguage,
-        targetLanguage: targetLanguage,
-        pageImage: settings.sendPageImage ? image : null,
-        extraContext: settings.extraContext,
-      ),
+      image,
+      blocks,
+      settings,
       context,
+      sourceLanguage: sourceLanguage,
+      targetLanguage: targetLanguage,
     );
     lap('03_translate');
 
@@ -342,4 +437,93 @@ class PagePipeline {
     await recordRender(context.recorder, context.page, render.image, render.items, ms);
     return PageResult.of(cleaned, render, ms);
   }
+}
+
+// Single steps, shared by the batch run and the manual steps of the editor
+// (original `manual_workflow.py`).
+
+/// OCR of [blocks] on [image] (small text enlarged first when the setting
+/// asks for it).
+Future<void> recognizeBlocks(
+  OcrEngine ocr,
+  RgbImage image,
+  List<TextBlock> blocks,
+  AppSettings settings,
+  PluginContext context, {
+  required String sourceLanguage,
+}) async {
+  final code = Languages.byName(sourceLanguage)?.code ?? '';
+  final reading = prepareReading(image, blocks, sourceLanguageCode: code, enabled: settings.upscaleSmallText);
+  try {
+    await ocr.recognize(reading.image, blocks, sourceLanguage: sourceLanguage, context: context);
+  } finally {
+    reading.restore();
+  }
+  if (settings.fixCyrillicLookalikes) fixOcrScript(blocks, code);
+}
+
+/// Translation of [blocks] (the page image goes along when the setting
+/// allows it).
+Future<void> translatePageBlocks(
+  Translator translator,
+  RgbImage image,
+  List<TextBlock> blocks,
+  AppSettings settings,
+  PluginContext context, {
+  required String sourceLanguage,
+  required String targetLanguage,
+}) => translateBlocks(
+  translator,
+  TranslationRequest(
+    blocks: blocks,
+    sourceLanguage: sourceLanguage,
+    targetLanguage: targetLanguage,
+    pageImage: settings.sendPageImage ? image : null,
+    extraContext: settings.extraContext,
+  ),
+  context,
+);
+
+/// The plugins of a [PipelineSpec], created when first needed and kept.
+class LazyPlugins {
+  LazyPlugins(this.registry, this.models, this.spec, this.log);
+
+  final PluginRegistry registry;
+  final ModelManager models;
+  final PipelineSpec spec;
+  final EventLog log;
+  final _made = <String, Future<Plugin>>{};
+
+  Future<T> _make<T extends Plugin>(String id) {
+    final made = _made[id] ??= registry.instance<T>(
+      id,
+      spec.configs[id] ?? PluginConfig(),
+      PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
+    );
+    // A failure (model not downloaded yet) is not kept: the next call tries
+    // again.
+    return made.then(
+      (p) => p as T,
+      onError: (Object e, StackTrace st) {
+        if (identical(_made[id], made)) _made.remove(id);
+        Error.throwWithStackTrace(e, st);
+      },
+    );
+  }
+
+  Future<TextDetector> get detector => _make(spec.settings.detector);
+  Future<OcrEngine> get ocr => _make(spec.settings.ocr);
+  Future<Translator> get translator => _make(spec.translatorId);
+  Future<Inpainter> get inpainter => _make(spec.settings.inpainter);
+
+  /// Every plugin, for whole-page runs.
+  Future<PagePipeline> pipeline(String source, String target) async => PagePipeline(
+    settings: spec.settings,
+    sourceLanguage: source,
+    targetLanguage: target,
+    detector: await detector,
+    ocr: await ocr,
+    translator: await translator,
+    inpainter: await inpainter,
+  );
 }

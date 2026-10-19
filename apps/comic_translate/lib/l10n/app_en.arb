@@ -457,5 +457,83 @@
         "type": "String"
       }
     }
+  },
+  "drawingPages": "Drawing the edited pages…",
+  "toolPan": "Hand: move the page, click a bubble to select it (H)",
+  "toolBoxes": "Boxes: draw a box around text, move or resize it (R)",
+  "toolText": "Translation: move, resize and turn the text (T)",
+  "toolBrush": "Brush: paint what to clean (B)",
+  "toolEraser": "Eraser: remove parts of the mask (E)",
+  "brushSize": "Brush size ([ and ])",
+  "clearMask": "Remove the whole mask",
+  "undo": "Undo (Ctrl+Z)",
+  "redo": "Redo (Ctrl+Y)",
+  "stepDetect": "Find text",
+  "stepDetectHelp": "finds the text on this page and puts boxes around it",
+  "stepRecognize": "Recognize",
+  "stepRecognizeHelp": "reads the text in the boxes",
+  "stepTranslate": "Translate",
+  "stepTranslateHelp": "translates the recognized text of this page (finds and reads it first if needed)",
+  "stepMask": "Mask",
+  "stepMaskHelp": "marks the letters to remove in red; correct it with the brush and the eraser",
+  "stepClean": "Clean",
+  "stepCleanHelp": "removes the marked text from the picture",
+  "fontFile": "Font file…",
+  "fontSize": "Size",
+  "sizeAuto": "Auto",
+  "colorAuto": "As in the original",
+  "textStyle": "Style",
+  "verticalText": "Vertical text",
+  "rotation": "Rotation",
+  "styleToAll": "To all on the page",
+  "styleReset": "Reset",
+  "findReplace": "Find and replace (Ctrl+F)",
+  "noBlocksHint": "No text boxes on this page yet. Use “Find text” above the page, “Translate all”, or draw boxes with the Boxes tool.",
+  "recognizeBlock": "Recognize this box again",
+  "translateBlock": "Translate this box again",
+  "deleteBlock": "Delete the box (Delete)",
+  "deselect": "Close (Esc)",
+  "sourceText": "Recognized text",
+  "translationText": "Translation",
+  "textLook": "Look of the text",
+  "findHint": "Find",
+  "matchCase": "Match case",
+  "wholeWord": "Whole words",
+  "useRegex": "Regular expression",
+  "previousMatch": "Previous (Shift+Enter)",
+  "nextMatch": "Next (Enter)",
+  "searchInTranslation": "In translations",
+  "searchInSource": "In recognized text",
+  "searchAllPages": "All pages",
+  "searchThisPage": "This page",
+  "badRegex": "Not a valid regular expression: {error}",
+  "@badRegex": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "matchesSummary": "Found: {count} on {pages} page(s)",
+  "@matchesSummary": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "pages": {
+        "type": "String"
+      }
+    }
+  },
+  "replaceHint": "Replace with",
+  "replace": "Replace",
+  "replaceAll": "Replace all",
+  "replacedCount": "Replaced: {count}",
+  "@replacedCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -2,6 +2,7 @@
 library;
 
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' show AppExitResponse;
 
 import 'package:ct_core/ct_core.dart';
@@ -14,6 +15,9 @@ import 'package:path/path.dart' as p;
 
 import '../../state/app_state.dart';
 import '../../state/batch.dart';
+import '../../state/editor.dart';
+import '../../state/page_render.dart';
+import '../../state/steps.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
 import '../common/plugin_strings.dart';
@@ -149,10 +153,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       return;
     }
     final dir = await getDirectoryPath(confirmButtonText: l.export);
-    if (dir == null) return;
+    if (dir == null || !mounted) return;
     final int count;
     try {
-      count = await exportTranslatedPages(pages, dir, ref.read(settingsProvider).export.imageFormat);
+      final ids = [
+        for (final p in pages)
+          if (p.isDone) p.id,
+      ];
+      final drawn = await _withProgress(
+        l.drawingPages,
+        (progress) => drawMissingPages(ref.read, ids, onProgress: progress),
+      );
+      count = await exportTranslatedPages(drawn, dir, ref.read(settingsProvider).export.imageFormat);
     } catch (e, st) {
       ref.read(servicesProvider).appLog.error('export_failed', e, st, {'dir': dir});
       if (mounted) _snack(l.exportFailed(e is FileSystemException ? (e.osError?.message ?? e.message) : '$e'));
@@ -167,6 +179,39 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         l.exportDone('$count', dir),
         action: SnackBarAction(label: l.showInFolder, onPressed: () => showInExplorer(dir)),
       );
+    }
+  }
+
+  /// Runs [work] behind a dialog with its progress (done of total).
+  Future<T> _withProgress<T>(String label, Future<T> Function(void Function(int done, int total) progress) work) async {
+    final value = ValueNotifier<double?>(null);
+    final dialog = showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => AlertDialog(
+        content: SizedBox(
+          width: 360,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label),
+              const SizedBox(height: 12),
+              ValueListenableBuilder(
+                valueListenable: value,
+                builder: (_, v, _) => LinearProgressIndicator(value: v),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    try {
+      return await work((done, total) => value.value = total == 0 ? null : done / total);
+    } finally {
+      if (mounted) Navigator.of(context).pop();
+      await dialog;
+      value.dispose();
     }
   }
 
@@ -192,82 +237,147 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget build(BuildContext context) {
     final ws = ref.watch(workspaceProvider);
     final running = ref.watch(batchProvider) is BatchRunning;
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyO, control: true): _pickFiles,
-        const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
-          if (!running && ws.pages.isNotEmpty) _translate();
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (_, e) => _onKey(e) ? KeyEventResult.handled : KeyEventResult.ignored,
+      child: DropTarget(
+        onDragEntered: (_) => setState(() => _dragging = true),
+        onDragExited: (_) => setState(() => _dragging = false),
+        onDragDone: (d) {
+          setState(() => _dragging = false);
+          _open([for (final f in d.files) f.path]);
         },
-        const SingleActivator(LogicalKeyboardKey.pageDown): () =>
-            ref.read(workspaceProvider.notifier).select(ws.current + 1),
-        const SingleActivator(LogicalKeyboardKey.pageUp): () =>
-            ref.read(workspaceProvider.notifier).select(ws.current - 1),
-      },
-      child: Focus(
-        autofocus: true,
-        child: DropTarget(
-          onDragEntered: (_) => setState(() => _dragging = true),
-          onDragExited: (_) => setState(() => _dragging = false),
-          onDragDone: (d) {
-            setState(() => _dragging = false);
-            _open([for (final f in d.files) f.path]);
-          },
-          child: Scaffold(
-            body: Stack(
-              children: [
-                Column(
-                  children: [
-                    _TopBar(
-                      onOpenFiles: _pickFiles,
-                      onOpenFolder: _pickFolder,
-                      onTranslate: _translate,
-                      onExport: _export,
-                      onCloseAll: _closeAll,
-                      onSettings: _openSettings,
-                    ),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: ws.pages.isEmpty
-                          ? HomeView(onOpenFiles: _pickFiles, onOpenFolder: _pickFolder, busy: ws.importing)
-                          : LayoutBuilder(
-                              builder: (context, c) => Row(
-                                children: [
-                                  SizedBox(
-                                    width: c.maxWidth < 1200 ? 200 : 230,
-                                    child: PageList(onAdd: running ? null : _pickFiles),
-                                  ),
-                                  const VerticalDivider(width: 1),
-                                  const Expanded(child: PageViewer()),
-                                  const VerticalDivider(width: 1),
-                                  SizedBox(width: (c.maxWidth * 0.22).clamp(240.0, 340.0), child: const TextPanel()),
-                                ],
-                              ),
+        child: Scaffold(
+          body: Stack(
+            children: [
+              Column(
+                children: [
+                  _TopBar(
+                    onOpenFiles: _pickFiles,
+                    onOpenFolder: _pickFolder,
+                    onTranslate: _translate,
+                    onExport: _export,
+                    onCloseAll: _closeAll,
+                    onSettings: _openSettings,
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: ws.pages.isEmpty
+                        ? HomeView(onOpenFiles: _pickFiles, onOpenFolder: _pickFolder, busy: ws.importing)
+                        : LayoutBuilder(
+                            builder: (context, c) => Row(
+                              children: [
+                                SizedBox(
+                                  width: c.maxWidth < 1200 ? 200 : 230,
+                                  child: PageList(onAdd: running ? null : _pickFiles),
+                                ),
+                                const VerticalDivider(width: 1),
+                                const Expanded(child: PageViewer()),
+                                const VerticalDivider(width: 1),
+                                SizedBox(width: (c.maxWidth * 0.22).clamp(240.0, 340.0), child: const TextPanel()),
+                              ],
                             ),
-                    ),
-                    const Divider(height: 1),
-                    const _StatusBar(),
-                  ],
-                ),
-                if (_dragging)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: Container(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.file_download_outlined,
-                          size: 96,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
+                          ),
+                  ),
+                  const Divider(height: 1),
+                  const _StatusBar(),
+                ],
+              ),
+              if (_dragging)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Container(
+                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                      alignment: Alignment.center,
+                      child: Icon(Icons.file_download_outlined, size: 96, color: Theme.of(context).colorScheme.primary),
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  /// Keyboard shortcuts of the window (original `app/shortcuts.py` plus the
+  /// tools). Letters and editing keys do nothing while a text field has the
+  /// focus, so typing is never taken over.
+  bool _onKey(KeyEvent e) {
+    if (e is! KeyDownEvent && e is! KeyRepeatEvent) return false;
+    final keyboard = HardwareKeyboard.instance;
+    final ctrl = keyboard.isControlPressed, shift = keyboard.isShiftPressed, alt = keyboard.isAltPressed;
+    final typing = FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
+    final key = e.logicalKey;
+    final ws = ref.read(workspaceProvider.notifier);
+    final state = ref.read(workspaceProvider);
+    final running = ref.read(batchProvider) is BatchRunning;
+    final busy = running || ref.read(stepsProvider).running;
+    final editor = ref.read(editorProvider.notifier);
+    if (ctrl && !alt) {
+      if (key == LogicalKeyboardKey.keyO) {
+        if (!running) _pickFiles();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.enter) {
+        if (!busy && state.pages.isNotEmpty) _translate();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyF || key == LogicalKeyboardKey.keyH) {
+        if (state.pages.isNotEmpty) ref.read(findOpenProvider.notifier).set(true);
+        return true;
+      }
+      if (typing || busy) return false;
+      if (key == LogicalKeyboardKey.keyZ && !shift) {
+        ws.undo();
+        return true;
+      }
+      if (key == LogicalKeyboardKey.keyY || (key == LogicalKeyboardKey.keyZ && shift)) {
+        ws.redo();
+        return true;
+      }
+      return false;
+    }
+    if (typing || alt) return false;
+    if (key == LogicalKeyboardKey.pageDown) {
+      ws.select(state.current + 1);
+      return true;
+    }
+    if (key == LogicalKeyboardKey.pageUp) {
+      ws.select(state.current - 1);
+      return true;
+    }
+    if (key == LogicalKeyboardKey.escape) {
+      if (state.selectedBlock == null) return false;
+      ws.selectBlock(null);
+      return true;
+    }
+    if (state.pages.isEmpty) return false;
+    final tools = {
+      LogicalKeyboardKey.keyH: EditorTool.pan,
+      LogicalKeyboardKey.keyV: EditorTool.pan,
+      LogicalKeyboardKey.keyR: EditorTool.boxes,
+      LogicalKeyboardKey.keyT: EditorTool.text,
+      LogicalKeyboardKey.keyB: EditorTool.brush,
+      LogicalKeyboardKey.keyE: EditorTool.eraser,
+    };
+    if (tools[key] case final tool?) {
+      editor.setTool(tool);
+      return true;
+    }
+    if (key == LogicalKeyboardKey.bracketLeft || key == LogicalKeyboardKey.bracketRight) {
+      final size = ref.read(editorProvider).brushSize;
+      final step = math.max(1.0, size * 0.15);
+      editor.setBrushSize(key == LogicalKeyboardKey.bracketLeft ? size - step : size + step);
+      return true;
+    }
+    if ((key == LogicalKeyboardKey.delete || key == LogicalKeyboardKey.backspace) && !busy) {
+      final i = state.selectedBlock;
+      if (i == null) return false;
+      ws.deleteBlock(i);
+      return true;
+    }
+    return false;
   }
 }
 
@@ -356,7 +466,7 @@ class _TopBar extends ConsumerWidget {
                 )
               else
                 FilledButton.icon(
-                  onPressed: hasPages ? onTranslate : null,
+                  onPressed: hasPages && !ref.watch(stepsProvider).running ? onTranslate : null,
                   icon: const Icon(Icons.translate),
                   label: Text(hasPages && ws.pages.every((p) => p.isDone) ? l.translateAgain : l.translateAll),
                 ),

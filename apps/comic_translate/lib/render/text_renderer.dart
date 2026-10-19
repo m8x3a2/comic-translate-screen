@@ -4,6 +4,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -55,37 +56,37 @@ class UiTextEngine implements TextMeasurer {
   final _naturalRatio = <int, double>{};
 
   ui.TextAlign get _align => switch (settings.alignment) {
-        TextAlignment.left => ui.TextAlign.left,
-        TextAlignment.center => ui.TextAlign.center,
-        TextAlignment.right => ui.TextAlign.right,
-      };
+    TextAlignment.left => ui.TextAlign.left,
+    TextAlignment.center => ui.TextAlign.center,
+    TextAlignment.right => ui.TextAlign.right,
+  };
 
   ui.TextStyle _style(int pt, {int? color, double? lineHeight}) => ui.TextStyle(
-        color: ui.Color(color ?? settings.color),
-        fontFamily: fontFamily,
-        fontFamilyFallback: const ['Segoe UI', 'Yu Gothic UI', 'Microsoft YaHei UI', 'Malgun Gothic', 'Noto Sans'],
-        fontSize: ptToPx(pt),
-        fontWeight: settings.bold ? ui.FontWeight.bold : ui.FontWeight.normal,
-        fontStyle: settings.italic ? ui.FontStyle.italic : ui.FontStyle.normal,
-        decoration: settings.underline ? ui.TextDecoration.underline : null,
-        height: lineHeight,
-      );
+    color: ui.Color(color ?? settings.color),
+    fontFamily: fontFamily,
+    fontFamilyFallback: const ['Segoe UI', 'Yu Gothic UI', 'Microsoft YaHei UI', 'Malgun Gothic', 'Noto Sans'],
+    fontSize: ptToPx(pt),
+    fontWeight: settings.bold ? ui.FontWeight.bold : ui.FontWeight.normal,
+    fontStyle: settings.italic ? ui.FontStyle.italic : ui.FontStyle.normal,
+    decoration: settings.underline ? ui.TextDecoration.underline : null,
+    height: lineHeight,
+  );
 
   /// Natural line height divided by the font size (Qt's 100% line height).
   double _ratio(int pt) => _naturalRatio.putIfAbsent(pt, () {
-        final p = _build('Ag', pt, natural: true);
-        return p.height / ptToPx(pt);
-      });
+    final p = _build('Ag', pt, natural: true);
+    return p.height / ptToPx(pt);
+  });
 
   ui.Paragraph _build(String text, int pt, {int? color, bool natural = false, double width = double.infinity}) {
     final spacing = settings.lineSpacing;
     final lineHeight = natural || spacing == 1.0 ? null : _ratio(pt) * spacing;
-    final builder = ui.ParagraphBuilder(ui.ParagraphStyle(
-      textAlign: _align,
-      textDirection: rtl ? ui.TextDirection.rtl : ui.TextDirection.ltr,
-    ))
-      ..pushStyle(_style(pt, color: color, lineHeight: lineHeight))
-      ..addText(text);
+    final builder =
+        ui.ParagraphBuilder(
+            ui.ParagraphStyle(textAlign: _align, textDirection: rtl ? ui.TextDirection.rtl : ui.TextDirection.ltr),
+          )
+          ..pushStyle(_style(pt, color: color, lineHeight: lineHeight))
+          ..addText(text);
     return builder.build()..layout(ui.ParagraphConstraints(width: width));
   }
 
@@ -116,8 +117,21 @@ class UiTextEngine implements TextMeasurer {
     return (width: p.longestLine + 2 * documentMargin, height: p.height + 2 * documentMargin);
   }
 
-  /// Draws [item] (with its outline) on [canvas].
+  /// Draws [item] (with its outline) on [canvas], rotated by its angle
+  /// around the box centre.
   void draw(ui.Canvas canvas, TextItem item) {
+    if (item.angle == 0) return _draw(canvas, item);
+    final c = ui.Offset(item.x + item.width / 2, item.y + item.height / 2);
+    canvas
+      ..save()
+      ..translate(c.dx, c.dy)
+      ..rotate(item.angle * math.pi / 180)
+      ..translate(-c.dx, -c.dy);
+    _draw(canvas, item);
+    canvas.restore();
+  }
+
+  void _draw(ui.Canvas canvas, TextItem item) {
     final outline = settings.outline && settings.outlineWidth > 0;
     final w = settings.outlineWidth;
     final offsets = outline
@@ -137,7 +151,10 @@ class UiTextEngine implements TextMeasurer {
     final layoutWidth = math.max(1.0, item.width - 2 * documentMargin) + 0.5;
     final origin = ui.Offset(item.x + documentMargin, item.y + documentMargin);
     for (final o in offsets) {
-      canvas.drawParagraph(_build(item.text, item.fontSizePt, color: settings.outlineColor, width: layoutWidth), origin + o);
+      canvas.drawParagraph(
+        _build(item.text, item.fontSizePt, color: settings.outlineColor, width: layoutWidth),
+        origin + o,
+      );
     }
     canvas.drawParagraph(_build(item.text, item.fontSizePt, color: item.color, width: layoutWidth), origin);
   }
@@ -166,6 +183,50 @@ class UiTextEngine implements TextMeasurer {
   }
 }
 
+/// Text engines of one page: the render settings and every block style's
+/// variant of them. Fonts are loaded by [TextEngines.load].
+class TextEngines {
+  TextEngines._(this.base, this.rtl, this._families);
+
+  final RenderSettings base;
+  final bool rtl;
+
+  /// Font setting → family.
+  final Map<String, String> _families;
+  final _engines = <String, UiTextEngine>{};
+
+  /// Loads the fonts of [base] and of the styles of [blocks]. A font file
+  /// that cannot be read falls back to the bundled font.
+  static Future<TextEngines> load(
+    RenderSettings base, {
+    bool rtl = false,
+    Iterable<TextBlock> blocks = const [],
+  }) async {
+    final families = <String, String>{};
+    for (final setting in {base.fontFamily, for (final b in blocks) ?b.style?.fontFamily}) {
+      try {
+        families[setting] = await resolveFontFamily(setting);
+      } on FileSystemException {
+        families[setting] = defaultFontFamily;
+      }
+    }
+    return TextEngines._(base, rtl, families);
+  }
+
+  /// Whether the fonts of [blocks] are loaded.
+  bool covers(Iterable<TextBlock> blocks) => blocks.every((b) => _families.containsKey(b.style?.fontFamily ?? ''));
+
+  UiTextEngine get main => of(base);
+
+  UiTextEngine of(RenderSettings s) => _engines.putIfAbsent(
+    jsonEncode(s.toJson()),
+    () => UiTextEngine(s, fontFamily: _families[s.fontFamily] ?? defaultFontFamily, rtl: rtl),
+  );
+
+  /// Draws [item] with its own settings.
+  void draw(ui.Canvas canvas, TextItem item) => of(item.settings ?? base).draw(canvas, item);
+}
+
 /// Converts an [RgbImage] to a `dart:ui` image.
 Future<ui.Image> toUiImage(RgbImage image) {
   final rgba = Uint8List(image.width * image.height * 4);
@@ -185,7 +246,7 @@ Future<ui.Image> toUiImage(RgbImage image) {
 const _maxStrip = 4096;
 
 /// Draws [items] over [page] and returns the result.
-Future<RgbImage> renderTextOnPage(RgbImage page, List<TextItem> items, UiTextEngine engine) async {
+Future<RgbImage> renderTextOnPage(RgbImage page, List<TextItem> items, TextEngines engines) async {
   final out = Uint8List(page.data.length);
   for (var top = 0; top < page.height; top += _maxStrip) {
     final h = math.min(_maxStrip, page.height - top);
@@ -195,8 +256,13 @@ Future<RgbImage> renderTextOnPage(RgbImage page, List<TextItem> items, UiTextEng
     final canvas = ui.Canvas(recorder)..drawImage(base, ui.Offset.zero, ui.Paint());
     canvas.translate(0, -top.toDouble());
     for (final item in items) {
-      if (item.y > top + h + 200 || item.y + item.height < top - 200) continue;
-      engine.draw(canvas, item);
+      // A rotated box reaches at most half its diagonal from the centre.
+      final reach = item.angle == 0
+          ? item.height / 2
+          : math.sqrt(item.width * item.width + item.height * item.height) / 2;
+      final cy = item.y + item.height / 2;
+      if (cy - reach > top + h + 200 || cy + reach < top - 200) continue;
+      engines.draw(canvas, item);
     }
     final picture = recorder.endRecording();
     final image = await picture.toImage(page.width, h);

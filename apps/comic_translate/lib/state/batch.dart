@@ -13,6 +13,7 @@ import 'package:path/path.dart' as p;
 import '../pipeline/page_pipeline.dart';
 import '../pipeline/pipeline_worker.dart';
 import 'app_state.dart';
+import 'worker_pool.dart';
 import 'workspace.dart';
 
 enum NetworkChoice { once, always, cancel }
@@ -193,36 +194,28 @@ class BatchNotifier extends Notifier<BatchState> {
     SkipReason? stoppedBy;
     final skipped = <SkippedPage>[];
     final exportDirs = <String>{};
+    final pool = ref.read(workerPoolProvider);
     PipelineWorker? worker;
     try {
-      if (!await _checkKey(ui) || !await _approveNetwork(ui)) {
+      if (!await checkTranslatorKey(ref, ui) || !await approveTranslatorNetwork(ref, ui)) {
         state = BatchIdle(last);
         return;
       }
-      if (!await _ensureModels(ui, cancel)) {
+      final ready = await ensureModels(
+        ref,
+        ui,
+        cancel,
+        onProgress: (f) => _update((s) => s.copyWith(stage: 'download', download: f)),
+      );
+      if (!ready) {
         state = BatchIdle(last);
         return;
       }
       final settings = ref.read(settingsProvider);
       _update((s) => s.copyWith(stage: 'loading'));
-      final spec = await PipelineSpec.resolve(
-        services,
-        settings,
-        sourceLanguage: settings.sourceLanguage,
-        targetLanguage: settings.targetLanguage,
-      );
-      worker = await PipelineWorker.start(
-        WorkerSetup(
-          spec: spec,
-          modelsDir: services.models.root.path,
-          runsDir: settings.testMode ? services.paths.runs.path : null,
-          environment: settings.testMode ? services.environment() : const {},
-          runLabel: 'gui',
-          homeDir: AppPaths.homeDir(),
-          registry: ref.read(workerRegistryProvider),
-        ),
-        log: log,
-      );
+      final (setup, key) = await currentWorkerSetup(ref);
+      worker = await pool.acquire(setup, key, log);
+      await worker.load({...PipelinePart.values});
       log.info('batch_start', {'pages': todo.length, 'translator': settings.translator});
       final stamp = _stamp(started);
       final pageMs = <int>[];
@@ -234,10 +227,7 @@ class BatchNotifier extends Notifier<BatchState> {
           _update((b) => b.copyWith(stage: s));
         }
 
-        workspace.updatePage(
-          page.id,
-          (p) => p.copyWith(status: PageStatus.running, stage: '01_detect', clearReason: true),
-        );
+        workspace.updatePage(page.id, (p) => p.copyWith(status: PageStatus.running, stage: '01_detect', reason: null));
         _update((b) => b.copyWith(done: i, pageName: page.name, stage: '01_detect'));
         try {
           final cleaned = await worker.prepare(
@@ -279,15 +269,17 @@ class BatchNotifier extends Notifier<BatchState> {
             render: render,
             renderMs: renderMs,
           );
-          workspace.updatePage(
+          workspace.edit(
             page.id,
             (p) => p.copyWith(
               status: PageStatus.done,
               translatedPath: translated,
               cleanPath: clean,
+              maskPath: null,
+              strokes: const [],
               blocks: cleaned.blocks,
               renderScale: render.scale,
-              clearStage: true,
+              stage: null,
             ),
           );
           done++;
@@ -299,18 +291,14 @@ class BatchNotifier extends Notifier<BatchState> {
         } on CancelledException {
           workspace.updatePage(
             page.id,
-            (p) =>
-                p.copyWith(status: p.translatedPath != null ? PageStatus.done : PageStatus.pending, clearStage: true),
+            (p) => p.copyWith(status: p.isDone ? PageStatus.done : PageStatus.pending, stage: null),
           );
           break;
         } catch (e, st) {
           log.error('page_failed', e, st, {'page': page.name});
           final reason = skipReasonFor(e);
           skipped.add(SkippedPage(page.id, page.name, reason));
-          workspace.updatePage(
-            page.id,
-            (p) => p.copyWith(status: PageStatus.skipped, reason: reason, clearStage: true),
-          );
+          workspace.updatePage(page.id, (p) => p.copyWith(status: PageStatus.skipped, reason: reason, stage: null));
           failuresInARow = reason is TranslationFailedReason ? failuresInARow + 1 : 0;
           final fatal = reason is TranslationFailedReason && reason.kind.stopsRun;
           if (fatal || failuresInARow >= maxTranslationFailuresInARow || reason is WorkerStoppedReason) {
@@ -331,7 +319,14 @@ class BatchNotifier extends Notifier<BatchState> {
       ui.showError(e);
     } finally {
       final cancelled = cancel.isCancelled;
-      await worker?.dispose(success: skipped.isEmpty && !cancelled, summary: {'pages': todo.length, 'done': done});
+      if (worker != null) {
+        pool.release();
+        // Test mode: finish the run folder now; otherwise keep the models
+        // loaded for the editor's steps.
+        if (ref.read(settingsProvider).testMode) {
+          await pool.close(success: skipped.isEmpty && !cancelled, summary: {'pages': todo.length, 'done': done});
+        }
+      }
       _cancel = null;
       if (state is BatchRunning) {
         final report = BatchReport(
@@ -347,62 +342,6 @@ class BatchNotifier extends Notifier<BatchState> {
         state = BatchIdle(report);
       }
     }
-  }
-
-  /// An internet translator without its key would fail every page.
-  Future<bool> _checkKey(BatchUi ui) async {
-    final services = ref.read(servicesProvider);
-    final settings = ref.read(settingsProvider);
-    final info = services.registry.info(settings.translator);
-    final config = await services.pluginConfig(settings.translator, settings);
-    final endpoint = info.endpointFor(config);
-    final keys = info.settings.whereType<SecretSetting>();
-    if (endpoint == null || endpoint.privacy != Privacy.cloud || keys.isEmpty) return true;
-    if (keys.any((k) => config.secret(k.key) != null)) return true;
-    await ui.explainMissingKey(info, endpoint.host);
-    return false;
-  }
-
-  Future<bool> _approveNetwork(BatchUi ui) async {
-    final services = ref.read(servicesProvider);
-    final settings = ref.read(settingsProvider);
-    final info = services.registry.info(settings.translator);
-    final endpoint = info.endpointFor(await services.pluginConfig(settings.translator, settings));
-    if (endpoint == null) return true;
-    final key = endpoint.approvalKey(info.id);
-    if (settings.approvedNetworkPlugins.contains(key)) return true;
-    switch (await ui.confirmNetwork(info, endpoint, sendsImage: settings.sendPageImage)) {
-      case NetworkChoice.cancel:
-        return false;
-      case NetworkChoice.once:
-        return true;
-      case NetworkChoice.always:
-        await ref.read(settingsProvider.notifier).change((s) => s.approvedNetworkPlugins.add(key));
-        return true;
-    }
-  }
-
-  /// Offers to download the models the chosen plugins need.
-  Future<bool> _ensureModels(BatchUi ui, CancelToken cancel) async {
-    final services = ref.read(servicesProvider);
-    final settings = ref.read(settingsProvider);
-    final missing = await missingModels(services.registry, services.models, settings);
-    if (missing.isEmpty) return true;
-    if (!await ui.confirmDownload(missing)) return false;
-    final total = missing.fold<int>(0, (a, m) => a + m.files.fold(0, (b, f) => b + f.size));
-    var before = 0;
-    for (final spec in missing) {
-      _update((s) => s.copyWith(stage: 'download', download: before / total));
-      await services.models.download(
-        spec,
-        cancel: cancel,
-        onProgress: (d) {
-          _update((s) => s.copyWith(stage: 'download', download: (before + d.received) / total));
-        },
-      );
-      before += spec.files.fold(0, (b, f) => b + f.size);
-    }
-    return true;
   }
 
   /// Writes the original's automatic exports for [page]; returns the folder.
@@ -438,10 +377,86 @@ class BatchNotifier extends Notifier<BatchState> {
   }
 }
 
-/// Models the plugins chosen in [settings] need and that are not downloaded.
-Future<List<ModelSpec>> missingModels(PluginRegistry registry, ModelManager models, AppSettings settings) async {
+/// An internet translator without its key would fail every page: explains
+/// where to enter it and returns false.
+Future<bool> checkTranslatorKey(Ref ref, BatchUi ui) async {
+  final services = ref.read(servicesProvider);
+  final settings = ref.read(settingsProvider);
+  final info = services.registry.info(settings.translator);
+  final config = await services.pluginConfig(settings.translator, settings);
+  final endpoint = info.endpointFor(config);
+  final keys = info.settings.whereType<SecretSetting>();
+  if (endpoint == null || endpoint.privacy != Privacy.cloud || keys.isEmpty) return true;
+  if (keys.any((k) => config.secret(k.key) != null)) return true;
+  await ui.explainMissingKey(info, endpoint.host);
+  return false;
+}
+
+/// Asks before the translator sends data off the device (once, or always
+/// for this translator and address).
+Future<bool> approveTranslatorNetwork(Ref ref, BatchUi ui) async {
+  final services = ref.read(servicesProvider);
+  final settings = ref.read(settingsProvider);
+  final info = services.registry.info(settings.translator);
+  final endpoint = info.endpointFor(await services.pluginConfig(settings.translator, settings));
+  if (endpoint == null) return true;
+  final key = endpoint.approvalKey(info.id);
+  if (settings.approvedNetworkPlugins.contains(key)) return true;
+  switch (await ui.confirmNetwork(info, endpoint, sendsImage: settings.sendPageImage)) {
+    case NetworkChoice.cancel:
+      return false;
+    case NetworkChoice.once:
+      return true;
+    case NetworkChoice.always:
+      await ref.read(settingsProvider.notifier).change((s) => s.approvedNetworkPlugins.add(key));
+      return true;
+  }
+}
+
+/// Offers to download the models that [parts] of the chosen plugins need;
+/// false when the user declines.
+Future<bool> ensureModels(
+  Ref ref,
+  BatchUi ui,
+  CancelToken cancel, {
+  Set<PipelinePart> parts = const {...PipelinePart.values},
+  void Function(double fraction)? onProgress,
+}) async {
+  final services = ref.read(servicesProvider);
+  final settings = ref.read(settingsProvider);
+  final missing = await missingModels(services.registry, services.models, settings, parts: parts);
+  if (missing.isEmpty) return true;
+  if (!await ui.confirmDownload(missing)) return false;
+  final total = missing.fold<int>(0, (a, m) => a + m.files.fold(0, (b, f) => b + f.size));
+  var before = 0;
+  for (final spec in missing) {
+    onProgress?.call(before / total);
+    await services.models.download(
+      spec,
+      cancel: cancel,
+      onProgress: (d) => onProgress?.call((before + d.received) / total),
+    );
+    before += spec.files.fold(0, (b, f) => b + f.size);
+  }
+  return true;
+}
+
+/// Models that [parts] of the plugins chosen in [settings] need and that are
+/// not downloaded.
+Future<List<ModelSpec>> missingModels(
+  PluginRegistry registry,
+  ModelManager models,
+  AppSettings settings, {
+  Set<PipelinePart> parts = const {...PipelinePart.values},
+}) async {
+  final chosen = [
+    if (parts.contains(PipelinePart.detector)) settings.detector,
+    if (parts.contains(PipelinePart.ocr)) settings.ocr,
+    if (parts.contains(PipelinePart.translator)) settings.translator,
+    if (parts.contains(PipelinePart.inpainter)) settings.inpainter,
+  ];
   final ids = <String>{
-    for (final id in [settings.detector, settings.ocr, settings.inpainter])
+    for (final id in chosen)
       if (registry.contains(id)) ...registry.info(id).requiredModels(settings.sourceLanguage),
   };
   return [
@@ -461,12 +476,13 @@ String _writableExtension(String path) {
   return const {'.png', '.jpg', '.jpeg', '.webp', '.bmp'}.contains(ext) ? ext : '.png';
 }
 
-/// Saves the translated pages into [dir] (in a background isolate), named
-/// after the original files; returns how many were written.
+/// Saves the drawn translated pages into [dir] (in a background isolate),
+/// named after the original files; returns how many were written. Pages
+/// changed since they were drawn need [drawMissingPages] first.
 Future<int> exportTranslatedPages(List<PageEntry> pages, String dir, String format) async {
   final jobs = <(String, String)>[];
   final used = <String>{};
-  for (final page in pages.where((p) => p.isDone)) {
+  for (final page in pages.where((p) => p.isDone && p.translatedPath != null)) {
     final ext = format == 'source' ? _writableExtension(page.path) : '.$format';
     final stem = page.source == null
         ? p.basenameWithoutExtension(page.path)

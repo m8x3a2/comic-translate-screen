@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/batch.dart';
+import '../../state/steps.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
 
@@ -60,22 +61,25 @@ class _PageTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    final status = switch (page.status) {
-      PageStatus.running => Tooltip(
-        message: stageLabel(l, page.stage),
-        child: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-      ),
-      PageStatus.done => Tooltip(
-        message: l.statusDone,
-        child: Icon(Icons.check_circle, size: 18, color: theme.colorScheme.primary),
-      ),
-      PageStatus.skipped => Tooltip(
-        message: l.statusSkipped(reasonLabel(l, page.reason)),
-        child: Icon(Icons.warning_amber, size: 18, color: theme.colorScheme.error),
-      ),
-      PageStatus.pending => const SizedBox(width: 18),
-    };
-    final thumb = page.translatedPath ?? page.path;
+    final step = ref.watch(stepsProvider);
+    final stepHere = step.running && step.pageId == page.id;
+    final status = page.status == PageStatus.running || stepHere
+        ? Tooltip(
+            message: stageLabel(l, stepHere ? step.stage : page.stage),
+            child: const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+          )
+        : page.status == PageStatus.skipped
+        ? Tooltip(
+            message: l.statusSkipped(reasonLabel(l, page.reason)),
+            child: Icon(Icons.warning_amber, size: 18, color: theme.colorScheme.error),
+          )
+        : page.isDone
+        ? Tooltip(
+            message: l.statusDone,
+            child: Icon(Icons.check_circle, size: 18, color: theme.colorScheme.primary),
+          )
+        : const SizedBox(width: 18);
+    final thumb = page.translatedPath ?? page.cleanPath ?? page.path;
     return GestureDetector(
       onSecondaryTapDown: canRemove
           ? (d) => showMenu<void>(
