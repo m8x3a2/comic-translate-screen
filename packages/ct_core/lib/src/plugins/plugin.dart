@@ -1,6 +1,8 @@
 import '../cancel.dart';
 import '../diagnostics/event_log.dart';
 import '../diagnostics/run_recorder.dart';
+import '../usage/key_status.dart';
+import '../usage/usage_log.dart';
 import 'settings_schema.dart';
 
 /// What a plugin does in the pipeline.
@@ -65,6 +67,7 @@ class PluginInfo {
     this.models = const [],
     this.modelsForLanguage,
     this.endpoint,
+    this.keyStatus,
   });
 
   /// Stable identifier stored in settings and logs, e.g. `openai_compatible`.
@@ -106,6 +109,10 @@ class PluginInfo {
     return e.privacy.sendsData ? e : null;
   }
 
+  /// For services that can tell what is left of the user's key: how to ask
+  /// for a configuration, or null when its server cannot tell.
+  final KeyStatusQuery? Function(PluginConfig config)? keyStatus;
+
   SettingField? field(String key) {
     for (final f in settings) {
       if (f.key == key) return f;
@@ -121,6 +128,7 @@ class PluginContext {
     CancelToken? cancel,
     this.recorder,
     this.page,
+    this.onUsage,
   }) : cancel = cancel ?? CancelToken.none;
 
   final EventLog log;
@@ -132,8 +140,21 @@ class PluginContext {
   /// Name of the page being processed, for logs and artifacts.
   final String? page;
 
+  /// Counts what requests to services used (the local usage counter).
+  final UsageSink? onUsage;
+
+  /// Plugins that call a service report each answered request here. Never
+  /// throws.
+  Future<void> reportUsage(ServiceUsage usage) async {
+    try {
+      await onUsage?.call(usage);
+    } on Object catch (e) {
+      log.warn('usage_not_counted', {'error': e.toString()});
+    }
+  }
+
   PluginContext forPage(String page) =>
-      PluginContext(log: log.child(page: page), cancel: cancel, recorder: recorder, page: page);
+      PluginContext(log: log.child(page: page), cancel: cancel, recorder: recorder, page: page, onUsage: onUsage);
 }
 
 /// Base interface of all plugin instances.

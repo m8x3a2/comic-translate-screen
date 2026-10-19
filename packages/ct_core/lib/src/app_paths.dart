@@ -19,6 +19,9 @@ class AppPaths {
   File get settingsFile => File(p.join(root.path, 'settings.json'));
   File get appLog => File(p.join(logs.path, 'app.jsonl'));
 
+  /// The local usage counter of paid services ([UsageLog]).
+  File get usageFile => File(p.join(root.path, 'usage.json'));
+
   Directory _dir(String name) => Directory(p.join(root.path, name));
 
   /// Resolution order: explicit [override] (CLI `--data-dir`), the

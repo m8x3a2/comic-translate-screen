@@ -51,3 +51,5 @@ export 'src/settings/secret_store.dart';
 export 'src/settings/settings_store.dart';
 export 'src/translation/llm_protocol.dart';
 export 'src/translation/translation_error.dart';
+export 'src/usage/key_status.dart';
+export 'src/usage/usage_log.dart';
