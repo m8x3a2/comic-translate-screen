@@ -1,5 +1,5 @@
-/// Full screen (F11). The Windows runner does it natively
-/// (`windows/runner/flutter_window.cpp`); elsewhere the key does nothing
+/// Full screen (F11) and the window title. The Windows runner does them
+/// natively (`windows/runner/flutter_window.cpp`); elsewhere they do nothing
 /// until those platforms get their own code.
 library;
 
@@ -22,5 +22,14 @@ class FullScreenNotifier extends Notifier<bool> {
       // Not on Windows.
     }
     return state;
+  }
+}
+
+/// Sets the title of the window (the project's name).
+Future<void> setWindowTitle(String title) async {
+  try {
+    await windowChannel.invokeMethod<void>('setTitle', title);
+  } on MissingPluginException {
+    // Not on Windows.
   }
 }

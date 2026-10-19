@@ -28,10 +28,13 @@ class AppSettings {
     this.theme = 'dark',
     this.uiLanguage = 'ru',
     this.testMode = false,
+    this.projectAutosave = true,
+    List<String>? recentProjects,
     Map<String, Map<String, Object?>>? plugins,
     Set<String>? approvedNetworkPlugins,
     Map<String, Object?>? extra,
-  })  : plugins = plugins ?? {},
+  })  : recentProjects = recentProjects ?? [],
+        plugins = plugins ?? {},
         approvedNetworkPlugins = approvedNetworkPlugins ?? {},
         extra = extra ?? {};
 
@@ -93,6 +96,15 @@ class AppSettings {
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
+  /// A project that has a file saves itself shortly after every change (on
+  /// by default; the original's project auto-save is off by default).
+  bool projectAutosave;
+
+  /// Recently opened or saved projects, most recent first.
+  List<String> recentProjects;
+
+  static const maxRecentProjects = 12;
+
   /// Non-secret settings of each plugin: plugin id → key → value.
   Map<String, Map<String, Object?>> plugins;
 
@@ -124,6 +136,7 @@ class AppSettings {
         'models': {'dir': modelsDir},
         'ui': {'theme': theme, 'language': uiLanguage},
         'test_mode': testMode,
+        'projects': {'autosave': projectAutosave, 'recent': recentProjects},
         'plugins': plugins,
         'approved_network_plugins': approvedNetworkPlugins.toList()..sort(),
       };
@@ -145,9 +158,10 @@ class AppSettings {
     final upscale = group('upscale');
     final export = group('export');
     final models = group('models');
+    final projects = group('projects');
     const known = {
       'schema_version', 'tools', 'inpaint', 'languages', 'llm', 'render', 'upscale', 'export', 'models', 'ui', 'test_mode', 'plugins', //
-      'approved_network_plugins',
+      'approved_network_plugins', 'projects',
     };
     final strategyName = pick<String>(inpaint, 'strategy', defaults.inpaint.strategy.name);
     return AppSettings(
@@ -175,6 +189,8 @@ class AppSettings {
       theme: pick(ui, 'theme', defaults.theme),
       uiLanguage: pick(ui, 'language', defaults.uiLanguage),
       testMode: pick(json, 'test_mode', defaults.testMode),
+      projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),
+      recentProjects: [...?(projects['recent'] as List?)?.whereType<String>()],
       plugins: {
         for (final e in group('plugins').entries)
           if (e.value is Map) e.key: (e.value as Map).cast<String, Object?>(),

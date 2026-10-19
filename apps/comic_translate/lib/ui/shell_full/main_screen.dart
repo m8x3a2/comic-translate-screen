@@ -11,13 +11,17 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 
+import '../../app_info.dart';
 import '../../state/app_state.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
 import '../../state/page_render.dart';
+import '../../state/project.dart';
 import '../../state/steps.dart';
+import '../../state/window_mode.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
 import '../common/plugin_strings.dart';
@@ -48,26 +52,156 @@ class MainScreen extends ConsumerStatefulWidget {
 
 class _MainScreenState extends ConsumerState<MainScreen> {
   bool _dragging = false;
+  String? _title;
   late final AppLifecycleListener _lifecycle = AppLifecycleListener(onExitRequested: _confirmExit);
 
-  /// Translations live only in a cache folder until projects arrive (M9):
-  /// closing asks first when some were not exported.
+  /// Closing asks about unsaved work (a project with autosave saves itself
+  /// first); a normal exit removes the recovery copy.
   Future<AppExitResponse> _confirmExit() async {
-    final count = ref.read(workspaceProvider).unexportedCount;
-    if (count == 0 || !mounted) return AppExitResponse.exit;
+    if (!await _settleUnsaved()) return AppExitResponse.cancel;
+    await ref.read(projectProvider.notifier).discardRecovery();
+    return AppExitResponse.exit;
+  }
+
+  /// Before the open pages go away (exit, closing all, opening a project):
+  /// saves them, or lets the user choose. False: stay.
+  Future<bool> _settleUnsaved() async {
+    final project = ref.read(projectProvider);
+    if (ref.read(workspaceProvider).pages.isEmpty || !project.dirty) return true;
+    if (project.path != null &&
+        ref.read(settingsProvider).projectAutosave &&
+        await ref.read(projectProvider.notifier).save()) {
+      return true;
+    }
+    if (!mounted) return false;
     final l = context.l10n;
-    final exit = await showDialog<bool>(
+    final choice = await showDialog<String>(
       context: context,
       builder: (c) => AlertDialog(
-        title: Text(l.exitTitle),
-        content: Text(l.exitBody('$count')),
+        title: Text(l.unsavedTitle),
+        content: Text(project.path == null ? l.unsavedNew : l.unsavedProject(project.name!)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.exitAnyway)),
+          TextButton(onPressed: () => Navigator.pop(c), child: Text(l.cancel)),
+          TextButton(onPressed: () => Navigator.pop(c, 'discard'), child: Text(l.dontSave)),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, 'save'),
+            child: Text(project.path == null ? l.saveAs : l.save),
+          ),
         ],
       ),
     );
-    return (exit ?? false) ? AppExitResponse.exit : AppExitResponse.cancel;
+    return switch (choice) {
+      'discard' => true,
+      'save' => _saveProject(),
+      _ => false,
+    };
+  }
+
+  /// Ctrl+S: into the project's file (a new one the first time).
+  Future<bool> _saveProject({bool asNew = false}) async {
+    if (ref.read(workspaceProvider).pages.isEmpty) return false;
+    String? to;
+    if (asNew || ref.read(projectProvider).path == null) {
+      to = await _askProjectPath();
+      if (to == null) return false;
+    }
+    final ok = await ref.read(projectProvider.notifier).save(to: to);
+    if (!ok && mounted) _snack(context.l10n.projectSaveFailed(ref.read(projectProvider).error ?? ''));
+    return ok;
+  }
+
+  Future<String?> _askProjectPath() async {
+    final l = context.l10n;
+    final ws = ref.read(workspaceProvider);
+    final project = ref.read(projectProvider);
+    final first = ws.pages.first;
+    final cache = ref.read(servicesProvider).paths.cache.path;
+    final from = first.source ?? first.path;
+    final String name;
+    if (project.name != null) {
+      name = project.name!;
+    } else if (first.source != null) {
+      name = p.basenameWithoutExtension(first.source!);
+    } else {
+      name = ws.pages.length > 1 ? p.basename(p.dirname(first.path)) : p.basenameWithoutExtension(first.name);
+    }
+    final location = await getSaveLocation(
+      acceptedTypeGroups: [
+        XTypeGroup(label: l.projectFileType, extensions: [ProjectFile.extension.substring(1)]),
+      ],
+      initialDirectory: project.path != null
+          ? p.dirname(project.path!)
+          : p.isWithin(cache, from)
+          ? null
+          : p.dirname(from),
+      suggestedName: '$name${ProjectFile.extension}',
+      confirmButtonText: l.save,
+    );
+    if (location == null) return null;
+    return isProjectPath(location.path) ? location.path : '${location.path}${ProjectFile.extension}';
+  }
+
+  /// Opens a project ([path], or one the user picks) instead of the open
+  /// pages.
+  Future<void> _openProject([String? path]) async {
+    final l = context.l10n;
+    path ??= (await openFile(
+      acceptedTypeGroups: [
+        XTypeGroup(label: l.projectFileType, extensions: [ProjectFile.extension.substring(1)]),
+      ],
+    ))?.path;
+    if (path == null || !mounted || !await _settleUnsaved() || !mounted) return;
+    final notifier = ref.read(projectProvider.notifier);
+    try {
+      await _withProgress(l.openingProject, (_) => notifier.open(path!));
+    } on Object catch (e, st) {
+      ref.read(servicesProvider).appLog.error('project_open_failed', e, st);
+      if (!mounted) return;
+      final why = switch (e) {
+        ProjectFormatException(newerVersion: true) => l.projectNewer,
+        ProjectFormatException(:final message) when message.contains('damaged') => l.projectDamaged,
+        ProjectFormatException() => l.projectNotProject,
+        FileSystemException(osError: null) => l.fileNotFound,
+        FileSystemException(:final osError) => osError!.message,
+        _ => '$e',
+      };
+      _snack(l.projectOpenFailed(why));
+    }
+  }
+
+  /// After a crash: offers the copy of the unsaved work.
+  Future<void> _offerRecovery() async {
+    final notifier = ref.read(projectProvider.notifier);
+    final recovery = notifier.findRecovery();
+    if (recovery == null || !mounted || ref.read(workspaceProvider).pages.isNotEmpty) return;
+    final l = context.l10n;
+    final locale = Localizations.localeOf(context).toString();
+    final when = recovery.saved == null ? '' : DateFormat.yMd(locale).add_Hm().format(recovery.saved!);
+    final restore = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (c) => AlertDialog(
+        icon: const Icon(Icons.restore),
+        title: Text(l.recoveryTitle),
+        content: Text(l.recoveryBody('${recovery.pages}', when)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.recoveryDiscard)),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.recoveryRestore)),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (restore != true) {
+      await notifier.discardRecovery();
+      return;
+    }
+    try {
+      await _withProgress(l.openingProject, (_) => notifier.restoreRecovery());
+      if (mounted) _snack(l.recoveryRestored);
+    } on Object catch (e, st) {
+      ref.read(servicesProvider).appLog.error('recovery_restore_failed', e, st);
+      if (mounted) _snack(l.projectOpenFailed('$e'));
+    }
   }
 
   @override
@@ -89,12 +223,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       );
     }
     final inputs = ref.read(initialInputsProvider);
-    if (inputs.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await _open(inputs);
-        if (mounted && ref.read(translateOnStartProvider)) await _translate();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _offerRecovery();
+      if (inputs.isEmpty || !mounted) return;
+      await _open(inputs);
+      if (mounted && ref.read(translateOnStartProvider)) await _translate();
+    });
   }
 
   void _snack(String text, {SnackBarAction? action}) =>
@@ -102,6 +236,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   Future<void> _open(List<String> paths) async {
     if (paths.isEmpty) return;
+    final project = paths.where(isProjectPath).firstOrNull;
+    if (project != null) {
+      await _openProject(project);
+      return;
+    }
     final l = context.l10n;
     final outcome = await ref.read(workspaceProvider.notifier).addInputs(paths);
     if (!mounted) return;
@@ -119,7 +258,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         XTypeGroup(
           label: context.l10n.supportedFormats,
           extensions: [
-            for (final e in [...imageExtensions, ...archiveExtensions, ...pdfExtensions]) e.substring(1),
+            for (final e in [...imageExtensions, ...archiveExtensions, ...pdfExtensions, ProjectFile.extension])
+              e.substring(1),
           ],
         ),
       ],
@@ -218,19 +358,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     }
   }
 
+  /// Closes the pages (and the project), after saving or asking.
   Future<void> _closeAll() async {
-    final l = context.l10n;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        content: Text(l.closeAllConfirm),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.closeAll)),
-        ],
-      ),
-    );
-    if (ok ?? false) ref.read(workspaceProvider.notifier).clear();
+    if (await _settleUnsaved()) ref.read(workspaceProvider.notifier).clear();
   }
 
   void _openSettings([SettingsSection section = SettingsSection.general]) =>
@@ -240,6 +370,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   Widget build(BuildContext context) {
     final ws = ref.watch(workspaceProvider);
     final running = ref.watch(batchProvider) is BatchRunning;
+    final project = ref.watch(projectProvider);
+    final title = ws.pages.isEmpty
+        ? AppInfo.name
+        : '${project.name ?? context.l10n.untitledProject}${project.dirty ? ' *' : ''} — ${AppInfo.name}';
+    if (title != _title) {
+      _title = title;
+      setWindowTitle(title);
+    }
     return Focus(
       autofocus: true,
       child: DropTarget(
@@ -257,6 +395,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   _TopBar(
                     onOpenFiles: _pickFiles,
                     onOpenFolder: _pickFolder,
+                    onOpenProject: _openProject,
+                    onSaveProject: () => _saveProject(),
+                    onSaveProjectAs: () => _saveProject(asNew: true),
                     onTranslate: _translate,
                     onExport: _export,
                     onCloseAll: _closeAll,
@@ -265,7 +406,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   const Divider(height: 1),
                   Expanded(
                     child: ws.pages.isEmpty
-                        ? HomeView(onOpenFiles: _pickFiles, onOpenFolder: _pickFolder, busy: ws.importing)
+                        ? HomeView(
+                            onOpenFiles: _pickFiles,
+                            onOpenFolder: _pickFolder,
+                            onOpenProject: _openProject,
+                            busy: ws.importing,
+                          )
                         : LayoutBuilder(
                             builder: (context, c) => Row(
                               children: [
@@ -321,6 +467,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final busy = running || ref.read(stepsProvider).running;
     final editor = ref.read(editorProvider.notifier);
     if (ctrl && !alt) {
+      if (key == LogicalKeyboardKey.keyS) {
+        if (state.pages.isNotEmpty) _saveProject(asNew: shift);
+        return true;
+      }
       if (key == LogicalKeyboardKey.keyO) {
         if (!running) _pickFiles();
         return true;
@@ -395,6 +545,9 @@ class _TopBar extends ConsumerWidget {
   const _TopBar({
     required this.onOpenFiles,
     required this.onOpenFolder,
+    required this.onOpenProject,
+    required this.onSaveProject,
+    required this.onSaveProjectAs,
     required this.onTranslate,
     required this.onExport,
     required this.onCloseAll,
@@ -403,6 +556,9 @@ class _TopBar extends ConsumerWidget {
 
   final VoidCallback onOpenFiles;
   final VoidCallback onOpenFolder;
+  final void Function([String? path]) onOpenProject;
+  final VoidCallback onSaveProject;
+  final VoidCallback onSaveProjectAs;
   final VoidCallback onTranslate;
   final VoidCallback onExport;
   final VoidCallback onCloseAll;
@@ -416,6 +572,7 @@ class _TopBar extends ConsumerWidget {
     final running = batch is BatchRunning;
     final hasPages = ws.pages.isNotEmpty;
     final last = batch is BatchIdle ? batch.last : null;
+    final recent = ref.watch(settingsProvider.select((s) => s.recentProjects));
     return LayoutBuilder(
       builder: (context, c) {
         final compact = c.maxWidth < 1200;
@@ -434,6 +591,34 @@ class _TopBar extends ConsumerWidget {
                     leadingIcon: const Icon(Icons.folder_open_outlined),
                     onPressed: onOpenFolder,
                     child: Text(l.openFolder),
+                  ),
+                  const Divider(),
+                  MenuItemButton(
+                    leadingIcon: const Icon(Icons.auto_stories_outlined),
+                    onPressed: () => onOpenProject(),
+                    child: Text(l.openProject),
+                  ),
+                  if (recent.isNotEmpty)
+                    SubmenuButton(
+                      leadingIcon: const Icon(Icons.history),
+                      menuChildren: [
+                        for (final path in recent)
+                          MenuItemButton(
+                            onPressed: () => onOpenProject(path),
+                            child: Text(p.basenameWithoutExtension(path)),
+                          ),
+                      ],
+                      child: Text(l.recentProjects),
+                    ),
+                  MenuItemButton(
+                    leadingIcon: const Icon(Icons.save_outlined),
+                    onPressed: hasPages ? onSaveProject : null,
+                    child: Text(l.saveProject),
+                  ),
+                  MenuItemButton(
+                    leadingIcon: const Icon(Icons.save_as_outlined),
+                    onPressed: hasPages ? onSaveProjectAs : null,
+                    child: Text(l.saveProjectAs),
                   ),
                   if (hasPages) ...[
                     const Divider(),
@@ -633,7 +818,45 @@ class _StatusBar extends ConsumerWidget {
     final l = context.l10n;
     final batch = ref.watch(batchProvider);
     final ws = ref.watch(workspaceProvider);
-    final style = Theme.of(context).textTheme.bodySmall;
+    final project = ref.watch(projectProvider);
+    final theme = Theme.of(context);
+    final style = theme.textTheme.bodySmall;
+    final Widget saved;
+    if (ws.pages.isEmpty) {
+      saved = const SizedBox.shrink();
+    } else {
+      final status = project.saving
+          ? l.projectSaving
+          : project.error != null
+          ? l.projectSaveFailed(project.error!)
+          : project.path == null
+          ? l.projectNoFile
+          : project.dirty || project.savedAt == null
+          ? l.projectUnsaved
+          : l.projectSavedAt(DateFormat.Hm(Localizations.localeOf(context).toString()).format(project.savedAt!));
+      saved = Padding(
+        padding: const EdgeInsets.only(left: 16),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              project.error != null ? Icons.error_outline : Icons.save_outlined,
+              size: 14,
+              color: project.error != null ? theme.colorScheme.error : theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Text(
+                [if (project.name != null) project.name!, status].join(' · '),
+                style: project.error != null ? style?.copyWith(color: theme.colorScheme.error) : style,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     final Widget content;
     if (batch is BatchRunning) {
       final stage = batch.stage == 'download'
@@ -656,10 +879,18 @@ class _StatusBar extends ConsumerWidget {
             ),
           ),
           SizedBox(width: 240, child: LinearProgressIndicator(value: value)),
+          saved,
         ],
       );
     } else {
-      content = Text(ws.pages.isEmpty ? '' : l.pagesSummary('${ws.pages.length}', '${ws.doneCount}'), style: style);
+      content = Row(
+        children: [
+          Expanded(
+            child: Text(ws.pages.isEmpty ? '' : l.pagesSummary('${ws.pages.length}', '${ws.doneCount}'), style: style),
+          ),
+          saved,
+        ],
+      );
     }
     return SizedBox(
       height: 30,

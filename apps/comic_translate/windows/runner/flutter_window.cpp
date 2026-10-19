@@ -3,6 +3,7 @@
 #include <flutter/standard_method_codec.h>
 
 #include <optional>
+#include <string>
 
 #include "flutter/generated_plugin_registrant.h"
 
@@ -46,6 +47,22 @@ bool FlutterWindow::OnCreate() {
           result->Success(flutter::EncodableValue(full_screen_));
         } else if (call.method_name() == "isFullScreen") {
           result->Success(flutter::EncodableValue(full_screen_));
+        } else if (call.method_name() == "setTitle") {
+          const auto* title = std::get_if<std::string>(call.arguments());
+          if (title == nullptr) {
+            result->Error("bad_args", "setTitle expects a string");
+            return;
+          }
+          // UTF-8 from Dart to the UTF-16 Windows wants.
+          const int n = MultiByteToWideChar(CP_UTF8, 0, title->c_str(), -1,
+                                            nullptr, 0);
+          std::wstring wide(n > 0 ? n - 1 : 0, L'\0');
+          if (n > 1) {
+            MultiByteToWideChar(CP_UTF8, 0, title->c_str(), -1, wide.data(),
+                                n);
+          }
+          SetWindowTextW(GetHandle(), wide.c_str());
+          result->Success();
         } else {
           result->NotImplemented();
         }

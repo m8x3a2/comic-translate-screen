@@ -283,6 +283,17 @@ class _GeneralSection extends ConsumerWidget {
           ],
         ),
         SettingsGroup(
+          title: l.settingsProjects,
+          children: [
+            _switch(
+              l.projectAutosave,
+              s.projectAutosave,
+              (v) => _change(ref, (s) => s.projectAutosave = v),
+              help: l.projectAutosaveHelp,
+            ),
+          ],
+        ),
+        SettingsGroup(
           title: l.testMode,
           children: [
             _switch(l.testMode, s.testMode, (v) => _change(ref, (s) => s.testMode = v), help: l.testModeHelp),

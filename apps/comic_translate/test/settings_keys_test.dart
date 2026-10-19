@@ -161,7 +161,12 @@ void main() {
 
   testWidgets('F11 turns full screen on and off on any screen', (tester) async {
     final calls = <Object?>[];
+    final titles = <Object?>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(windowChannel, (call) async {
+      if (call.method == 'setTitle') {
+        titles.add(call.arguments);
+        return null;
+      }
       expect(call.method, 'setFullScreen');
       calls.add(call.arguments);
       return call.arguments;
@@ -180,5 +185,6 @@ void main() {
     expect(calls, [true, false]);
     final container = ProviderScope.containerOf(tester.element(find.byType(SettingsScreen)));
     expect(container.read(fullScreenProvider), isFalse);
+    expect(titles, ['Comic Translate Screen'], reason: 'no pages: the program name');
   });
 }

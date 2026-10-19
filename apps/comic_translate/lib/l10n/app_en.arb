@@ -6,7 +6,7 @@
   "openFolder": "Open folder…",
   "addPages": "Add pages",
   "dropHint": "or drag files into this window",
-  "supportedFormats": "Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT) and PDF",
+  "supportedFormats": "Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF and projects (.ctsproj)",
   "privacyLocal": "Everything runs on this computer; nothing is sent anywhere.",
   "privacySends": "For translation, the text is sent to {host}",
   "@privacySends": {
@@ -38,7 +38,6 @@
   },
   "noPagesFound": "No pages found in the selected files",
   "closeAll": "Close all pages",
-  "closeAllConfirm": "Close all pages? Translations that were not exported will be lost.",
   "cancel": "Cancel",
   "close": "Close",
   "ok": "OK",
@@ -174,16 +173,6 @@
     }
   },
   "openSettings": "Open settings",
-  "exitTitle": "Close the program?",
-  "exitBody": "{count} translated page(s) were not exported and will be lost.",
-  "@exitBody": {
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
-  "exitAnyway": "Close",
   "showInFolder": "Show in folder",
   "goToPage": "Go to page",
   "reasonModelMissing": "model \"{name}\" is not downloaded",
@@ -702,5 +691,76 @@
   "usageReset": "Reset the counter",
   "usageResetTitle": "Reset the counter?",
   "usageResetBody": "The local counter starts from zero. Nothing changes on the servers or in your account.",
-  "reset": "Reset"
+  "reset": "Reset",
+  "openProject": "Open project…",
+  "saveProject": "Save project (Ctrl+S)",
+  "saveProjectAs": "Save project as… (Ctrl+Shift+S)",
+  "recentProjects": "Recent projects",
+  "projectFileType": "Comic Translate Screen projects",
+  "untitledProject": "Untitled",
+  "projectSavedAt": "Saved at {time}",
+  "@projectSavedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "projectSaving": "Saving…",
+  "projectUnsaved": "Not saved",
+  "projectNoFile": "Not saved in a project yet (Ctrl+S)",
+  "projectSaveFailed": "Could not save the project: {error}",
+  "@projectSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "projectOpenFailed": "Could not open the project: {error}",
+  "@projectOpenFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "projectNewer": "it was saved by a newer version of the program; please update it",
+  "projectNotProject": "this is not a Comic Translate Screen project",
+  "projectDamaged": "the file is damaged",
+  "unsavedTitle": "Save the changes?",
+  "unsavedNew": "The pages and edits are not saved in a project yet. Unless you save them, they will be lost.",
+  "unsavedProject": "“{name}” has unsaved changes.",
+  "@unsavedProject": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dontSave": "Don't save",
+  "saveAs": "Save as…",
+  "recoveryTitle": "Restore your previous work?",
+  "recoveryBody": "Last time the program closed without saving your work. A copy was kept: {pages} page(s), {time}.",
+  "@recoveryBody": {
+    "placeholders": {
+      "pages": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "recoveryRestore": "Restore",
+  "recoveryDiscard": "Delete the copy",
+  "recoveryRestored": "Your previous work is back. Save it as a project to keep it.",
+  "fileNotFound": "File not found",
+  "removeFromList": "Remove from the list",
+  "settingsProjects": "Projects",
+  "projectAutosave": "Save projects automatically",
+  "projectAutosaveHelp": "A project that has a file saves itself a couple of seconds after every change and after every page of “Translate all”. Work that is not saved in a project yet is copied every 2 minutes, so it can be restored after a crash.",
+  "openingProject": "Opening the project…",
+  "keySave": "Save the project",
+  "keySaveAs": "Save the project as a new file"
 }

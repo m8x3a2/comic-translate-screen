@@ -1,5 +1,5 @@
-/// The open pages and their edit history (until projects arrive in M9, a
-/// session lives in a cache folder and is not restored after restart).
+/// The open pages and their edit history. Their files live in a session
+/// folder in the cache; projects (`project.dart`) keep them for good.
 ///
 /// Pages are immutable values: every change makes new [PageEntry] and
 /// [TextBlock] objects (blocks are never changed in place), so an undo step
@@ -310,6 +310,38 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
 
   /// Folder for the results of page [id].
   Directory pageDir(String id) => Directory(p.join(sessionDir.path, 'pages', id))..createSync(recursive: true);
+
+  /// A fresh session folder, for the files of a project being opened; the
+  /// current session stays until [loadPages] replaces it.
+  Directory newSessionDir() {
+    final root = Directory(p.join(ref.read(servicesProvider).paths.cache.path, 'sessions'));
+    final stamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[^0-9]'), '').substring(0, 14);
+    return Directory(p.join(root.path, '$stamp-$pid-${_sessionCount++}'))..createSync(recursive: true);
+  }
+
+  var _sessionCount = 0;
+
+  /// Replaces the open pages with the pages of a project, whose files are in
+  /// [session] (a [newSessionDir]); the old session's files are removed. No
+  /// undo history: it is not kept in project files.
+  void loadPages(List<PageEntry> pages, {int current = 0, Directory? session}) {
+    final old = _session;
+    if (session != null) _session = session;
+    var next = 0;
+    for (final page in pages) {
+      final n = int.tryParse(page.id);
+      if (n != null && n >= next) next = n + 1;
+    }
+    _nextId = next;
+    state = WorkspaceState(pages: pages, current: pages.isEmpty ? 0 : current.clamp(0, pages.length - 1));
+    if (old != null && session != null && !p.equals(old.path, session.path) && old.existsSync()) {
+      try {
+        old.deleteSync(recursive: true);
+      } on FileSystemException {
+        // Files still open; removed with old sessions later.
+      }
+    }
+  }
 
   Future<ImportOutcome> addInputs(List<String> inputs) async {
     if (inputs.isEmpty || state.importing) return ImportOutcome(0, const [], const {});

@@ -10,6 +10,8 @@ Future<void> showShortcuts(BuildContext context) {
   final groups = [
     (l.keysGroupFiles, [
       ('Ctrl+O', l.keyOpen),
+      ('Ctrl+S', l.keySave),
+      ('Ctrl+Shift+S', l.keySaveAs),
       ('Ctrl+Enter', l.keyTranslateAll),
       ('PageUp / PageDown', l.keyPages),
     ]),

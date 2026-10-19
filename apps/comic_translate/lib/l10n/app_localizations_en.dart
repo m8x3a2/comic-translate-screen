@@ -29,7 +29,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get supportedFormats =>
-      'Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT) and PDF';
+      'Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF and projects (.ctsproj)';
 
   @override
   String get privacyLocal =>
@@ -58,10 +58,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get closeAll => 'Close all pages';
-
-  @override
-  String get closeAllConfirm =>
-      'Close all pages? Translations that were not exported will be lost.';
 
   @override
   String get cancel => 'Cancel';
@@ -232,17 +228,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openSettings => 'Open settings';
-
-  @override
-  String get exitTitle => 'Close the program?';
-
-  @override
-  String exitBody(String count) {
-    return '$count translated page(s) were not exported and will be lost.';
-  }
-
-  @override
-  String get exitAnyway => 'Close';
 
   @override
   String get showInFolder => 'Show in folder';
@@ -1148,4 +1133,118 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reset => 'Reset';
+
+  @override
+  String get openProject => 'Open project…';
+
+  @override
+  String get saveProject => 'Save project (Ctrl+S)';
+
+  @override
+  String get saveProjectAs => 'Save project as… (Ctrl+Shift+S)';
+
+  @override
+  String get recentProjects => 'Recent projects';
+
+  @override
+  String get projectFileType => 'Comic Translate Screen projects';
+
+  @override
+  String get untitledProject => 'Untitled';
+
+  @override
+  String projectSavedAt(String time) {
+    return 'Saved at $time';
+  }
+
+  @override
+  String get projectSaving => 'Saving…';
+
+  @override
+  String get projectUnsaved => 'Not saved';
+
+  @override
+  String get projectNoFile => 'Not saved in a project yet (Ctrl+S)';
+
+  @override
+  String projectSaveFailed(String error) {
+    return 'Could not save the project: $error';
+  }
+
+  @override
+  String projectOpenFailed(String error) {
+    return 'Could not open the project: $error';
+  }
+
+  @override
+  String get projectNewer =>
+      'it was saved by a newer version of the program; please update it';
+
+  @override
+  String get projectNotProject =>
+      'this is not a Comic Translate Screen project';
+
+  @override
+  String get projectDamaged => 'the file is damaged';
+
+  @override
+  String get unsavedTitle => 'Save the changes?';
+
+  @override
+  String get unsavedNew =>
+      'The pages and edits are not saved in a project yet. Unless you save them, they will be lost.';
+
+  @override
+  String unsavedProject(String name) {
+    return '“$name” has unsaved changes.';
+  }
+
+  @override
+  String get dontSave => 'Don\'t save';
+
+  @override
+  String get saveAs => 'Save as…';
+
+  @override
+  String get recoveryTitle => 'Restore your previous work?';
+
+  @override
+  String recoveryBody(String pages, String time) {
+    return 'Last time the program closed without saving your work. A copy was kept: $pages page(s), $time.';
+  }
+
+  @override
+  String get recoveryRestore => 'Restore';
+
+  @override
+  String get recoveryDiscard => 'Delete the copy';
+
+  @override
+  String get recoveryRestored =>
+      'Your previous work is back. Save it as a project to keep it.';
+
+  @override
+  String get fileNotFound => 'File not found';
+
+  @override
+  String get removeFromList => 'Remove from the list';
+
+  @override
+  String get settingsProjects => 'Projects';
+
+  @override
+  String get projectAutosave => 'Save projects automatically';
+
+  @override
+  String get projectAutosaveHelp =>
+      'A project that has a file saves itself a couple of seconds after every change and after every page of “Translate all”. Work that is not saved in a project yet is copied every 2 minutes, so it can be restored after a crash.';
+
+  @override
+  String get openingProject => 'Opening the project…';
+
+  @override
+  String get keySave => 'Save the project';
+
+  @override
+  String get keySaveAs => 'Save the project as a new file';
 }

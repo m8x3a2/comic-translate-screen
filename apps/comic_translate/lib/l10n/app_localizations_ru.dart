@@ -29,7 +29,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get supportedFormats =>
-      'Картинки (PNG, JPG, WEBP, BMP), архивы комиксов (CBZ, ZIP, EPUB, CBR, CB7, CBT) и PDF';
+      'Картинки (PNG, JPG, WEBP, BMP), архивы комиксов (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF и проекты (.ctsproj)';
 
   @override
   String get privacyLocal =>
@@ -58,10 +58,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get closeAll => 'Закрыть все страницы';
-
-  @override
-  String get closeAllConfirm =>
-      'Закрыть все страницы? Неэкспортированные переводы пропадут.';
 
   @override
   String get cancel => 'Отмена';
@@ -233,17 +229,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get openSettings => 'Открыть настройки';
-
-  @override
-  String get exitTitle => 'Закрыть программу?';
-
-  @override
-  String exitBody(String count) {
-    return 'Переведённых, но не экспортированных страниц: $count. Они пропадут.';
-  }
-
-  @override
-  String get exitAnyway => 'Закрыть';
 
   @override
   String get showInFolder => 'Показать в папке';
@@ -1151,4 +1136,117 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get reset => 'Сбросить';
+
+  @override
+  String get openProject => 'Открыть проект…';
+
+  @override
+  String get saveProject => 'Сохранить проект (Ctrl+S)';
+
+  @override
+  String get saveProjectAs => 'Сохранить проект как… (Ctrl+Shift+S)';
+
+  @override
+  String get recentProjects => 'Недавние проекты';
+
+  @override
+  String get projectFileType => 'Проекты Comic Translate Screen';
+
+  @override
+  String get untitledProject => 'Без названия';
+
+  @override
+  String projectSavedAt(String time) {
+    return 'Сохранено в $time';
+  }
+
+  @override
+  String get projectSaving => 'Сохраняю…';
+
+  @override
+  String get projectUnsaved => 'Не сохранено';
+
+  @override
+  String get projectNoFile => 'Ещё не сохранено в проект (Ctrl+S)';
+
+  @override
+  String projectSaveFailed(String error) {
+    return 'Не удалось сохранить проект: $error';
+  }
+
+  @override
+  String projectOpenFailed(String error) {
+    return 'Не удалось открыть проект: $error';
+  }
+
+  @override
+  String get projectNewer =>
+      'он сохранён более новой версией программы — обновите программу';
+
+  @override
+  String get projectNotProject => 'это не файл проекта Comic Translate Screen';
+
+  @override
+  String get projectDamaged => 'файл повреждён';
+
+  @override
+  String get unsavedTitle => 'Сохранить изменения?';
+
+  @override
+  String get unsavedNew =>
+      'Страницы и правки ещё не сохранены в проект. Если их не сохранить, они пропадут.';
+
+  @override
+  String unsavedProject(String name) {
+    return 'В проекте «$name» есть несохранённые изменения.';
+  }
+
+  @override
+  String get dontSave => 'Не сохранять';
+
+  @override
+  String get saveAs => 'Сохранить как…';
+
+  @override
+  String get recoveryTitle => 'Восстановить прошлую работу?';
+
+  @override
+  String recoveryBody(String pages, String time) {
+    return 'В прошлый раз программа закрылась, не сохранив работу. Сохранилась копия: страниц — $pages, $time.';
+  }
+
+  @override
+  String get recoveryRestore => 'Восстановить';
+
+  @override
+  String get recoveryDiscard => 'Удалить копию';
+
+  @override
+  String get recoveryRestored =>
+      'Прошлая работа восстановлена. Сохраните её в проект, чтобы не потерять.';
+
+  @override
+  String get fileNotFound => 'Файл не найден';
+
+  @override
+  String get removeFromList => 'Убрать из списка';
+
+  @override
+  String get settingsProjects => 'Проекты';
+
+  @override
+  String get projectAutosave => 'Автосохранение проекта';
+
+  @override
+  String get projectAutosaveHelp =>
+      'Проект, у которого есть файл, сохраняется сам через пару секунд после каждой правки и после каждой страницы «Перевести всё». Работа, ещё не сохранённая в проект, раз в 2 минуты копируется, чтобы её можно было восстановить после сбоя.';
+
+  @override
+  String get openingProject => 'Открываю проект…';
+
+  @override
+  String get keySave => 'Сохранить проект';
+
+  @override
+  String get keySaveAs => 'Сохранить проект в новый файл';
 }

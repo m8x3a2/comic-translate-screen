@@ -137,7 +137,7 @@ abstract class AppLocalizations {
   /// No description provided for @supportedFormats.
   ///
   /// In en, this message translates to:
-  /// **'Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT) and PDF'**
+  /// **'Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF and projects (.ctsproj)'**
   String get supportedFormats;
 
   /// No description provided for @privacyLocal.
@@ -181,12 +181,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close all pages'**
   String get closeAll;
-
-  /// No description provided for @closeAllConfirm.
-  ///
-  /// In en, this message translates to:
-  /// **'Close all pages? Translations that were not exported will be lost.'**
-  String get closeAllConfirm;
 
   /// No description provided for @cancel.
   ///
@@ -487,24 +481,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open settings'**
   String get openSettings;
-
-  /// No description provided for @exitTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Close the program?'**
-  String get exitTitle;
-
-  /// No description provided for @exitBody.
-  ///
-  /// In en, this message translates to:
-  /// **'{count} translated page(s) were not exported and will be lost.'**
-  String exitBody(String count);
-
-  /// No description provided for @exitAnyway.
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get exitAnyway;
 
   /// No description provided for @showInFolder.
   ///
@@ -2119,6 +2095,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset'**
   String get reset;
+
+  /// No description provided for @openProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Open project…'**
+  String get openProject;
+
+  /// No description provided for @saveProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Save project (Ctrl+S)'**
+  String get saveProject;
+
+  /// No description provided for @saveProjectAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save project as… (Ctrl+Shift+S)'**
+  String get saveProjectAs;
+
+  /// No description provided for @recentProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent projects'**
+  String get recentProjects;
+
+  /// No description provided for @projectFileType.
+  ///
+  /// In en, this message translates to:
+  /// **'Comic Translate Screen projects'**
+  String get projectFileType;
+
+  /// No description provided for @untitledProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled'**
+  String get untitledProject;
+
+  /// No description provided for @projectSavedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved at {time}'**
+  String projectSavedAt(String time);
+
+  /// No description provided for @projectSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get projectSaving;
+
+  /// No description provided for @projectUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved'**
+  String get projectUnsaved;
+
+  /// No description provided for @projectNoFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved in a project yet (Ctrl+S)'**
+  String get projectNoFile;
+
+  /// No description provided for @projectSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the project: {error}'**
+  String projectSaveFailed(String error);
+
+  /// No description provided for @projectOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the project: {error}'**
+  String projectOpenFailed(String error);
+
+  /// No description provided for @projectNewer.
+  ///
+  /// In en, this message translates to:
+  /// **'it was saved by a newer version of the program; please update it'**
+  String get projectNewer;
+
+  /// No description provided for @projectNotProject.
+  ///
+  /// In en, this message translates to:
+  /// **'this is not a Comic Translate Screen project'**
+  String get projectNotProject;
+
+  /// No description provided for @projectDamaged.
+  ///
+  /// In en, this message translates to:
+  /// **'the file is damaged'**
+  String get projectDamaged;
+
+  /// No description provided for @unsavedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the changes?'**
+  String get unsavedTitle;
+
+  /// No description provided for @unsavedNew.
+  ///
+  /// In en, this message translates to:
+  /// **'The pages and edits are not saved in a project yet. Unless you save them, they will be lost.'**
+  String get unsavedNew;
+
+  /// No description provided for @unsavedProject.
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” has unsaved changes.'**
+  String unsavedProject(String name);
+
+  /// No description provided for @dontSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t save'**
+  String get dontSave;
+
+  /// No description provided for @saveAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as…'**
+  String get saveAs;
+
+  /// No description provided for @recoveryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore your previous work?'**
+  String get recoveryTitle;
+
+  /// No description provided for @recoveryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Last time the program closed without saving your work. A copy was kept: {pages} page(s), {time}.'**
+  String recoveryBody(String pages, String time);
+
+  /// No description provided for @recoveryRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get recoveryRestore;
+
+  /// No description provided for @recoveryDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the copy'**
+  String get recoveryDiscard;
+
+  /// No description provided for @recoveryRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Your previous work is back. Save it as a project to keep it.'**
+  String get recoveryRestored;
+
+  /// No description provided for @fileNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'File not found'**
+  String get fileNotFound;
+
+  /// No description provided for @removeFromList.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from the list'**
+  String get removeFromList;
+
+  /// No description provided for @settingsProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get settingsProjects;
+
+  /// No description provided for @projectAutosave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save projects automatically'**
+  String get projectAutosave;
+
+  /// No description provided for @projectAutosaveHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A project that has a file saves itself a couple of seconds after every change and after every page of “Translate all”. Work that is not saved in a project yet is copied every 2 minutes, so it can be restored after a crash.'**
+  String get projectAutosaveHelp;
+
+  /// No description provided for @openingProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the project…'**
+  String get openingProject;
+
+  /// No description provided for @keySave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the project'**
+  String get keySave;
+
+  /// No description provided for @keySaveAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the project as a new file'**
+  String get keySaveAs;
 }
 
 class _AppLocalizationsDelegate
