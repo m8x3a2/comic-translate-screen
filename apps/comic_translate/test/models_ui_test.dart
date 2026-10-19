@@ -7,6 +7,7 @@ import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/ui/app.dart';
 import 'package:comic_translate/ui/common/info_hint.dart';
 import 'package:ct_core/ct_core.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,7 +48,8 @@ void main() {
     await openSettings(tester);
     final testMode = find.widgetWithText(SwitchListTile, 'Режим тестирования');
     final hint = find.descendant(of: testMode, matching: find.byType(InfoHint));
-    await tester.tap(hint);
+    // With the mouse, as on a computer (a touch tap also works).
+    await tester.tap(hint, kind: PointerDeviceKind.mouse);
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.textContaining('Повторите то же действие'), findsOneWidget);
     expect(tester.widget<SwitchListTile>(testMode).value, isFalse, reason: 'the switch stays as it was');

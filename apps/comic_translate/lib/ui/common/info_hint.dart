@@ -25,21 +25,30 @@ Widget titleWithInfo(String title, String? info, {TextStyle? style}) => info == 
         ],
       );
 
-class InfoHint extends StatelessWidget {
+class InfoHint extends StatefulWidget {
   const InfoHint(this.text, {super.key});
 
   final String text;
 
   @override
+  State<InfoHint> createState() => _InfoHintState();
+}
+
+class _InfoHintState extends State<InfoHint> {
+  final _tooltip = GlobalKey<TooltipState>();
+
+  @override
   Widget build(BuildContext context) => Tooltip(
-    message: text,
-    triggerMode: TooltipTriggerMode.tap,
+    key: _tooltip,
+    message: widget.text,
     waitDuration: const Duration(milliseconds: 300),
     showDuration: const Duration(seconds: 15),
     constraints: const BoxConstraints(maxWidth: 380),
-    child: Semantics(
-      button: true,
-      label: text,
+    // The click is taken here, so a switch or tile around the "i" is not
+    // changed by it.
+    child: InkResponse(
+      onTap: () => _tooltip.currentState?.ensureTooltipVisible(),
+      radius: 16,
       child: Padding(
         padding: const EdgeInsets.all(4),
         child: Icon(Icons.info_outline, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),

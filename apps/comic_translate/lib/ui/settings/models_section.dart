@@ -322,9 +322,9 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
           children: [
             Row(
               children: [
-                Flexible(child: Text(title, style: theme.textTheme.titleSmall)),
-                InfoHint('$info\n\n${spec.displayName}'),
-                const Spacer(),
+                Expanded(
+                  child: titleWithInfo(title, '$info\n\n${spec.displayName}', style: theme.textTheme.titleSmall),
+                ),
                 Text(label, style: theme.textTheme.labelMedium?.copyWith(color: color)),
               ],
             ),

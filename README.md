@@ -28,6 +28,7 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 | M8 | Manual mode: single steps on a page (find text, recognize, translate, mask, clean); boxes, brush and eraser; moving, resizing and turning the translation; per-bubble font, size, colours and outline; undo/redo; find and replace; keyboard shortcuts | done |
 | M8.1 | Full screen (F11); API keys: show what you typed, the last 4 characters of a saved key, replace and delete; OpenRouter key balance on request; a per-model usage counter kept on this computer | done |
 | M9 | Projects `.ctsproj` (save, open, recent, autosave, crash recovery); export to a folder, ZIP, CBZ, CB7, PDF: translations, cleaned pages, texts, by chapter; added fonts; languages per page; steps on several pages; all-boxes tools; embedded PDF pictures | done |
+| M9.1 | Settings reset (one section or all); a solid text outline at any width; Space / Ctrl + left button moves the page; models grouped (main, by language, extra) with "download what is needed", "download all", "check all"; an "i" explaining models and settings | done |
 | M10–M12 | Webtoon mode, PSD, polish | planned |
 
 ## Principles
