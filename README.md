@@ -80,6 +80,7 @@ The build produces two executables in `apps/comic_translate/build/windows/x64/ru
 - [Architecture](docs/ARCHITECTURE.md)
 - [Command-line interface](docs/CLI.md)
 - [Test mode and bug reports](docs/DIAGNOSTICS.md)
+- [How to test and report bugs](docs/TESTING.ru.md) (Russian); F1 in the app lists the keyboard shortcuts
 - [Contributing](CONTRIBUTING.md)
 
 ## License

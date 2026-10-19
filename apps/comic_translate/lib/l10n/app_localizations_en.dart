@@ -913,4 +913,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String replacedCount(String count) {
     return 'Replaced: $count';
   }
+
+  @override
+  String get shortcutsTitle => 'Keyboard shortcuts';
+
+  @override
+  String get shortcutsTooltip => 'Keyboard shortcuts (F1)';
+
+  @override
+  String get keysGroupFiles => 'Pages';
+
+  @override
+  String get keysGroupTools => 'Tools';
+
+  @override
+  String get keysGroupEdit => 'Editing';
+
+  @override
+  String get keysGroupMouse => 'Mouse';
+
+  @override
+  String get keyOpen => 'Open files';
+
+  @override
+  String get keyTranslateAll => 'Translate all';
+
+  @override
+  String get keyPages => 'Previous / next page';
+
+  @override
+  String get keyPan => 'Hand: move the page, select a bubble';
+
+  @override
+  String get keyBoxes => 'Boxes around the text';
+
+  @override
+  String get keyText => 'Move, resize and turn the translation';
+
+  @override
+  String get keyBrush => 'Brush: mark what to clean';
+
+  @override
+  String get keyEraser => 'Eraser: unmark';
+
+  @override
+  String get keyBrushSize => 'Smaller / larger brush';
+
+  @override
+  String get keyUndo => 'Undo';
+
+  @override
+  String get keyRedo => 'Redo';
+
+  @override
+  String get keyDelete => 'Delete the selected box';
+
+  @override
+  String get keyDeselect => 'Deselect the bubble';
+
+  @override
+  String get keyFind => 'Find and replace';
+
+  @override
+  String get keyFindNext => 'Next / previous match (in the find field)';
+
+  @override
+  String get mouseWheel => 'Wheel';
+
+  @override
+  String get mouseWheelHelp => 'Zoom in and out';
+
+  @override
+  String get mouseMiddle => 'Middle button, drag';
+
+  @override
+  String get mouseMiddleHelp => 'Move the page with any tool';
+
+  @override
+  String get mouseDouble => 'Double click on a translation';
+
+  @override
+  String get mouseDoubleHelp =>
+      'Edit its text in the right panel (Translation tool)';
+
+  @override
+  String get keysNote =>
+      'Letter keys do nothing while you type in a text field. They work with any keyboard layout.';
 }

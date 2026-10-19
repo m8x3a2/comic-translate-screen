@@ -26,6 +26,7 @@ import 'batch_dialogs.dart';
 import 'home_view.dart';
 import 'page_list.dart';
 import 'page_viewer.dart';
+import 'shortcuts_dialog.dart';
 import 'text_panel.dart';
 
 /// Opens [path] in Windows Explorer (selecting it when it is a file).
@@ -342,6 +343,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         return true;
       }
       return false;
+    }
+    if (key == LogicalKeyboardKey.f1 && !ctrl && !alt) {
+      showShortcuts(context);
+      return true;
     }
     if (typing || alt) return false;
     if (key == LogicalKeyboardKey.pageDown) {

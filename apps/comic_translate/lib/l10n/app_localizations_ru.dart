@@ -915,4 +915,90 @@ class AppLocalizationsRu extends AppLocalizations {
   String replacedCount(String count) {
     return 'Заменено: $count';
   }
+
+  @override
+  String get shortcutsTitle => 'Горячие клавиши';
+
+  @override
+  String get shortcutsTooltip => 'Горячие клавиши (F1)';
+
+  @override
+  String get keysGroupFiles => 'Страницы';
+
+  @override
+  String get keysGroupTools => 'Инструменты';
+
+  @override
+  String get keysGroupEdit => 'Правка';
+
+  @override
+  String get keysGroupMouse => 'Мышь';
+
+  @override
+  String get keyOpen => 'Открыть файлы';
+
+  @override
+  String get keyTranslateAll => 'Перевести всё';
+
+  @override
+  String get keyPages => 'Предыдущая / следующая страница';
+
+  @override
+  String get keyPan => 'Рука: двигать страницу, выбрать пузырь';
+
+  @override
+  String get keyBoxes => 'Рамки вокруг текста';
+
+  @override
+  String get keyText => 'Двигать, растягивать и поворачивать перевод';
+
+  @override
+  String get keyBrush => 'Кисть: отметить, что очистить';
+
+  @override
+  String get keyEraser => 'Ластик: снять отметку';
+
+  @override
+  String get keyBrushSize => 'Кисть меньше / больше';
+
+  @override
+  String get keyUndo => 'Отменить';
+
+  @override
+  String get keyRedo => 'Повторить';
+
+  @override
+  String get keyDelete => 'Удалить выбранную рамку';
+
+  @override
+  String get keyDeselect => 'Снять выбор с пузыря';
+
+  @override
+  String get keyFind => 'Поиск и замена';
+
+  @override
+  String get keyFindNext => 'Следующее / предыдущее совпадение (в поле поиска)';
+
+  @override
+  String get mouseWheel => 'Колёсико';
+
+  @override
+  String get mouseWheelHelp => 'Приблизить и отдалить';
+
+  @override
+  String get mouseMiddle => 'Средняя кнопка, тянуть';
+
+  @override
+  String get mouseMiddleHelp => 'Двигать страницу в любом инструменте';
+
+  @override
+  String get mouseDouble => 'Двойной щелчок по переводу';
+
+  @override
+  String get mouseDoubleHelp =>
+      'Правка его текста в правой панели (инструмент «Перевод»)';
+
+  @override
+  String get keysNote =>
+      'Буквенные клавиши не срабатывают, пока вы печатаете в поле. Работают при любой раскладке.';
 }

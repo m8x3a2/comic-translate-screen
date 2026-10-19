@@ -1711,6 +1711,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Replaced: {count}'**
   String replacedCount(String count);
+
+  /// No description provided for @shortcutsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get shortcutsTitle;
+
+  /// No description provided for @shortcutsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts (F1)'**
+  String get shortcutsTooltip;
+
+  /// No description provided for @keysGroupFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get keysGroupFiles;
+
+  /// No description provided for @keysGroupTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get keysGroupTools;
+
+  /// No description provided for @keysGroupEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing'**
+  String get keysGroupEdit;
+
+  /// No description provided for @keysGroupMouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Mouse'**
+  String get keysGroupMouse;
+
+  /// No description provided for @keyOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open files'**
+  String get keyOpen;
+
+  /// No description provided for @keyTranslateAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate all'**
+  String get keyTranslateAll;
+
+  /// No description provided for @keyPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous / next page'**
+  String get keyPages;
+
+  /// No description provided for @keyPan.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand: move the page, select a bubble'**
+  String get keyPan;
+
+  /// No description provided for @keyBoxes.
+  ///
+  /// In en, this message translates to:
+  /// **'Boxes around the text'**
+  String get keyBoxes;
+
+  /// No description provided for @keyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Move, resize and turn the translation'**
+  String get keyText;
+
+  /// No description provided for @keyBrush.
+  ///
+  /// In en, this message translates to:
+  /// **'Brush: mark what to clean'**
+  String get keyBrush;
+
+  /// No description provided for @keyEraser.
+  ///
+  /// In en, this message translates to:
+  /// **'Eraser: unmark'**
+  String get keyEraser;
+
+  /// No description provided for @keyBrushSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Smaller / larger brush'**
+  String get keyBrushSize;
+
+  /// No description provided for @keyUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get keyUndo;
+
+  /// No description provided for @keyRedo.
+  ///
+  /// In en, this message translates to:
+  /// **'Redo'**
+  String get keyRedo;
+
+  /// No description provided for @keyDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the selected box'**
+  String get keyDelete;
+
+  /// No description provided for @keyDeselect.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect the bubble'**
+  String get keyDeselect;
+
+  /// No description provided for @keyFind.
+  ///
+  /// In en, this message translates to:
+  /// **'Find and replace'**
+  String get keyFind;
+
+  /// No description provided for @keyFindNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next / previous match (in the find field)'**
+  String get keyFindNext;
+
+  /// No description provided for @mouseWheel.
+  ///
+  /// In en, this message translates to:
+  /// **'Wheel'**
+  String get mouseWheel;
+
+  /// No description provided for @mouseWheelHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in and out'**
+  String get mouseWheelHelp;
+
+  /// No description provided for @mouseMiddle.
+  ///
+  /// In en, this message translates to:
+  /// **'Middle button, drag'**
+  String get mouseMiddle;
+
+  /// No description provided for @mouseMiddleHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the page with any tool'**
+  String get mouseMiddleHelp;
+
+  /// No description provided for @mouseDouble.
+  ///
+  /// In en, this message translates to:
+  /// **'Double click on a translation'**
+  String get mouseDouble;
+
+  /// No description provided for @mouseDoubleHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit its text in the right panel (Translation tool)'**
+  String get mouseDoubleHelp;
+
+  /// No description provided for @keysNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Letter keys do nothing while you type in a text field. They work with any keyboard layout.'**
+  String get keysNote;
 }
 
 class _AppLocalizationsDelegate

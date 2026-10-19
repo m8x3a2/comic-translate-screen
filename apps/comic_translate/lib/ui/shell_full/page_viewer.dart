@@ -16,6 +16,7 @@ import '../../state/workspace.dart';
 import '../common/labels.dart';
 import 'batch_dialogs.dart';
 import 'page_canvas.dart';
+import 'shortcuts_dialog.dart';
 
 class PageViewer extends ConsumerStatefulWidget {
   const PageViewer({super.key});
@@ -315,6 +316,11 @@ class _ToolBar extends ConsumerWidget {
                   ),
               ],
             ),
+          ),
+          IconButton(
+            tooltip: l.shortcutsTooltip,
+            onPressed: () => showShortcuts(context),
+            icon: const Icon(Icons.keyboard_outlined),
           ),
           IconButton(
             tooltip: l.undo,

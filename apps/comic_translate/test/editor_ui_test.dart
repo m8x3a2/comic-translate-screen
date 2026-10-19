@@ -124,6 +124,15 @@ void main() {
     expect(container.read(workspaceProvider).currentPage!.blocks.single.translation, 'Привет');
   });
 
+  testWidgets('F1 lists the keyboard shortcuts', (tester) async {
+    await openTranslatedPage(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.f1);
+    await tester.pumpAndSettle();
+    expect(find.text('Горячие клавиши'), findsOneWidget);
+    expect(find.text('Ctrl+Z'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('find and replace in the translations', (tester) async {
     final container = await openTranslatedPage(tester);
     await ctrl(tester, LogicalKeyboardKey.keyF);
