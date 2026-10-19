@@ -2467,6 +2467,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select several pages for the steps'**
   String get keyPickPages;
+
+  /// No description provided for @settingsReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset this section'**
+  String get settingsReset;
+
+  /// No description provided for @settingsResetAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset all settings'**
+  String get settingsResetAll;
+
+  /// No description provided for @settingsResetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset the settings?'**
+  String get settingsResetTitle;
+
+  /// No description provided for @settingsResetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The settings of “{name}” go back to how they were at first. API keys, projects and downloaded models stay.'**
+  String settingsResetBody(String name);
+
+  /// No description provided for @settingsResetAllBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every setting goes back to how it was at first, including the translator\'s server and model and the approved servers. API keys, the recent projects and downloaded models stay. If the models were in another folder, the program looks in the usual folder again (the files stay where they are).'**
+  String get settingsResetAllBody;
+
+  /// No description provided for @settingsResetDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings reset'**
+  String get settingsResetDone;
 }
 
 class _AppLocalizationsDelegate

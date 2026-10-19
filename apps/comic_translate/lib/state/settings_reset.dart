@@ -1,0 +1,58 @@
+/// Settings back to their defaults: one section of the settings window, or
+/// all of them. API keys (secure storage), the recent projects and the
+/// downloaded models are not touched.
+library;
+
+import 'package:ct_core/ct_core.dart';
+
+enum SettingsPart { general, translator, tools, text, upscale, export, models }
+
+void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part}) {
+  final d = AppSettings();
+  void forgetPlugins(Set<PluginKind> kinds) => s.plugins.removeWhere(
+    (id, _) => registry.contains(id) && kinds.contains(registry.info(id).kind),
+  );
+  final parts = part == null ? SettingsPart.values : [part];
+  for (final p in parts) {
+    switch (p) {
+      case SettingsPart.general:
+        s
+          ..uiLanguage = d.uiLanguage
+          ..theme = d.theme
+          ..useGpu = d.useGpu
+          ..projectAutosave = d.projectAutosave
+          ..testMode = d.testMode;
+      case SettingsPart.translator:
+        s
+          ..translator = d.translator
+          ..extraContext = d.extraContext
+          ..sendPageImage = d.sendPageImage
+          ..approvedNetworkPlugins.clear();
+        forgetPlugins({PluginKind.translator});
+      case SettingsPart.tools:
+        s
+          ..detector = d.detector
+          ..ocr = d.ocr
+          ..inpainter = d.inpainter
+          ..upscaleSmallText = d.upscaleSmallText
+          ..fixCyrillicLookalikes = d.fixCyrillicLookalikes
+          ..inpaint = d.inpaint;
+        forgetPlugins({PluginKind.detector, PluginKind.ocr, PluginKind.inpainter});
+      case SettingsPart.text:
+        s.render = d.render;
+      case SettingsPart.upscale:
+        s.upscale = d.upscale;
+      case SettingsPart.export:
+        s.export = d.export;
+      case SettingsPart.models:
+        s.modelsDir = d.modelsDir;
+    }
+  }
+  if (part == null) {
+    s
+      ..sourceLanguage = d.sourceLanguage
+      ..targetLanguage = d.targetLanguage
+      ..plugins.clear()
+      ..extra.clear();
+  }
+}

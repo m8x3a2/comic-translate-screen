@@ -1353,4 +1353,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyPickPages => 'Select several pages for the steps';
+
+  @override
+  String get settingsReset => 'Reset this section';
+
+  @override
+  String get settingsResetAll => 'Reset all settings';
+
+  @override
+  String get settingsResetTitle => 'Reset the settings?';
+
+  @override
+  String settingsResetBody(String name) {
+    return 'The settings of “$name” go back to how they were at first. API keys, projects and downloaded models stay.';
+  }
+
+  @override
+  String get settingsResetAllBody =>
+      'Every setting goes back to how it was at first, including the translator\'s server and model and the approved servers. API keys, the recent projects and downloaded models stay. If the models were in another folder, the program looks in the usual folder again (the files stay where they are).';
+
+  @override
+  String get settingsResetDone => 'Settings reset';
 }

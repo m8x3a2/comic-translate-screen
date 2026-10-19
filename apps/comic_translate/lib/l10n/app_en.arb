@@ -847,5 +847,18 @@
     }
   },
   "mousePickPages": "Ctrl / Shift + click on a page",
-  "keyPickPages": "Select several pages for the steps"
+  "keyPickPages": "Select several pages for the steps",
+  "settingsReset": "Reset this section",
+  "settingsResetAll": "Reset all settings",
+  "settingsResetTitle": "Reset the settings?",
+  "settingsResetBody": "The settings of “{name}” go back to how they were at first. API keys, projects and downloaded models stay.",
+  "@settingsResetBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsResetAllBody": "Every setting goes back to how it was at first, including the translator's server and model and the approved servers. API keys, the recent projects and downloaded models stay. If the models were in another folder, the program looks in the usual folder again (the files stay where they are).",
+  "settingsResetDone": "Settings reset"
 }

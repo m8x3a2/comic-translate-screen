@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_info.dart';
 import '../../state/app_state.dart';
+import '../../state/settings_reset.dart';
 import '../../render/text_renderer.dart' show defaultFontFamily;
 import '../common/fonts.dart';
 import '../common/labels.dart';
@@ -33,6 +34,20 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late var _section = widget.initial;
+
+  /// Changes after a reset, so every field shows the default again.
+  var _resets = 0;
+
+  static SettingsPart? _partOf(SettingsSection s) => switch (s) {
+    SettingsSection.general => SettingsPart.general,
+    SettingsSection.translator => SettingsPart.translator,
+    SettingsSection.tools => SettingsPart.tools,
+    SettingsSection.text => SettingsPart.text,
+    SettingsSection.upscale => SettingsPart.upscale,
+    SettingsSection.export => SettingsPart.export,
+    SettingsSection.models => SettingsPart.models,
+    SettingsSection.about => null,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -80,16 +95,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children: [
                       Text(titles[_section]!.$2, style: Theme.of(context).textTheme.headlineSmall),
                       const SizedBox(height: 16),
-                      switch (_section) {
-                        SettingsSection.general => const _GeneralSection(),
-                        SettingsSection.translator => const _TranslatorSection(),
-                        SettingsSection.tools => const _ToolsSection(),
-                        SettingsSection.text => const _TextSection(),
-                        SettingsSection.upscale => const _UpscaleSection(),
-                        SettingsSection.export => const _ExportSection(),
-                        SettingsSection.models => const ModelsSection(),
-                        SettingsSection.about => const _AboutSection(),
-                      },
+                      KeyedSubtree(
+                        key: ValueKey('$_section/$_resets'),
+                        child: switch (_section) {
+                          SettingsSection.general => const _GeneralSection(),
+                          SettingsSection.translator => const _TranslatorSection(),
+                          SettingsSection.tools => const _ToolsSection(),
+                          SettingsSection.text => const _TextSection(),
+                          SettingsSection.upscale => const _UpscaleSection(),
+                          SettingsSection.export => const _ExportSection(),
+                          SettingsSection.models => const ModelsSection(),
+                          SettingsSection.about => const _AboutSection(),
+                        },
+                      ),
+                      if (_partOf(_section) case final part?)
+                        _ResetButtons(
+                          section: titles[_section]!.$2,
+                          part: part,
+                          all: _section == SettingsSection.general,
+                          onReset: () => setState(() => _resets++),
+                        ),
                     ],
                   ),
                 ),
@@ -103,6 +128,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // Small building blocks.
+
+/// "Reset this section" (and, in General, "Reset all settings"), asking
+/// first.
+class _ResetButtons extends ConsumerWidget {
+  const _ResetButtons({required this.section, required this.part, required this.all, required this.onReset});
+
+  final String section;
+  final SettingsPart part;
+  final bool all;
+  final VoidCallback onReset;
+
+  Future<void> _reset(BuildContext context, WidgetRef ref, {required bool everything}) async {
+    final l = context.l10n;
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        icon: const Icon(Icons.restart_alt),
+        title: Text(l.settingsResetTitle),
+        content: Text(everything ? l.settingsResetAllBody : l.settingsResetBody(section)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.reset)),
+        ],
+      ),
+    );
+    if (yes != true || !context.mounted) return;
+    final registry = ref.read(servicesProvider).registry;
+    // Saved in the background, as every other change here.
+    ref.read(settingsProvider.notifier).change((s) => resetSettings(s, registry, part: everything ? null : part));
+    ref.read(servicesProvider).appLog.info('settings_reset', {'part': everything ? 'all' : part.name});
+    onReset();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.settingsResetDone)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          OutlinedButton.icon(
+            onPressed: () => _reset(context, ref, everything: false),
+            icon: const Icon(Icons.restart_alt),
+            label: Text(l.settingsReset),
+          ),
+          if (all)
+            OutlinedButton.icon(
+              onPressed: () => _reset(context, ref, everything: true),
+              icon: const Icon(Icons.settings_backup_restore),
+              label: Text(l.settingsResetAll),
+            ),
+        ],
+      ),
+    );
+  }
+}
 
 void _change(WidgetRef ref, void Function(AppSettings s) change) => ref.read(settingsProvider.notifier).change(change);
 

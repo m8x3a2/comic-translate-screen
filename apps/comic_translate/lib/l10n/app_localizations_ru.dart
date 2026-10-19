@@ -1355,4 +1355,25 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keyPickPages => 'Выбрать несколько страниц для шагов';
+
+  @override
+  String get settingsReset => 'Сбросить раздел';
+
+  @override
+  String get settingsResetAll => 'Сбросить все настройки';
+
+  @override
+  String get settingsResetTitle => 'Сбросить настройки?';
+
+  @override
+  String settingsResetBody(String name) {
+    return 'Настройки раздела «$name» вернутся к начальным. Ключи API, проекты и скачанные модели не затрагиваются.';
+  }
+
+  @override
+  String get settingsResetAllBody =>
+      'Все настройки вернутся к начальным, в том числе адрес и модель переводчика и разрешённые серверы. Ключи API, список недавних проектов и скачанные модели не затрагиваются. Если модели лежали в другой папке, программа снова будет искать их в обычной (сами файлы останутся на месте).';
+
+  @override
+  String get settingsResetDone => 'Настройки сброшены';
 }
