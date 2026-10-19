@@ -103,9 +103,58 @@ void main() {
     final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', apiKey: 'sk-secret-abcdefgh');
     await expectLater(
       t.translate(request([block('a')]), PluginContext(log: EventLog([sink]))),
-      throwsA(isA<TranslationException>().having((e) => e.message, 'message', contains('HTTP 401: Invalid API key'))),
+      throwsA(isA<TranslationException>()
+          .having((e) => e.message, 'message', contains('HTTP 401: Invalid API key'))
+          .having((e) => e.kind, 'kind', TranslationErrorKind.auth)),
     );
     expect(sink.lines.join('\n'), isNot(contains('sk-secret-abcdefgh')));
+  });
+
+  test('errors are sorted by kind; temporary ones are sent again', () async {
+    Future<TranslationException> errorOf(OpenAiCompatibleTranslator t) async {
+      try {
+        await t.translate(request([block('a')]), PluginContext(log: EventLog.silent()));
+      } on TranslationException catch (e) {
+        return e;
+      }
+      throw StateError('no error');
+    }
+
+    OpenAiCompatibleTranslator make() => OpenAiCompatibleTranslator(
+        apiUrl: server.url, model: 'm', retryDelays: const [Duration(milliseconds: 5), Duration(milliseconds: 5)]);
+
+    for (final (status, message, kind) in [
+      (401, 'Invalid API key', TranslationErrorKind.auth),
+      (402, 'Insufficient credits', TranslationErrorKind.credits),
+      (404, 'Not found', TranslationErrorKind.notFound),
+      (400, 'foo/bar is not a valid model ID', TranslationErrorKind.notFound),
+      (400, 'context too long', TranslationErrorKind.other),
+    ]) {
+      server.requests.clear();
+      server.handler = (body) => (status, jsonEncode({'error': {'message': message}}));
+      final e = await errorOf(make());
+      expect([e.kind, e.statusCode], [kind, status], reason: message);
+      expect(server.requests, hasLength(1), reason: 'not sent again: $message');
+    }
+    expect(TranslationErrorKind.credits.stopsRun, isTrue);
+    expect(TranslationErrorKind.badReply.stopsRun, isFalse);
+
+    // A busy server is asked again and the page still gets translated.
+    server.requests.clear();
+    var calls = 0;
+    server.handler = (body) => ++calls == 1 ? (503, '{}') : (200, chatReply('{"block_0": "Да"}'));
+    final ok = [block('Yes')];
+    await make().translate(request(ok), PluginContext(log: EventLog.silent()));
+    expect(ok.single.translation, 'Да');
+    expect(server.requests, hasLength(2));
+
+    server.requests.clear();
+    server.handler = (body) => (429, jsonEncode({'error': {'message': 'Rate limited'}}));
+    expect((await errorOf(make())).kind, TranslationErrorKind.rateLimit);
+    expect(server.requests, hasLength(3), reason: 'first try and two retries');
+
+    server.handler = (body) => (200, chatReply('Sorry, I cannot help with that.'));
+    expect((await errorOf(make())).kind, TranslationErrorKind.badReply, reason: 'a reply without translations');
   });
 
   test('timeout, unreachable server and bad configuration', () async {
@@ -113,14 +162,14 @@ void main() {
     server.delay = const Duration(seconds: 3);
     final slow = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', timeout: const Duration(seconds: 1));
     await expectLater(slow.translate(request([block('a')]), PluginContext(log: EventLog.silent())),
-        throwsA(isA<TranslationException>().having((e) => e.message, 'message', contains('did not answer'))));
+        throwsA(isA<TranslationException>().having((e) => e.message, 'message', contains('did not answer')).having((e) => e.kind, 'kind', TranslationErrorKind.timeout)));
 
     final closed = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
     final port = closed.port;
     await closed.close();
     final down = OpenAiCompatibleTranslator(apiUrl: 'http://127.0.0.1:$port/v1', model: 'm');
     await expectLater(down.translate(request([block('a')]), PluginContext(log: EventLog.silent())),
-        throwsA(isA<TranslationException>().having((e) => e.message, 'message', contains('cannot connect'))));
+        throwsA(isA<TranslationException>().having((e) => e.message, 'message', contains('cannot connect')).having((e) => e.kind, 'kind', TranslationErrorKind.network)));
 
     expect(() => OpenAiCompatibleTranslator(apiUrl: '', model: 'm').translate(request([block('a')]), PluginContext(log: EventLog.silent())),
         throwsA(isA<TranslationException>()));

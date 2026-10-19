@@ -218,8 +218,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportNoSkipped => 'Every page went through.';
 
   @override
-  String get reportTranslatorFailing =>
-      'Stopped: the translator failed three pages in a row. Check the API key, the balance and the server address in Settings; the remaining pages were not sent.';
+  String reportStopped(String reason) {
+    return 'Translation stopped: $reason. The remaining pages were not sent.';
+  }
 
   @override
   String get missingKeyTitle => 'API key needed';
@@ -255,12 +256,73 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String reasonTranslation(String message) {
-    return 'translation failed: $message';
+  String get reasonImage => 'the image could not be read';
+
+  @override
+  String get reasonWorkerStopped =>
+      'page processing stopped unexpectedly (details are in the log; you can create a bug report in Settings)';
+
+  @override
+  String withDetails(String text, String details) {
+    return '$text (details: $details)';
   }
 
   @override
-  String get reasonImage => 'the image could not be read';
+  String get trErrConfig =>
+      'the translator is not set up: enter the server address and model in Settings';
+
+  @override
+  String get trErrAuth =>
+      'the server did not accept the API key; check the key in Settings';
+
+  @override
+  String get trErrCredits =>
+      'the translator account has run out of money or credits';
+
+  @override
+  String get trErrNotFound => 'wrong server address or model name';
+
+  @override
+  String get trErrRateLimit =>
+      'the server is busy with too many requests and asks to wait; try again later';
+
+  @override
+  String get trErrServer => 'the translator\'s server failed; try again later';
+
+  @override
+  String get trErrNetwork =>
+      'no connection to the translator\'s server; check the internet connection';
+
+  @override
+  String get trErrTimeout => 'the translator\'s server did not answer in time';
+
+  @override
+  String get trErrBadReply =>
+      'the translator answered in a form the program cannot read';
+
+  @override
+  String get trErrOther => 'translation failed';
+
+  @override
+  String get needsArchiveTool =>
+      'CBR, RAR, CB7 and 7Z need 7-Zip (7-zip.org) or WinRAR installed';
+
+  @override
+  String exportFailed(String error) {
+    return 'Could not save the pages: $error';
+  }
+
+  @override
+  String importedAs(String model) {
+    return 'installed as $model';
+  }
+
+  @override
+  String get notAModelFile => 'not a known model file';
+
+  @override
+  String get unexpectedError =>
+      'Something went wrong. Details are in the log; a bug report helps fix it.';
 
   @override
   String runFailed(String error) {

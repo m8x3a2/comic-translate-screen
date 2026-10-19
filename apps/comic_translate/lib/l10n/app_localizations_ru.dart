@@ -219,8 +219,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get reportNoSkipped => 'Все страницы обработаны.';
 
   @override
-  String get reportTranslatorFailing =>
-      'Остановлено: переводчик три страницы подряд ответил ошибкой. Проверьте в настройках ключ API, баланс и адрес сервера; остальные страницы не отправлялись.';
+  String reportStopped(String reason) {
+    return 'Перевод остановлен: $reason. Остальные страницы не отправлялись.';
+  }
 
   @override
   String get missingKeyTitle => 'Нужен ключ API';
@@ -256,12 +257,73 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String reasonTranslation(String message) {
-    return 'ошибка перевода: $message';
+  String get reasonImage => 'не удалось прочитать картинку';
+
+  @override
+  String get reasonWorkerStopped =>
+      'обработка страниц неожиданно остановилась (подробности в журнале; в настройках можно собрать отчёт об ошибке)';
+
+  @override
+  String withDetails(String text, String details) {
+    return '$text (подробности: $details)';
   }
 
   @override
-  String get reasonImage => 'не удалось прочитать картинку';
+  String get trErrConfig =>
+      'переводчик не настроен: укажите адрес сервера и модель в настройках';
+
+  @override
+  String get trErrAuth =>
+      'сервер не принял ключ API; проверьте ключ в настройках';
+
+  @override
+  String get trErrCredits =>
+      'на счёте переводчика закончились деньги или кредиты';
+
+  @override
+  String get trErrNotFound => 'неверный адрес сервера или название модели';
+
+  @override
+  String get trErrRateLimit =>
+      'сервер перегружен запросами и просит подождать; попробуйте позже';
+
+  @override
+  String get trErrServer => 'сбой на сервере переводчика; попробуйте позже';
+
+  @override
+  String get trErrNetwork =>
+      'нет связи с сервером переводчика; проверьте интернет';
+
+  @override
+  String get trErrTimeout => 'сервер переводчика не ответил вовремя';
+
+  @override
+  String get trErrBadReply =>
+      'переводчик ответил в виде, который программа не может прочитать';
+
+  @override
+  String get trErrOther => 'ошибка перевода';
+
+  @override
+  String get needsArchiveTool =>
+      'для CBR, RAR, CB7 и 7Z нужен установленный 7-Zip (7-zip.org) или WinRAR';
+
+  @override
+  String exportFailed(String error) {
+    return 'Не удалось сохранить страницы: $error';
+  }
+
+  @override
+  String importedAs(String model) {
+    return 'установлен как $model';
+  }
+
+  @override
+  String get notAModelFile => 'не файл известной модели';
+
+  @override
+  String get unexpectedError =>
+      'Что-то пошло не так. Подробности в журнале; отчёт об ошибке поможет это исправить.';
 
   @override
   String runFailed(String error) {

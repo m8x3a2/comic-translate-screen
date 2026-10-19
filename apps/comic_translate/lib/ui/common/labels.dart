@@ -34,13 +34,40 @@ double stageFraction(String? stage) => switch (stage) {
   _ => 0.0,
 };
 
-String reasonLabel(AppLocalizations l, SkipReason? reason) => switch (reason) {
+/// Why a page was skipped, in plain words; with [details] the technical
+/// message is added in brackets.
+String reasonLabel(AppLocalizations l, SkipReason? reason, {bool details = true}) => switch (reason) {
   ModelMissingReason(:final model) => l.reasonModelMissing(model),
-  TranslationFailedReason(:final message) => l.reasonTranslation(message),
+  TranslationFailedReason(:final kind, :final message) =>
+    details ? l.withDetails(translationErrorLabel(l, kind), message) : translationErrorLabel(l, kind),
   UnreadableImageReason() => l.reasonImage,
+  WorkerStoppedReason() => l.reasonWorkerStopped,
   OtherReason(:final message) => message,
   null => '',
 };
+
+String translationErrorLabel(AppLocalizations l, TranslationErrorKind kind) => switch (kind) {
+  TranslationErrorKind.config => l.trErrConfig,
+  TranslationErrorKind.auth => l.trErrAuth,
+  TranslationErrorKind.credits => l.trErrCredits,
+  TranslationErrorKind.notFound => l.trErrNotFound,
+  TranslationErrorKind.rateLimit => l.trErrRateLimit,
+  TranslationErrorKind.server => l.trErrServer,
+  TranslationErrorKind.network => l.trErrNetwork,
+  TranslationErrorKind.timeout => l.trErrTimeout,
+  TranslationErrorKind.badReply => l.trErrBadReply,
+  TranslationErrorKind.other => l.trErrOther,
+};
+
+/// Errors the user fixes in the translator settings.
+bool fixedInSettings(SkipReason? reason) =>
+    reason is TranslationFailedReason &&
+    const {
+      TranslationErrorKind.config,
+      TranslationErrorKind.auth,
+      TranslationErrorKind.credits,
+      TranslationErrorKind.notFound,
+    }.contains(reason.kind);
 
 /// `1:05`, `12:30`, `1:02:03`.
 String formatDuration(Duration d) {

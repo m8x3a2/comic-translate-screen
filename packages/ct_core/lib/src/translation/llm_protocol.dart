@@ -37,6 +37,9 @@ String llmUserPrompt(String extraContext, String blocksJson) =>
 
 final _jsonObject = RegExp(r'\{[\s\S]*\}');
 
+/// Warning of [applyTranslationsJson] when the reply has no JSON object.
+const noJsonWarning = 'No JSON found in the reply.';
+
 /// `set_texts_from_json`: takes the outermost `{...}` of a model reply and
 /// stores `block_N` values as translations. Returns warnings (missing keys,
 /// no JSON); throws [FormatException] for malformed JSON.
@@ -46,7 +49,7 @@ final _jsonObject = RegExp(r'\{[\s\S]*\}');
 /// object is used instead of failing the whole page.
 List<String> applyTranslationsJson(List<TextBlock> blocks, String reply) {
   final match = _jsonObject.firstMatch(reply);
-  if (match == null) return ['No JSON found in the reply.'];
+  if (match == null) return [noJsonWarning];
   Object? decoded;
   try {
     decoded = jsonDecode(match[0]!);

@@ -464,11 +464,11 @@ abstract class AppLocalizations {
   /// **'Every page went through.'**
   String get reportNoSkipped;
 
-  /// No description provided for @reportTranslatorFailing.
+  /// No description provided for @reportStopped.
   ///
   /// In en, this message translates to:
-  /// **'Stopped: the translator failed three pages in a row. Check the API key, the balance and the server address in Settings; the remaining pages were not sent.'**
-  String get reportTranslatorFailing;
+  /// **'Translation stopped: {reason}. The remaining pages were not sent.'**
+  String reportStopped(String reason);
 
   /// No description provided for @missingKeyTitle.
   ///
@@ -524,17 +524,113 @@ abstract class AppLocalizations {
   /// **'model \"{name}\" is not downloaded'**
   String reasonModelMissing(String name);
 
-  /// No description provided for @reasonTranslation.
-  ///
-  /// In en, this message translates to:
-  /// **'translation failed: {message}'**
-  String reasonTranslation(String message);
-
   /// No description provided for @reasonImage.
   ///
   /// In en, this message translates to:
   /// **'the image could not be read'**
   String get reasonImage;
+
+  /// No description provided for @reasonWorkerStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'page processing stopped unexpectedly (details are in the log; you can create a bug report in Settings)'**
+  String get reasonWorkerStopped;
+
+  /// No description provided for @withDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'{text} (details: {details})'**
+  String withDetails(String text, String details);
+
+  /// No description provided for @trErrConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'the translator is not set up: enter the server address and model in Settings'**
+  String get trErrConfig;
+
+  /// No description provided for @trErrAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'the server did not accept the API key; check the key in Settings'**
+  String get trErrAuth;
+
+  /// No description provided for @trErrCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'the translator account has run out of money or credits'**
+  String get trErrCredits;
+
+  /// No description provided for @trErrNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'wrong server address or model name'**
+  String get trErrNotFound;
+
+  /// No description provided for @trErrRateLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'the server is busy with too many requests and asks to wait; try again later'**
+  String get trErrRateLimit;
+
+  /// No description provided for @trErrServer.
+  ///
+  /// In en, this message translates to:
+  /// **'the translator\'s server failed; try again later'**
+  String get trErrServer;
+
+  /// No description provided for @trErrNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'no connection to the translator\'s server; check the internet connection'**
+  String get trErrNetwork;
+
+  /// No description provided for @trErrTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'the translator\'s server did not answer in time'**
+  String get trErrTimeout;
+
+  /// No description provided for @trErrBadReply.
+  ///
+  /// In en, this message translates to:
+  /// **'the translator answered in a form the program cannot read'**
+  String get trErrBadReply;
+
+  /// No description provided for @trErrOther.
+  ///
+  /// In en, this message translates to:
+  /// **'translation failed'**
+  String get trErrOther;
+
+  /// No description provided for @needsArchiveTool.
+  ///
+  /// In en, this message translates to:
+  /// **'CBR, RAR, CB7 and 7Z need 7-Zip (7-zip.org) or WinRAR installed'**
+  String get needsArchiveTool;
+
+  /// No description provided for @exportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the pages: {error}'**
+  String exportFailed(String error);
+
+  /// No description provided for @importedAs.
+  ///
+  /// In en, this message translates to:
+  /// **'installed as {model}'**
+  String importedAs(String model);
+
+  /// No description provided for @notAModelFile.
+  ///
+  /// In en, this message translates to:
+  /// **'not a known model file'**
+  String get notAModelFile;
+
+  /// No description provided for @unexpectedError.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Details are in the log; a bug report helps fix it.'**
+  String get unexpectedError;
 
   /// No description provided for @runFailed.
   ///

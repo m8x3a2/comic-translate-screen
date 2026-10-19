@@ -75,7 +75,13 @@ PluginRegistry fakeRegistryWith({Duration detectDelay = Duration.zero}) => Plugi
   ..register(
     PluginFactory<Translator>(fakeInfo('fake_fail', PluginKind.translator), (c, e) async => _FailingTranslator()),
   )
-  ..register(PluginFactory<Translator>(fakeCloudInfo, (c, e) async => _FailingTranslator()));
+  ..register(PluginFactory<Translator>(fakeCloudInfo, (c, e) async => _FailingTranslator()))
+  ..register(
+    PluginFactory<Translator>(
+      fakeInfo('fake_bad_reply', PluginKind.translator),
+      (c, e) async => _FailingTranslator(TranslationErrorKind.badReply),
+    ),
+  );
 
 /// A translator on an internet service that needs a key.
 const fakeCloudInfo = PluginInfo(
@@ -91,12 +97,15 @@ PluginEndpoint _cloudEndpoint(PluginConfig config) => const PluginEndpoint(Priva
 
 /// Fails every page as an out-of-credit server would.
 class _FailingTranslator implements Translator {
+  _FailingTranslator([this.kind = TranslationErrorKind.credits]);
+
+  final TranslationErrorKind kind;
   @override
   PluginInfo get info => fakeInfo('fake_fail', PluginKind.translator);
 
   @override
   Future<void> translate(TranslationRequest request, PluginContext context) async =>
-      throw TranslationException('HTTP 402: insufficient credits');
+      throw TranslationException('example.com answered HTTP 402: insufficient credits', kind: kind, statusCode: 402);
 
   @override
   Future<void> dispose() async {}

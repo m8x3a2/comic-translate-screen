@@ -154,10 +154,28 @@ class _ReportDialog extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(l.reportSummary('${report.done}', '${report.total}', formatDuration(report.duration))),
-            if (report.translatorFailing)
+            if (report.stoppedBy case final reason?)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
-                child: Text(l.reportTranslatorFailing, style: TextStyle(color: theme.colorScheme.error)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.reportStopped(reasonLabel(l, reason)), style: TextStyle(color: theme.colorScheme.error)),
+                    if (fixedInSettings(reason))
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const SettingsScreen(initial: SettingsSection.translator),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.settings_outlined),
+                        label: Text(l.openSettings),
+                      ),
+                  ],
+                ),
               )
             else if (report.cancelled)
               Text(l.reportCancelled, style: TextStyle(color: theme.colorScheme.error)),

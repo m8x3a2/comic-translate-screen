@@ -43,6 +43,14 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   `tools.fix_cyrillic_lookalikes`, off by default; never applied to other
   source languages).
 - MI-GAN is not included (its download URL in the original returns 404).
+- Translator errors are sorted by kind (key refused, no credits, wrong address
+  or model, no connection, rate limit, server error, timeout, unreadable
+  reply). Rate limits, server errors and lost connections are sent again
+  twice (after 2 s and 6 s, or the server's Retry-After). A batch run (GUI and
+  `cts process`) stops at once on errors every page would repeat (key,
+  credits, address, connection) and after three failed pages in a row; the
+  original fails each page and goes on. A reply without any translation is
+  reported as an error instead of leaving the page silently untranslated.
 - Translation: a reply with stray braces after its JSON is still read (the
   original fails the page); the Authorization header is omitted when no API key
   is set; the length-limit field name is configurable for older servers.

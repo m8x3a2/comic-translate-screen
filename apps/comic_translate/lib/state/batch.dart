@@ -7,7 +7,6 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:ct_core/ct_core.dart';
-import 'package:ct_providers/ct_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
@@ -32,9 +31,9 @@ abstract interface class BatchUi {
   Future<void> explainMissingKey(PluginInfo translator, String host);
 }
 
-/// After this many pages in a row whose translation failed, the run stops:
-/// the cause is almost always the key, the balance or the connection, and
-/// every further page would fail the same way.
+/// After this many pages in a row whose translation failed, the run stops.
+/// Errors that every page would repeat (key, balance, address, connection)
+/// stop it at once; temporary ones are already retried by the translator.
 const maxTranslationFailuresInARow = 3;
 
 class SkippedPage {
@@ -53,7 +52,7 @@ class BatchReport {
     required this.cancelled,
     required this.duration,
     this.exportDirs = const [],
-    this.translatorFailing = false,
+    this.stoppedBy,
   });
 
   final int total;
@@ -65,8 +64,8 @@ class BatchReport {
   /// Folders of the automatic export (text, cleaned pages).
   final List<String> exportDirs;
 
-  /// Stopped after [maxTranslationFailuresInARow] translation failures.
-  final bool translatorFailing;
+  /// Why the run stopped before the end on its own (translator errors).
+  final SkipReason? stoppedBy;
 }
 
 sealed class BatchState {
@@ -136,7 +135,8 @@ class BatchRunning extends BatchState {
 /// Pipeline stage → its error, worded for the user.
 SkipReason skipReasonFor(Object e) => switch (e) {
   ModelNotInstalledException(:final spec) => ModelMissingReason(spec.displayName),
-  TranslationException(:final message) => TranslationFailedReason(message),
+  TranslationException(:final kind, :final message) => TranslationFailedReason(kind, message),
+  WorkerException(type: 'exit') => const WorkerStoppedReason(),
   ImageDecodeException() => const UnreadableImageReason(),
   UnsupportedError(:final message) => OtherReason(message ?? '$e'),
   _ => OtherReason('$e'),
@@ -190,7 +190,7 @@ class BatchNotifier extends Notifier<BatchState> {
 
     var done = 0;
     var failuresInARow = 0;
-    var translatorFailing = false;
+    SkipReason? stoppedBy;
     final skipped = <SkippedPage>[];
     final exportDirs = <String>{};
     PipelineWorker? worker;
@@ -312,9 +312,10 @@ class BatchNotifier extends Notifier<BatchState> {
             (p) => p.copyWith(status: PageStatus.skipped, reason: reason, clearStage: true),
           );
           failuresInARow = reason is TranslationFailedReason ? failuresInARow + 1 : 0;
-          if (failuresInARow >= maxTranslationFailuresInARow) {
-            log.warn('batch_translator_failing', {'failures': failuresInARow});
-            translatorFailing = true;
+          final fatal = reason is TranslationFailedReason && reason.kind.stopsRun;
+          if (fatal || failuresInARow >= maxTranslationFailuresInARow || reason is WorkerStoppedReason) {
+            log.warn('batch_stopped', {'failures_in_a_row': failuresInARow, 'reason': reason.runtimeType.toString()});
+            stoppedBy = reason;
             pageMs.add(sw.elapsedMilliseconds);
             _update((b) => b.copyWith(done: i + 1, pageMs: List.of(pageMs)));
             break;
@@ -340,7 +341,7 @@ class BatchNotifier extends Notifier<BatchState> {
           cancelled: cancelled,
           duration: DateTime.now().difference(started),
           exportDirs: exportDirs.toList(),
-          translatorFailing: translatorFailing,
+          stoppedBy: stoppedBy,
         );
         log.info('batch_end', {'done': done, 'skipped': skipped.length, 'cancelled': cancelled});
         state = BatchIdle(report);

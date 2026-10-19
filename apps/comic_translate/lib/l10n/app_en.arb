@@ -153,7 +153,14 @@
     }
   },
   "reportNoSkipped": "Every page went through.",
-  "reportTranslatorFailing": "Stopped: the translator failed three pages in a row. Check the API key, the balance and the server address in Settings; the remaining pages were not sent.",
+  "reportStopped": "Translation stopped: {reason}. The remaining pages were not sent.",
+  "@reportStopped": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "missingKeyTitle": "API key needed",
   "missingKeyBody": "\"{name}\" sends text to {host}, which needs an API key. Enter it in Settings → Translator (it is stored in Windows secure storage), or choose a local translator.",
   "@missingKeyBody": {
@@ -187,15 +194,48 @@
       }
     }
   },
-  "reasonTranslation": "translation failed: {message}",
-  "@reasonTranslation": {
+  "reasonImage": "the image could not be read",
+  "reasonWorkerStopped": "page processing stopped unexpectedly (details are in the log; you can create a bug report in Settings)",
+  "withDetails": "{text} (details: {details})",
+  "@withDetails": {
     "placeholders": {
-      "message": {
+      "text": {
+        "type": "String"
+      },
+      "details": {
         "type": "String"
       }
     }
   },
-  "reasonImage": "the image could not be read",
+  "trErrConfig": "the translator is not set up: enter the server address and model in Settings",
+  "trErrAuth": "the server did not accept the API key; check the key in Settings",
+  "trErrCredits": "the translator account has run out of money or credits",
+  "trErrNotFound": "wrong server address or model name",
+  "trErrRateLimit": "the server is busy with too many requests and asks to wait; try again later",
+  "trErrServer": "the translator's server failed; try again later",
+  "trErrNetwork": "no connection to the translator's server; check the internet connection",
+  "trErrTimeout": "the translator's server did not answer in time",
+  "trErrBadReply": "the translator answered in a form the program cannot read",
+  "trErrOther": "translation failed",
+  "needsArchiveTool": "CBR, RAR, CB7 and 7Z need 7-Zip (7-zip.org) or WinRAR installed",
+  "exportFailed": "Could not save the pages: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "importedAs": "installed as {model}",
+  "@importedAs": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "notAModelFile": "not a known model file",
+  "unexpectedError": "Something went wrong. Details are in the log; a bug report helps fix it.",
   "runFailed": "Could not start: {error}",
   "@runFailed": {
     "placeholders": {

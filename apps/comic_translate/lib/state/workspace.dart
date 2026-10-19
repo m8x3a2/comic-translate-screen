@@ -25,9 +25,17 @@ class ModelMissingReason extends SkipReason {
 }
 
 class TranslationFailedReason extends SkipReason {
-  const TranslationFailedReason(this.message);
+  const TranslationFailedReason(this.kind, this.message);
 
+  final TranslationErrorKind kind;
+
+  /// Technical details from the translator (English).
   final String message;
+}
+
+/// The background worker stopped unexpectedly (details in the log).
+class WorkerStoppedReason extends SkipReason {
+  const WorkerStoppedReason();
 }
 
 class UnreadableImageReason extends SkipReason {

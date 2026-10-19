@@ -201,6 +201,12 @@ class ProcessCommand extends CtsCommand {
         pageLog.error('process_failed', e, st);
         results.add({'image': origin, 'page': input.name, 'error': e.toString()});
         ctx.err.writeln('$page: $e');
+        // Every following page would fail the same way (key, balance,
+        // address, connection): stop instead of sending them.
+        if (e is TranslationException && e.kind.stopsRun) {
+          ctx.err.writeln('Stopped: the translator error (${e.kind.name}) would repeat on every page.');
+          break;
+        }
       }
     }
     await recorder?.finish(success: ok, summary: {'pages': results.length});

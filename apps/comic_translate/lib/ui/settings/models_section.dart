@@ -5,6 +5,7 @@ import 'package:ct_core/ct_core.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 
 import '../../state/app_state.dart';
 import '../common/labels.dart';
@@ -104,8 +105,31 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
     final files = await openFiles();
     if (files.isEmpty) return;
     final results = await _models.importFiles([for (final f in files) f.path]);
-    if (mounted) _snack(context.l10n.importModelsDone('${results.where((r) => r.imported).length}'));
     await _refresh();
+    if (!mounted) return;
+    final l = context.l10n;
+    await showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(l.importModelsDone('${results.where((r) => r.imported).length}')),
+        content: SizedBox(
+          width: 520,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              for (final r in results)
+                ListTile(
+                  dense: true,
+                  leading: Icon(r.imported ? Icons.check_circle_outline : Icons.block, size: 20),
+                  title: Text(p.basename(r.path)),
+                  subtitle: Text(r.imported ? l.importedAs(r.model!) : l.notAModelFile),
+                ),
+            ],
+          ),
+        ),
+        actions: [FilledButton(onPressed: () => Navigator.pop(c), child: Text(l.close))],
+      ),
+    );
   }
 
   Future<void> _changeFolder() async {

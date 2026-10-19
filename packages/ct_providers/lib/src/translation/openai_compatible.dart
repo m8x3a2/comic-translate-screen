@@ -83,15 +83,6 @@ Privacy privacyOfHost(String host) {
   return Privacy.cloud;
 }
 
-class TranslationException implements Exception {
-  TranslationException(this.message);
-
-  final String message;
-
-  @override
-  String toString() => 'Translation failed: $message';
-}
-
 class OpenAiCompatibleTranslator implements Translator {
   OpenAiCompatibleTranslator({
     required this.apiUrl,
@@ -101,6 +92,7 @@ class OpenAiCompatibleTranslator implements Translator {
     this.maxTokens = llmDefaultMaxTokens,
     this.tokenLimitParam = 'max_completion_tokens',
     this.timeout = const Duration(seconds: 120),
+    this.retryDelays = const [Duration(seconds: 2), Duration(seconds: 6)],
     HttpClient Function()? httpClientFactory,
   }) : _httpClientFactory = httpClientFactory ?? _defaultClient;
 
@@ -111,6 +103,9 @@ class OpenAiCompatibleTranslator implements Translator {
   final int maxTokens;
   final String tokenLimitParam;
   final Duration timeout;
+
+  /// Pauses before sending again after a temporary failure.
+  final List<Duration> retryDelays;
   final HttpClient Function() _httpClientFactory;
 
   static HttpClient _defaultClient() => HttpClient()..findProxy = HttpClient.findProxyFromEnvironment;
@@ -154,9 +149,12 @@ class OpenAiCompatibleTranslator implements Translator {
     final base = apiUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final uri = Uri.tryParse('$base/chat/completions');
     if (base.isEmpty || uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      throw TranslationException('set the API URL of the OpenAI-compatible translator (e.g. https://openrouter.ai/api/v1)');
+      throw TranslationException('set the API URL of the OpenAI-compatible translator (e.g. https://openrouter.ai/api/v1)',
+          kind: TranslationErrorKind.config);
     }
-    if (model.trim().isEmpty) throw TranslationException('set the model name of the OpenAI-compatible translator');
+    if (model.trim().isEmpty) {
+      throw TranslationException('set the model name of the OpenAI-compatible translator', kind: TranslationErrorKind.config);
+    }
 
     final payload = buildPayload(request);
     final log = context.log.child(stage: 'translate');
@@ -170,13 +168,53 @@ class OpenAiCompatibleTranslator implements Translator {
         page: context.page);
 
     final sw = Stopwatch()..start();
-    final reply = await _post(uri, payload, context.cancel);
+    final reply = await _postWithRetries(uri, payload, context.cancel, log);
     log.info('translate_response', {'ms': sw.elapsedMilliseconds, 'chars': reply.length});
     await context.recorder?.writeJsonArtifact('03_translate', 'response.json', {'content': reply}, page: context.page);
 
-    for (final w in applyTranslationsJson(request.blocks, reply)) {
+    final List<String> warnings;
+    try {
+      warnings = applyTranslationsJson(request.blocks, reply);
+    } on FormatException catch (e) {
+      throw TranslationException('the model reply has broken JSON (${e.message}): ${_clip(reply)}',
+          kind: TranslationErrorKind.badReply);
+    }
+    for (final w in warnings) {
       log.warn('translate_reply_warning', {'warning': w});
     }
+    // The original only warns; a page with no translation at all would look
+    // done but keep its text removed, so it is reported instead.
+    final nothing = warnings.length >= request.blocks.length || warnings.contains(noJsonWarning);
+    if (request.blocks.isNotEmpty && nothing) {
+      throw TranslationException('the model reply has no translations: ${_clip(reply)}', kind: TranslationErrorKind.badReply);
+    }
+  }
+
+  /// Sends again after temporary failures (rate limit, server error, lost
+  /// connection), waiting [retryDelays] (or the server's Retry-After, up to
+  /// 30 s) in between. Not in the original, which fails the page at once.
+  Future<String> _postWithRetries(Uri uri, Map<String, Object?> payload, CancelToken cancel, EventLog log) async {
+    for (var attempt = 0;; attempt++) {
+      try {
+        return await _post(uri, payload, cancel);
+      } on TranslationException catch (e) {
+        if (!e.kind.isTemporary || attempt >= retryDelays.length) rethrow;
+        final wait = e is _RetryAfter && e.retryAfter != null
+            ? (e.retryAfter! > const Duration(seconds: 30) ? const Duration(seconds: 30) : e.retryAfter!)
+            : retryDelays[attempt];
+        log.warn('translate_retry', {'attempt': attempt + 1, 'kind': e.kind.name, 'wait_ms': wait.inMilliseconds});
+        await Future.any([Future<void>.delayed(wait), _cancelled(cancel)]);
+        cancel.throwIfCancelled();
+      }
+    }
+  }
+
+  static Future<void> _cancelled(CancelToken cancel) {
+    final done = Completer<void>();
+    cancel.onCancel(() {
+      if (!done.isCompleted) done.complete();
+    });
+    return done.future;
   }
 
   Future<String> _post(Uri uri, Map<String, Object?> payload, CancelToken cancel) async {
@@ -192,18 +230,26 @@ class OpenAiCompatibleTranslator implements Translator {
       final res = await req.close().timeout(timeout);
       final body = await res.transform(utf8.decoder).join().timeout(timeout);
       if (res.statusCode < 200 || res.statusCode >= 300) {
-        throw TranslationException('${uri.host} answered HTTP ${res.statusCode}${_errorDetail(body)}');
+        final detail = _errorDetail(body);
+        final seconds = int.tryParse(res.headers.value('retry-after') ?? '');
+        throw _RetryAfter(
+          '${uri.host} answered HTTP ${res.statusCode}$detail',
+          kind: TranslationErrorKind.forStatus(res.statusCode, detail),
+          statusCode: res.statusCode,
+          retryAfter: seconds == null ? null : Duration(seconds: seconds),
+        );
       }
       return _content(body);
     } on TimeoutException {
       cancel.throwIfCancelled();
-      throw TranslationException('${uri.host} did not answer within ${timeout.inSeconds} s');
+      throw TranslationException('${uri.host} did not answer within ${timeout.inSeconds} s', kind: TranslationErrorKind.timeout);
     } on SocketException catch (e) {
       cancel.throwIfCancelled();
-      throw TranslationException('cannot connect to ${uri.host}: ${e.osError?.message ?? e.message}');
+      throw TranslationException('cannot connect to ${uri.host}: ${e.osError?.message ?? e.message}',
+          kind: TranslationErrorKind.network);
     } on HttpException catch (e) {
       cancel.throwIfCancelled();
-      throw TranslationException('connection to ${uri.host} failed: ${e.message}');
+      throw TranslationException('connection to ${uri.host} failed: ${e.message}', kind: TranslationErrorKind.network);
     } finally {
       client.close(force: true);
     }
@@ -216,7 +262,7 @@ class OpenAiCompatibleTranslator implements Translator {
     try {
       json = jsonDecode(body);
     } on FormatException {
-      throw TranslationException('the server reply is not JSON: ${_clip(body)}');
+      throw TranslationException('the server reply is not JSON: ${_clip(body)}', kind: TranslationErrorKind.badReply);
     }
     final choices = json is Map ? json['choices'] : null;
     final message = choices is List && choices.isNotEmpty && choices.first is Map ? (choices.first as Map)['message'] : null;
@@ -225,7 +271,7 @@ class OpenAiCompatibleTranslator implements Translator {
     if (content is List) {
       return [for (final part in content) if (part is Map && part['text'] is String) part['text'] as String].join();
     }
-    throw TranslationException('unexpected reply format: ${_clip(body)}');
+    throw TranslationException('unexpected reply format: ${_clip(body)}', kind: TranslationErrorKind.badReply);
   }
 
   static String _errorDetail(String body) {
@@ -262,4 +308,11 @@ class OpenAiCompatibleTranslator implements Translator {
 
   @override
   Future<void> dispose() async {}
+}
+
+/// An HTTP error that may carry the server's Retry-After.
+class _RetryAfter extends TranslationException {
+  _RetryAfter(super.message, {super.kind, super.statusCode, this.retryAfter});
+
+  final Duration? retryAfter;
 }

@@ -22,9 +22,12 @@ Future<void> guiMain(List<String> args) async {
       'context': details.context?.toString(),
     });
     FlutterError.presentError(details);
+    // Pictures that fail to load show a broken-image icon instead.
+    if (details.library != 'image resource service') notifyUnexpectedError(services);
   };
   PlatformDispatcher.instance.onError = (error, stack) {
     log.error('uncaught_error', error, stack);
+    notifyUnexpectedError(services);
     return true;
   };
 

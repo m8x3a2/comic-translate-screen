@@ -191,15 +191,32 @@ void main() {
     expect(container.read(workspaceProvider).pages.single.status, PageStatus.pending);
   });
 
-  testWidgets('the run stops after three translation failures in a row', (tester) async {
+  testWidgets('an error every page would repeat stops the run at once, with the reason', (tester) async {
     desktopWindow(tester);
-    final (container, _) = await openPages(tester, fakeSettings()..translator = 'fake_fail', 5);
+    final (container, _) = await openPages(tester, fakeSettings()..translator = 'fake_fail', 4);
     await tester.runAsync(() => container.read(batchProvider.notifier).run(_YesUi()));
     await tester.pump();
     final report = (container.read(batchProvider) as BatchIdle).last!;
-    expect(report.translatorFailing, isTrue);
+    final reason = report.stoppedBy as TranslationFailedReason;
+    expect([reason.kind, report.skipped.length], [TranslationErrorKind.credits, 1]);
+    expect(reason.message, contains('HTTP 402'));
+    expect(container.read(workspaceProvider).pages.where((p) => p.status == PageStatus.pending), hasLength(3));
+    // The report says it in plain words, with the details.
+    await tester.tap(find.text('Отчёт'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('закончились деньги'), findsWidgets);
+    expect(find.textContaining('HTTP 402'), findsWidgets);
+    expect(find.text('Открыть настройки'), findsOneWidget);
+  });
+
+  testWidgets('page-by-page errors are skipped, but three in a row stop the run', (tester) async {
+    desktopWindow(tester);
+    final (container, _) = await openPages(tester, fakeSettings()..translator = 'fake_bad_reply', 5);
+    await tester.runAsync(() => container.read(batchProvider.notifier).run(_YesUi()));
+    await tester.pump();
+    final report = (container.read(batchProvider) as BatchIdle).last!;
     expect(report.skipped, hasLength(3));
-    expect(report.skipped.first.reason, isA<TranslationFailedReason>());
+    expect((report.stoppedBy as TranslationFailedReason).kind, TranslationErrorKind.badReply);
     expect(container.read(workspaceProvider).pages.map((p) => p.status).toList(), [
       PageStatus.skipped,
       PageStatus.skipped,

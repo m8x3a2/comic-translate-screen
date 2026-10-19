@@ -182,6 +182,8 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                                         key: ValueKey(path),
                                         gaplessPlayback: true,
                                         filterQuality: FilterQuality.medium,
+                                        errorBuilder: (_, _, _) =>
+                                            const Center(child: Icon(Icons.broken_image_outlined, size: 64)),
                                       ),
                                     ),
                                     if (_showBoxes)

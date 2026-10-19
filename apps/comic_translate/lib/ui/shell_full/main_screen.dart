@@ -99,7 +99,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final outcome = await ref.read(workspaceProvider.notifier).addInputs(paths);
     if (!mounted) return;
     for (final e in outcome.errors.entries) {
-      _snack(l.importFailed(p.basename(e.key), '${e.value}'));
+      final why = e.value is ArchiveToolMissingException ? l.needsArchiveTool : '${e.value}';
+      _snack(l.importFailed(p.basename(e.key), why));
     }
     if (outcome.skipped.isNotEmpty) _snack(l.skippedFiles(outcome.skipped.map(p.basename).join(', ')));
     if (outcome.added == 0 && outcome.errors.isEmpty && outcome.skipped.isEmpty) _snack(l.noPagesFound);
@@ -149,7 +150,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     }
     final dir = await getDirectoryPath(confirmButtonText: l.export);
     if (dir == null) return;
-    final count = await exportTranslatedPages(pages, dir, ref.read(settingsProvider).export.imageFormat);
+    final int count;
+    try {
+      count = await exportTranslatedPages(pages, dir, ref.read(settingsProvider).export.imageFormat);
+    } catch (e, st) {
+      ref.read(servicesProvider).appLog.error('export_failed', e, st, {'dir': dir});
+      if (mounted) _snack(l.exportFailed(e is FileSystemException ? (e.osError?.message ?? e.message) : '$e'));
+      return;
+    }
     ref.read(workspaceProvider.notifier).markExported([
       for (final p in pages)
         if (p.isDone) p.id,
