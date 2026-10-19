@@ -1,0 +1,273 @@
+/// Saving the work outside the program: the translated pages (and/or the
+/// cleaned pages and the texts) into a folder, or packed as ZIP, CBZ, CB7 or
+/// PDF, optionally one file per chapter (original
+/// `ProjectController.save_and_make` and `modules/utils/archives.py: make`).
+library;
+
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:archive/archive_io.dart';
+import 'package:path/path.dart' as p;
+
+import '../image/cv_bridge.dart';
+import '../import/page_import.dart';
+import 'pdf_writer.dart';
+
+enum ExportContainer {
+  folder,
+  zip,
+  cbz,
+  cb7,
+  pdf;
+
+  String get extension => '.$name';
+
+  /// Comic reader formats: pictures of one kind, no texts.
+  bool get forReaders => this == cbz || this == cb7 || this == pdf;
+
+  static ExportContainer parse(String? name) =>
+      values.firstWhere((c) => c.name == name, orElse: () => ExportContainer.folder);
+}
+
+/// One page to export.
+class ExportPage {
+  const ExportPage({
+    required this.name,
+    this.chapter = '',
+    this.sourceExtension = '.png',
+    this.translatedImage,
+    this.cleanImage,
+    this.recognized,
+    this.translations,
+  });
+
+  /// File name of the page without extension (unique names are made from
+  /// it).
+  final String name;
+
+  /// Pages of the same chapter go into the same file when exporting by
+  /// chapter (the archive or PDF they came from).
+  final String chapter;
+
+  /// Image format of the original page, for the `source` image format.
+  final String sourceExtension;
+
+  /// The page drawn with its translation, and the page with the text
+  /// removed (files).
+  final String? translatedImage;
+  final String? cleanImage;
+
+  /// `block_N` → text, as the original's text exports.
+  final Map<String, String>? recognized;
+  final Map<String, String>? translations;
+}
+
+class ExportOptions {
+  const ExportOptions({
+    this.container = ExportContainer.folder,
+    this.imageFormat = 'source',
+    this.translated = true,
+    this.cleaned = false,
+    this.recognizedText = false,
+    this.translatedText = false,
+    this.byChapter = false,
+  });
+
+  final ExportContainer container;
+
+  /// `source`, `png`, `jpg` or `webp` (PDF: `png` keeps every pixel, any
+  /// other is JPEG).
+  final String imageFormat;
+  final bool translated;
+  final bool cleaned;
+  final bool recognizedText;
+  final bool translatedText;
+
+  /// One file (or folder) per chapter.
+  final bool byChapter;
+}
+
+class ExportResult {
+  const ExportResult(this.outputs, this.pages);
+
+  /// Written files or folders.
+  final List<String> outputs;
+
+  /// Pages written (counted once even if several kinds were saved).
+  final int pages;
+}
+
+class ExportException implements Exception {
+  const ExportException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// A file name without characters Windows refuses (original
+/// `_sanitize_export_stem`).
+String safeFileStem(String value, {String fallback = 'chapter'}) {
+  final s = value.replaceAll(RegExp(r'[\\/:*?"<>|\r\n\t]+'), '_').replaceAll(RegExp(r'\s+'), ' ').trim();
+  final t = s.replaceAll(RegExp(r'^[._-]+|[._-]+$'), '');
+  return t.isEmpty ? fallback : t;
+}
+
+/// Exports [pages] into [output]: the file when everything goes into one
+/// archive or PDF, otherwise a folder (created if missing). [bookName]
+/// names the result when there are no chapters. CB7 needs 7-Zip
+/// ([sevenZip]). Runs synchronously apart from 7-Zip; the app calls it in a
+/// background isolate.
+Future<ExportResult> exportPages(
+  List<ExportPage> pages,
+  ExportOptions options,
+  String output, {
+  String bookName = 'comic',
+  String? sevenZip,
+}) async {
+  final o = options;
+  final groups = <String, List<ExportPage>>{};
+  for (final page in pages) {
+    groups.putIfAbsent(o.byChapter ? page.chapter : '', () => []).add(page);
+  }
+  final split = groups.length > 1;
+  final kinds = <String>[
+    if (o.translated) 'translated',
+    if (o.cleaned && !(o.container.forReaders && o.translated)) 'cleaned',
+    if (!o.container.forReaders && o.recognizedText) 'raw_texts',
+    if (!o.container.forReaders && o.translatedText) 'translated_texts',
+  ];
+  if (kinds.isEmpty) throw const ExportException('nothing to export');
+  if (o.container == ExportContainer.cb7 && sevenZip == null) throw ArchiveToolMissingException(output);
+
+  final outputs = <String>[];
+  final written = <ExportPage>{};
+  final usedNames = <String>{};
+  for (final MapEntry(key: chapter, value: group) in groups.entries) {
+    final title = safeFileStem(chapter.isEmpty ? bookName : chapter);
+    final names = _pageNames(group);
+    if (o.container == ExportContainer.pdf) {
+      final file = split ? p.join(output, _unique('$title.pdf', usedNames)) : output;
+      Directory(p.dirname(file)).createSync(recursive: true);
+      final pdf = ImagePdfWriter(file);
+      try {
+        for (final page in group) {
+          final source = kinds.first == 'translated' ? page.translatedImage : page.cleanImage;
+          if (source == null) continue;
+          final image = await ImageCodec.readFile(source);
+          if (o.imageFormat == 'png') {
+            pdf.addRgb(image);
+          } else {
+            pdf.addJpeg(ImageCodec.encodeJpeg(image, quality: 92), image.width, image.height);
+          }
+          written.add(page);
+        }
+      } finally {
+        pdf.close();
+      }
+      outputs.add(file);
+      continue;
+    }
+
+    final Directory dir;
+    final Directory? staging;
+    if (o.container == ExportContainer.folder) {
+      dir = Directory(split ? p.join(output, _unique(title, usedNames)) : output);
+      staging = null;
+    } else {
+      staging = Directory.systemTemp.createTempSync('cts_export_');
+      dir = staging;
+    }
+    try {
+      dir.createSync(recursive: true);
+      for (final kind in kinds) {
+        final into = kinds.length == 1 ? dir.path : p.join(dir.path, kind);
+        Directory(into).createSync(recursive: true);
+        for (final (i, page) in group.indexed) {
+          final name = names[i];
+          switch (kind) {
+            case 'translated' || 'cleaned':
+              final source = kind == 'translated' ? page.translatedImage : page.cleanImage;
+              if (source == null) continue;
+              final ext = o.imageFormat == 'source' ? _writable(page.sourceExtension) : '.${o.imageFormat}';
+              final target = p.join(into, '$name$ext');
+              if (p.extension(source).toLowerCase() == ext) {
+                File(source).copySync(target);
+              } else {
+                await ImageCodec.writeFile(target, await ImageCodec.readFile(source));
+              }
+              written.add(page);
+            case 'raw_texts' || 'translated_texts':
+              final texts = kind == 'raw_texts' ? page.recognized : page.translations;
+              if (texts == null) continue;
+              final suffix = kind == 'raw_texts' ? 'raw' : 'translated';
+              File(p.join(into, '${name}_$suffix.json'))
+                  .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(texts));
+              written.add(page);
+          }
+        }
+      }
+      if (staging == null) {
+        outputs.add(dir.path);
+        continue;
+      }
+      final file = split ? p.join(output, _unique('$title${o.container.extension}', usedNames)) : output;
+      Directory(p.dirname(file)).createSync(recursive: true);
+      if (File(file).existsSync()) File(file).deleteSync();
+      if (o.container == ExportContainer.cb7) {
+        final r = await Process.run(sevenZip!, ['a', '-t7z', '-mx=1', '-bd', '-y', file, '.${Platform.pathSeparator}*'],
+            workingDirectory: staging.path);
+        if (r.exitCode != 0) throw ExportException('7-Zip could not write ${p.basename(file)}: ${'${r.stderr}'.trim()}');
+      } else {
+        final zip = ZipFileEncoder()..create(file);
+        try {
+          final files = staging.listSync(recursive: true).whereType<File>().toList()
+            ..sort((a, b) => naturalCompare(a.path, b.path));
+          for (final f in files) {
+            // Pictures are compressed already: stored as they are.
+            zip.addFileSync(f, p.relative(f.path, from: staging.path).replaceAll(r'\', '/'), 0);
+          }
+        } finally {
+          zip.closeSync();
+        }
+      }
+      outputs.add(file);
+    } finally {
+      if (staging != null && staging.existsSync()) staging.deleteSync(recursive: true);
+    }
+  }
+  return ExportResult(outputs, written.length);
+}
+
+/// Unique file names for the pages, in their order: readers sort pages by
+/// name, so when the names would sort differently, they get a number first.
+List<String> _pageNames(List<ExportPage> pages) {
+  final used = <String>{};
+  final names = [for (final page in pages) _unique(safeFileStem(page.name, fallback: 'page'), used, lower: true)];
+  final sorted = [...names]..sort(naturalCompare);
+  var inOrder = true;
+  for (var i = 0; i < names.length; i++) {
+    if (sorted[i] != names[i]) inOrder = false;
+  }
+  if (inOrder) return names;
+  final width = '${names.length}'.length.clamp(3, 6);
+  return [for (final (i, n) in names.indexed) '${'${i + 1}'.padLeft(width, '0')}_$n'];
+}
+
+String _unique(String name, Set<String> used, {bool lower = true}) {
+  final ext = p.extension(name);
+  final stem = ext.isEmpty ? name : name.substring(0, name.length - ext.length);
+  var candidate = name;
+  for (var n = 2; !used.add(lower ? candidate.toLowerCase() : candidate); n++) {
+    candidate = '${stem}_${n.toString().padLeft(2, '0')}$ext';
+  }
+  return candidate;
+}
+
+/// [ext] if pictures can be written in it, else `.png`.
+String _writable(String ext) {
+  final e = ext.toLowerCase();
+  return const {'.png', '.jpg', '.jpeg', '.webp', '.bmp'}.contains(e) ? e : '.png';
+}
