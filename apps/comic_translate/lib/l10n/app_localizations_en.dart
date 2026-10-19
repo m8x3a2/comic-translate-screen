@@ -1374,4 +1374,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsResetDone => 'Settings reset';
+
+  @override
+  String get mouseGrab => 'Space or Ctrl + left button, drag';
 }

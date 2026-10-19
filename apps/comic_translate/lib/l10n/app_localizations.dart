@@ -2503,6 +2503,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings reset'**
   String get settingsResetDone;
+
+  /// No description provided for @mouseGrab.
+  ///
+  /// In en, this message translates to:
+  /// **'Space or Ctrl + left button, drag'**
+  String get mouseGrab;
 }
 
 class _AppLocalizationsDelegate

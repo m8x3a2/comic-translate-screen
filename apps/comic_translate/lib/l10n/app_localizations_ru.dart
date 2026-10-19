@@ -1376,4 +1376,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsResetDone => 'Настройки сброшены';
+
+  @override
+  String get mouseGrab => 'Пробел или Ctrl + левая кнопка, тянуть';
 }

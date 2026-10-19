@@ -14,6 +14,7 @@ import 'dart:ui' as ui;
 import 'package:ct_core/ct_core.dart' hide TextDirection;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../pipeline/page_pipeline.dart';
@@ -82,10 +83,32 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   /// The last click on a text, to notice a double click.
   (int, DateTime)? _lastTextClick;
 
+  /// Ctrl or Space is held: the left button moves the page in any tool, as
+  /// in drawing programs.
+  var _grab = false;
+  var _inside = false;
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_onKey);
+  }
+
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
     _mask?.dispose();
     super.dispose();
+  }
+
+  bool _onKey(KeyEvent e) {
+    final keys = HardwareKeyboard.instance;
+    final typing = FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
+    final space = !typing && keys.logicalKeysPressed.contains(LogicalKeyboardKey.space);
+    final grab = keys.isControlPressed || space;
+    if (grab != _grab && mounted) setState(() => _grab = grab);
+    // Space over the page is ours (it would press the focused button).
+    return e.logicalKey == LogicalKeyboardKey.space && !typing && (_inside || _drag?.mode == _Mode.pan);
   }
 
   double get _zoom => widget.transform.value.entry(0, 0).abs().clamp(1e-3, 1e3);
@@ -185,8 +208,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   // Gestures.
 
   void _down(PointerDownEvent e) {
-    if (e.buttons == kMiddleMouseButton) {
-      _drag = _Drag(_Mode.pan, e.localPosition);
+    if (e.buttons == kMiddleMouseButton || (_grab && e.buttons == kPrimaryButton)) {
+      setState(() => _drag = _Drag(_Mode.pan, e.localPosition));
       return;
     }
     if (e.buttons != kPrimaryButton) return;
@@ -334,6 +357,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   }
 
   MouseCursor _cursor(EditorState editor) {
+    if (_drag?.mode == _Mode.pan) return SystemMouseCursors.grabbing;
+    if (_grab) return SystemMouseCursors.grab;
     if (widget.readOnly) return SystemMouseCursors.basic;
     return switch (editor.tool) {
       EditorTool.brush || EditorTool.eraser => SystemMouseCursors.none,
@@ -364,8 +389,12 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     final image = result ? page.basePath : page.path;
     return MouseRegion(
       cursor: _cursor(editor),
+      onEnter: (_) => _inside = true,
       onHover: (e) => editor.paints ? setState(() => _hover = e.localPosition) : null,
-      onExit: (_) => setState(() => _hover = null),
+      onExit: (_) => setState(() {
+        _hover = null;
+        _inside = false;
+      }),
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: _down,
@@ -406,7 +435,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
                   engines: engines,
                   areaOf: (i) => _textArea(page.blocks, i),
                   drag: d,
-                  hover: editor.paints && !widget.readOnly ? _hover : null,
+                  hover: editor.paints && !widget.readOnly && !_grab ? _hover : null,
                   showBoxes: editor.tool == EditorTool.boxes || (editor.showBoxes && editor.tool == EditorTool.pan),
                   rotateHandle: _rotateHandle,
                 ),

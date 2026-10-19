@@ -10,7 +10,9 @@ import 'package:comic_translate/state/editor.dart';
 import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:comic_translate/ui/app.dart';
+import 'package:comic_translate/ui/shell_full/page_canvas.dart';
 import 'package:ct_core/ct_core.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,8 +31,11 @@ class _YesUi implements BatchUi {
   Future<bool> confirmDownload(List<ModelSpec> models) async => true;
 
   @override
-  Future<NetworkChoice> confirmNetwork(PluginInfo translator, PluginEndpoint endpoint, {required bool sendsImage}) async =>
-      NetworkChoice.once;
+  Future<NetworkChoice> confirmNetwork(
+    PluginInfo translator,
+    PluginEndpoint endpoint, {
+    required bool sendsImage,
+  }) async => NetworkChoice.once;
 
   @override
   void showError(Object error) => errors.add(error);
@@ -42,7 +47,11 @@ void main() {
 
   setUp(() {
     dir = Directory.systemTemp.createTempSync('cts_editor_ui_test_');
-    services = AppServices.create(dataDirOverride: dir.path, secretStore: MemorySecretStore(), registry: fakeRegistry());
+    services = AppServices.create(
+      dataDirOverride: dir.path,
+      secretStore: MemorySecretStore(),
+      registry: fakeRegistry(),
+    );
   });
 
   tearDown(() async {
@@ -122,6 +131,55 @@ void main() {
     expect(container.read(workspaceProvider).currentPage!.blocks.single.translation, contains('HELLO'));
     await ctrl(tester, LogicalKeyboardKey.keyY);
     expect(container.read(workspaceProvider).currentPage!.blocks.single.translation, 'Привет');
+  });
+
+  testWidgets('with Ctrl or Space held, the left button moves the page in any tool', (tester) async {
+    final container = await openTranslatedPage(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
+    await tester.pump();
+    // The page image is decoded for real before the canvas appears.
+    final canvas = find.byType(PageCanvas);
+    for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    Matrix4 view() => tester.widget<PageCanvas>(canvas).transform.value.clone();
+    int boxes() => container.read(workspaceProvider).currentPage!.blocks.length;
+    Offset start() => tester.getCenter(canvas) + const Offset(20, 10);
+    // The mouse is over the page (Space is taken only there).
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
+    await mouse.addPointer(location: start());
+    await mouse.moveTo(start());
+    await tester.pump();
+    Future<void> drag() async {
+      final at = start();
+      await mouse.moveTo(at);
+      await tester.pump();
+      await mouse.down(at);
+      for (var i = 0; i < 4; i++) {
+        await mouse.moveBy(const Offset(40, 24));
+        await tester.pump();
+      }
+      await mouse.up();
+      await tester.pump();
+    }
+
+    for (final key in [LogicalKeyboardKey.controlLeft, LogicalKeyboardKey.space]) {
+      final before = view();
+      await tester.sendKeyDownEvent(key);
+      await tester.pump();
+      await drag();
+      await tester.sendKeyUpEvent(key);
+      await tester.pump();
+      expect(boxes(), 1, reason: '$key: no box is drawn');
+      expect(view().getTranslation().x - before.getTranslation().x, closeTo(160, 1), reason: '$key moves the page');
+    }
+
+    // Without the key the tool works again: a box is drawn, the page stays.
+    final before = view();
+    await drag();
+    expect(view(), before);
+    expect(boxes(), 2);
   });
 
   testWidgets('F1 lists the keyboard shortcuts', (tester) async {

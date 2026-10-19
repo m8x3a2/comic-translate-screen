@@ -860,5 +860,6 @@
     }
   },
   "settingsResetAllBody": "Every setting goes back to how it was at first, including the translator's server and model and the approved servers. API keys, the recent projects and downloaded models stay. If the models were in another folder, the program looks in the usual folder again (the files stay where they are).",
-  "settingsResetDone": "Settings reset"
+  "settingsResetDone": "Settings reset",
+  "mouseGrab": "Space or Ctrl + left button, drag"
 }

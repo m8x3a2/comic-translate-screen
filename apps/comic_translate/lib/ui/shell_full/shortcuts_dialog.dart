@@ -34,6 +34,7 @@ Future<void> showShortcuts(BuildContext context) {
     (l.keysGroupMouse, [
       (l.mouseWheel, l.mouseWheelHelp),
       (l.mouseMiddle, l.mouseMiddleHelp),
+      (l.mouseGrab, l.mouseMiddleHelp),
       (l.mouseDouble, l.mouseDoubleHelp),
       (l.mousePickPages, l.keyPickPages),
     ]),
