@@ -11,9 +11,11 @@ import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:comic_translate/ui/app.dart';
 import 'package:comic_translate/ui/shell_full/page_canvas.dart';
+import 'package:comic_translate/ui/shell_full/text_panel.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -252,6 +254,22 @@ void main() {
     await tester.pump();
     expect(container.read(workspaceProvider).currentPage!.maskPath, isNotNull);
     expect(container.read(editorProvider).tool, EditorTool.brush);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('in the smallest window the note about picked pages stays in sight', (tester) async {
+    final container = await openTranslatedPage(tester);
+    tester.view.physicalSize = const Size(1024, 640);
+    final second = p.join(dir.path, 'second.png');
+    await tester.runAsync(() => ImageCodec.writeFile(second, RgbImage.filled(120, 80, 255, 255, 255)));
+    await tester.runAsync(() => container.read(workspaceProvider.notifier).addInputs([second]));
+    container.read(workspaceProvider.notifier).select(1, toggle: true);
+    await tester.pump();
+
+    final note = find.text('для выбранных страниц: 2');
+    expect(note, findsOneWidget);
+    expect(tester.renderObject<RenderParagraph>(note).didExceedMaxLines, isFalse, reason: 'not cut short');
+    expect(tester.getRect(note).right, lessThanOrEqualTo(tester.getRect(find.byType(TextPanel)).left));
     expect(tester.takeException(), isNull);
   });
 }

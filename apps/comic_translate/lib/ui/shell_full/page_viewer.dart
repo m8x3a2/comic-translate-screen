@@ -446,9 +446,17 @@ class _StepStrip extends ConsumerWidget {
       (ManualStep.mask, Icons.layers_outlined, l.stepMask, l.stepMaskHelp),
       (ManualStep.clean, Icons.cleaning_services_outlined, l.stepClean, l.stepCleanHelp),
     ];
+    final picked = ref.watch(workspaceProvider.select((s) => s.selectedPages.length));
+    final note = steps.running && steps.pages > 1
+        ? l.progressPage('${steps.page}', '${steps.pages}')
+        : picked > 1
+        ? l.stepsForPicked('$picked')
+        : null;
     return LayoutBuilder(
       builder: (context, c) {
-        final compact = c.maxWidth < 720;
+        // The note sits outside the scrolling row so it is never cut off; the buttons lose their labels
+        // first to leave it room.
+        final compact = c.maxWidth < (note == null ? 720 : 900);
         final children = <Widget>[];
         for (final (i, (step, icon, label, help)) in items.indexed) {
           if (i > 0) children.add(Icon(Icons.chevron_right, size: 18, color: Theme.of(context).disabledColor));
@@ -466,30 +474,31 @@ class _StepStrip extends ConsumerWidget {
             ),
           );
         }
-        final picked = ref.watch(workspaceProvider.select((s) => s.selectedPages.length));
-        if (steps.running && steps.pages > 1) {
-          children.add(
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Text(
-                l.progressPage('${steps.page}', '${steps.pages}'),
-                style: Theme.of(context).textTheme.labelMedium,
-              ),
-            ),
-          );
-        } else if (picked > 1) {
-          children.add(
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Text(l.stepsForPicked('$picked'), style: Theme.of(context).textTheme.labelMedium),
-            ),
-          );
-        }
         return Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(children: children),
+          child: Row(
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: children),
+                ),
+              ),
+              if (note != null)
+                // Laid out before the buttons: they scroll when there is no room for both.
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: c.maxWidth * 0.6),
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Text(
+                      note,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium,
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       },

@@ -141,13 +141,11 @@ class _PageTile extends ConsumerWidget {
               : picked
               ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.45)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          shape: picked
-              ? RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: theme.colorScheme.primary, width: 1.5),
-                )
-              : null,
+          // Material takes a shape or a border radius, not both.
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: picked ? BorderSide(color: theme.colorScheme.primary, width: 1.5) : BorderSide.none,
+          ),
           child: InkWell(
             borderRadius: BorderRadius.circular(8),
             onTap: () {
