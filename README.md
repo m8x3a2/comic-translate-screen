@@ -30,7 +30,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 | M9 | Projects `.ctsproj` (save, open, recent, autosave, crash recovery); export to a folder, ZIP, CBZ, CB7, PDF: translations, cleaned pages, texts, by chapter; added fonts; languages per page; steps on several pages; all-boxes tools; embedded PDF pictures | done |
 | M9.1 | Settings reset (one section or all); a solid text outline at any width; Space / Ctrl + left button moves the page; models grouped (main, by language, extra) with "download what is needed", "download all", "check all"; an "i" explaining models and settings | done |
 | M10 | Webtoon mode: all pages as one strip (wheel scrolls, Ctrl + wheel zooms, light on long chapters); a bubble cut by the edge between two pages is read, cleaned and drawn whole; very tall pictures shown in tiles; export of the strip as one picture or cut again into parts along even rows | done |
-| M11–M12 | PSD, polish | planned |
+| M11 | PSD files for Photoshop: each page with the original, the cleaned places and the translation as editable text layers (font, size, colours, outline, rotation); opening PSD files of this program, of the original Comic Translate and of other programs; `cts psd info` | done |
+| M12 | Polish | planned |
 
 ## Principles
 

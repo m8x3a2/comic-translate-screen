@@ -111,6 +111,33 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   are centred on each other, as in the original. New: export of the strip
   as one picture per chapter, or cut again into parts of about N px along
   the calmest row within 40 % of N (`src/export/strip_export.dart`).
+- PSD (M11): written and read in pure Dart (`ct_core` `src/psd/`; it is a file
+  format, not inference), not through PhotoshopAPI as in the original: that
+  library has no C interface, needs C++20 with vcpkg and has no Android
+  build. The layout of a page file is the original's (`psd_exporter.py`), so
+  files go both ways: top to bottom the group "Editable Text" (one text layer
+  per translation: font by PostScript name, size, colour, outline, bold /
+  italic as a real face or imitated, underline, alignment, line distance,
+  rotation), "Inpaint Patches" (the places where the cleaned page differs from
+  the original, in 32 px squares joined when they touch) and "Raw Image".
+  Unlike the original: the merged picture is written (viewers and Krita show
+  the page; the original's files have none), each text layer carries its text
+  as drawn here (programs without Photoshop's text engine show that), the page
+  is saved at 72 dpi so that points are pixels, the text box is a little wider
+  and taller than the program's (Photoshop measures letters differently and
+  hides what does not fit), vertical text is a picture layer only (vertical
+  text layers of other writers are known to break Photoshop files), files
+  taller than 30 000 px are PSB, and the page's blocks are kept in image
+  resource 4000 (JSON) so the file opens again with the recognized text and
+  boxes; translations changed in Photoshop and new text layers are taken over.
+  The bundled font and its licence are put beside exported files that use it.
+  Opening (as the original): a file of this layout gives the raw page, the
+  patches over it as the cleaned page and the text layers as blocks; any other
+  file gives its visible picture layers joined and its text layers as
+  translated blocks, with a notice, and features that are not reproduced
+  (smart objects, masks, blend modes, opacity, adjustment layers) are named.
+  A webtoon page's file also has the text continued from the page above
+  ("Text N (page above)"), which opening leaves to that page.
 - `renderPage` does not change the blocks (the original leaves the render
   areas and case-adjusted translations in them), so a page can be edited
   and drawn again; golden pages now store the detected boxes.
