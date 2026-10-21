@@ -108,6 +108,17 @@ jobs:
           ./cts.exe compare "$RUNNER_TEMP/render.png" "$RUNNER_TEMP/render.png"
           ./cts.exe --json report -o "$RUNNER_TEMP/report.zip"
 
+      # The program as one zip for other computers (Actions → this run →
+      # Artifacts).
+      - name: Package the program
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tools/package_windows.ps1
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ComicTranslateScreen-windows-x64
+          path: dist/*.zip
+          retention-days: 30
+
       # Logs need a GitHub login; annotations do not. On failure, publish the
       # tail of each step log as one annotation so failures are readable.
       - name: Publish failure details

@@ -34,3 +34,4 @@ __pycache__/
 
 # Default output folder of cts golden/process runs
 cts_out/
+dist/
