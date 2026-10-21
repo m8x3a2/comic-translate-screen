@@ -227,9 +227,10 @@ class ExportSettings {
     this.sliceHeight = 1280,
   });
 
-  static const formats = ['source', 'png', 'jpg', 'webp'];
+  static const formats = ['source', 'png', 'jpg', 'webp', 'psd'];
 
-  /// `source` (same as the input page), `png`, `jpg` or `webp`.
+  /// `source` (same as the input page), `png`, `jpg`, `webp` or `psd`
+  /// (layered Photoshop files, made by the app: see [ExportOptions.imageFormat]).
   final String imageFormat;
   final bool rawText;
   final bool translatedText;

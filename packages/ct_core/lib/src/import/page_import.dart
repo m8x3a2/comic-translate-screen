@@ -11,6 +11,9 @@ import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as p;
 
 import '../cancel.dart';
+import '../model/text_block.dart';
+import '../psd/psd_import.dart';
+import '../render/font_files.dart';
 
 const imageExtensions = {'.png', '.jpg', '.jpeg', '.webp', '.bmp'};
 const zipExtensions = {'.zip', '.cbz', '.epub'};
@@ -27,7 +30,7 @@ bool isArchivePath(String path) => archiveExtensions.contains(_ext(path));
 bool isPdfPath(String path) => pdfExtensions.contains(_ext(path));
 
 /// Anything [importPages] opens.
-bool isImportablePath(String path) => isImagePath(path) || isArchivePath(path) || isPdfPath(path);
+bool isImportablePath(String path) => isImagePath(path) || isArchivePath(path) || isPdfPath(path) || isPsdPath(path);
 
 final _chunks = RegExp(r'\d+|\D+');
 
@@ -45,17 +48,25 @@ int naturalCompare(String a, String b) {
 }
 
 /// The images of folder [dir] (not recursive), in natural order.
-List<String> imagesInFolder(String dir) => Directory(dir)
-    .listSync()
-    .whereType<File>()
-    .map((f) => f.path)
-    .where(isImagePath)
-    .toList()
-  ..sort((a, b) => naturalCompare(p.basename(a), p.basename(b)));
+List<String> imagesInFolder(String dir, {bool psd = false}) =>
+    Directory(dir)
+        .listSync()
+        .whereType<File>()
+        .map((f) => f.path)
+        .where((f) => isImagePath(f) || (psd && isPsdPath(f)))
+        .toList()
+      ..sort((a, b) => naturalCompare(p.basename(a), p.basename(b)));
 
 /// One page image on disk.
 class ImportedPage {
-  const ImportedPage({required this.path, required this.name, this.source});
+  const ImportedPage({
+    required this.path,
+    required this.name,
+    this.source,
+    this.cleanPath,
+    this.blocks = const [],
+    this.notices = const [],
+  });
 
   /// The image file (inside the import cache for archives and PDFs).
   final String path;
@@ -65,6 +76,12 @@ class ImportedPage {
 
   /// The archive or PDF the page came from, if any.
   final String? source;
+
+  /// PSD files: the cleaned page, the translated blocks, and what to tell
+  /// about the file.
+  final String? cleanPath;
+  final List<TextBlock> blocks;
+  final List<PsdNotice> notices;
 }
 
 /// A rar or 7z archive was opened without 7-Zip (or WinRAR) installed.
@@ -101,6 +118,7 @@ Future<List<ImportedPage>> importPages(
   CancelToken? cancel,
   List<String>? skipped,
   void Function(String input, Object error)? onError,
+  Future<FontCatalog> Function()? fonts,
 }) async {
   final token = cancel ?? CancelToken.none;
   final pages = <ImportedPage>[];
@@ -113,16 +131,39 @@ Future<List<ImportedPage>> importPages(
     return dir.create(recursive: true);
   }
 
-  for (final input in inputs) {
+  // Folders: their pictures and PSD files, in name order.
+  final files = [
+    for (final input in inputs)
+      if (FileSystemEntity.isDirectorySync(input)) ...imagesInFolder(input, psd: true) else input,
+  ];
+  for (final input in files) {
     token.throwIfCancelled();
-    if (FileSystemEntity.isDirectorySync(input)) {
-      pages.addAll([for (final f in imagesInFolder(input)) ImportedPage(path: f, name: p.basename(f))]);
-    } else if (isImagePath(input)) {
+    if (isImagePath(input)) {
       pages.add(ImportedPage(path: input, name: p.basename(input)));
+    } else if (isPsdPath(input)) {
+      try {
+        final page = await importPsdPage(input, await nextDir(input), fonts: await fonts?.call());
+        pages.add(
+          ImportedPage(
+            path: page.image,
+            name: p.basename(input),
+            cleanPath: page.clean,
+            blocks: page.blocks,
+            notices: page.notices,
+          ),
+        );
+      } on CancelledException {
+        rethrow;
+      } catch (e) {
+        if (onError == null) rethrow;
+        onError(input, e);
+      }
     } else if (isArchivePath(input) || (isPdfPath(input) && pdf != null)) {
       try {
         final dir = await nextDir(input);
-        final found = isPdfPath(input) ? await pdf!(input, dir, token) : await extractArchiveImages(input, dir, cancel: token);
+        final found = isPdfPath(input)
+            ? await pdf!(input, dir, token)
+            : await extractArchiveImages(input, dir, cancel: token);
         if (found.isEmpty) throw PageImportException('No pages found in ${p.basename(input)}.');
         pages.addAll(found);
       } on CancelledException {
@@ -154,14 +195,17 @@ Future<List<ImportedPage>> extractArchiveImages(String path, Directory outDir, {
   return _extractWithTool(path, outDir, token);
 }
 
-String _numbered(int index, int count, String ext) => '${(index + 1).toString().padLeft(count.toString().length.clamp(3, 9), '0')}$ext';
+String _numbered(int index, int count, String ext) =>
+    '${(index + 1).toString().padLeft(count.toString().length.clamp(3, 9), '0')}$ext';
 
 Future<List<ImportedPage>> _extractWithDart(String path, Directory outDir, CancelToken token) async {
   final input = InputFileStream(path);
   try {
     final Archive archive;
     try {
-      archive = zipExtensions.contains(_ext(path)) ? ZipDecoder().decodeStream(input) : TarDecoder().decodeStream(input);
+      archive = zipExtensions.contains(_ext(path))
+          ? ZipDecoder().decodeStream(input)
+          : TarDecoder().decodeStream(input);
     } catch (e) {
       throw PageImportException('${p.basename(path)} is not a readable ${_ext(path).substring(1)} archive: $e');
     }
@@ -220,20 +264,27 @@ Future<List<ImportedPage>> _extractWithTool(String path, Directory outDir, Cance
   await tmp.create(recursive: true);
   try {
     final isUnrar = p.basename(tool).toLowerCase().startsWith('unrar');
-    final args = isUnrar ? ['x', '-y', '-idq', path, '${tmp.path}${Platform.pathSeparator}'] : ['x', '-y', '-bd', '-o${tmp.path}', path];
+    final args = isUnrar
+        ? ['x', '-y', '-idq', path, '${tmp.path}${Platform.pathSeparator}']
+        : ['x', '-y', '-bd', '-o${tmp.path}', path];
     final process = await Process.start(tool, args);
     token.onCancel(process.kill);
     final stderrText = process.stderr.transform(const SystemEncoding().decoder).join();
     await process.stdout.drain<void>();
     final code = await process.exitCode;
     token.throwIfCancelled();
-    if (code != 0) throw PageImportException('${p.basename(tool)} could not unpack ${p.basename(path)} (code $code): ${(await stderrText).trim()}');
-    final files = tmp
-        .listSync(recursive: true)
-        .whereType<File>()
-        .where((f) => isImagePath(f.path) && !_isJunk(p.relative(f.path, from: tmp.path).replaceAll(r'\', '/')))
-        .toList()
-      ..sort((a, b) => naturalCompare(p.relative(a.path, from: tmp.path), p.relative(b.path, from: tmp.path)));
+    if (code != 0) {
+      throw PageImportException(
+        '${p.basename(tool)} could not unpack ${p.basename(path)} (code $code): ${(await stderrText).trim()}',
+      );
+    }
+    final files =
+        tmp
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => isImagePath(f.path) && !_isJunk(p.relative(f.path, from: tmp.path).replaceAll(r'\', '/')))
+            .toList()
+          ..sort((a, b) => naturalCompare(p.relative(a.path, from: tmp.path), p.relative(b.path, from: tmp.path)));
     final pages = <ImportedPage>[];
     for (final (i, f) in files.indexed) {
       final target = p.join(outDir.path, _numbered(i, files.length, _ext(f.path)));

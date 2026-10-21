@@ -38,3 +38,12 @@ adaptations of David Revoy's work under the same **CC BY 4.0** license; the
 lettering uses the Pangolin font (SIL Open Font License 1.1, see
 `apps/comic_translate/assets/fonts/Pangolin-OFL.txt`). `*.json` and
 `golden.json` are generated data.
+
+## psd/
+
+Small synthetic Photoshop files (64×48 px, grey and red rectangles, the
+words "HELLO, world" and "Hi") written with PhotoshopAPI
+(https://github.com/EmilDohne/PhotoshopAPI, BSD-3-Clause) by
+`tools/reference/make_psd_fixtures.py`: `original_export.psd` is laid out as
+the original program exports a page, `other_program.psd` as another
+program's file. Made for this project; Apache-2.0 like the rest of it.

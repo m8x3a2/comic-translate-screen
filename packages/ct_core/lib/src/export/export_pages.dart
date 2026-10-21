@@ -76,12 +76,15 @@ class ExportOptions {
     this.byChapter = false,
     this.strip = StripExport.pages,
     this.sliceHeight = 1280,
+    this.extraFiles = const {},
   });
 
   final ExportContainer container;
 
-  /// `source`, `png`, `jpg` or `webp` (PDF: `png` keeps every pixel, any
-  /// other is JPEG).
+  /// `source`, `png`, `jpg`, `webp` (PDF: `png` keeps every pixel, any
+  /// other is JPEG) or `psd`: the translated pictures are then layered
+  /// Photoshop files the caller made ([ExportPage.translatedImage]), copied
+  /// as they are; cleaned pages are saved as PNG.
   final String imageFormat;
   final bool translated;
   final bool cleaned;
@@ -95,6 +98,23 @@ class ExportOptions {
   /// parts of about [sliceHeight] rows (per chapter).
   final StripExport strip;
   final int sliceHeight;
+
+  /// Files put beside the pages of each folder or archive (not PDF): path
+  /// inside it → file (fonts the PSD files use).
+  final Map<String, String> extraFiles;
+
+  ExportOptions withExtraFiles(Map<String, String> files) => ExportOptions(
+    container: container,
+    imageFormat: imageFormat,
+    translated: translated,
+    cleaned: cleaned,
+    recognizedText: recognizedText,
+    translatedText: translatedText,
+    byChapter: byChapter,
+    strip: strip,
+    sliceHeight: sliceHeight,
+    extraFiles: {...extraFiles, ...files},
+  );
 }
 
 class ExportResult {
@@ -149,6 +169,9 @@ Future<ExportResult> exportPages(
     if (!o.container.forReaders && o.translatedText) 'translated_texts',
   ];
   if (kinds.isEmpty) throw const ExportException('nothing to export');
+  final psd = o.imageFormat == 'psd';
+  if (psd && o.container.forReaders) throw const ExportException('PSD files go into a folder or a ZIP');
+  if (psd && o.strip != StripExport.pages) throw const ExportException('PSD files are saved page by page');
   if (o.container == ExportContainer.cb7 && sevenZip == null) throw ArchiveToolMissingException(output);
 
   final outputs = <String>[];
@@ -209,7 +232,16 @@ Future<ExportResult> exportPages(
               case 'translated' || 'cleaned':
                 final source = kind == 'translated' ? page.translatedImage : page.cleanImage;
                 if (source == null) continue;
-                final ext = o.imageFormat == 'source' ? _writable(page.sourceExtension) : '.${o.imageFormat}';
+                final ext = switch (o.imageFormat) {
+                  'source' => _writable(page.sourceExtension),
+                  'psd' when kind == 'cleaned' => '.png',
+                  // PSB for pages too tall for PSD.
+                  'psd' => p.extension(source).toLowerCase(),
+                  final f => '.$f',
+                };
+                if (psd && kind == 'translated' && ext != '.psd' && ext != '.psb') {
+                  throw ExportException('${page.name}: no PSD file made');
+                }
                 final target = p.join(into, '$name$ext');
                 if (p.extension(source).toLowerCase() == ext) {
                   File(source).copySync(target);
@@ -226,6 +258,11 @@ Future<ExportResult> exportPages(
                 written.add(page);
             }
           }
+        }
+        for (final MapEntry(key: name, value: source) in o.extraFiles.entries) {
+          final target = File(p.join(dir.path, name));
+          target.parent.createSync(recursive: true);
+          File(source).copySync(target.path);
         }
         if (staging == null) {
           outputs.add(dir.path);

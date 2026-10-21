@@ -12,6 +12,13 @@ ported from Comic Translate (upstream commit
 8977b91a4f7a40c3917c5a268e9e7d78e1d818da, 2026-09-10) and rewritten in
 Dart/Flutter.
 
+The bundled lettering font Pangolin (Copyright 2016 The Pangolin Project
+Authors) is licensed under the SIL Open Font License 1.1; see
+apps/comic_translate/assets/fonts/Pangolin-OFL.txt.
+
+The PSD text layer layout follows ag-psd (https://github.com/Agamnentzar/ag-psd,
+Copyright 2016 Agamnentzar, MIT License).
+
 Machine-learning models are not bundled. On first use they are downloaded
 from their original publishers and remain under their own licenses; see
 docs/MODELS.md.
