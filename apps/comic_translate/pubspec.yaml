@@ -43,3 +43,7 @@ flutter:
     - family: Pangolin
       fonts:
         - asset: assets/fonts/Pangolin-Regular.ttf
+
+  # The font's licence goes with it (also next to exported PSD files).
+  assets:
+    - assets/fonts/Pangolin-OFL.txt

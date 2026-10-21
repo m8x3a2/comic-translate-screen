@@ -29,7 +29,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get supportedFormats =>
-      'Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF and projects (.ctsproj)';
+      'Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF, Photoshop files (PSD) and projects (.ctsproj)';
 
   @override
   String get privacyLocal =>
@@ -1591,4 +1591,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get secretCopied => 'Key copied';
+
+  @override
+  String get formatPsd => 'PSD (layers for Photoshop)';
+
+  @override
+  String get exportPsdHelp =>
+      'Each page becomes a Photoshop file: the page as it was, the cleaned places, and the translation as editable text layers. Cleaned pages are saved as PNG.';
+
+  @override
+  String get exportPsdPagesOnly => 'PSD files are saved page by page.';
+
+  @override
+  String psdImportForeign(String name) {
+    return '$name: this PSD was not made by Comic Translate. Its visible picture layers were joined into the page, its text layers became editable text.';
+  }
+
+  @override
+  String psdImportUnsupported(String name, String features) {
+    return '$name: some Photoshop features are not carried over ($features); the page may look a little different.';
+  }
+
+  @override
+  String get psdFeatureSmartObjects => 'smart objects';
+
+  @override
+  String get psdFeatureMasks => 'masks';
+
+  @override
+  String get psdFeatureClipping => 'clipping masks';
+
+  @override
+  String get psdFeatureAdjustments => 'adjustment layers';
+
+  @override
+  String get psdFeatureBlendModes => 'blend modes';
+
+  @override
+  String get psdFeatureOpacity => 'layer opacity';
 }

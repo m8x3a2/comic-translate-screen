@@ -117,6 +117,9 @@ class UiTextEngine implements TextMeasurer {
     return p;
   }
 
+  /// Distance between lines, in pixels.
+  double lineHeightPx(int pt) => ptToPx(pt) * _ratio(pt) * settings.lineSpacing;
+
   double _cell(int pt) => ptToPx(pt);
   double _columnAdvance(int pt) => ptToPx(pt) * _ratio(pt) * settings.lineSpacing;
 
@@ -249,6 +252,40 @@ Future<ui.Image> toUiImage(RgbImage image) {
   final done = Completer<ui.Image>();
   ui.decodeImageFromPixels(rgba, image.width, image.height, ui.PixelFormat.rgba8888, done.complete);
   return done.future;
+}
+
+/// [item] drawn alone on a transparent background, as the pixels of a PSD
+/// text layer (null when nothing shows).
+Future<PsdPixels?> renderItemAlone(TextItem item, TextEngines engines) async {
+  final s = item.settings ?? engines.base;
+  final pad = (s.outline ? s.outlineWidth : 0) + ptToPx(item.fontSizePt) + 4;
+  final half = item.angle == 0
+      ? (item.width / 2, item.height / 2)
+      : (
+          (item.width * math.cos(item.angle * math.pi / 180)).abs() / 2 +
+              (item.height * math.sin(item.angle * math.pi / 180)).abs() / 2,
+          (item.width * math.sin(item.angle * math.pi / 180)).abs() / 2 +
+              (item.height * math.cos(item.angle * math.pi / 180)).abs() / 2,
+        );
+  final cx = item.x + item.width / 2, cy = item.y + item.height / 2;
+  final left = (cx - half.$1 - pad).floor(), top = (cy - half.$2 - pad).floor();
+  final w = (cx + half.$1 + pad).ceil() - left, h = (cy + half.$2 + pad).ceil() - top;
+  if (w <= 0 || h <= 0 || w > 16384 || h > 16384) return null;
+  final recorder = ui.PictureRecorder();
+  final canvas = ui.Canvas(recorder)..translate(-left.toDouble(), -top.toDouble());
+  engines.draw(canvas, item);
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(w, h);
+  final data = (await image.toByteData(format: ui.ImageByteFormat.rawStraightRgba))!;
+  image.dispose();
+  picture.dispose();
+  return PsdPixels(
+    left,
+    top,
+    w,
+    h,
+    Uint8List.fromList(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes)),
+  ).trimmed();
 }
 
 /// Tallest strip drawn at once (GPU texture limits; long webtoon pages are

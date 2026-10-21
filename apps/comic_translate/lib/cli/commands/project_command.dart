@@ -5,6 +5,7 @@ import 'package:ct_core/ct_core.dart';
 import 'package:path/path.dart' as p;
 
 import '../../pipeline/page_pipeline.dart';
+import '../../pipeline/psd_page.dart';
 import '../../render/mask_raster.dart';
 import '../cli.dart';
 import '../cli_context.dart';
@@ -126,22 +127,33 @@ class ExportCommand extends CtsCommand {
         return ExitCodes.failure;
       }
       final pages = <ExportPage>[];
+      var bundledFont = false;
       for (final (i, page) in data.pages.indexed) {
         if (page.cleanImage == null && !page.blocks.any((b) => hasTranslatableContent(b.translation))) continue;
         String? translated;
         if (options.translated) {
           final base = await ImageCodec.readFile(page.cleanImage ?? page.image);
-          final render = await renderPage(
-            base,
-            page.blocks,
-            settings,
-            targetLanguage: targetOf(page),
-            above: data.state['webtoon'] == true && i > 0 ? await _above(data.pages[i - 1], targetOf) : null,
-          );
-          translated = p.join(work.path, 'drawn', '$i.png');
-          File(translated)
-            ..parent.createSync(recursive: true)
-            ..writeAsBytesSync(ImageCodec.encodePng(render.image));
+          final above = data.state['webtoon'] == true && i > 0 ? await _above(data.pages[i - 1], targetOf) : null;
+          if (options.imageFormat == 'psd') {
+            final doc = await buildPagePsd(
+              await ImageCodec.readFile(page.image),
+              base,
+              page.blocks,
+              settings,
+              targetLanguage: targetOf(page),
+              above: above,
+            );
+            translated = p.join(work.path, 'drawn', '$i${doc.large ? '.psb' : '.psd'}');
+            Directory(p.dirname(translated)).createSync(recursive: true);
+            await writePsdFile(translated, doc);
+            bundledFont |= usesBundledFont(doc);
+          } else {
+            final render = await renderPage(base, page.blocks, settings, targetLanguage: targetOf(page), above: above);
+            translated = p.join(work.path, 'drawn', '$i.png');
+            File(translated)
+              ..parent.createSync(recursive: true)
+              ..writeAsBytesSync(ImageCodec.encodePng(render.image));
+          }
         }
         final ext = p.extension(page.name);
         pages.add(ExportPage(
@@ -162,7 +174,7 @@ class ExportCommand extends CtsCommand {
       try {
         result = await exportPages(
           pages,
-          options,
+          bundledFont ? options.withExtraFiles(bundledFontFiles()) : options,
           output,
           bookName: p.basenameWithoutExtension(args.rest.single),
           sevenZip: container == ExportContainer.cb7 ? findArchiveTool(output) : null,

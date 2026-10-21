@@ -29,7 +29,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get supportedFormats =>
-      'Картинки (PNG, JPG, WEBP, BMP), архивы комиксов (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF и проекты (.ctsproj)';
+      'Картинки (PNG, JPG, WEBP, BMP), архивы комиксов (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF, файлы Photoshop (PSD) и проекты (.ctsproj)';
 
   @override
   String get privacyLocal =>
@@ -1594,4 +1594,42 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get secretCopied => 'Ключ скопирован';
+
+  @override
+  String get formatPsd => 'PSD (слои для Photoshop)';
+
+  @override
+  String get exportPsdHelp =>
+      'Каждая страница — файл Photoshop: страница как была, очищенные места и перевод редактируемыми текстовыми слоями. Очищенные страницы сохраняются в PNG.';
+
+  @override
+  String get exportPsdPagesOnly => 'PSD сохраняются по страницам.';
+
+  @override
+  String psdImportForeign(String name) {
+    return '$name: этот PSD сделан не в Comic Translate. Видимые слои с картинкой склеены в страницу, текстовые слои стали редактируемым текстом.';
+  }
+
+  @override
+  String psdImportUnsupported(String name, String features) {
+    return '$name: часть возможностей Photoshop не переносится ($features); страница может выглядеть немного иначе.';
+  }
+
+  @override
+  String get psdFeatureSmartObjects => 'смарт-объекты';
+
+  @override
+  String get psdFeatureMasks => 'маски';
+
+  @override
+  String get psdFeatureClipping => 'обтравочные маски';
+
+  @override
+  String get psdFeatureAdjustments => 'корректирующие слои';
+
+  @override
+  String get psdFeatureBlendModes => 'режимы наложения';
+
+  @override
+  String get psdFeatureOpacity => 'непрозрачность слоёв';
 }

@@ -249,6 +249,28 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       final why = e.value is ArchiveToolMissingException ? l.needsArchiveTool : '${e.value}';
       _snack(l.importFailed(p.basename(e.key), why));
     }
+    for (final MapEntry(key: name, value: notices) in outcome.notices.entries) {
+      for (final n in notices) {
+        _snack(switch (n) {
+          PsdForeign() => l.psdImportForeign(name),
+          PsdUnsupported(:final features) => l.psdImportUnsupported(
+            name,
+            [
+              for (final f in features)
+                switch (f) {
+                  'smart objects' => l.psdFeatureSmartObjects,
+                  'masks' => l.psdFeatureMasks,
+                  'clipping masks' => l.psdFeatureClipping,
+                  'adjustment layers' => l.psdFeatureAdjustments,
+                  'blend modes' => l.psdFeatureBlendModes,
+                  'layer opacity' => l.psdFeatureOpacity,
+                  _ => f,
+                },
+            ].join(', '),
+          ),
+        });
+      }
+    }
     if (outcome.skipped.isNotEmpty) _snack(l.skippedFiles(outcome.skipped.map(p.basename).join(', ')));
     if (outcome.added == 0 && outcome.errors.isEmpty && outcome.skipped.isEmpty) _snack(l.noPagesFound);
   }
@@ -259,7 +281,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         XTypeGroup(
           label: context.l10n.supportedFormats,
           extensions: [
-            for (final e in [...imageExtensions, ...archiveExtensions, ...pdfExtensions, ProjectFile.extension])
+            for (final e in [
+              ...imageExtensions,
+              ...archiveExtensions,
+              ...pdfExtensions,
+              ...psdExtensions,
+              ProjectFile.extension,
+            ])
               e.substring(1),
           ],
         ),
@@ -781,12 +809,7 @@ class _LanguagePickers extends ConsumerWidget {
       ref.read(workspaceProvider.notifier).setLanguages(source: source, target: target);
     }
 
-    Widget picker(
-      String tooltip,
-      String value,
-      Iterable<Language> options,
-      void Function(String v) apply,
-    ) => Tooltip(
+    Widget picker(String tooltip, String value, Iterable<Language> options, void Function(String v) apply) => Tooltip(
       message: tooltip,
       child: SizedBox(
         width: 136,

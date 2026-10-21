@@ -22,7 +22,11 @@ void main() {
 
   setUp(() {
     dir = Directory.systemTemp.createTempSync('cts_project_ui_test_');
-    services = AppServices.create(dataDirOverride: dir.path, secretStore: MemorySecretStore(), registry: fakeRegistry());
+    services = AppServices.create(
+      dataDirOverride: dir.path,
+      secretStore: MemorySecretStore(),
+      registry: fakeRegistry(),
+    );
   });
 
   tearDown(() async {
@@ -57,7 +61,12 @@ void main() {
     await tester.runAsync(() async {
       final image = p.join(dir.path, 'a.png');
       await ImageCodec.writeFile(image, RgbImage.filled(20, 20, 255, 255, 255));
-      ProjectFile.save(saved, ProjectData(pages: [ProjectPage(id: '0', name: 'a.png', image: image)]));
+      ProjectFile.save(
+        saved,
+        ProjectData(
+          pages: [ProjectPage(id: '0', name: 'a.png', image: image)],
+        ),
+      );
     });
     final container = await start(
       tester,
@@ -176,12 +185,44 @@ void main() {
     expect(find.text('Лента вебтуна'), findsNothing);
   });
 
+  testWidgets('the export window: PSD files go page by page, not into comic readers', (tester) async {
+    await start(tester, fakeSettings());
+    final context = tester.element(find.byType(Scaffold).first);
+    ExportChoice? choice;
+    showExportDialog(
+      context,
+      // A saved PSD choice with a joined strip: back to page by page.
+      initial: const ExportSettings(imageFormat: 'psd', strip: StripExport.single),
+      pageCount: 3,
+      chapters: 1,
+      currentAvailable: true,
+      hasSevenZip: false,
+      webtoon: true,
+    ).then((c) => choice = c);
+    await tester.pumpAndSettle();
+    expect(find.text('PSD (слои для Photoshop)'), findsOneWidget);
+    expect(find.textContaining('редактируемыми текстовыми слоями'), findsOneWidget);
+    expect(find.text('PSD сохраняются по страницам.'), findsOneWidget);
+    // A comic reader format: the pictures are written as they are again.
+    await tester.tap(find.text('CBZ'));
+    await tester.pumpAndSettle();
+    expect(find.text('PSD (слои для Photoshop)'), findsNothing);
+    await tester.tap(find.text('Папка'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Экспортировать…'));
+    await tester.pumpAndSettle();
+    expect(choice!.settings.imageFormat, 'source');
+    expect(choice!.settings.strip, StripExport.pages);
+  });
+
   for (final width in [1024.0, 1280.0]) {
     testWidgets('different page languages: "for all pages" fits the toolbar at $width px', (tester) async {
       final container = await start(tester, fakeSettings());
       tester.view.physicalSize = Size(width, 720);
       await tester.runAsync(() async {
-        final images = [for (final n in ['a.png', 'b.png']) p.join(dir.path, n)];
+        final images = [
+          for (final n in ['a.png', 'b.png']) p.join(dir.path, n),
+        ];
         for (final i in images) {
           await ImageCodec.writeFile(i, RgbImage.filled(20, 20, 255, 255, 255));
         }

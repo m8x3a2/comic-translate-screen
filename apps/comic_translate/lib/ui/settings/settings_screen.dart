@@ -857,7 +857,7 @@ class _ExportSection extends ConsumerWidget {
               label: l.imageFormat,
               info: l.imageFormatInfo,
               value: e.imageFormat,
-              options: {'source': l.formatSource, 'png': 'PNG', 'jpg': 'JPG', 'webp': 'WEBP'},
+              options: {'source': l.formatSource, 'png': 'PNG', 'jpg': 'JPG', 'webp': 'WEBP', 'psd': l.formatPsd},
               onChanged: (v) => set((e) => e.copyWith(imageFormat: v)),
             ),
           ],

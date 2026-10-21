@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import '../import/pdf_pages.dart';
+import '../pipeline/psd_page.dart' show installedFonts;
 import 'app_state.dart';
 
 enum PageStatus { pending, running, done, skipped }
@@ -315,13 +316,16 @@ class WorkspaceState {
 
 /// What opening files produced, for messages to the user.
 class ImportOutcome {
-  ImportOutcome(this.added, this.skipped, this.errors);
+  ImportOutcome(this.added, this.skipped, this.errors, [this.notices = const {}]);
 
   final int added;
   final List<String> skipped;
 
   /// File → error.
   final Map<String, Object> errors;
+
+  /// PSD file name → what to tell about it.
+  final Map<String, List<PsdNotice>> notices;
 }
 
 final workspaceProvider = NotifierProvider<WorkspaceNotifier, WorkspaceState>(WorkspaceNotifier.new);
@@ -407,6 +411,7 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
         pdf: rasterizePdf,
         skipped: skipped,
         onError: (input, e) => errors[input] = e,
+        fonts: installedFonts,
       );
       final wasEmpty = state.pages.isEmpty;
       final settings = ref.read(settingsProvider);
@@ -417,6 +422,10 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
             name: page.name,
             path: page.path,
             source: page.source,
+            // PSD files: cleaned and translated already.
+            cleanPath: page.cleanPath,
+            blocks: page.blocks,
+            status: page.blocks.isNotEmpty || page.cleanPath != null ? PageStatus.done : PageStatus.pending,
             sourceLanguage: settings.sourceLanguage,
             targetLanguage: settings.targetLanguage,
           ),
@@ -427,7 +436,10 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
         'skipped': skipped.length,
         'errors': errors.length,
       });
-      return ImportOutcome(added.length, skipped, errors);
+      return ImportOutcome(added.length, skipped, errors, {
+        for (final page in imported)
+          if (page.notices.isNotEmpty) page.name: page.notices,
+      });
     } finally {
       state = state.copyWith(importing: false);
     }
@@ -558,12 +570,7 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     state = state.copyWith(
       pages: [
         for (final (i, p) in state.pages.indexed)
-          if (p.id == id)
-            next
-          else if (i == below && p.translatedPath != null)
-            p.copyWith(translatedPath: null)
-          else
-            p,
+          if (p.id == id) next else if (i == below && p.translatedPath != null) p.copyWith(translatedPath: null) else p,
       ],
       history: {...state.history, id: history},
     );

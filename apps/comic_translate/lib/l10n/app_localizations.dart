@@ -137,7 +137,7 @@ abstract class AppLocalizations {
   /// No description provided for @supportedFormats.
   ///
   /// In en, this message translates to:
-  /// **'Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF and projects (.ctsproj)'**
+  /// **'Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF, Photoshop files (PSD) and projects (.ctsproj)'**
   String get supportedFormats;
 
   /// No description provided for @privacyLocal.
@@ -2869,6 +2869,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Key copied'**
   String get secretCopied;
+
+  /// No description provided for @formatPsd.
+  ///
+  /// In en, this message translates to:
+  /// **'PSD (layers for Photoshop)'**
+  String get formatPsd;
+
+  /// No description provided for @exportPsdHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Each page becomes a Photoshop file: the page as it was, the cleaned places, and the translation as editable text layers. Cleaned pages are saved as PNG.'**
+  String get exportPsdHelp;
+
+  /// No description provided for @exportPsdPagesOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'PSD files are saved page by page.'**
+  String get exportPsdPagesOnly;
+
+  /// No description provided for @psdImportForeign.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: this PSD was not made by Comic Translate. Its visible picture layers were joined into the page, its text layers became editable text.'**
+  String psdImportForeign(String name);
+
+  /// No description provided for @psdImportUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: some Photoshop features are not carried over ({features}); the page may look a little different.'**
+  String psdImportUnsupported(String name, String features);
+
+  /// No description provided for @psdFeatureSmartObjects.
+  ///
+  /// In en, this message translates to:
+  /// **'smart objects'**
+  String get psdFeatureSmartObjects;
+
+  /// No description provided for @psdFeatureMasks.
+  ///
+  /// In en, this message translates to:
+  /// **'masks'**
+  String get psdFeatureMasks;
+
+  /// No description provided for @psdFeatureClipping.
+  ///
+  /// In en, this message translates to:
+  /// **'clipping masks'**
+  String get psdFeatureClipping;
+
+  /// No description provided for @psdFeatureAdjustments.
+  ///
+  /// In en, this message translates to:
+  /// **'adjustment layers'**
+  String get psdFeatureAdjustments;
+
+  /// No description provided for @psdFeatureBlendModes.
+  ///
+  /// In en, this message translates to:
+  /// **'blend modes'**
+  String get psdFeatureBlendModes;
+
+  /// No description provided for @psdFeatureOpacity.
+  ///
+  /// In en, this message translates to:
+  /// **'layer opacity'**
+  String get psdFeatureOpacity;
 }
 
 class _AppLocalizationsDelegate

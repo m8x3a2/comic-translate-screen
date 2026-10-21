@@ -6,7 +6,7 @@
   "openFolder": "Открыть папку…",
   "addPages": "Добавить страницы",
   "dropHint": "или перетащите файлы в это окно",
-  "supportedFormats": "Картинки (PNG, JPG, WEBP, BMP), архивы комиксов (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF и проекты (.ctsproj)",
+  "supportedFormats": "Картинки (PNG, JPG, WEBP, BMP), архивы комиксов (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF, файлы Photoshop (PSD) и проекты (.ctsproj)",
   "privacyLocal": "Всё работает на этом компьютере, ничего никуда не отправляется.",
   "privacySends": "Для перевода текст отправляется на {host}",
   "importing": "Открываю файлы…",
@@ -461,5 +461,16 @@
   "secretShowSaved": "Показать ключ",
   "secretHideSaved": "Скрыть ключ",
   "secretCopy": "Копировать",
-  "secretCopied": "Ключ скопирован"
+  "secretCopied": "Ключ скопирован",
+  "formatPsd": "PSD (слои для Photoshop)",
+  "exportPsdHelp": "Каждая страница — файл Photoshop: страница как была, очищенные места и перевод редактируемыми текстовыми слоями. Очищенные страницы сохраняются в PNG.",
+  "exportPsdPagesOnly": "PSD сохраняются по страницам.",
+  "psdImportForeign": "{name}: этот PSD сделан не в Comic Translate. Видимые слои с картинкой склеены в страницу, текстовые слои стали редактируемым текстом.",
+  "psdImportUnsupported": "{name}: часть возможностей Photoshop не переносится ({features}); страница может выглядеть немного иначе.",
+  "psdFeatureSmartObjects": "смарт-объекты",
+  "psdFeatureMasks": "маски",
+  "psdFeatureClipping": "обтравочные маски",
+  "psdFeatureAdjustments": "корректирующие слои",
+  "psdFeatureBlendModes": "режимы наложения",
+  "psdFeatureOpacity": "непрозрачность слоёв"
 }

@@ -61,9 +61,13 @@ class _ExportDialog extends StatefulWidget {
 }
 
 class _ExportDialogState extends State<_ExportDialog> {
-  late ExportSettings _s = widget.initial.container == ExportContainer.cb7 && !widget.hasSevenZip
-      ? widget.initial.copyWith(container: ExportContainer.cbz)
-      : widget.initial;
+  late ExportSettings _s = () {
+    var s = widget.initial;
+    if (s.container == ExportContainer.cb7 && !widget.hasSevenZip) s = s.copyWith(container: ExportContainer.cbz);
+    if (s.imageFormat == 'psd' && s.container.forReaders) s = s.copyWith(imageFormat: 'source');
+    if (s.imageFormat == 'psd') s = s.copyWith(strip: StripExport.pages);
+    return s;
+  }();
   bool _currentOnly = false;
   late final _slice = TextEditingController(text: '${widget.initial.sliceHeight}');
   final _scroll = ScrollController();
@@ -74,6 +78,8 @@ class _ExportDialogState extends State<_ExportDialog> {
     _scroll.dispose();
     super.dispose();
   }
+
+  bool get _psd => _s.imageFormat == 'psd';
 
   bool get _ready => _s.container.forReaders
       ? _s.withTranslated || _s.withCleaned
@@ -112,12 +118,7 @@ class _ExportDialogState extends State<_ExportDialog> {
               heading(l.exportWhat),
               check(l.exportTranslatedPages, _s.withTranslated, (v) => _s.copyWith(withTranslated: v)),
               check(l.exportCleanedPages, _s.withCleaned, (v) => _s.copyWith(withCleaned: v)),
-              check(
-                l.exportRecognizedJson,
-                _s.withRawText,
-                (v) => _s.copyWith(withRawText: v),
-                enabled: !readers,
-              ),
+              check(l.exportRecognizedJson, _s.withRawText, (v) => _s.copyWith(withRawText: v), enabled: !readers),
               check(
                 l.exportTranslatedJson,
                 _s.withTranslatedText,
@@ -137,7 +138,13 @@ class _ExportDialogState extends State<_ExportDialog> {
                         selected: _s.container == c,
                         onSelected: c == ExportContainer.cb7 && !widget.hasSevenZip
                             ? null
-                            : (_) => setState(() => _s = _s.copyWith(container: c)),
+                            : (_) => setState(
+                                () => _s = _s.copyWith(
+                                  container: c,
+                                  // Comic readers take pictures, not PSD files.
+                                  imageFormat: c.forReaders && _psd ? 'source' : null,
+                                ),
+                              ),
                       ),
                     ),
                 ],
@@ -149,25 +156,35 @@ class _ExportDialogState extends State<_ExportDialog> {
                 ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
+                key: ValueKey(_s.imageFormat),
                 initialValue: _s.imageFormat,
                 decoration: InputDecoration(
                   labelText: l.imageFormat,
-                  helperText: _s.container == ExportContainer.pdf ? l.exportPdfFormat : null,
-                  helperMaxLines: 2,
+                  helperText: _psd ? l.exportPsdHelp : (_s.container == ExportContainer.pdf ? l.exportPdfFormat : null),
+                  helperMaxLines: 3,
                 ),
                 items: [
                   for (final f in ExportSettings.formats)
-                    DropdownMenuItem(value: f, child: Text(f == 'source' ? l.formatSource : f.toUpperCase())),
+                    DropdownMenuItem(
+                      value: f,
+                      enabled: f != 'psd' || !readers,
+                      child: Text(switch (f) {
+                        'source' => l.formatSource,
+                        'psd' => l.formatPsd,
+                        _ => f.toUpperCase(),
+                      }),
+                    ),
                 ],
-                onChanged: (v) => setState(() => _s = _s.copyWith(imageFormat: v)),
+                onChanged: (v) =>
+                    setState(() => _s = _s.copyWith(imageFormat: v, strip: v == 'psd' ? StripExport.pages : null)),
               ),
               if (widget.webtoon) ...[
                 heading(l.exportStrip),
                 SegmentedButton<StripExport>(
                   segments: [
                     ButtonSegment(value: StripExport.pages, label: Text(l.exportStripPages)),
-                    ButtonSegment(value: StripExport.single, label: Text(l.exportStripSingle)),
-                    ButtonSegment(value: StripExport.slices, label: Text(l.exportStripSlices)),
+                    ButtonSegment(value: StripExport.single, label: Text(l.exportStripSingle), enabled: !_psd),
+                    ButtonSegment(value: StripExport.slices, label: Text(l.exportStripSlices), enabled: !_psd),
                   ],
                   selected: {_s.strip},
                   onSelectionChanged: (v) {
@@ -184,6 +201,11 @@ class _ExportDialogState extends State<_ExportDialog> {
                     });
                   },
                 ),
+                if (_psd)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(l.exportPsdPagesOnly, style: theme.textTheme.bodySmall),
+                  ),
                 if (_s.strip == StripExport.single)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -220,11 +242,7 @@ class _ExportDialogState extends State<_ExportDialog> {
               if (widget.chapters > 1 && !_currentOnly)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
-                  child: check(
-                    l.exportByChapter('${widget.chapters}'),
-                    _s.byChapter,
-                    (v) => _s.copyWith(byChapter: v),
-                  ),
+                  child: check(l.exportByChapter('${widget.chapters}'), _s.byChapter, (v) => _s.copyWith(byChapter: v)),
                 ),
             ],
           ),

@@ -6,7 +6,7 @@
   "openFolder": "Open folder…",
   "addPages": "Add pages",
   "dropHint": "or drag files into this window",
-  "supportedFormats": "Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF and projects (.ctsproj)",
+  "supportedFormats": "Images (PNG, JPG, WEBP, BMP), comic archives (CBZ, ZIP, EPUB, CBR, CB7, CBT), PDF, Photoshop files (PSD) and projects (.ctsproj)",
   "privacyLocal": "Everything runs on this computer; nothing is sent anywhere.",
   "privacySends": "For translation, the text is sent to {host}",
   "@privacySends": {
@@ -948,5 +948,18 @@
   "secretShowSaved": "Show key",
   "secretHideSaved": "Hide key",
   "secretCopy": "Copy",
-  "secretCopied": "Key copied"
+  "secretCopied": "Key copied",
+  "formatPsd": "PSD (layers for Photoshop)",
+  "exportPsdHelp": "Each page becomes a Photoshop file: the page as it was, the cleaned places, and the translation as editable text layers. Cleaned pages are saved as PNG.",
+  "exportPsdPagesOnly": "PSD files are saved page by page.",
+  "psdImportForeign": "{name}: this PSD was not made by Comic Translate. Its visible picture layers were joined into the page, its text layers became editable text.",
+  "@psdImportForeign": {"placeholders": {"name": {"type": "String"}}},
+  "psdImportUnsupported": "{name}: some Photoshop features are not carried over ({features}); the page may look a little different.",
+  "@psdImportUnsupported": {"placeholders": {"name": {"type": "String"}, "features": {"type": "String"}}},
+  "psdFeatureSmartObjects": "smart objects",
+  "psdFeatureMasks": "masks",
+  "psdFeatureClipping": "clipping masks",
+  "psdFeatureAdjustments": "adjustment layers",
+  "psdFeatureBlendModes": "blend modes",
+  "psdFeatureOpacity": "layer opacity"
 }
