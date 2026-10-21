@@ -971,13 +971,10 @@
     }
   },
   "gpuOnlyIntegrated": "This graphics is built into the processor: it is rarely faster than the processor itself.",
-  "gpuOldDriver": "The driver of {card} is from {year}; if something goes wrong, update it from the maker's site.",
-  "@gpuOldDriver": {
+  "gpuOldDrivers": "Old drivers: {cards}. If something goes wrong, update them from the maker's site.",
+  "@gpuOldDrivers": {
     "placeholders": {
-      "card": {
-        "type": "String"
-      },
-      "year": {
+      "cards": {
         "type": "String"
       }
     }

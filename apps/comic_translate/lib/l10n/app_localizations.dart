@@ -2834,11 +2834,11 @@ abstract class AppLocalizations {
   /// **'This graphics is built into the processor: it is rarely faster than the processor itself.'**
   String get gpuOnlyIntegrated;
 
-  /// No description provided for @gpuOldDriver.
+  /// No description provided for @gpuOldDrivers.
   ///
   /// In en, this message translates to:
-  /// **'The driver of {card} is from {year}; if something goes wrong, update it from the maker\'s site.'**
-  String gpuOldDriver(String card, String year);
+  /// **'Old drivers: {cards}. If something goes wrong, update them from the maker\'s site.'**
+  String gpuOldDrivers(String cards);
 
   /// No description provided for @gpuNotUsableTitle.
   ///

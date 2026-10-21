@@ -1573,8 +1573,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'This graphics is built into the processor: it is rarely faster than the processor itself.';
 
   @override
-  String gpuOldDriver(String card, String year) {
-    return 'The driver of $card is from $year; if something goes wrong, update it from the maker\'s site.';
+  String gpuOldDrivers(String cards) {
+    return 'Old drivers: $cards. If something goes wrong, update them from the maker\'s site.';
   }
 
   @override

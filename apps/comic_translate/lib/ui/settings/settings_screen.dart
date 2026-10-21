@@ -405,10 +405,11 @@ class _GpuSwitchState extends ConsumerState<_GpuSwitch> {
   String? _status(AppLocalizations l) {
     final check = _last;
     if (check == null || !check.usable) return null;
+    final old = check.oldDrivers(DateTime.now());
     return [
       l.gpuFound(check.cards.map(gpuLabel).join(', ')),
       if (check.onlyIntegrated) l.gpuOnlyIntegrated,
-      for (final a in check.oldDrivers(DateTime.now())) l.gpuOldDriver(a.name, '${a.driverDate!.year}'),
+      if (old.isNotEmpty) l.gpuOldDrivers(old.map((a) => '${a.name} (${a.driverDate!.year})').join(', ')),
     ].join('\n');
   }
 

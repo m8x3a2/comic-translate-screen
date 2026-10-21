@@ -1576,8 +1576,8 @@ class AppLocalizationsRu extends AppLocalizations {
       'Это видеокарта, встроенная в процессор: она редко быстрее самого процессора.';
 
   @override
-  String gpuOldDriver(String card, String year) {
-    return 'Драйвер $card от $year года — если будут ошибки, обновите его с сайта производителя.';
+  String gpuOldDrivers(String cards) {
+    return 'Старые драйверы: $cards. Если будут ошибки, обновите их с сайта производителя.';
   }
 
   @override
