@@ -75,7 +75,19 @@ class ReadingPage {
 /// Enlarges [image] when its text is small (see [readingScaleFactor]) and
 /// re-splits the blocks into lines on the enlarged copy. With
 /// [sourceLanguageCode] the line splitter also gets the language hint.
+///
+/// Blocks without lines (boxes drawn by hand, or resized) are split first,
+/// on the page as it is: otherwise their text would not count towards the
+/// enlargement and they would be read as one line.
 ReadingPage prepareReading(RgbImage image, List<TextBlock> blocks, {String sourceLanguageCode = '', bool enabled = true}) {
+  final bare = [for (final b in blocks) if (b.lines.isEmpty) b];
+  if (bare.isNotEmpty) {
+    try {
+      annotateBlocksWithHeuristicLines(image, bare, sourceLanguage: sourceLanguageCode);
+    } on Object {
+      // The heuristics gave up: those blocks are read whole, as before.
+    }
+  }
   final f = enabled ? readingScaleFactor(image, blocks) : 1.0;
   final boxes = [for (final b in blocks) b.xyxy];
   final bubbles = [for (final b in blocks) b.bubbleXyxy];

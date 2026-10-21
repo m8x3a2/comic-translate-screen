@@ -35,4 +35,27 @@ void main() {
     expect(readingScaleFactor(page, [blockWithLines(12)]), closeTo(3.0, 1e-9));
     expect(readingScaleFactor(page, []), 1.0);
   });
+
+  test('a box drawn by hand (no lines) is split into lines and its small text enlarged', () {
+    // Three rows of tiny "letters" (5×7 px), as on a low-resolution screenshot.
+    final page = RgbImage.filled(200, 120, 255, 255, 255);
+    for (var row = 0; row < 3; row++) {
+      for (var letter = 0; letter < 12; letter++) {
+        for (var y = 0; y < 7; y++) {
+          for (var x = 0; x < 5; x++) {
+            final px = 40 + letter * 7 + (letter ~/ 4) * 4 + x, py = 30 + row * 12 + y;
+            final i = (py * page.width + px) * 3;
+            page.data[i] = page.data[i + 1] = page.data[i + 2] = 0;
+          }
+        }
+      }
+    }
+    final hand = TextBlock(xyxy: const BBox(34, 24, 136, 72));
+    final reading = prepareReading(page, [hand], sourceLanguageCode: 'en');
+    expect(reading.scaled, isTrue, reason: 'small text counts once its lines are known');
+    expect(hand.lines, hasLength(3));
+    reading.restore();
+    expect(hand.xyxy, const BBox(34, 24, 136, 72));
+    expect(hand.lines, hasLength(3));
+  });
 }

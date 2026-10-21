@@ -132,7 +132,8 @@ void main() {
     final detector = RowDetector();
     final ocr = ReadAll();
     final pipeline = PagePipeline(
-      settings: fakeSettings(),
+      // The dashes are small text: kept at page size so the heights below are in page pixels.
+      settings: fakeSettings()..upscaleSmallText = false,
       sourceLanguage: 'English',
       targetLanguage: 'Russian',
       detector: detector,
