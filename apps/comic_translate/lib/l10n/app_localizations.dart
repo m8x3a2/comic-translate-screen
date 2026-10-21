@@ -2845,6 +2845,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All pages (of each chapter) one below the other in one picture. A very tall picture is saved as PNG.'**
   String get exportStripSingleHelp;
+
+  /// No description provided for @secretShowSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Show key'**
+  String get secretShowSaved;
+
+  /// No description provided for @secretHideSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide key'**
+  String get secretHideSaved;
+
+  /// No description provided for @secretCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get secretCopy;
+
+  /// No description provided for @secretCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Key copied'**
+  String get secretCopied;
 }
 
 class _AppLocalizationsDelegate

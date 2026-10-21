@@ -1582,4 +1582,16 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get exportStripSingleHelp =>
       'Все страницы (каждой главы) одна под другой в одной картинке. Очень длинная картинка сохраняется в PNG.';
+
+  @override
+  String get secretShowSaved => 'Показать ключ';
+
+  @override
+  String get secretHideSaved => 'Скрыть ключ';
+
+  @override
+  String get secretCopy => 'Копировать';
+
+  @override
+  String get secretCopied => 'Ключ скопирован';
 }

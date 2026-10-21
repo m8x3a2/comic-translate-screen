@@ -90,7 +90,30 @@ void main() {
     expect(await secrets.read('plugin.openai_compatible.api_key'), 'sk-or-v1-abcdef123456wxyz');
     expect(keyField('Сохранён: …wxyz'), findsOneWidget);
     expect(obscured(tester), isTrue, reason: 'hidden again after saving');
-    expect(find.textContaining('abcdef'), findsNothing, reason: 'the saved key is never shown');
+    expect(find.textContaining('abcdef'), findsNothing, reason: 'the saved key is not shown by itself');
+
+    // Shown and copied only on request; hidden again after half a minute.
+    await tester.tap(find.text('Показать ключ'));
+    await tester.pumpAndSettle();
+    expect(find.text('sk-or-v1-abcdef123456wxyz'), findsOneWidget);
+    await tester.tap(find.text('Скрыть ключ'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('abcdef'), findsNothing);
+    await tester.tap(find.text('Показать ключ'));
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 31));
+    expect(find.textContaining('abcdef'), findsNothing);
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String?;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    await tester.tap(find.text('Копировать'));
+    await tester.pumpAndSettle();
+    expect(copied, 'sk-or-v1-abcdef123456wxyz');
+    expect(find.text('Ключ скопирован'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
 
     await tester.enterText(keyField('Сохранён'), 'sk-or-v1-second-key-9876');
     await tester.tap(find.widgetWithText(FilledButton, 'Заменить'));

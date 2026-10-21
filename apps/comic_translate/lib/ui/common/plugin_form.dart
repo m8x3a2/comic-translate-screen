@@ -182,9 +182,10 @@ class _DebouncedTextFieldState extends State<DebouncedTextField> {
 /// short values, where 4 characters would give away too much.
 String secretTail(String? value) => value == null || value.length < 12 ? '' : value.substring(value.length - 4);
 
-/// A secret (API key): shows only whether it is saved and its last 4
-/// characters. What the user types can be shown before saving; the saved
-/// key never is.
+/// A secret (API key): shows whether it is saved and its last 4 characters.
+/// What the user types can be shown before saving; the saved key is shown
+/// or copied only on request (and hidden again after a while). It never goes
+/// into logs or bug reports.
 class _SecretField extends ConsumerStatefulWidget {
   const _SecretField(this.info, this.field);
 
@@ -200,6 +201,10 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
   bool? _saved;
   String _tail = '';
   bool _show = false;
+
+  /// The saved key, while shown.
+  String? _revealed;
+  Timer? _hide;
 
   String get _key => pluginSecretKey(widget.info.id, widget.field.key);
 
@@ -225,6 +230,7 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
     await ref.read(servicesProvider).secrets.write(_key, value);
     _controller.clear();
     _show = false;
+    _conceal();
     await _refresh();
   }
 
@@ -243,11 +249,35 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
     );
     if (yes != true || !mounted) return;
     await ref.read(servicesProvider).secrets.delete(_key);
+    _conceal();
     await _refresh();
+  }
+
+  void _conceal() {
+    _hide?.cancel();
+    if (mounted) setState(() => _revealed = null);
+  }
+
+  Future<void> _reveal() async {
+    if (_revealed != null) return _conceal();
+    final value = await ref.read(servicesProvider).secrets.read(_key);
+    if (!mounted || value == null) return;
+    setState(() => _revealed = value);
+    _hide?.cancel();
+    _hide = Timer(const Duration(seconds: 30), _conceal);
+  }
+
+  Future<void> _copy() async {
+    final value = await ref.read(servicesProvider).secrets.read(_key);
+    if (value == null) return;
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.secretCopied)));
   }
 
   @override
   void dispose() {
+    _hide?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -299,6 +329,20 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
               ),
           ],
         ),
+        if (saved)
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 4,
+            children: [
+              TextButton.icon(
+                onPressed: _reveal,
+                icon: Icon(_revealed == null ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 18),
+                label: Text(_revealed == null ? l.secretShowSaved : l.secretHideSaved),
+              ),
+              TextButton.icon(onPressed: _copy, icon: const Icon(Icons.copy, size: 18), label: Text(l.secretCopy)),
+              if (_revealed != null) SelectableText(_revealed!, style: const TextStyle(fontFamily: 'monospace')),
+            ],
+          ),
       ],
     );
   }

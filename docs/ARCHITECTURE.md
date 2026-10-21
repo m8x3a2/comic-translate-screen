@@ -243,7 +243,9 @@ one file in `ct_providers/lib/src/<kind>/` and one line in its registry. See
   with the `Redactor`, which masks it in all logs, artifacts and bug reports.
   Each plugin has its own keys (`plugin.<id>.<key>`). The settings show only whether
   a key is saved and its last 4 characters (keys shorter than 12 characters: none);
-  what the user types can be shown before saving.
+  what the user types can be shown before saving. "Show key" shows a saved key for
+  30 seconds and "Copy" puts it on the clipboard, only when pressed; the value is
+  still masked in logs and reports.
 - The usage counter (`usage.json`) stays on this computer; it holds model names and
   numbers only.
 - There is no telemetry and no automatic network access (the original's update check

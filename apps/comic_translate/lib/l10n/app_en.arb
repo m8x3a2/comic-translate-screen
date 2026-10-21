@@ -944,5 +944,9 @@
   "exportStripSlices": "Cut again",
   "exportSliceHeight": "Height of a part, px",
   "exportStripHelp": "Each cut goes along an even row near this height (between panels), not through a bubble. Pictures taller than JPEG or WebP allow are saved as PNG.",
-  "exportStripSingleHelp": "All pages (of each chapter) one below the other in one picture. A very tall picture is saved as PNG."
+  "exportStripSingleHelp": "All pages (of each chapter) one below the other in one picture. A very tall picture is saved as PNG.",
+  "secretShowSaved": "Show key",
+  "secretHideSaved": "Hide key",
+  "secretCopy": "Copy",
+  "secretCopied": "Key copied"
 }

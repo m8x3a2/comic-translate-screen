@@ -1579,4 +1579,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get exportStripSingleHelp =>
       'All pages (of each chapter) one below the other in one picture. A very tall picture is saved as PNG.';
+
+  @override
+  String get secretShowSaved => 'Show key';
+
+  @override
+  String get secretHideSaved => 'Hide key';
+
+  @override
+  String get secretCopy => 'Copy';
+
+  @override
+  String get secretCopied => 'Key copied';
 }
