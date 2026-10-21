@@ -28,8 +28,13 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 ### Deliberate differences from the original
 
 - The PP-OCR line *detector* is not ported. The original runs it only when no
-  block has text lines; the heuristic line splitter always produces lines, and a
-  block without lines is read as a whole instead.
+  block has text lines, and reads a hand-drawn box among detected ones as one
+  line. Here every block without lines (drawn by hand, or resized) is split by
+  the heuristic line splitter just before reading, so it also counts towards
+  enlarging small text; only if the heuristics give up is it read as a whole.
+- A moved box takes its lines, bubble and outline along (the original keeps
+  them in place); a resized one loses its lines and keeps its bubble only while
+  it is still inside it.
 - Automatic source language ("Auto", M12) is the original's: the OSD LSTM
   model (Tesseract's script detector in ONNX, `osd-script-id`) reads the
   largest line of each block, and each block is read by the recognizer of its
