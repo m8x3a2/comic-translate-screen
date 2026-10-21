@@ -1616,6 +1616,12 @@ abstract class AppLocalizations {
   /// **'Regular expression'**
   String get useRegex;
 
+  /// No description provided for @preserveCase.
+  ///
+  /// In en, this message translates to:
+  /// **'Preserve case: the replacement takes the case of the found text (hello → world, HELLO → WORLD, Hello → World)'**
+  String get preserveCase;
+
   /// No description provided for @previousMatch.
   ///
   /// In en, this message translates to:

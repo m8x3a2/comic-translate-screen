@@ -859,6 +859,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get useRegex => 'Regular expression';
 
   @override
+  String get preserveCase =>
+      'Preserve case: the replacement takes the case of the found text (hello → world, HELLO → WORLD, Hello → World)';
+
+  @override
   String get previousMatch => 'Previous (Shift+Enter)';
 
   @override

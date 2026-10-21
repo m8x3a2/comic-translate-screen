@@ -242,7 +242,20 @@ class _FindReplacePanelState extends ConsumerState<FindReplacePanel> {
                 child: Text(l.matchesSummary('${matches.length}', '$pages'), style: theme.textTheme.bodySmall),
               ),
             const SizedBox(height: 8),
-            TextField(controller: _replace, decoration: deco(l.replaceHint)),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(controller: _replace, decoration: deco(l.replaceHint)),
+                ),
+                const SizedBox(width: 4),
+                toggle(
+                  'AB',
+                  l.preserveCase,
+                  _o.preserveCase,
+                  () => options(_o.copyWith(preserveCase: !_o.preserveCase)),
+                ),
+              ],
+            ),
             const SizedBox(height: 6),
             Wrap(
               alignment: WrapAlignment.end,

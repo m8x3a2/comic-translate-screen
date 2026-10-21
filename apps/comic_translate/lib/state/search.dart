@@ -14,6 +14,7 @@ class SearchOptions {
     this.wholeWord = false,
     this.regex = false,
     this.allPages = true,
+    this.preserveCase = false,
   });
 
   final String query;
@@ -29,6 +30,10 @@ class SearchOptions {
   /// Every page, else the current one.
   final bool allPages;
 
+  /// A replacement takes the case of the text it replaces (hello → world,
+  /// HELLO → WORLD, Hello → World).
+  final bool preserveCase;
+
   SearchOptions copyWith({
     String? query,
     bool? inSource,
@@ -36,6 +41,7 @@ class SearchOptions {
     bool? wholeWord,
     bool? regex,
     bool? allPages,
+    bool? preserveCase,
   }) => SearchOptions(
     query: query ?? this.query,
     inSource: inSource ?? this.inSource,
@@ -43,7 +49,23 @@ class SearchOptions {
     wholeWord: wholeWord ?? this.wholeWord,
     regex: regex ?? this.regex,
     allPages: allPages ?? this.allPages,
+    preserveCase: preserveCase ?? this.preserveCase,
   );
+}
+
+/// `_apply_preserve_case`: [replacement] in the case of [matched] (all
+/// lower, all upper, title case, or a capital first letter).
+String applyPreserveCase(String matched, String replacement) {
+  if (matched.isEmpty || replacement.isEmpty) return replacement;
+  if (pyIsLower(matched)) return pyLower(replacement);
+  if (pyIsUpper(matched)) return pyUpper(replacement);
+  if (pyIsTitle(matched)) return pyTitle(replacement);
+  if (pyIsUpper(String.fromCharCode(matched.runes.first))) {
+    final runes = replacement.runes;
+    if (runes.length <= 1) return pyUpper(replacement);
+    return pyUpper(String.fromCharCode(runes.first)) + String.fromCharCodes(runes.skip(1));
+  }
+  return replacement;
 }
 
 class SearchMatch {
@@ -81,6 +103,13 @@ List<SearchMatch> findMatches(List<PageEntry> pages, SearchOptions o, {String? c
   ];
 }
 
+/// What replaces match [m]: [replacement] expanded, in the case of the
+/// matched text when [SearchOptions.preserveCase] is on.
+String _replacement(Match m, String replacement, SearchOptions o) {
+  final text = _expand(m, replacement, o.regex);
+  return o.preserveCase ? applyPreserveCase(m[0]!, text) : text;
+}
+
 /// [replacement] for one match: groups (`$1`, `${name}`) with regular
 /// expressions, literal text otherwise.
 String _expand(Match m, String replacement, bool regex) {
@@ -103,7 +132,7 @@ String? replaceAt(String text, int start, SearchOptions o, String replacement) {
   if (re == null) return null;
   for (final m in re.allMatches(text)) {
     if (m.start == start && m.end > m.start) {
-      return text.replaceRange(m.start, m.end, _expand(m, replacement, o.regex));
+      return text.replaceRange(m.start, m.end, _replacement(m, replacement, o));
     }
   }
   return null;
@@ -117,7 +146,7 @@ String? replaceAt(String text, int start, SearchOptions o, String replacement) {
   final out = text.replaceAllMapped(re, (m) {
     if (m.end == m.start) return m[0]!;
     count++;
-    return _expand(m, replacement, o.regex);
+    return _replacement(m, replacement, o);
   });
   return (out, count);
 }

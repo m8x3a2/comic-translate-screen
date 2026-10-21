@@ -489,6 +489,7 @@
   "matchCase": "Match case",
   "wholeWord": "Whole words",
   "useRegex": "Regular expression",
+  "preserveCase": "Preserve case: the replacement takes the case of the found text (hello → world, HELLO → WORLD, Hello → World)",
   "previousMatch": "Previous (Shift+Enter)",
   "nextMatch": "Next (Enter)",
   "searchInTranslation": "In translations",

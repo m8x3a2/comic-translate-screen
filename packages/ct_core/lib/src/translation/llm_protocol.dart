@@ -185,6 +185,53 @@ bool pyIsUpper(String s) {
   return cased;
 }
 
+/// Python `str.islower()`: has a cased character and no upper- or
+/// title-case one.
+bool pyIsLower(String s) {
+  var cased = false;
+  for (final r in s.runes) {
+    final c = String.fromCharCode(r);
+    if (pyLower(c) != c) return false; // upper or title case
+    if (pyUpper(c) != c) cased = true;
+  }
+  return cased;
+}
+
+bool _isCasedChar(String c) => pyUpper(c) != c || pyLower(c) != c;
+
+/// Python `str.istitle()`: upper- and title-case characters only after
+/// uncased ones, lower-case ones only after cased ones.
+bool pyIsTitle(String s) {
+  var cased = false, previousCased = false;
+  for (final r in s.runes) {
+    final c = String.fromCharCode(r);
+    final lower = pyUpper(c) != c && pyLower(c) == c;
+    if (_isCasedChar(c) && !lower) {
+      if (previousCased) return false;
+      previousCased = cased = true;
+    } else if (lower) {
+      if (!previousCased) return false;
+      previousCased = cased = true;
+    } else {
+      previousCased = false;
+    }
+  }
+  return cased;
+}
+
+/// Python `str.title()`: each run of cased characters starts in title case
+/// and goes on in lower case ("they're" → "They'Re", as Python does).
+String pyTitle(String s) {
+  final out = StringBuffer();
+  var previousCased = false;
+  for (final r in s.runes) {
+    final c = String.fromCharCode(r);
+    out.write(previousCased ? pyLower(c) : (_pyTitleSpecial[r] ?? pyUpper(c)));
+    previousCased = _isCasedChar(c);
+  }
+  return out.toString();
+}
+
 /// Python `str.capitalize()`: first character in title case, the rest lower.
 String pyCapitalize(String s) {
   if (s.isEmpty) return s;

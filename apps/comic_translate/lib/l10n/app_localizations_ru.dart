@@ -861,6 +861,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get useRegex => 'Регулярное выражение';
 
   @override
+  String get preserveCase =>
+      'Сохранять регистр: замена пишется так же, как найденное (привет → мир, ПРИВЕТ → МИР, Привет → Мир)';
+
+  @override
   String get previousMatch => 'Предыдущее (Shift+Enter)';
 
   @override

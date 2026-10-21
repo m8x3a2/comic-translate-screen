@@ -15,6 +15,7 @@ with small tolerances.
 | `detection` | RT-DETR-v2 on every test page: raw outputs, blocks, lines, colours | `packages/ct_providers/test/rtdetr_v2_parity_test.dart` (needs the model) |
 | `ocr` | PaddleOCR on the detected blocks: line crops, recognizer inputs, texts | `packages/ct_providers/test/ppocr_parity_test.dart` (needs the models) |
 | `manga_ocr` | manga-ocr on two pages (inputs, tokens, texts) and its text clean-up | `packages/ct_providers/test/manga_ocr_parity_test.dart`, `packages/ct_core/test/parity/manga_ocr_text_test.dart` |
+| `search` | "preserve case" of find and replace on ~300 word pairs (the function is taken from the source: its module needs the whole Qt application) | `apps/comic_translate/test/search_test.dart` |
 | `script` | script identification ("Auto"): the line read in each block, model inputs and best paths, script labels, page language (with lines, without, inverted) | `packages/ct_core/test/parity/script_test.dart`, `packages/ct_providers/test/script_id_parity_test.dart` (needs the model) |
 | `mask` | mahotas morphology, imkit contours, Pillow blur and "L" resize; generate_mask on every page | `packages/ct_core/test/parity/mask_test.dart` |
 | `inpaint` | fast bubble fill, patch/full routing, AOT and LaMa results with each high-resolution strategy | `packages/ct_providers/test/inpaint_parity_test.dart` (needs the models) |

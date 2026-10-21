@@ -104,9 +104,9 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   will draw it. Text formatting applies to a whole bubble (the original also
   formats selected characters inside a text item); text is typed in the
   side panel, not on the page. Line breaks typed by the user are kept (the
-  original wraps them away). "Preserve case" of find and replace is not
-  ported. The generated mask is a raster, and brush and eraser strokes are
-  kept as strokes over it (the original turns the mask into vector paths).
+  original wraps them away). The generated mask is a raster, and brush and
+  eraser strokes are kept as strokes over it (the original turns the mask
+  into vector paths).
   Cleaning starts from the current cleaned page, as in the original.
 - Webtoon mode (M10): a bubble cut by the edge between two pages belongs to
   the upper page. The original detects both pages apart and joins the two

@@ -633,6 +633,28 @@ def gen_script(out: Path, pages_dir: Path, models_dir: Path, detection_dir: Path
     write_json(out / "script.json", {"labels": detector.labels, "pages": pages, "helpers": helpers, "dominant": dominant})
 
 
+# ----------------------------------------------------------------- search ---
+
+def gen_search(out: Path, original: Path) -> None:
+    """"Preserve case" of find and replace (`_apply_preserve_case`). The module imports the
+    whole Qt application, so the function is taken from its source and run alone."""
+    import ast
+
+    path = original / "app" / "controllers" / "search_replace.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "_apply_preserve_case")
+    namespace: dict = {}
+    exec(compile(ast.Module(body=[fn], type_ignores=[]), str(path), "exec"), namespace)
+    apply = namespace["_apply_preserve_case"]
+
+    matched = ["hello", "HELLO", "Hello", "Hello World", "hELLO", "HeLLo", "привет", "ПРИВЕТ", "Привет",
+               "Привет Мир", "ß", "ǅemal", "they're", "X", "x", "123", "1st", "Ünder", "ΣΊΣΥΦΟΣ", "", "a-b", "Mc"]
+    replacements = ["world", "WORLD", "World", "big world", "мир", "большой мир", "straße", "x", "ǆungla",
+                    "o'neil", "", "1two", "éclair", "ﬁne"]
+    cases = [{"matched": m, "replacement": r, "out": apply(m, r)} for m in matched for r in replacements]
+    write_json(out / "search.json", {"preserve_case": cases})
+
+
 # ------------------------------------------------------------ translation ---
 
 def gen_translation(out: Path) -> None:
@@ -920,7 +942,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "translation", "mask", "inpaint", "render"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "search", "translation", "mask", "inpaint", "render"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -946,7 +968,7 @@ def main() -> None:
         "decoder": "cv2.imdecode(IMREAD_COLOR) + BGR2RGB",
     })
 
-    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "translation", "mask", "inpaint", "render"])
+    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "search", "translation", "mask", "inpaint", "render"])
     if "primitives" in only:
         gen_primitives(args.out)
     if "geometry" in only:
@@ -961,6 +983,8 @@ def main() -> None:
         gen_manga_ocr(args.out, args.pages, args.models, args.out / "detection")
     if "script" in only:
         gen_script(args.out, args.pages, args.models, args.out / "detection")
+    if "search" in only:
+        gen_search(args.out, original)
     if "translation" in only:
         gen_translation(args.out)
     if "mask" in only:

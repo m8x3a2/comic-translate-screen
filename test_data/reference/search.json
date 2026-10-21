@@ -1,0 +1,1544 @@
+{
+ "preserve_case": [
+  {
+   "matched": "hello",
+   "replacement": "world",
+   "out": "world"
+  },
+  {
+   "matched": "hello",
+   "replacement": "WORLD",
+   "out": "world"
+  },
+  {
+   "matched": "hello",
+   "replacement": "World",
+   "out": "world"
+  },
+  {
+   "matched": "hello",
+   "replacement": "big world",
+   "out": "big world"
+  },
+  {
+   "matched": "hello",
+   "replacement": "мир",
+   "out": "мир"
+  },
+  {
+   "matched": "hello",
+   "replacement": "большой мир",
+   "out": "большой мир"
+  },
+  {
+   "matched": "hello",
+   "replacement": "straße",
+   "out": "straße"
+  },
+  {
+   "matched": "hello",
+   "replacement": "x",
+   "out": "x"
+  },
+  {
+   "matched": "hello",
+   "replacement": "ǆungla",
+   "out": "ǆungla"
+  },
+  {
+   "matched": "hello",
+   "replacement": "o'neil",
+   "out": "o'neil"
+  },
+  {
+   "matched": "hello",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "hello",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "hello",
+   "replacement": "éclair",
+   "out": "éclair"
+  },
+  {
+   "matched": "hello",
+   "replacement": "ﬁne",
+   "out": "ﬁne"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "world",
+   "out": "WORLD"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "WORLD",
+   "out": "WORLD"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "World",
+   "out": "WORLD"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "big world",
+   "out": "BIG WORLD"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "мир",
+   "out": "МИР"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "большой мир",
+   "out": "БОЛЬШОЙ МИР"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "straße",
+   "out": "STRASSE"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "ǆungla",
+   "out": "ǄUNGLA"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "o'neil",
+   "out": "O'NEIL"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "1two",
+   "out": "1TWO"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "éclair",
+   "out": "ÉCLAIR"
+  },
+  {
+   "matched": "HELLO",
+   "replacement": "ﬁne",
+   "out": "FINE"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "world",
+   "out": "World"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "WORLD",
+   "out": "World"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "big world",
+   "out": "Big World"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "мир",
+   "out": "Мир"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "большой мир",
+   "out": "Большой Мир"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "straße",
+   "out": "Straße"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "ǆungla",
+   "out": "ǅungla"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "o'neil",
+   "out": "O'Neil"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "Hello",
+   "replacement": "1two",
+   "out": "1Two"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "éclair",
+   "out": "Éclair"
+  },
+  {
+   "matched": "Hello",
+   "replacement": "ﬁne",
+   "out": "Fine"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "world",
+   "out": "World"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "WORLD",
+   "out": "World"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "big world",
+   "out": "Big World"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "мир",
+   "out": "Мир"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "большой мир",
+   "out": "Большой Мир"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "straße",
+   "out": "Straße"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "ǆungla",
+   "out": "ǅungla"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "o'neil",
+   "out": "O'Neil"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "1two",
+   "out": "1Two"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "éclair",
+   "out": "Éclair"
+  },
+  {
+   "matched": "Hello World",
+   "replacement": "ﬁne",
+   "out": "Fine"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "world",
+   "out": "world"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "WORLD",
+   "out": "WORLD"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "big world",
+   "out": "big world"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "мир",
+   "out": "мир"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "большой мир",
+   "out": "большой мир"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "straße",
+   "out": "straße"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "x",
+   "out": "x"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "ǆungla",
+   "out": "ǆungla"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "o'neil",
+   "out": "o'neil"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "éclair",
+   "out": "éclair"
+  },
+  {
+   "matched": "hELLO",
+   "replacement": "ﬁne",
+   "out": "ﬁne"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "world",
+   "out": "World"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "WORLD",
+   "out": "WORLD"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "big world",
+   "out": "Big world"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "мир",
+   "out": "Мир"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "большой мир",
+   "out": "Большой мир"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "straße",
+   "out": "Straße"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "ǆungla",
+   "out": "Ǆungla"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "o'neil",
+   "out": "O'neil"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "éclair",
+   "out": "Éclair"
+  },
+  {
+   "matched": "HeLLo",
+   "replacement": "ﬁne",
+   "out": "FIne"
+  },
+  {
+   "matched": "привет",
+   "replacement": "world",
+   "out": "world"
+  },
+  {
+   "matched": "привет",
+   "replacement": "WORLD",
+   "out": "world"
+  },
+  {
+   "matched": "привет",
+   "replacement": "World",
+   "out": "world"
+  },
+  {
+   "matched": "привет",
+   "replacement": "big world",
+   "out": "big world"
+  },
+  {
+   "matched": "привет",
+   "replacement": "мир",
+   "out": "мир"
+  },
+  {
+   "matched": "привет",
+   "replacement": "большой мир",
+   "out": "большой мир"
+  },
+  {
+   "matched": "привет",
+   "replacement": "straße",
+   "out": "straße"
+  },
+  {
+   "matched": "привет",
+   "replacement": "x",
+   "out": "x"
+  },
+  {
+   "matched": "привет",
+   "replacement": "ǆungla",
+   "out": "ǆungla"
+  },
+  {
+   "matched": "привет",
+   "replacement": "o'neil",
+   "out": "o'neil"
+  },
+  {
+   "matched": "привет",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "привет",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "привет",
+   "replacement": "éclair",
+   "out": "éclair"
+  },
+  {
+   "matched": "привет",
+   "replacement": "ﬁne",
+   "out": "ﬁne"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "world",
+   "out": "WORLD"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "WORLD",
+   "out": "WORLD"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "World",
+   "out": "WORLD"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "big world",
+   "out": "BIG WORLD"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "мир",
+   "out": "МИР"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "большой мир",
+   "out": "БОЛЬШОЙ МИР"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "straße",
+   "out": "STRASSE"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "ǆungla",
+   "out": "ǄUNGLA"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "o'neil",
+   "out": "O'NEIL"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "1two",
+   "out": "1TWO"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "éclair",
+   "out": "ÉCLAIR"
+  },
+  {
+   "matched": "ПРИВЕТ",
+   "replacement": "ﬁne",
+   "out": "FINE"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "world",
+   "out": "World"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "WORLD",
+   "out": "World"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "big world",
+   "out": "Big World"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "мир",
+   "out": "Мир"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "большой мир",
+   "out": "Большой Мир"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "straße",
+   "out": "Straße"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "ǆungla",
+   "out": "ǅungla"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "o'neil",
+   "out": "O'Neil"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "Привет",
+   "replacement": "1two",
+   "out": "1Two"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "éclair",
+   "out": "Éclair"
+  },
+  {
+   "matched": "Привет",
+   "replacement": "ﬁne",
+   "out": "Fine"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "world",
+   "out": "World"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "WORLD",
+   "out": "World"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "big world",
+   "out": "Big World"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "мир",
+   "out": "Мир"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "большой мир",
+   "out": "Большой Мир"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "straße",
+   "out": "Straße"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "ǆungla",
+   "out": "ǅungla"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "o'neil",
+   "out": "O'Neil"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "1two",
+   "out": "1Two"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "éclair",
+   "out": "Éclair"
+  },
+  {
+   "matched": "Привет Мир",
+   "replacement": "ﬁne",
+   "out": "Fine"
+  },
+  {
+   "matched": "ß",
+   "replacement": "world",
+   "out": "world"
+  },
+  {
+   "matched": "ß",
+   "replacement": "WORLD",
+   "out": "world"
+  },
+  {
+   "matched": "ß",
+   "replacement": "World",
+   "out": "world"
+  },
+  {
+   "matched": "ß",
+   "replacement": "big world",
+   "out": "big world"
+  },
+  {
+   "matched": "ß",
+   "replacement": "мир",
+   "out": "мир"
+  },
+  {
+   "matched": "ß",
+   "replacement": "большой мир",
+   "out": "большой мир"
+  },
+  {
+   "matched": "ß",
+   "replacement": "straße",
+   "out": "straße"
+  },
+  {
+   "matched": "ß",
+   "replacement": "x",
+   "out": "x"
+  },
+  {
+   "matched": "ß",
+   "replacement": "ǆungla",
+   "out": "ǆungla"
+  },
+  {
+   "matched": "ß",
+   "replacement": "o'neil",
+   "out": "o'neil"
+  },
+  {
+   "matched": "ß",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "ß",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "ß",
+   "replacement": "éclair",
+   "out": "éclair"
+  },
+  {
+   "matched": "ß",
+   "replacement": "ﬁne",
+   "out": "ﬁne"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "world",
+   "out": "World"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "WORLD",
+   "out": "World"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "big world",
+   "out": "Big World"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "мир",
+   "out": "Мир"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "большой мир",
+   "out": "Большой Мир"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "straße",
+   "out": "Straße"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "ǆungla",
+   "out": "ǅungla"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "o'neil",
+   "out": "O'Neil"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "1two",
+   "out": "1Two"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "éclair",
+   "out": "Éclair"
+  },
+  {
+   "matched": "ǅemal",
+   "replacement": "ﬁne",
+   "out": "Fine"
+  },
+  {
+   "matched": "they're",
+   "replacement": "world",
+   "out": "world"
+  },
+  {
+   "matched": "they're",
+   "replacement": "WORLD",
+   "out": "world"
+  },
+  {
+   "matched": "they're",
+   "replacement": "World",
+   "out": "world"
+  },
+  {
+   "matched": "they're",
+   "replacement": "big world",
+   "out": "big world"
+  },
+  {
+   "matched": "they're",
+   "replacement": "мир",
+   "out": "мир"
+  },
+  {
+   "matched": "they're",
+   "replacement": "большой мир",
+   "out": "большой мир"
+  },
+  {
+   "matched": "they're",
+   "replacement": "straße",
+   "out": "straße"
+  },
+  {
+   "matched": "they're",
+   "replacement": "x",
+   "out": "x"
+  },
+  {
+   "matched": "they're",
+   "replacement": "ǆungla",
+   "out": "ǆungla"
+  },
+  {
+   "matched": "they're",
+   "replacement": "o'neil",
+   "out": "o'neil"
+  },
+  {
+   "matched": "they're",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "they're",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "they're",
+   "replacement": "éclair",
+   "out": "éclair"
+  },
+  {
+   "matched": "they're",
+   "replacement": "ﬁne",
+   "out": "ﬁne"
+  },
+  {
+   "matched": "X",
+   "replacement": "world",
+   "out": "WORLD"
+  },
+  {
+   "matched": "X",
+   "replacement": "WORLD",
+   "out": "WORLD"
+  },
+  {
+   "matched": "X",
+   "replacement": "World",
+   "out": "WORLD"
+  },
+  {
+   "matched": "X",
+   "replacement": "big world",
+   "out": "BIG WORLD"
+  },
+  {
+   "matched": "X",
+   "replacement": "мир",
+   "out": "МИР"
+  },
+  {
+   "matched": "X",
+   "replacement": "большой мир",
+   "out": "БОЛЬШОЙ МИР"
+  },
+  {
+   "matched": "X",
+   "replacement": "straße",
+   "out": "STRASSE"
+  },
+  {
+   "matched": "X",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "X",
+   "replacement": "ǆungla",
+   "out": "ǄUNGLA"
+  },
+  {
+   "matched": "X",
+   "replacement": "o'neil",
+   "out": "O'NEIL"
+  },
+  {
+   "matched": "X",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "X",
+   "replacement": "1two",
+   "out": "1TWO"
+  },
+  {
+   "matched": "X",
+   "replacement": "éclair",
+   "out": "ÉCLAIR"
+  },
+  {
+   "matched": "X",
+   "replacement": "ﬁne",
+   "out": "FINE"
+  },
+  {
+   "matched": "x",
+   "replacement": "world",
+   "out": "world"
+  },
+  {
+   "matched": "x",
+   "replacement": "WORLD",
+   "out": "world"
+  },
+  {
+   "matched": "x",
+   "replacement": "World",
+   "out": "world"
+  },
+  {
+   "matched": "x",
+   "replacement": "big world",
+   "out": "big world"
+  },
+  {
+   "matched": "x",
+   "replacement": "мир",
+   "out": "мир"
+  },
+  {
+   "matched": "x",
+   "replacement": "большой мир",
+   "out": "большой мир"
+  },
+  {
+   "matched": "x",
+   "replacement": "straße",
+   "out": "straße"
+  },
+  {
+   "matched": "x",
+   "replacement": "x",
+   "out": "x"
+  },
+  {
+   "matched": "x",
+   "replacement": "ǆungla",
+   "out": "ǆungla"
+  },
+  {
+   "matched": "x",
+   "replacement": "o'neil",
+   "out": "o'neil"
+  },
+  {
+   "matched": "x",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "x",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "x",
+   "replacement": "éclair",
+   "out": "éclair"
+  },
+  {
+   "matched": "x",
+   "replacement": "ﬁne",
+   "out": "ﬁne"
+  },
+  {
+   "matched": "123",
+   "replacement": "world",
+   "out": "world"
+  },
+  {
+   "matched": "123",
+   "replacement": "WORLD",
+   "out": "WORLD"
+  },
+  {
+   "matched": "123",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "123",
+   "replacement": "big world",
+   "out": "big world"
+  },
+  {
+   "matched": "123",
+   "replacement": "мир",
+   "out": "мир"
+  },
+  {
+   "matched": "123",
+   "replacement": "большой мир",
+   "out": "большой мир"
+  },
+  {
+   "matched": "123",
+   "replacement": "straße",
+   "out": "straße"
+  },
+  {
+   "matched": "123",
+   "replacement": "x",
+   "out": "x"
+  },
+  {
+   "matched": "123",
+   "replacement": "ǆungla",
+   "out": "ǆungla"
+  },
+  {
+   "matched": "123",
+   "replacement": "o'neil",
+   "out": "o'neil"
+  },
+  {
+   "matched": "123",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "123",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "123",
+   "replacement": "éclair",
+   "out": "éclair"
+  },
+  {
+   "matched": "123",
+   "replacement": "ﬁne",
+   "out": "ﬁne"
+  },
+  {
+   "matched": "1st",
+   "replacement": "world",
+   "out": "world"
+  },
+  {
+   "matched": "1st",
+   "replacement": "WORLD",
+   "out": "world"
+  },
+  {
+   "matched": "1st",
+   "replacement": "World",
+   "out": "world"
+  },
+  {
+   "matched": "1st",
+   "replacement": "big world",
+   "out": "big world"
+  },
+  {
+   "matched": "1st",
+   "replacement": "мир",
+   "out": "мир"
+  },
+  {
+   "matched": "1st",
+   "replacement": "большой мир",
+   "out": "большой мир"
+  },
+  {
+   "matched": "1st",
+   "replacement": "straße",
+   "out": "straße"
+  },
+  {
+   "matched": "1st",
+   "replacement": "x",
+   "out": "x"
+  },
+  {
+   "matched": "1st",
+   "replacement": "ǆungla",
+   "out": "ǆungla"
+  },
+  {
+   "matched": "1st",
+   "replacement": "o'neil",
+   "out": "o'neil"
+  },
+  {
+   "matched": "1st",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "1st",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "1st",
+   "replacement": "éclair",
+   "out": "éclair"
+  },
+  {
+   "matched": "1st",
+   "replacement": "ﬁne",
+   "out": "ﬁne"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "world",
+   "out": "World"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "WORLD",
+   "out": "World"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "big world",
+   "out": "Big World"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "мир",
+   "out": "Мир"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "большой мир",
+   "out": "Большой Мир"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "straße",
+   "out": "Straße"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "ǆungla",
+   "out": "ǅungla"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "o'neil",
+   "out": "O'Neil"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "1two",
+   "out": "1Two"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "éclair",
+   "out": "Éclair"
+  },
+  {
+   "matched": "Ünder",
+   "replacement": "ﬁne",
+   "out": "Fine"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "world",
+   "out": "WORLD"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "WORLD",
+   "out": "WORLD"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "World",
+   "out": "WORLD"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "big world",
+   "out": "BIG WORLD"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "мир",
+   "out": "МИР"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "большой мир",
+   "out": "БОЛЬШОЙ МИР"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "straße",
+   "out": "STRASSE"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "ǆungla",
+   "out": "ǄUNGLA"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "o'neil",
+   "out": "O'NEIL"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "1two",
+   "out": "1TWO"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "éclair",
+   "out": "ÉCLAIR"
+  },
+  {
+   "matched": "ΣΊΣΥΦΟΣ",
+   "replacement": "ﬁne",
+   "out": "FINE"
+  },
+  {
+   "matched": "",
+   "replacement": "world",
+   "out": "world"
+  },
+  {
+   "matched": "",
+   "replacement": "WORLD",
+   "out": "WORLD"
+  },
+  {
+   "matched": "",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "",
+   "replacement": "big world",
+   "out": "big world"
+  },
+  {
+   "matched": "",
+   "replacement": "мир",
+   "out": "мир"
+  },
+  {
+   "matched": "",
+   "replacement": "большой мир",
+   "out": "большой мир"
+  },
+  {
+   "matched": "",
+   "replacement": "straße",
+   "out": "straße"
+  },
+  {
+   "matched": "",
+   "replacement": "x",
+   "out": "x"
+  },
+  {
+   "matched": "",
+   "replacement": "ǆungla",
+   "out": "ǆungla"
+  },
+  {
+   "matched": "",
+   "replacement": "o'neil",
+   "out": "o'neil"
+  },
+  {
+   "matched": "",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "",
+   "replacement": "éclair",
+   "out": "éclair"
+  },
+  {
+   "matched": "",
+   "replacement": "ﬁne",
+   "out": "ﬁne"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "world",
+   "out": "world"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "WORLD",
+   "out": "world"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "World",
+   "out": "world"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "big world",
+   "out": "big world"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "мир",
+   "out": "мир"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "большой мир",
+   "out": "большой мир"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "straße",
+   "out": "straße"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "x",
+   "out": "x"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "ǆungla",
+   "out": "ǆungla"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "o'neil",
+   "out": "o'neil"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "a-b",
+   "replacement": "1two",
+   "out": "1two"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "éclair",
+   "out": "éclair"
+  },
+  {
+   "matched": "a-b",
+   "replacement": "ﬁne",
+   "out": "ﬁne"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "world",
+   "out": "World"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "WORLD",
+   "out": "World"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "World",
+   "out": "World"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "big world",
+   "out": "Big World"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "мир",
+   "out": "Мир"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "большой мир",
+   "out": "Большой Мир"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "straße",
+   "out": "Straße"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "x",
+   "out": "X"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "ǆungla",
+   "out": "ǅungla"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "o'neil",
+   "out": "O'Neil"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "",
+   "out": ""
+  },
+  {
+   "matched": "Mc",
+   "replacement": "1two",
+   "out": "1Two"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "éclair",
+   "out": "Éclair"
+  },
+  {
+   "matched": "Mc",
+   "replacement": "ﬁne",
+   "out": "Fine"
+  }
+ ]
+}
