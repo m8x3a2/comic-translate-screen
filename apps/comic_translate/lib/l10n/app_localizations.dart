@@ -1766,12 +1766,6 @@ abstract class AppLocalizations {
   /// **'Translate all'**
   String get keyTranslateAll;
 
-  /// No description provided for @keyPages.
-  ///
-  /// In en, this message translates to:
-  /// **'Previous / next page'**
-  String get keyPages;
-
   /// No description provided for @keyPan.
   ///
   /// In en, this message translates to:
@@ -1801,12 +1795,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Eraser: unmark'**
   String get keyEraser;
-
-  /// No description provided for @keyBrushSize.
-  ///
-  /// In en, this message translates to:
-  /// **'Smaller / larger brush'**
-  String get keyBrushSize;
 
   /// No description provided for @keyUndo.
   ///
@@ -1883,7 +1871,7 @@ abstract class AppLocalizations {
   /// No description provided for @keysNote.
   ///
   /// In en, this message translates to:
-  /// **'Letter keys do nothing while you type in a text field. They work with any keyboard layout.'**
+  /// **'Keys without Ctrl or Alt do nothing while you type in a text field. They work with any keyboard layout. To change them: Settings → Keys.'**
   String get keysNote;
 
   /// No description provided for @keysGroupWindow.
@@ -1903,6 +1891,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Full screen on and off'**
   String get keyFullScreen;
+
+  /// No description provided for @keyPreviousPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get keyPreviousPage;
+
+  /// No description provided for @keyNextPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get keyNextPage;
+
+  /// No description provided for @keyBrushSmaller.
+  ///
+  /// In en, this message translates to:
+  /// **'Smaller brush'**
+  String get keyBrushSmaller;
+
+  /// No description provided for @keyBrushLarger.
+  ///
+  /// In en, this message translates to:
+  /// **'Larger brush'**
+  String get keyBrushLarger;
+
+  /// No description provided for @settingsKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Keys'**
+  String get settingsKeys;
+
+  /// No description provided for @keysSettingsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Click an action to give it another key or combination. Keys without Ctrl or Alt do nothing while you type in a text field.'**
+  String get keysSettingsHelp;
+
+  /// No description provided for @keysNone.
+  ///
+  /// In en, this message translates to:
+  /// **'no key'**
+  String get keysNone;
+
+  /// No description provided for @keysChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the key'**
+  String get keysChange;
+
+  /// No description provided for @keysDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the default key'**
+  String get keysDefault;
+
+  /// No description provided for @keysCaptureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New key: {action}'**
+  String keysCaptureTitle(String action);
+
+  /// No description provided for @keysCaptureBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Press a key or a combination with Ctrl, Shift or Alt.'**
+  String get keysCaptureBody;
+
+  /// No description provided for @keysCaptureTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'Now used by \"{action}\": it will be taken from there.'**
+  String keysCaptureTaken(String action);
+
+  /// No description provided for @keysCaptureReserved.
+  ///
+  /// In en, this message translates to:
+  /// **'Text fields and windows need this key; choose another one.'**
+  String get keysCaptureReserved;
+
+  /// No description provided for @keysCaptureNoKey.
+  ///
+  /// In en, this message translates to:
+  /// **'No key'**
+  String get keysCaptureNoKey;
 
   /// No description provided for @fullScreenOn.
   ///

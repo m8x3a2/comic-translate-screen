@@ -943,9 +943,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get keyTranslateAll => 'Translate all';
 
   @override
-  String get keyPages => 'Previous / next page';
-
-  @override
   String get keyPan => 'Hand: move the page, select a bubble';
 
   @override
@@ -959,9 +956,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyEraser => 'Eraser: unmark';
-
-  @override
-  String get keyBrushSize => 'Smaller / larger brush';
 
   @override
   String get keyUndo => 'Undo';
@@ -1002,7 +996,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keysNote =>
-      'Letter keys do nothing while you type in a text field. They work with any keyboard layout.';
+      'Keys without Ctrl or Alt do nothing while you type in a text field. They work with any keyboard layout. To change them: Settings → Keys.';
 
   @override
   String get keysGroupWindow => 'Window';
@@ -1012,6 +1006,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyFullScreen => 'Full screen on and off';
+
+  @override
+  String get keyPreviousPage => 'Previous page';
+
+  @override
+  String get keyNextPage => 'Next page';
+
+  @override
+  String get keyBrushSmaller => 'Smaller brush';
+
+  @override
+  String get keyBrushLarger => 'Larger brush';
+
+  @override
+  String get settingsKeys => 'Keys';
+
+  @override
+  String get keysSettingsHelp =>
+      'Click an action to give it another key or combination. Keys without Ctrl or Alt do nothing while you type in a text field.';
+
+  @override
+  String get keysNone => 'no key';
+
+  @override
+  String get keysChange => 'Change the key';
+
+  @override
+  String get keysDefault => 'Back to the default key';
+
+  @override
+  String keysCaptureTitle(String action) {
+    return 'New key: $action';
+  }
+
+  @override
+  String get keysCaptureBody =>
+      'Press a key or a combination with Ctrl, Shift or Alt.';
+
+  @override
+  String keysCaptureTaken(String action) {
+    return 'Now used by \"$action\": it will be taken from there.';
+  }
+
+  @override
+  String get keysCaptureReserved =>
+      'Text fields and windows need this key; choose another one.';
+
+  @override
+  String get keysCaptureNoKey => 'No key';
 
   @override
   String get fullScreenOn => 'Full screen. Press F11 to leave it.';

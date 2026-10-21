@@ -37,6 +37,7 @@ void main() {
         'openai_compatible': {'url': 'http://localhost:1234/v1', 'model': 'x'},
       },
       approvedNetworkPlugins: {'openai_compatible'},
+      shortcuts: {'undo': 'Ctrl+U', 'help': ''},
       extra: {'future_feature': 42},
     );
     await store.save(s);
@@ -47,6 +48,7 @@ void main() {
     expect(loaded.fixCyrillicLookalikes, isTrue);
     expect(loaded.upscaleSmallText, isFalse);
     expect(loaded.upperCase, isTrue);
+    expect(loaded.shortcuts, {'undo': 'Ctrl+U', 'help': ''});
   });
 
   test('corrupt file falls back to defaults and is kept as backup', () async {
@@ -54,13 +56,18 @@ void main() {
     final mem = MemorySink(Redactor());
     final loaded = await SettingsStore(file, log: EventLog([mem])).load();
     expect(loaded.toJson(), AppSettings().toJson());
-    expect(tmp.listSync().map((e) => p.basename(e.path)).where((n) => n.startsWith('settings.json.bad-')), hasLength(1));
+    expect(
+      tmp.listSync().map((e) => p.basename(e.path)).where((n) => n.startsWith('settings.json.bad-')),
+      hasLength(1),
+    );
     expect(mem.events.single.event, 'settings_unreadable');
   });
 
   test('wrong types fall back per field', () {
-    final s = AppSettings.fromJson(jsonDecode('{"tools": {"use_gpu": "yes", "inpainter": "lama"}, "inpaint": {"resize_limit": 1280.0}}')
-        as Map<String, Object?>);
+    final s = AppSettings.fromJson(
+      jsonDecode('{"tools": {"use_gpu": "yes", "inpainter": "lama"}, "inpaint": {"resize_limit": 1280.0}}')
+          as Map<String, Object?>,
+    );
     expect(s.useGpu, isFalse);
     expect(s.inpainter, 'lama');
     expect(s.inpaint.resizeLimit, 1280);

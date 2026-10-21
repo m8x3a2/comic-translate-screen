@@ -29,16 +29,18 @@ class AppSettings {
     this.modelsDir = '',
     this.theme = 'dark',
     this.uiLanguage = 'ru',
+    Map<String, String>? shortcuts,
     this.testMode = false,
     this.projectAutosave = true,
     List<String>? recentProjects,
     Map<String, Map<String, Object?>>? plugins,
     Set<String>? approvedNetworkPlugins,
     Map<String, Object?>? extra,
-  })  : recentProjects = recentProjects ?? [],
-        plugins = plugins ?? {},
-        approvedNetworkPlugins = approvedNetworkPlugins ?? {},
-        extra = extra ?? {};
+  }) : shortcuts = shortcuts ?? {},
+       recentProjects = recentProjects ?? [],
+       plugins = plugins ?? {},
+       approvedNetworkPlugins = approvedNetworkPlugins ?? {},
+       extra = extra ?? {};
 
   static const schemaVersion = 1;
 
@@ -95,6 +97,11 @@ class AppSettings {
   String theme;
   String uiLanguage;
 
+  /// Keyboard shortcuts changed by the user: action id → key combination
+  /// (`Ctrl+Shift+S`; empty: no key). Actions not listed keep their
+  /// default keys.
+  Map<String, String> shortcuts;
+
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
@@ -118,30 +125,30 @@ class AppSettings {
   Map<String, Object?> pluginValues(String id) => plugins[id] ?? const {};
 
   Map<String, Object?> toJson() => {
-        ...extra,
-        'schema_version': schemaVersion,
-        'tools': {
-          'detector': detector,
-          'ocr': ocr,
-          'translator': translator,
-          'inpainter': inpainter,
-          'use_gpu': useGpu,
-          'upscale_small_text': upscaleSmallText,
-          'fix_cyrillic_lookalikes': fixCyrillicLookalikes,
-        },
-        'inpaint': inpaint.toJson(),
-        'languages': {'source': sourceLanguage, 'target': targetLanguage},
-        'llm': {'extra_context': extraContext, 'send_page_image': sendPageImage},
-        'render': render.toJson(),
-        'upscale': upscale.toJson(),
-        'export': export.toJson(),
-        'models': {'dir': modelsDir},
-        'ui': {'theme': theme, 'language': uiLanguage},
-        'test_mode': testMode,
-        'projects': {'autosave': projectAutosave, 'recent': recentProjects},
-        'plugins': plugins,
-        'approved_network_plugins': approvedNetworkPlugins.toList()..sort(),
-      };
+    ...extra,
+    'schema_version': schemaVersion,
+    'tools': {
+      'detector': detector,
+      'ocr': ocr,
+      'translator': translator,
+      'inpainter': inpainter,
+      'use_gpu': useGpu,
+      'upscale_small_text': upscaleSmallText,
+      'fix_cyrillic_lookalikes': fixCyrillicLookalikes,
+    },
+    'inpaint': inpaint.toJson(),
+    'languages': {'source': sourceLanguage, 'target': targetLanguage},
+    'llm': {'extra_context': extraContext, 'send_page_image': sendPageImage},
+    'render': render.toJson(),
+    'upscale': upscale.toJson(),
+    'export': export.toJson(),
+    'models': {'dir': modelsDir},
+    'ui': {'theme': theme, 'language': uiLanguage, if (shortcuts.isNotEmpty) 'shortcuts': shortcuts},
+    'test_mode': testMode,
+    'projects': {'autosave': projectAutosave, 'recent': recentProjects},
+    'plugins': plugins,
+    'approved_network_plugins': approvedNetworkPlugins.toList()..sort(),
+  };
 
   factory AppSettings.fromJson(Map<String, Object?> json) {
     Map<String, Object?> group(String key) => (json[key] as Map?)?.cast<String, Object?>() ?? const {};
@@ -162,7 +169,18 @@ class AppSettings {
     final models = group('models');
     final projects = group('projects');
     const known = {
-      'schema_version', 'tools', 'inpaint', 'languages', 'llm', 'render', 'upscale', 'export', 'models', 'ui', 'test_mode', 'plugins', //
+      'schema_version',
+      'tools',
+      'inpaint',
+      'languages',
+      'llm',
+      'render',
+      'upscale',
+      'export',
+      'models',
+      'ui',
+      'test_mode',
+      'plugins', //
       'approved_network_plugins', 'projects',
     };
     final strategyName = pick<String>(inpaint, 'strategy', defaults.inpaint.strategy.name);
@@ -190,6 +208,10 @@ class AppSettings {
       modelsDir: pick(models, 'dir', defaults.modelsDir),
       theme: pick(ui, 'theme', defaults.theme),
       uiLanguage: pick(ui, 'language', defaults.uiLanguage),
+      shortcuts: {
+        for (final e in ((ui['shortcuts'] as Map?) ?? const {}).entries)
+          if (e.key is String && e.value is String) e.key as String: e.value as String,
+      },
       testMode: pick(json, 'test_mode', defaults.testMode),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),
       recentProjects: [...?(projects['recent'] as List?)?.whereType<String>()],
@@ -254,16 +276,16 @@ class ExportSettings {
 
   /// The Export window's choices.
   ExportOptions get options => ExportOptions(
-        container: container,
-        imageFormat: imageFormat,
-        translated: withTranslated,
-        cleaned: withCleaned,
-        recognizedText: withRawText,
-        translatedText: withTranslatedText,
-        byChapter: byChapter,
-        strip: strip,
-        sliceHeight: sliceHeight,
-      );
+    container: container,
+    imageFormat: imageFormat,
+    translated: withTranslated,
+    cleaned: withCleaned,
+    recognizedText: withRawText,
+    translatedText: withTranslatedText,
+    byChapter: byChapter,
+    strip: strip,
+    sliceHeight: sliceHeight,
+  );
 
   ExportSettings copyWith({
     String? imageFormat,
@@ -278,36 +300,35 @@ class ExportSettings {
     bool? byChapter,
     StripExport? strip,
     int? sliceHeight,
-  }) =>
-      ExportSettings(
-        imageFormat: imageFormat ?? this.imageFormat,
-        rawText: rawText ?? this.rawText,
-        translatedText: translatedText ?? this.translatedText,
-        cleanedImage: cleanedImage ?? this.cleanedImage,
-        container: container ?? this.container,
-        withTranslated: withTranslated ?? this.withTranslated,
-        withCleaned: withCleaned ?? this.withCleaned,
-        withRawText: withRawText ?? this.withRawText,
-        withTranslatedText: withTranslatedText ?? this.withTranslatedText,
-        byChapter: byChapter ?? this.byChapter,
-        strip: strip ?? this.strip,
-        sliceHeight: sliceHeight ?? this.sliceHeight,
-      );
+  }) => ExportSettings(
+    imageFormat: imageFormat ?? this.imageFormat,
+    rawText: rawText ?? this.rawText,
+    translatedText: translatedText ?? this.translatedText,
+    cleanedImage: cleanedImage ?? this.cleanedImage,
+    container: container ?? this.container,
+    withTranslated: withTranslated ?? this.withTranslated,
+    withCleaned: withCleaned ?? this.withCleaned,
+    withRawText: withRawText ?? this.withRawText,
+    withTranslatedText: withTranslatedText ?? this.withTranslatedText,
+    byChapter: byChapter ?? this.byChapter,
+    strip: strip ?? this.strip,
+    sliceHeight: sliceHeight ?? this.sliceHeight,
+  );
 
   Map<String, Object?> toJson() => {
-        'image_format': imageFormat,
-        'raw_text': rawText,
-        'translated_text': translatedText,
-        'cleaned_image': cleanedImage,
-        'container': container.name,
-        'with_translated': withTranslated,
-        'with_cleaned': withCleaned,
-        'with_raw_text': withRawText,
-        'with_translated_text': withTranslatedText,
-        'by_chapter': byChapter,
-        'strip': strip.name,
-        'slice_height': sliceHeight,
-      };
+    'image_format': imageFormat,
+    'raw_text': rawText,
+    'translated_text': translatedText,
+    'cleaned_image': cleanedImage,
+    'container': container.name,
+    'with_translated': withTranslated,
+    'with_cleaned': withCleaned,
+    'with_raw_text': withRawText,
+    'with_translated_text': withTranslatedText,
+    'by_chapter': byChapter,
+    'strip': strip.name,
+    'slice_height': sliceHeight,
+  };
 
   factory ExportSettings.fromJson(Map<String, Object?> json) {
     const d = ExportSettings();

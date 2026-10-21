@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../state/workspace.dart';
+import 'key_bindings.dart';
 
 extension L10nContext on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
@@ -165,4 +166,35 @@ ModelGroup modelGroupOf(String id) => switch (id) {
   'manga-ocr-mobile' => (l.modelOcrJapanese, l.modelOcrJapaneseInfo),
   'osd-script-id' => (l.modelOsd, l.modelOsdInfo),
   _ => (m.displayName, m.purpose),
+};
+
+/// What a keyboard shortcut does, as the settings and F1 show it.
+String shortcutLabel(AppLocalizations l, ShortcutAction a) => switch (a) {
+  ShortcutAction.open => l.keyOpen,
+  ShortcutAction.save => l.keySave,
+  ShortcutAction.saveAs => l.keySaveAs,
+  ShortcutAction.translateAll => l.keyTranslateAll,
+  ShortcutAction.previousPage => l.keyPreviousPage,
+  ShortcutAction.nextPage => l.keyNextPage,
+  ShortcutAction.pan => l.keyPan,
+  ShortcutAction.boxes => l.keyBoxes,
+  ShortcutAction.text => l.keyText,
+  ShortcutAction.brush => l.keyBrush,
+  ShortcutAction.eraser => l.keyEraser,
+  ShortcutAction.brushSmaller => l.keyBrushSmaller,
+  ShortcutAction.brushLarger => l.keyBrushLarger,
+  ShortcutAction.undo => l.keyUndo,
+  ShortcutAction.redo => l.keyRedo,
+  ShortcutAction.deleteBox => l.keyDelete,
+  ShortcutAction.deselect => l.keyDeselect,
+  ShortcutAction.find => l.keyFind,
+  ShortcutAction.help => l.keyHelp,
+  ShortcutAction.fullScreen => l.keyFullScreen,
+};
+
+String shortcutGroupLabel(AppLocalizations l, ShortcutGroup g) => switch (g) {
+  ShortcutGroup.files => l.keysGroupFiles,
+  ShortcutGroup.tools => l.keysGroupTools,
+  ShortcutGroup.edit => l.keysGroupEdit,
+  ShortcutGroup.window => l.keysGroupWindow,
 };

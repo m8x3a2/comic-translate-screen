@@ -2,47 +2,35 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../state/app_state.dart';
+import '../common/key_bindings.dart';
 import '../common/labels.dart';
 
 Future<void> showShortcuts(BuildContext context) {
   final l = context.l10n;
+  final keys = KeyBindings.of(ProviderScope.containerOf(context, listen: false).read(settingsProvider));
+  List<(String, String)> rows(ShortcutGroup group) => [
+    for (final a in ShortcutAction.values)
+      if (a.group == group) (keys.labelOf(a).isEmpty ? '—' : keys.labelOf(a), shortcutLabel(l, a)),
+  ];
   final groups = [
-    (l.keysGroupFiles, [
-      ('Ctrl+O', l.keyOpen),
-      ('Ctrl+S', l.keySave),
-      ('Ctrl+Shift+S', l.keySaveAs),
-      ('Ctrl+Enter', l.keyTranslateAll),
-      ('PageUp / PageDown', l.keyPages),
-    ]),
-    (l.keysGroupTools, [
-      ('H, V', l.keyPan),
-      ('R', l.keyBoxes),
-      ('T', l.keyText),
-      ('B', l.keyBrush),
-      ('E', l.keyEraser),
-      ('[  ]', l.keyBrushSize),
-    ]),
-    (l.keysGroupEdit, [
-      ('Ctrl+Z', l.keyUndo),
-      ('Ctrl+Y, Ctrl+Shift+Z', l.keyRedo),
-      ('Delete', l.keyDelete),
-      ('Esc', l.keyDeselect),
-      ('Ctrl+F', l.keyFind),
-      ('Enter / Shift+Enter', l.keyFindNext),
-    ]),
-    (l.keysGroupMouse, [
-      (l.mouseWheel, l.mouseWheelHelp),
-      (l.mouseWheel, l.mouseWheelStrip),
-      (l.mouseMiddle, l.mouseMiddleHelp),
-      (l.mouseGrab, l.mouseMiddleHelp),
-      (l.mouseDouble, l.mouseDoubleHelp),
-      (l.mousePickPages, l.keyPickPages),
-    ]),
-    (l.keysGroupWindow, [
-      ('F1', l.keyHelp),
-      ('F11', l.keyFullScreen),
-    ]),
+    (l.keysGroupFiles, rows(ShortcutGroup.files)),
+    (l.keysGroupTools, rows(ShortcutGroup.tools)),
+    (l.keysGroupEdit, [...rows(ShortcutGroup.edit), ('Enter / Shift+Enter', l.keyFindNext)]),
+    (
+      l.keysGroupMouse,
+      [
+        (l.mouseWheel, l.mouseWheelHelp),
+        (l.mouseWheel, l.mouseWheelStrip),
+        (l.mouseMiddle, l.mouseMiddleHelp),
+        (l.mouseGrab, l.mouseMiddleHelp),
+        (l.mouseDouble, l.mouseDoubleHelp),
+        (l.mousePickPages, l.keyPickPages),
+      ],
+    ),
+    (l.keysGroupWindow, rows(ShortcutGroup.window)),
   ];
   return showDialog<void>(
     context: context,

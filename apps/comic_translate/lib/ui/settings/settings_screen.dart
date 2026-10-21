@@ -19,10 +19,11 @@ import '../common/labels.dart';
 import '../common/plugin_form.dart';
 import '../common/plugin_strings.dart';
 import '../shell_full/main_screen.dart' show showInExplorer;
+import 'keys_section.dart';
 import 'models_section.dart';
 import 'usage_section.dart';
 
-enum SettingsSection { general, translator, tools, text, upscale, export, models, about }
+enum SettingsSection { general, translator, tools, text, upscale, export, keys, models, about }
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, this.initial = SettingsSection.general});
@@ -46,6 +47,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     SettingsSection.text => SettingsPart.text,
     SettingsSection.upscale => SettingsPart.upscale,
     SettingsSection.export => SettingsPart.export,
+    SettingsSection.keys => SettingsPart.keys,
     SettingsSection.models => SettingsPart.models,
     SettingsSection.about => null,
   };
@@ -60,6 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SettingsSection.text: (Icons.text_fields, l.settingsText),
       SettingsSection.upscale: (Icons.zoom_out_map, l.settingsUpscale),
       SettingsSection.export: (Icons.save_alt, l.settingsExport),
+      SettingsSection.keys: (Icons.keyboard_outlined, l.settingsKeys),
       SettingsSection.models: (Icons.memory, l.settingsModels),
       SettingsSection.about: (Icons.info_outline, l.settingsAbout),
     };
@@ -105,6 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           SettingsSection.text => const _TextSection(),
                           SettingsSection.upscale => const _UpscaleSection(),
                           SettingsSection.export => const _ExportSection(),
+                          SettingsSection.keys => const KeysSection(),
                           SettingsSection.models => const ModelsSection(),
                           SettingsSection.about => const _AboutSection(),
                         },

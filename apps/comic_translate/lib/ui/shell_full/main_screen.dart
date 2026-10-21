@@ -23,6 +23,7 @@ import '../../state/project.dart';
 import '../../state/steps.dart';
 import '../../state/window_mode.dart';
 import '../../state/workspace.dart';
+import '../common/key_bindings.dart';
 import '../common/labels.dart';
 import '../common/plugin_strings.dart';
 import '../settings/settings_screen.dart';
@@ -532,91 +533,73 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   bool _onHardwareKey(KeyEvent e) => mounted && (ModalRoute.of(context)?.isCurrent ?? true) && _onKey(e);
 
   /// Keyboard shortcuts of the window (original `app/shortcuts.py` plus the
-  /// tools). Letters and editing keys do nothing while a text field has the
-  /// focus, so typing is never taken over.
+  /// tools), with the keys chosen in the settings. Keys without Ctrl or Alt
+  /// do nothing while a text field has the focus, so typing is never taken
+  /// over.
   bool _onKey(KeyEvent e) {
     if (e is! KeyDownEvent && e is! KeyRepeatEvent) return false;
-    final keyboard = HardwareKeyboard.instance;
-    final ctrl = keyboard.isControlPressed, shift = keyboard.isShiftPressed, alt = keyboard.isAltPressed;
     final typing = FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
-    final key = e.logicalKey;
+    final action = KeyBindings.of(ref.read(settingsProvider)).actionFor(e, typing: typing);
+    if (action == null) return false;
     final ws = ref.read(workspaceProvider.notifier);
     final state = ref.read(workspaceProvider);
     final running = ref.read(batchProvider) is BatchRunning;
     final busy = running || ref.read(stepsProvider).running;
     final editor = ref.read(editorProvider.notifier);
-    if (ctrl && !alt) {
-      if (key == LogicalKeyboardKey.keyS) {
-        if (state.pages.isNotEmpty) _saveProject(asNew: shift);
-        return true;
-      }
-      if (key == LogicalKeyboardKey.keyO) {
-        if (!running) _pickFiles();
-        return true;
-      }
-      if (key == LogicalKeyboardKey.enter) {
-        if (!busy && state.pages.isNotEmpty) _translate();
-        return true;
-      }
-      if (key == LogicalKeyboardKey.keyF || key == LogicalKeyboardKey.keyH) {
-        if (state.pages.isNotEmpty) ref.read(findOpenProvider.notifier).set(true);
-        return true;
-      }
-      if (typing || busy) return false;
-      if (key == LogicalKeyboardKey.keyZ && !shift) {
-        ws.undo();
-        return true;
-      }
-      if (key == LogicalKeyboardKey.keyY || (key == LogicalKeyboardKey.keyZ && shift)) {
-        ws.redo();
-        return true;
-      }
-      return false;
+    void tool(EditorTool t) {
+      if (state.pages.isNotEmpty) editor.setTool(t);
     }
-    if (key == LogicalKeyboardKey.f1 && !ctrl && !alt) {
-      showShortcuts(context);
-      return true;
-    }
-    if (typing || alt) return false;
-    if (key == LogicalKeyboardKey.pageDown) {
-      ws.select(state.current + 1);
-      return true;
-    }
-    if (key == LogicalKeyboardKey.pageUp) {
-      ws.select(state.current - 1);
-      return true;
-    }
-    if (key == LogicalKeyboardKey.escape) {
-      if (state.selectedBlock == null) return false;
-      ws.selectBlock(null);
-      return true;
-    }
-    if (state.pages.isEmpty) return false;
-    final tools = {
-      LogicalKeyboardKey.keyH: EditorTool.pan,
-      LogicalKeyboardKey.keyV: EditorTool.pan,
-      LogicalKeyboardKey.keyR: EditorTool.boxes,
-      LogicalKeyboardKey.keyT: EditorTool.text,
-      LogicalKeyboardKey.keyB: EditorTool.brush,
-      LogicalKeyboardKey.keyE: EditorTool.eraser,
-    };
-    if (tools[key] case final tool?) {
-      editor.setTool(tool);
-      return true;
-    }
-    if (key == LogicalKeyboardKey.bracketLeft || key == LogicalKeyboardKey.bracketRight) {
+
+    void brushBy(double sign) {
+      if (state.pages.isEmpty) return;
       final size = ref.read(editorProvider).brushSize;
-      final step = math.max(1.0, size * 0.15);
-      editor.setBrushSize(key == LogicalKeyboardKey.bracketLeft ? size - step : size + step);
-      return true;
+      editor.setBrushSize(size + sign * math.max(1.0, size * 0.15));
     }
-    if ((key == LogicalKeyboardKey.delete || key == LogicalKeyboardKey.backspace) && !busy) {
-      final i = state.selectedBlock;
-      if (i == null) return false;
-      ws.deleteBlock(i);
-      return true;
+
+    switch (action) {
+      case ShortcutAction.open:
+        if (!running) _pickFiles();
+      case ShortcutAction.save || ShortcutAction.saveAs:
+        if (state.pages.isNotEmpty) _saveProject(asNew: action == ShortcutAction.saveAs);
+      case ShortcutAction.translateAll:
+        if (!busy && state.pages.isNotEmpty) _translate();
+      case ShortcutAction.find:
+        if (state.pages.isNotEmpty) ref.read(findOpenProvider.notifier).set(true);
+      case ShortcutAction.undo || ShortcutAction.redo:
+        if (busy) return false;
+        action == ShortcutAction.undo ? ws.undo() : ws.redo();
+      case ShortcutAction.help:
+        showShortcuts(context);
+      case ShortcutAction.previousPage:
+        ws.select(state.current - 1);
+      case ShortcutAction.nextPage:
+        ws.select(state.current + 1);
+      case ShortcutAction.deselect:
+        if (state.selectedBlock == null) return false;
+        ws.selectBlock(null);
+      case ShortcutAction.pan:
+        tool(EditorTool.pan);
+      case ShortcutAction.boxes:
+        tool(EditorTool.boxes);
+      case ShortcutAction.text:
+        tool(EditorTool.text);
+      case ShortcutAction.brush:
+        tool(EditorTool.brush);
+      case ShortcutAction.eraser:
+        tool(EditorTool.eraser);
+      case ShortcutAction.brushSmaller:
+        brushBy(-1);
+      case ShortcutAction.brushLarger:
+        brushBy(1);
+      case ShortcutAction.deleteBox:
+        final i = state.selectedBlock;
+        if (busy || i == null) return false;
+        ws.deleteBlock(i);
+      // On every screen: see ComicTranslateApp.
+      case ShortcutAction.fullScreen:
+        return false;
     }
-    return false;
+    return true;
   }
 }
 

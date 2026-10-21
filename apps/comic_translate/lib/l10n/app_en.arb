@@ -545,13 +545,11 @@
   "keysGroupMouse": "Mouse",
   "keyOpen": "Open files",
   "keyTranslateAll": "Translate all",
-  "keyPages": "Previous / next page",
   "keyPan": "Hand: move the page, select a bubble",
   "keyBoxes": "Boxes around the text",
   "keyText": "Move, resize and turn the translation",
   "keyBrush": "Brush: mark what to clean",
   "keyEraser": "Eraser: unmark",
-  "keyBrushSize": "Smaller / larger brush",
   "keyUndo": "Undo",
   "keyRedo": "Redo",
   "keyDelete": "Delete the selected box",
@@ -564,10 +562,38 @@
   "mouseMiddleHelp": "Move the page with any tool",
   "mouseDouble": "Double click on a translation",
   "mouseDoubleHelp": "Edit its text in the right panel (Translation tool)",
-  "keysNote": "Letter keys do nothing while you type in a text field. They work with any keyboard layout.",
+  "keysNote": "Keys without Ctrl or Alt do nothing while you type in a text field. They work with any keyboard layout. To change them: Settings → Keys.",
   "keysGroupWindow": "Window",
   "keyHelp": "This list of keys",
   "keyFullScreen": "Full screen on and off",
+  "keyPreviousPage": "Previous page",
+  "keyNextPage": "Next page",
+  "keyBrushSmaller": "Smaller brush",
+  "keyBrushLarger": "Larger brush",
+  "settingsKeys": "Keys",
+  "keysSettingsHelp": "Click an action to give it another key or combination. Keys without Ctrl or Alt do nothing while you type in a text field.",
+  "keysNone": "no key",
+  "keysChange": "Change the key",
+  "keysDefault": "Back to the default key",
+  "keysCaptureTitle": "New key: {action}",
+  "@keysCaptureTitle": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "keysCaptureBody": "Press a key or a combination with Ctrl, Shift or Alt.",
+  "keysCaptureTaken": "Now used by \"{action}\": it will be taken from there.",
+  "@keysCaptureTaken": {
+    "placeholders": {
+      "action": {
+        "type": "String"
+      }
+    }
+  },
+  "keysCaptureReserved": "Text fields and windows need this key; choose another one.",
+  "keysCaptureNoKey": "No key",
   "fullScreenOn": "Full screen. Press F11 to leave it.",
   "secretSavedTail": "Saved: …{tail}",
   "@secretSavedTail": {

@@ -945,9 +945,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get keyTranslateAll => 'Перевести всё';
 
   @override
-  String get keyPages => 'Предыдущая / следующая страница';
-
-  @override
   String get keyPan => 'Рука: двигать страницу, выбрать пузырь';
 
   @override
@@ -961,9 +958,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keyEraser => 'Ластик: снять отметку';
-
-  @override
-  String get keyBrushSize => 'Кисть меньше / больше';
 
   @override
   String get keyUndo => 'Отменить';
@@ -1004,7 +998,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keysNote =>
-      'Буквенные клавиши не срабатывают, пока вы печатаете в поле. Работают при любой раскладке.';
+      'Клавиши без Ctrl и Alt не срабатывают, пока вы печатаете в поле. Работают при любой раскладке. Изменить их: Настройки → Клавиши.';
 
   @override
   String get keysGroupWindow => 'Окно';
@@ -1014,6 +1008,55 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keyFullScreen => 'Во весь экран и обратно';
+
+  @override
+  String get keyPreviousPage => 'Предыдущая страница';
+
+  @override
+  String get keyNextPage => 'Следующая страница';
+
+  @override
+  String get keyBrushSmaller => 'Кисть меньше';
+
+  @override
+  String get keyBrushLarger => 'Кисть больше';
+
+  @override
+  String get settingsKeys => 'Клавиши';
+
+  @override
+  String get keysSettingsHelp =>
+      'Щёлкните по действию, чтобы назначить ему другую клавишу или сочетание. Клавиши без Ctrl и Alt не срабатывают, пока вы печатаете в поле.';
+
+  @override
+  String get keysNone => 'нет клавиши';
+
+  @override
+  String get keysChange => 'Изменить клавишу';
+
+  @override
+  String get keysDefault => 'Вернуть клавишу по умолчанию';
+
+  @override
+  String keysCaptureTitle(String action) {
+    return 'Новая клавиша: $action';
+  }
+
+  @override
+  String get keysCaptureBody =>
+      'Нажмите клавишу или сочетание с Ctrl, Shift или Alt.';
+
+  @override
+  String keysCaptureTaken(String action) {
+    return 'Сейчас это сочетание у «$action» — там оно будет снято.';
+  }
+
+  @override
+  String get keysCaptureReserved =>
+      'Эта клавиша нужна полям ввода и окнам; выберите другую.';
+
+  @override
+  String get keysCaptureNoKey => 'Без клавиши';
 
   @override
   String get fullScreenOn => 'Полноэкранный режим. Выйти — F11.';

@@ -5,13 +5,12 @@ library;
 
 import 'package:ct_core/ct_core.dart';
 
-enum SettingsPart { general, translator, tools, text, upscale, export, models }
+enum SettingsPart { general, translator, tools, text, upscale, export, keys, models }
 
 void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part}) {
   final d = AppSettings();
-  void forgetPlugins(Set<PluginKind> kinds) => s.plugins.removeWhere(
-    (id, _) => registry.contains(id) && kinds.contains(registry.info(id).kind),
-  );
+  void forgetPlugins(Set<PluginKind> kinds) =>
+      s.plugins.removeWhere((id, _) => registry.contains(id) && kinds.contains(registry.info(id).kind));
   final parts = part == null ? SettingsPart.values : [part];
   for (final p in parts) {
     switch (p) {
@@ -44,6 +43,8 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
         s.upscale = d.upscale;
       case SettingsPart.export:
         s.export = d.export;
+      case SettingsPart.keys:
+        s.shortcuts.clear();
       case SettingsPart.models:
         s.modelsDir = d.modelsDir;
     }

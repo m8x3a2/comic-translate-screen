@@ -9,6 +9,7 @@ import '../bootstrap.dart';
 import '../l10n/app_localizations.dart';
 import '../state/app_state.dart';
 import '../state/window_mode.dart';
+import 'common/key_bindings.dart';
 import 'shell_full/main_screen.dart';
 
 /// Shows messages from outside the widget tree (unexpected errors).
@@ -72,11 +73,13 @@ class _ComicTranslateAppState extends ConsumerState<ComicTranslateApp> {
     super.dispose();
   }
 
-  /// F11 works everywhere: on every screen and under dialogs.
+  /// Full screen (F11, or the key chosen in the settings) works everywhere:
+  /// on every screen and under dialogs.
   bool _onKey(KeyEvent e) {
-    if (e is! KeyDownEvent || e.logicalKey != LogicalKeyboardKey.f11) return false;
-    final keyboard = HardwareKeyboard.instance;
-    if (keyboard.isControlPressed || keyboard.isAltPressed || keyboard.isShiftPressed) return false;
+    if (e is! KeyDownEvent || capturingShortcut) return false;
+    final combo = KeyCombo.ofEvent(e, HardwareKeyboard.instance);
+    final keys = KeyBindings.of(ref.read(settingsProvider));
+    if (combo == null || keys.actionOf(combo) != ShortcutAction.fullScreen) return false;
     ref.read(fullScreenProvider.notifier).toggle().then((on) {
       final messenger = appMessengerKey.currentState;
       final context = appMessengerKey.currentContext;
