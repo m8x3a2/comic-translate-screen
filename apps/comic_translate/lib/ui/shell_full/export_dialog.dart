@@ -66,10 +66,12 @@ class _ExportDialogState extends State<_ExportDialog> {
       : widget.initial;
   bool _currentOnly = false;
   late final _slice = TextEditingController(text: '${widget.initial.sliceHeight}');
+  final _scroll = ScrollController();
 
   @override
   void dispose() {
     _slice.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -102,6 +104,7 @@ class _ExportDialogState extends State<_ExportDialog> {
       content: SizedBox(
         width: 560,
         child: SingleChildScrollView(
+          controller: _scroll,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -167,7 +170,19 @@ class _ExportDialogState extends State<_ExportDialog> {
                     ButtonSegment(value: StripExport.slices, label: Text(l.exportStripSlices)),
                   ],
                   selected: {_s.strip},
-                  onSelectionChanged: (v) => setState(() => _s = _s.copyWith(strip: v.first)),
+                  onSelectionChanged: (v) {
+                    setState(() => _s = _s.copyWith(strip: v.first));
+                    // The part height comes below: in view.
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_scroll.hasClients) {
+                        _scroll.animateTo(
+                          _scroll.position.maxScrollExtent,
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    });
+                  },
                 ),
                 if (_s.strip == StripExport.single)
                   Padding(

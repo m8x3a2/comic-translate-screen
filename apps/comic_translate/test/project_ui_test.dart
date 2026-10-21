@@ -138,6 +138,44 @@ void main() {
     expect(choice!.currentOnly, isFalse);
   });
 
+  testWidgets('the export window of a webtoon: one picture or cut again, with the part height', (tester) async {
+    await start(tester, fakeSettings());
+    final context = tester.element(find.byType(Scaffold).first);
+    ExportChoice? choice;
+    showExportDialog(
+      context,
+      initial: const ExportSettings(),
+      pageCount: 3,
+      chapters: 1,
+      currentAvailable: true,
+      hasSevenZip: false,
+      webtoon: true,
+    ).then((c) => choice = c);
+    await tester.pumpAndSettle();
+    expect(find.text('Лента вебтуна'), findsOneWidget);
+    await tester.tap(find.text('Нарезать заново'));
+    await tester.pumpAndSettle();
+    final field = find.widgetWithText(TextField, 'Высота части, px');
+    expect(field, findsOneWidget);
+    await tester.enterText(field, '2000');
+    await tester.tap(find.text('Экспортировать…'));
+    await tester.pumpAndSettle();
+    expect(choice!.settings.strip, StripExport.slices);
+    expect(choice!.settings.sliceHeight, 2000);
+
+    // Not a webtoon: no such choice.
+    showExportDialog(
+      context,
+      initial: const ExportSettings(),
+      pageCount: 3,
+      chapters: 1,
+      currentAvailable: true,
+      hasSevenZip: false,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Лента вебтуна'), findsNothing);
+  });
+
   for (final width in [1024.0, 1280.0]) {
     testWidgets('different page languages: "for all pages" fits the toolbar at $width px', (tester) async {
       final container = await start(tester, fakeSettings());
