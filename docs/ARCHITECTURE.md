@@ -91,6 +91,26 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   ported. The generated mask is a raster, and brush and eraser strokes are
   kept as strokes over it (the original turns the mask into vector paths).
   Cleaning starts from the current cleaned page, as in the original.
+- Webtoon mode (M10): a bubble cut by the edge between two pages belongs to
+  the upper page. The original detects both pages apart and joins the two
+  halves found at the edge (`_match_split_blocks`); here the upper page is
+  detected together with the top of the page below (`ct_core`
+  `src/webtoon/seams.dart`), so the detector sees the whole bubble. Blocks
+  that start on the page below are left to it, and that page drops what
+  continues a block of the page above. Reading and cleaning such a block use
+  the page with the rows of the next page it needs; what was cleaned below
+  the edge is kept with the upper page as a transparent patch
+  (`PageEntry.overflowPath`, `overflow` in project files), drawn over the next
+  page in the strip, in export and in `cts export`, together with the part of
+  the translation that reaches into it. The original also cuts long pages
+  into 2000–3500 px pieces for memory; here pages are processed whole (a
+  20 000 px chapter takes about 35 s and fits in memory), and pictures
+  taller than 8192 px are shown in 4096 px tiles (graphics cards refuse
+  larger textures). The strip view builds only the pages within a screen of
+  what is shown; the wheel scrolls, Ctrl + wheel zooms. Pages of the strip
+  are centred on each other, as in the original. New: export of the strip
+  as one picture per chapter, or cut again into parts of about N px along
+  the calmest row within 40 % of N (`src/export/strip_export.dart`).
 - `renderPage` does not change the blocks (the original leaves the render
   areas and case-adjusted translations in them), so a page can be edited
   and drawn again; golden pages now store the detected boxes.

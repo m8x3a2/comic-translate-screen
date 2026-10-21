@@ -80,6 +80,24 @@ void main() {
     expect(File(font).lengthSync(), 300);
   });
 
+  test('a webtoon page keeps the cleaned part of the page below it', () {
+    final path = p.join(dir.path, 'w.ctsproj');
+    ProjectFile.save(
+      path,
+      ProjectData(
+        pages: [
+          ProjectPage(id: 'a', name: '1.png', image: file('1.png', [1]), overflow: file('ov.png', [4, 2])),
+          ProjectPage(id: 'b', name: '2.png', image: file('2.png', [2])),
+        ],
+        state: const {'current': 0, 'webtoon': true},
+      ),
+    );
+    final back = ProjectFile.load(path, Directory(p.join(dir.path, 'open')));
+    expect(back.state['webtoon'], isTrue);
+    expect(File(back.pages.first.overflow!).readAsBytesSync(), [4, 2]);
+    expect(back.pages.last.overflow, isNull);
+  });
+
   test('saving again writes only what changed and drops unused files', () {
     final path = p.join(dir.path, 'c.ctsproj');
     ProjectFile.save(path, chapter());

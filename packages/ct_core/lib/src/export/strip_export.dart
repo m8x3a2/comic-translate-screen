@@ -66,10 +66,11 @@ int _rowNoise(RgbImage image, int y) {
   return n;
 }
 
-/// The row to cut [image] at, near [target]: the calmest one within a
-/// quarter of [target] around it (the nearest among equally calm ones).
+/// The row to cut [image] at, near [target]: the calmest one within 40 % of
+/// [target] around it (the nearest among equally calm ones).
 int chooseCut(RgbImage image, int target) {
-  final lo = math.max(1, target - target ~/ 4), hi = math.min(image.height - 1, target + target ~/ 4);
+  final reach = target * 2 ~/ 5;
+  final lo = math.max(1, target - reach), hi = math.min(image.height - 1, target + reach);
   if (hi <= lo) return math.min(target, image.height);
   var best = target.clamp(lo, hi), bestNoise = 1 << 30;
   for (var y = lo; y <= hi; y++) {
@@ -174,8 +175,8 @@ Future<(List<String>, List<int>)> joinStrip(
         if (given.isEmpty || given.first > start + have) break;
         cut = given.removeAt(0) - start;
       } else {
-        // What is left at the end (up to a quarter more) stays one part.
-        if (have < n + n ~/ 4) break;
+        // What is left at the end (up to 40 % more) stays one part.
+        if (have < n + n * 2 ~/ 5) break;
         cut = chooseCut(rows(), n);
         chosen.add(start + cut);
       }

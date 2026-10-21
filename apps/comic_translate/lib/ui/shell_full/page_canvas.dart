@@ -9,7 +9,6 @@ library;
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:ct_core/ct_core.dart' hide TextDirection;
 import 'package:flutter/gestures.dart';
@@ -18,6 +17,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../pipeline/page_pipeline.dart';
+import '../../render/image_tiles.dart';
 import '../../render/mask_raster.dart';
 import '../../render/text_renderer.dart';
 import '../../state/editor.dart';
@@ -97,7 +97,7 @@ class _Drag {
 }
 
 class _PageCanvasState extends ConsumerState<PageCanvas> {
-  ui.Image? _mask;
+  ImageTiles? _mask;
   String? _maskPath;
 
   _Drag? _drag;
@@ -145,13 +145,12 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     if (path == null) return;
     unawaited(() async {
       try {
-        final codec = await ui.instantiateImageCodec(await File(path).readAsBytes());
-        final frame = await codec.getNextFrame();
-        codec.dispose();
+        // In tiles: the mask of a long webtoon page is as tall as the page.
+        final tiles = await loadImageTiles(path, gray: true);
         if (mounted && _maskPath == path) {
-          setState(() => _mask = frame.image);
+          setState(() => _mask = tiles);
         } else {
-          frame.image.dispose();
+          tiles.dispose();
         }
       } on Object {
         // An unreadable mask file shows nothing; cleaning reports the error.
@@ -434,13 +433,15 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
           children: [
             Positioned.fill(
-              child: Image.file(
-                File(image),
-                key: ValueKey(image),
-                gaplessPlayback: true,
-                filterQuality: FilterQuality.medium,
-                errorBuilder: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined, size: 64)),
-              ),
+              child: needsTiles(widget.size)
+                  ? TiledImage(key: ValueKey(image), path: image)
+                  : Image.file(
+                      File(image),
+                      key: ValueKey(image),
+                      gaplessPlayback: true,
+                      filterQuality: FilterQuality.medium,
+                      errorBuilder: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined, size: 64)),
+                    ),
             ),
             if (overflow != null)
               Positioned(
@@ -495,7 +496,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
 class _MaskPainter extends CustomPainter {
   _MaskPainter(this.base, this.strokes, this.draft);
 
-  final ui.Image? base;
+  final ImageTiles? base;
   final List<MaskStroke> strokes;
   final MaskStroke? draft;
 
@@ -505,7 +506,7 @@ class _MaskPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.saveLayer(Offset.zero & size, Paint()..color = const Color.fromRGBO(0, 0, 0, 0.45));
-    if (base != null) canvas.drawImage(base!, Offset.zero, Paint()..colorFilter = _redFromGray);
+    base?.paint(canvas, Paint()..colorFilter = _redFromGray);
     paintStrokes(canvas, [...strokes, ?draft], const Color(0xFFFF0000));
     canvas.restore();
   }

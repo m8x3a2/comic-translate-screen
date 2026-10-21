@@ -29,7 +29,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 | M8.1 | Full screen (F11); API keys: show what you typed, the last 4 characters of a saved key, replace and delete; OpenRouter key balance on request; a per-model usage counter kept on this computer | done |
 | M9 | Projects `.ctsproj` (save, open, recent, autosave, crash recovery); export to a folder, ZIP, CBZ, CB7, PDF: translations, cleaned pages, texts, by chapter; added fonts; languages per page; steps on several pages; all-boxes tools; embedded PDF pictures | done |
 | M9.1 | Settings reset (one section or all); a solid text outline at any width; Space / Ctrl + left button moves the page; models grouped (main, by language, extra) with "download what is needed", "download all", "check all"; an "i" explaining models and settings | done |
-| M10–M12 | Webtoon mode, PSD, polish | planned |
+| M10 | Webtoon mode: all pages as one strip (wheel scrolls, Ctrl + wheel zooms, light on long chapters); a bubble cut by the edge between two pages is read, cleaned and drawn whole; very tall pictures shown in tiles; export of the strip as one picture or cut again into parts along even rows | done |
+| M11–M12 | PSD, polish | planned |
 
 ## Principles
 

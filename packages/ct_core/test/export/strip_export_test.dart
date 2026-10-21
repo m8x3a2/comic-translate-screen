@@ -40,6 +40,7 @@ void main() {
     expect(chooseCut(busy(50, 400, calm: {80, 130}), 100), 80);
     expect(chooseCut(busy(50, 400), 100), 100, reason: 'all rows alike: the wanted height');
     expect(chooseCut(busy(50, 400, calm: {10}), 100), 100, reason: 'too far from the wanted height');
+    expect(chooseCut(busy(50, 400, calm: {65}), 100), 65, reason: 'within 40 %');
   });
 
   test('one long picture; tall ones are saved as PNG', () async {
