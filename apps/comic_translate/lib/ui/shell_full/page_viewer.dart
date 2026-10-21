@@ -115,7 +115,6 @@ class _PageViewerState extends ConsumerState<PageViewer> {
     final readOnly = batchRunning || stepHere || page.status == PageStatus.running;
     bool readOnlyPage(PageEntry p) =>
         batchRunning || (steps.running && steps.pageId == p.id) || p.status == PageStatus.running;
-    final percent = _percent(MediaQuery.devicePixelRatioOf(context));
     final theme = Theme.of(context);
     return Column(
       children: [
@@ -174,7 +173,17 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                                 onPressed: () => _zoom(1 / 1.25),
                                 icon: const Icon(Icons.zoom_out),
                               ),
-                              SizedBox(width: 48, child: Text('${percent.round()}%', textAlign: TextAlign.center)),
+                              // The strip zooms and scrolls on its own: follow it.
+                              ListenableBuilder(
+                                listenable: _transform,
+                                builder: (context, _) => SizedBox(
+                                  width: 48,
+                                  child: Text(
+                                    '${_percent(MediaQuery.devicePixelRatioOf(context)).round()}%',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
                               IconButton(
                                 tooltip: l.zoomIn,
                                 onPressed: () => _zoom(1.25),

@@ -241,7 +241,12 @@ class ProcessCommand extends CtsCommand {
             cleanImage: clean.path,
             overflow: overflow?.path,
             blocks: r.blocks,
-            state: {'status': 'done', if (r.renderScale != 1) 'render_scale': r.renderScale},
+            state: {
+              'status': 'done',
+              if (r.renderScale != 1) 'render_scale': r.renderScale,
+              'source_language': source,
+              'target_language': target,
+            },
           ));
         }
         final total = timings.values.fold(0, (a, b) => a + b);

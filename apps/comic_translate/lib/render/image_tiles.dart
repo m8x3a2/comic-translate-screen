@@ -90,7 +90,60 @@ Future<ImageTiles> loadImageTiles(String path, {bool gray = false}) async {
   return ImageTiles._(images, tops, w, h);
 }
 
-/// A tall picture shown in tiles, filling its box (the page's size).
+/// Tiles of recently shown tall pictures, so that switching between the
+/// original and the translation, or scrolling back, shows them at once.
+/// Tiles in use are kept; unused ones go when the total passes [_budget].
+class _TileCache {
+  static const _budget = 320 << 20;
+
+  final _entries = <String, _CacheEntry>{};
+
+  Future<ImageTiles> acquire(String path) {
+    final e = _entries.remove(path) ?? _CacheEntry(loadImageTiles(path));
+    _entries[path] = e..refs += 1; // last = most recent
+    e.tiles.then((_) => _trim(), onError: (Object _) => _entries.remove(path));
+    return e.tiles;
+  }
+
+  void release(String path) {
+    final e = _entries[path];
+    if (e == null) return;
+    e.refs -= 1;
+    _trim();
+  }
+
+  void _trim() {
+    var total = 0;
+    for (final e in _entries.values) {
+      total += e.bytes;
+    }
+    for (final path in [..._entries.keys]) {
+      if (total <= _budget) break;
+      final e = _entries[path]!;
+      if (e.refs > 0 || e.loaded == null) continue;
+      total -= e.bytes;
+      _entries.remove(path);
+      e.loaded!.dispose();
+    }
+  }
+}
+
+class _CacheEntry {
+  _CacheEntry(this.tiles) {
+    tiles.then((t) => loaded = t, onError: (Object _) {});
+  }
+
+  final Future<ImageTiles> tiles;
+  ImageTiles? loaded;
+  var refs = 0;
+
+  int get bytes => loaded == null ? 0 : loaded!.width * loaded!.height * 4;
+}
+
+final _cache = _TileCache();
+
+/// A tall picture shown in tiles, filling its box (the page's size). While
+/// another picture loads, the previous one stays on screen.
 class TiledImage extends StatefulWidget {
   const TiledImage({super.key, required this.path});
 
@@ -102,6 +155,7 @@ class TiledImage extends StatefulWidget {
 
 class _TiledImageState extends State<TiledImage> {
   ImageTiles? _tiles;
+  String? _shown;
 
   @override
   void initState() {
@@ -118,12 +172,14 @@ class _TiledImageState extends State<TiledImage> {
   Future<void> _load() async {
     final path = widget.path;
     try {
-      final tiles = await loadImageTiles(path);
-      if (!mounted || path != widget.path) return tiles.dispose();
+      final tiles = await _cache.acquire(path);
+      if (!mounted || path != widget.path) return _cache.release(path);
+      final old = _shown;
       setState(() {
-        _tiles?.dispose();
         _tiles = tiles;
+        _shown = path;
       });
+      if (old != null) _cache.release(old);
     } on Object {
       // An unreadable page shows nothing; the steps report the error.
     }
@@ -131,7 +187,8 @@ class _TiledImageState extends State<TiledImage> {
 
   @override
   void dispose() {
-    _tiles?.dispose();
+    final shown = _shown;
+    if (shown != null) _cache.release(shown);
     super.dispose();
   }
 

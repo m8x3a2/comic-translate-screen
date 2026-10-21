@@ -434,7 +434,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           children: [
             Positioned.fill(
               child: needsTiles(widget.size)
-                  ? TiledImage(key: ValueKey(image), path: image)
+                  ? TiledImage(path: image)
                   : Image.file(
                       File(image),
                       key: ValueKey(image),
