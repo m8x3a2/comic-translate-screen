@@ -1,4 +1,3 @@
-import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -36,12 +35,7 @@ void notifyUnexpectedError(AppServices services) {
         action: SnackBarAction(
           label: l.bugReport,
           onPressed: () async {
-            await services.appLog.flush();
-            final zip = await BugReportBuilder(
-              paths: services.paths,
-              redactor: services.redactor,
-            ).build(environment: await services.environmentWithGpu());
-            services.appLog.info('bug_report', {'file': zip.path, 'with_images': false});
+            final zip = await services.buildBugReport();
             messenger.showSnackBar(SnackBar(content: Text(l.bugReportDone(zip.path)), showCloseIcon: true));
           },
         ),

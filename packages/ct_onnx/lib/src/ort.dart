@@ -148,17 +148,24 @@ class OrtRuntime {
     final getApi = base.ref.GetApi.asFunction<ffi.Pointer<OrtApi> Function(int)>();
     final api = getApi(ORT_API_VERSION);
     if (api == ffi.nullptr) {
-      throw StateError('ONNX Runtime does not support API version $ORT_API_VERSION '
-          '(loaded ${versionOf(base)}, expected ${OrtNativeRelease.version})');
+      throw StateError(
+        'ONNX Runtime does not support API version $ORT_API_VERSION '
+        '(loaded ${versionOf(base)}, expected ${OrtNativeRelease.version})',
+      );
     }
     return using((arena) {
       final out = arena<ffi.Pointer<OrtEnv>>();
-      _checkWith(api, api.ref.CreateEnv.asFunction<
-          ffi.Pointer<OrtStatus> Function(int, ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Pointer<OrtEnv>>)>()(
-        3, // ORT_LOGGING_LEVEL_ERROR
-        'comic_translate_screen'.toNativeUtf8(allocator: arena).cast(),
-        out,
-      ));
+      _checkWith(
+        api,
+        api.ref.CreateEnv
+            .asFunction<
+              ffi.Pointer<OrtStatus> Function(int, ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Pointer<OrtEnv>>)
+            >()(
+          3, // ORT_LOGGING_LEVEL_ERROR
+          'comic_translate_screen'.toNativeUtf8(allocator: arena).cast(),
+          out,
+        ),
+      );
       return OrtRuntime._(api, out.value);
     });
   }
@@ -172,18 +179,21 @@ class OrtRuntime {
   /// Execution providers compiled into the library, e.g.
   /// `[DmlExecutionProvider, CPUExecutionProvider]`.
   List<String> get availableProviders => using((arena) {
-        final out = arena<ffi.Pointer<ffi.Pointer<ffi.Char>>>();
-        final len = arena<ffi.Int>();
-        _check(_api.ref.GetAvailableProviders.asFunction<
-            ffi.Pointer<OrtStatus> Function(ffi.Pointer<ffi.Pointer<ffi.Pointer<ffi.Char>>>, ffi.Pointer<ffi.Int>)>()(
-          out,
-          len,
-        ));
-        final result = [for (var i = 0; i < len.value; i++) out.value[i].cast<Utf8>().toDartString()];
-        _check(_api.ref.ReleaseAvailableProviders.asFunction<
-            ffi.Pointer<OrtStatus> Function(ffi.Pointer<ffi.Pointer<ffi.Char>>, int)>()(out.value, len.value));
-        return result;
-      });
+    final out = arena<ffi.Pointer<ffi.Pointer<ffi.Char>>>();
+    final len = arena<ffi.Int>();
+    _check(
+      _api.ref.GetAvailableProviders
+          .asFunction<
+            ffi.Pointer<OrtStatus> Function(ffi.Pointer<ffi.Pointer<ffi.Pointer<ffi.Char>>>, ffi.Pointer<ffi.Int>)
+          >()(out, len),
+    );
+    final result = [for (var i = 0; i < len.value; i++) out.value[i].cast<Utf8>().toDartString()];
+    _check(
+      _api.ref.ReleaseAvailableProviders
+          .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<ffi.Pointer<ffi.Char>>, int)>()(out.value, len.value),
+    );
+    return result;
+  });
 
   bool get hasDirectML => availableProviders.contains('DmlExecutionProvider');
 
@@ -193,7 +203,8 @@ class OrtRuntime {
     if (status == ffi.nullptr) return;
     final code = api.ref.GetErrorCode.asFunction<int Function(ffi.Pointer<OrtStatus>)>()(status);
     final message = decodeNativeMessage(
-        api.ref.GetErrorMessage.asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<OrtStatus>)>()(status).cast());
+      api.ref.GetErrorMessage.asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<OrtStatus>)>()(status).cast(),
+    );
     api.ref.ReleaseStatus.asFunction<void Function(ffi.Pointer<OrtStatus>)>()(status);
     throw OrtException(code, message);
   }
@@ -213,7 +224,7 @@ String decodeNativeMessage(ffi.Pointer<ffi.Uint8> ptr) {
 
 /// A loaded model.
 class OrtSession {
-  OrtSession._(this._rt, this._session, this._options, this.device, this.fallbackReason, this.modelPath) {
+  OrtSession._(this._rt, this._session, this._options, this.device, this.fallbackReason, this.modelPath, this._config) {
     inputs = _describe(input: true);
     outputs = _describe(input: false);
   }
@@ -222,12 +233,23 @@ class OrtSession {
   ffi.Pointer<b.OrtSession> _session;
   ffi.Pointer<OrtSessionOptions> _options;
   final String modelPath;
+  final OrtSessionConfig _config;
 
-  /// Device actually used (may be CPU when DirectML was requested).
-  final OrtDevice device;
+  /// Device actually used (may be CPU when DirectML was requested, or after
+  /// DirectML failed while running).
+  OrtDevice device;
 
   /// Why DirectML was not used, if it was requested and failed.
-  final String? fallbackReason;
+  String? fallbackReason;
+
+  /// Called (in the isolate that runs the session) when a model that ran on
+  /// DirectML failed while running and goes on on the CPU.
+  static void Function(String modelPath, String reason)? onRuntimeFallback;
+
+  /// For checks on computers where DirectML works: the first run of every
+  /// DirectML session fails (environment variable CTS_SIMULATE_DML_FAILURE=1).
+  static bool simulateDirectMLFailure = Platform.environment['CTS_SIMULATE_DML_FAILURE'] == '1';
+  var _simulated = false;
 
   late final List<OrtTensorInfo> inputs;
   late final List<OrtTensorInfo> outputs;
@@ -236,8 +258,11 @@ class OrtSession {
 
   /// Loads [modelPath]. With [OrtDevice.directml] the session falls back to
   /// CPU if the DirectML provider cannot be created.
-  static OrtSession open(String modelPath,
-      {OrtDevice device = OrtDevice.cpu, OrtSessionConfig config = const OrtSessionConfig()}) {
+  static OrtSession open(
+    String modelPath, {
+    OrtDevice device = OrtDevice.cpu,
+    OrtSessionConfig config = const OrtSessionConfig(),
+  }) {
     if (!File(modelPath).existsSync()) throw ArgumentError('Model file not found: $modelPath');
     final rt = OrtRuntime.instance;
     if (device == OrtDevice.directml) {
@@ -251,12 +276,20 @@ class OrtSession {
   }
 
   static OrtSession _open(
-      OrtRuntime rt, String path, OrtDevice device, OrtSessionConfig config, String? fallbackReason) {
+    OrtRuntime rt,
+    String path,
+    OrtDevice device,
+    OrtSessionConfig config,
+    String? fallbackReason,
+  ) {
     final api = rt._api.ref;
     final options = using((arena) {
       final out = arena<ffi.Pointer<OrtSessionOptions>>();
-      rt._check(api.CreateSessionOptions
-          .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<ffi.Pointer<OrtSessionOptions>>)>()(out));
+      rt._check(
+        api.CreateSessionOptions.asFunction<
+          ffi.Pointer<OrtStatus> Function(ffi.Pointer<ffi.Pointer<OrtSessionOptions>>)
+        >()(out),
+      );
       return out.value;
     });
     try {
@@ -266,42 +299,69 @@ class OrtSession {
         final nativePath = Platform.isWindows
             ? path.toNativeUtf16(allocator: arena).cast<ffi.WChar>()
             : path.toNativeUtf8(allocator: arena).cast<ffi.WChar>();
-        rt._check(api.CreateSession.asFunction<
-            ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtEnv>, ffi.Pointer<ffi.WChar>, ffi.Pointer<OrtSessionOptions>,
-                ffi.Pointer<ffi.Pointer<b.OrtSession>>)>()(rt._env, nativePath, options, out));
+        rt._check(
+          api.CreateSession.asFunction<
+            ffi.Pointer<OrtStatus> Function(
+              ffi.Pointer<OrtEnv>,
+              ffi.Pointer<ffi.WChar>,
+              ffi.Pointer<OrtSessionOptions>,
+              ffi.Pointer<ffi.Pointer<b.OrtSession>>,
+            )
+          >()(rt._env, nativePath, options, out),
+        );
         return out.value;
       });
-      return OrtSession._(rt, session, options, device, fallbackReason, path);
+      return OrtSession._(rt, session, options, device, fallbackReason, path, config);
     } catch (_) {
       api.ReleaseSessionOptions.asFunction<void Function(ffi.Pointer<OrtSessionOptions>)>()(options);
       rethrow;
     }
   }
 
-  static void _configure(
-      OrtRuntime rt, ffi.Pointer<OrtSessionOptions> o, OrtDevice device, OrtSessionConfig c) {
+  static void _configure(OrtRuntime rt, ffi.Pointer<OrtSessionOptions> o, OrtDevice device, OrtSessionConfig c) {
     final api = rt._api.ref;
-    rt._check(api.SetSessionLogSeverityLevel
-        .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>, int)>()(o, c.logSeverity));
-    rt._check(api.SetSessionGraphOptimizationLevel
-        .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>, int)>()(o, c.optimizationLevel));
+    rt._check(
+      api.SetSessionLogSeverityLevel.asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>, int)>()(
+        o,
+        c.logSeverity,
+      ),
+    );
+    rt._check(
+      api.SetSessionGraphOptimizationLevel.asFunction<
+        ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>, int)
+      >()(o, c.optimizationLevel),
+    );
     if (c.intraOpThreads > 0) {
-      rt._check(api.SetIntraOpNumThreads
-          .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>, int)>()(o, c.intraOpThreads));
+      rt._check(
+        api.SetIntraOpNumThreads.asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>, int)>()(
+          o,
+          c.intraOpThreads,
+        ),
+      );
     }
     if (c.interOpThreads > 0) {
-      rt._check(api.SetInterOpNumThreads
-          .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>, int)>()(o, c.interOpThreads));
+      rt._check(
+        api.SetInterOpNumThreads.asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>, int)>()(
+          o,
+          c.interOpThreads,
+        ),
+      );
     }
     // DirectML requires sequential execution without memory patterns.
     final sequential = c.sequential || device == OrtDevice.directml;
-    rt._check(api.SetSessionExecutionMode
-        .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>, int)>()(o, sequential ? 0 : 1));
+    rt._check(
+      api.SetSessionExecutionMode.asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>, int)>()(
+        o,
+        sequential ? 0 : 1,
+      ),
+    );
     if (!c.memPattern || device == OrtDevice.directml) {
       rt._check(api.DisableMemPattern.asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>)>()(o));
     }
     if (!c.cpuArena) {
-      rt._check(api.DisableCpuMemArena.asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>)>()(o));
+      rt._check(
+        api.DisableCpuMemArena.asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>)>()(o),
+      );
     }
 
     if (device == OrtDevice.directml) _appendDirectML(rt, o, c);
@@ -311,12 +371,12 @@ class OrtSession {
     if (!rt.hasDirectML) throw OrtException(-1, 'this ONNX Runtime build has no DirectML provider');
     using((arena) {
       final apiOut = arena<ffi.Pointer<ffi.Void>>();
-      rt._check(rt._api.ref.GetExecutionProviderApi.asFunction<
-          ffi.Pointer<OrtStatus> Function(ffi.Pointer<ffi.Char>, int, ffi.Pointer<ffi.Pointer<ffi.Void>>)>()(
-        'DML'.toNativeUtf8(allocator: arena).cast(),
-        ORT_API_VERSION,
-        apiOut,
-      ));
+      rt._check(
+        rt._api.ref.GetExecutionProviderApi
+            .asFunction<
+              ffi.Pointer<OrtStatus> Function(ffi.Pointer<ffi.Char>, int, ffi.Pointer<ffi.Pointer<ffi.Void>>)
+            >()('DML'.toNativeUtf8(allocator: arena).cast(), ORT_API_VERSION, apiOut),
+      );
       final dml = apiOut.value.cast<OrtDmlApi>().ref;
       if (c.dmlHighPerformance) {
         final opts = arena<OrtDmlDeviceOptions>()
@@ -333,34 +393,52 @@ class OrtSession {
     final api = _rt._api.ref;
     return using((arena) {
       final count = arena<ffi.Size>();
-      _rt._check((input ? api.SessionGetInputCount : api.SessionGetOutputCount)
-          .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<b.OrtSession>, ffi.Pointer<ffi.Size>)>()(
-        _session,
-        count,
-      ));
+      _rt._check(
+        (input ? api.SessionGetInputCount : api.SessionGetOutputCount)
+            .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<b.OrtSession>, ffi.Pointer<ffi.Size>)>()(
+          _session,
+          count,
+        ),
+      );
       final allocator = _defaultAllocator(arena);
       final result = <OrtTensorInfo>[];
       for (var i = 0; i < count.value; i++) {
         final namePtr = arena<ffi.Pointer<ffi.Char>>();
-        _rt._check((input ? api.SessionGetInputName : api.SessionGetOutputName).asFunction<
-            ffi.Pointer<OrtStatus> Function(ffi.Pointer<b.OrtSession>, int, ffi.Pointer<OrtAllocator>,
-                ffi.Pointer<ffi.Pointer<ffi.Char>>)>()(_session, i, allocator, namePtr));
+        _rt._check(
+          (input ? api.SessionGetInputName : api.SessionGetOutputName)
+              .asFunction<
+                ffi.Pointer<OrtStatus> Function(
+                  ffi.Pointer<b.OrtSession>,
+                  int,
+                  ffi.Pointer<OrtAllocator>,
+                  ffi.Pointer<ffi.Pointer<ffi.Char>>,
+                )
+              >()(_session, i, allocator, namePtr),
+        );
         final name = namePtr.value.cast<Utf8>().toDartString();
-        _rt._check(api.AllocatorFree
-            .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtAllocator>, ffi.Pointer<ffi.Void>)>()(
-          allocator,
-          namePtr.value.cast(),
-        ));
+        _rt._check(
+          api.AllocatorFree.asFunction<
+            ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtAllocator>, ffi.Pointer<ffi.Void>)
+          >()(allocator, namePtr.value.cast()),
+        );
 
         final typeInfo = arena<ffi.Pointer<OrtTypeInfo>>();
-        _rt._check((input ? api.SessionGetInputTypeInfo : api.SessionGetOutputTypeInfo).asFunction<
-            ffi.Pointer<OrtStatus> Function(
-                ffi.Pointer<b.OrtSession>, int, ffi.Pointer<ffi.Pointer<OrtTypeInfo>>)>()(_session, i, typeInfo));
+        _rt._check(
+          (input ? api.SessionGetInputTypeInfo : api.SessionGetOutputTypeInfo)
+              .asFunction<
+                ffi.Pointer<OrtStatus> Function(ffi.Pointer<b.OrtSession>, int, ffi.Pointer<ffi.Pointer<OrtTypeInfo>>)
+              >()(_session, i, typeInfo),
+        );
         try {
           final tensorInfo = arena<ffi.Pointer<OrtTensorTypeAndShapeInfo>>();
-          _rt._check(api.CastTypeInfoToTensorInfo.asFunction<
-              ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtTypeInfo>,
-                  ffi.Pointer<ffi.Pointer<OrtTensorTypeAndShapeInfo>>)>()(typeInfo.value, tensorInfo));
+          _rt._check(
+            api.CastTypeInfoToTensorInfo.asFunction<
+              ffi.Pointer<OrtStatus> Function(
+                ffi.Pointer<OrtTypeInfo>,
+                ffi.Pointer<ffi.Pointer<OrtTensorTypeAndShapeInfo>>,
+              )
+            >()(typeInfo.value, tensorInfo),
+          );
           if (tensorInfo.value == ffi.nullptr) {
             result.add(OrtTensorInfo(name, null, 0, const []));
           } else {
@@ -377,48 +455,76 @@ class OrtSession {
 
   ffi.Pointer<OrtAllocator> _defaultAllocator(Arena arena) {
     final out = arena<ffi.Pointer<OrtAllocator>>();
-    _rt._check(_rt._api.ref.GetAllocatorWithDefaultOptions
-        .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<ffi.Pointer<OrtAllocator>>)>()(out));
+    _rt._check(
+      _rt._api.ref.GetAllocatorWithDefaultOptions
+          .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<ffi.Pointer<OrtAllocator>>)>()(out),
+    );
     return out.value;
   }
 
   (int, List<int>) _typeAndShape(ffi.Pointer<OrtTensorTypeAndShapeInfo> info, Arena arena) {
     final api = _rt._api.ref;
     final elem = arena<ffi.UnsignedInt>();
-    _rt._check(api.GetTensorElementType.asFunction<
-        ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtTensorTypeAndShapeInfo>, ffi.Pointer<ffi.UnsignedInt>)>()(
-      info,
-      elem,
-    ));
+    _rt._check(
+      api.GetTensorElementType.asFunction<
+        ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtTensorTypeAndShapeInfo>, ffi.Pointer<ffi.UnsignedInt>)
+      >()(info, elem),
+    );
     final dimsCount = arena<ffi.Size>();
-    _rt._check(api.GetDimensionsCount.asFunction<
-        ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtTensorTypeAndShapeInfo>, ffi.Pointer<ffi.Size>)>()(
-      info,
-      dimsCount,
-    ));
+    _rt._check(
+      api.GetDimensionsCount.asFunction<
+        ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtTensorTypeAndShapeInfo>, ffi.Pointer<ffi.Size>)
+      >()(info, dimsCount),
+    );
     final dims = arena<ffi.Int64>(dimsCount.value == 0 ? 1 : dimsCount.value);
-    _rt._check(api.GetDimensions.asFunction<
-        ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtTensorTypeAndShapeInfo>, ffi.Pointer<ffi.Int64>, int)>()(
-      info,
-      dims,
-      dimsCount.value,
-    ));
+    _rt._check(
+      api.GetDimensions.asFunction<
+        ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtTensorTypeAndShapeInfo>, ffi.Pointer<ffi.Int64>, int)
+      >()(info, dims, dimsCount.value),
+    );
     return (elem.value, [for (var i = 0; i < dimsCount.value; i++) dims[i]]);
   }
 
-  /// Runs the model. [outputNames] defaults to all outputs.
+  /// Runs the model. [outputNames] defaults to all outputs. A model that
+  /// fails on DirectML (some graphics cards refuse some layers, e.g. a
+  /// Softmax of PaddleOCR on a GTX 1660 Ti) is loaded again on the CPU and run
+  /// there; [onRuntimeFallback] tells about it.
   Map<String, OrtTensor> run(Map<String, OrtTensor> feeds, {List<String>? outputNames}) {
     if (isDisposed) throw StateError('Session is disposed');
+    if (device != OrtDevice.directml) return _run(feeds, outputNames);
+    try {
+      if (simulateDirectMLFailure && !_simulated) {
+        _simulated = true;
+        throw OrtException(6, 'Simulated DirectML failure (CTS_SIMULATE_DML_FAILURE)');
+      }
+      return _run(feeds, outputNames);
+    } on OrtException catch (e) {
+      final reason = 'DirectML failed while running: ${e.message.trim()}';
+      final cpu = _open(_rt, modelPath, OrtDevice.cpu, _config, reason);
+      dispose();
+      _session = cpu._session;
+      _options = cpu._options;
+      device = OrtDevice.cpu;
+      fallbackReason = reason;
+      onRuntimeFallback?.call(modelPath, reason);
+      return _run(feeds, outputNames);
+    }
+  }
+
+  Map<String, OrtTensor> _run(Map<String, OrtTensor> feeds, List<String>? outputNames) {
     final api = _rt._api.ref;
     final names = outputNames ?? [for (final o in outputs) o.name];
     return using((arena) {
       final memInfo = arena<ffi.Pointer<OrtMemoryInfo>>();
-      _rt._check(api.CreateCpuMemoryInfo.asFunction<
-          ffi.Pointer<OrtStatus> Function(int, int, ffi.Pointer<ffi.Pointer<OrtMemoryInfo>>)>()(
-        0, // OrtDeviceAllocator
-        0, // OrtMemTypeDefault
-        memInfo,
-      ));
+      _rt._check(
+        api.CreateCpuMemoryInfo.asFunction<
+          ffi.Pointer<OrtStatus> Function(int, int, ffi.Pointer<ffi.Pointer<OrtMemoryInfo>>)
+        >()(
+          0, // OrtDeviceAllocator
+          0, // OrtMemTypeDefault
+          memInfo,
+        ),
+      );
       final inputValues = arena<ffi.Pointer<OrtValue>>(feeds.length);
       final inputNames = arena<ffi.Pointer<ffi.Char>>(feeds.length);
       final outputValues = arena<ffi.Pointer<OrtValue>>(names.length);
@@ -436,17 +542,27 @@ class OrtSession {
             shape[d] = tensor.shape[d];
           }
           inputNames[i] = name.toNativeUtf8(allocator: arena).cast();
-          _rt._check(api.CreateTensorWithDataAsOrtValue.asFunction<
-              ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtMemoryInfo>, ffi.Pointer<ffi.Void>, int,
-                  ffi.Pointer<ffi.Int64>, int, int, ffi.Pointer<ffi.Pointer<OrtValue>>)>()(
-            memInfo.value,
-            buffer.cast(),
-            bytes.length,
-            shape,
-            tensor.shape.length,
-            tensor.type.onnxId,
-            inputValues + i,
-          ));
+          _rt._check(
+            api.CreateTensorWithDataAsOrtValue.asFunction<
+              ffi.Pointer<OrtStatus> Function(
+                ffi.Pointer<OrtMemoryInfo>,
+                ffi.Pointer<ffi.Void>,
+                int,
+                ffi.Pointer<ffi.Int64>,
+                int,
+                int,
+                ffi.Pointer<ffi.Pointer<OrtValue>>,
+              )
+            >()(
+              memInfo.value,
+              buffer.cast(),
+              bytes.length,
+              shape,
+              tensor.shape.length,
+              tensor.type.onnxId,
+              inputValues + i,
+            ),
+          );
           created++;
           i++;
         }
@@ -455,25 +571,20 @@ class OrtSession {
           outputValues[j] = ffi.nullptr;
         }
 
-        _rt._check(api.Run.asFunction<
+        _rt._check(
+          api.Run.asFunction<
             ffi.Pointer<OrtStatus> Function(
-                ffi.Pointer<b.OrtSession>,
-                ffi.Pointer<OrtRunOptions>,
-                ffi.Pointer<ffi.Pointer<ffi.Char>>,
-                ffi.Pointer<ffi.Pointer<OrtValue>>,
-                int,
-                ffi.Pointer<ffi.Pointer<ffi.Char>>,
-                int,
-                ffi.Pointer<ffi.Pointer<OrtValue>>)>()(
-          _session,
-          ffi.nullptr,
-          inputNames,
-          inputValues,
-          feeds.length,
-          outputNamePtrs,
-          names.length,
-          outputValues,
-        ));
+              ffi.Pointer<b.OrtSession>,
+              ffi.Pointer<OrtRunOptions>,
+              ffi.Pointer<ffi.Pointer<ffi.Char>>,
+              ffi.Pointer<ffi.Pointer<OrtValue>>,
+              int,
+              ffi.Pointer<ffi.Pointer<ffi.Char>>,
+              int,
+              ffi.Pointer<ffi.Pointer<OrtValue>>,
+            )
+          >()(_session, ffi.nullptr, inputNames, inputValues, feeds.length, outputNamePtrs, names.length, outputValues),
+        );
 
         final results = <String, OrtTensor>{};
         try {
@@ -498,35 +609,38 @@ class OrtSession {
   OrtTensor _readTensor(ffi.Pointer<OrtValue> value, Arena arena) {
     final api = _rt._api.ref;
     final info = arena<ffi.Pointer<OrtTensorTypeAndShapeInfo>>();
-    _rt._check(api.GetTensorTypeAndShape.asFunction<
-        ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtValue>, ffi.Pointer<ffi.Pointer<OrtTensorTypeAndShapeInfo>>)>()(
-      value,
-      info,
-    ));
+    _rt._check(
+      api.GetTensorTypeAndShape.asFunction<
+        ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtValue>, ffi.Pointer<ffi.Pointer<OrtTensorTypeAndShapeInfo>>)
+      >()(value, info),
+    );
     final (elem, shape) = (() {
       try {
         return _typeAndShape(info.value, arena);
       } finally {
-        api.ReleaseTensorTypeAndShapeInfo
-            .asFunction<void Function(ffi.Pointer<OrtTensorTypeAndShapeInfo>)>()(info.value);
+        api.ReleaseTensorTypeAndShapeInfo.asFunction<void Function(ffi.Pointer<OrtTensorTypeAndShapeInfo>)>()(
+          info.value,
+        );
       }
     })();
-    final type = OrtElementType.fromOnnx(elem) ??
-        (throw OrtException(-1, 'Unsupported output element type $elem'));
+    final type = OrtElementType.fromOnnx(elem) ?? (throw OrtException(-1, 'Unsupported output element type $elem'));
     final count = shape.fold<int>(1, (a, b) => a * b);
     final dataPtr = arena<ffi.Pointer<ffi.Void>>();
-    _rt._check(api.GetTensorMutableData
-        .asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtValue>, ffi.Pointer<ffi.Pointer<ffi.Void>>)>()(
-      value,
-      dataPtr,
-    ));
+    _rt._check(
+      api.GetTensorMutableData.asFunction<
+        ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtValue>, ffi.Pointer<ffi.Pointer<ffi.Void>>)
+      >()(value, dataPtr),
+    );
     final p = dataPtr.value;
     return switch (type) {
       OrtElementType.float32 => OrtTensor.float32(Float32List.fromList(p.cast<ffi.Float>().asTypedList(count)), shape),
       OrtElementType.int64 => OrtTensor.int64(Int64List.fromList(p.cast<ffi.Int64>().asTypedList(count)), shape),
       OrtElementType.int32 => OrtTensor.int32(Int32List.fromList(p.cast<ffi.Int32>().asTypedList(count)), shape),
-      OrtElementType.uint8 || OrtElementType.bool_ || OrtElementType.int8 =>
-        OrtTensor._(type, List.unmodifiable(shape), Uint8List.fromList(p.cast<ffi.Uint8>().asTypedList(count))),
+      OrtElementType.uint8 || OrtElementType.bool_ || OrtElementType.int8 => OrtTensor._(
+        type,
+        List.unmodifiable(shape),
+        Uint8List.fromList(p.cast<ffi.Uint8>().asTypedList(count)),
+      ),
       OrtElementType.float64 => OrtTensor.float64(Float64List.fromList(p.cast<ffi.Double>().asTypedList(count)), shape),
     };
   }

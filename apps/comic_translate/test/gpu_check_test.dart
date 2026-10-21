@@ -1,5 +1,7 @@
 // The GPU setting: when the graphics card can be used.
 
+import 'package:comic_translate/pipeline/pipeline_worker.dart' show GpuFallback;
+import 'package:comic_translate/state/gpu_benchmark.dart';
 import 'package:comic_translate/state/gpu_check.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_onnx/ct_onnx.dart';
@@ -41,5 +43,18 @@ void main() {
     expect(failed.usable, isFalse);
     expect(failed.problem, 'device removed');
     expect(GpuCheck(const [], ort()).usable, isTrue, reason: 'adapters not listed: DirectML decides');
+  });
+
+  test('speed test verdict: faster by 15 % or more, else the processor; any failure', () {
+    expect(const GpuBenchmarkResult(cpuMs: 2000, gpuMs: 1500).verdict, GpuVerdict.gpuFaster);
+    expect(const GpuBenchmarkResult(cpuMs: 2000, gpuMs: 1800).verdict, GpuVerdict.cpuBetter);
+    expect(const GpuBenchmarkResult(cpuMs: 1900, gpuMs: 2200).verdict, GpuVerdict.cpuBetter);
+    expect(const GpuBenchmarkResult(cpuMs: 1400, gpuError: 'Softmax').verdict, GpuVerdict.gpuFailed);
+    expect(
+      const GpuBenchmarkResult(cpuMs: 1400, gpuMs: 900, fallbacks: [GpuFallback('rec.onnx', 'Softmax')]).verdict,
+      GpuVerdict.gpuFailed,
+      reason: 'fast only because a model ran on the processor',
+    );
+    expect(const GpuBenchmarkResult(cpuMs: 1400, gpuMs: 900).toJson()['verdict'], 'gpuFaster');
   });
 }

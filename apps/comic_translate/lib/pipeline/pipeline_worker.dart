@@ -17,7 +17,9 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:ct_core/ct_core.dart';
+import 'package:ct_onnx/ct_onnx.dart';
 import 'package:ct_providers/ct_providers.dart';
+import 'package:path/path.dart' as p;
 
 import 'page_pipeline.dart';
 
@@ -119,6 +121,9 @@ class WorkerException implements Exception {
   String toString() => message;
 }
 
+/// Models that failed on the graphics card in any worker (main isolate).
+final gpuFallbacks = StreamController<GpuFallback>.broadcast();
+
 /// Main-isolate handle of a background pipeline.
 class PipelineWorker {
   PipelineWorker._(this._isolate, this._toWorker, this._fromWorker, this.runDir, this.runId);
@@ -158,6 +163,8 @@ class PipelineWorker {
       switch (message) {
         case _Log(:final line):
           log.write(LogEvent.fromJson((jsonDecode(line) as Map).cast<String, Object?>()));
+        case GpuFallback f:
+          gpuFallbacks.add(f);
         case _Ready r:
           ready.complete(r);
         case _Failed f when worker == null:
@@ -299,16 +306,7 @@ class PipelineWorker {
     String? below,
     CancelToken? cancel,
   }) async =>
-      await _job(
-            _Op.inpaint,
-            page,
-            path: path,
-            image: image,
-            mask: mask,
-            blocks: blocks,
-            below: below,
-            cancel: cancel,
-          )
+      await _job(_Op.inpaint, page, path: path, image: image, mask: mask, blocks: blocks, below: below, cancel: cancel)
           as CleanedImage;
 
   Future<Object?> _job(
@@ -487,6 +485,18 @@ class _Log {
   final String line;
 }
 
+/// A model that failed on the graphics card and goes on on the CPU.
+class GpuFallback {
+  const GpuFallback(this.model, this.reason, {this.speedTest = false});
+
+  /// Model file name (`en_PP-OCRv5_rec_mobile_infer.onnx`).
+  final String model;
+  final String reason;
+
+  /// During the speed test of the settings (shown there, not as a notice).
+  final bool speedTest;
+}
+
 class _Stage {
   _Stage(this.id, this.stage);
 
@@ -577,6 +587,10 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
       );
     }
     log = recorder?.log ?? EventLog([forward]);
+    OrtSession.onRuntimeFallback = (path, reason) {
+      log.warn('gpu_fallback', {'model': p.basename(path), 'reason': reason});
+      toMain.send(GpuFallback(p.basename(path), reason, speedTest: setup.runLabel == 'gpu_benchmark'));
+    };
     plugins = LazyPlugins(registry, ModelManager(Directory(setup.modelsDir), log: log), setup.spec, log);
     await load(setup.preload);
   } catch (e, st) {

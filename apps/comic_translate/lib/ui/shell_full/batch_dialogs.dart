@@ -106,8 +106,15 @@ class DialogBatchUi implements BatchUi {
       context: context,
       builder: (c) => AlertDialog(
         icon: const Icon(Icons.key_outlined),
-        title: Text(l.missingKeyTitle),
-        content: SizedBox(width: 460, child: Text(l.missingKeyBody(pluginName(context, translator), host))),
+        title: Text(host.isEmpty ? l.missingAddressTitle : l.missingKeyTitle),
+        content: SizedBox(
+          width: 460,
+          child: Text(
+            host.isEmpty
+                ? l.missingAddressBody(pluginName(context, translator))
+                : l.missingKeyBody(pluginName(context, translator), host),
+          ),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.cancel)),
           FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.openSettings)),

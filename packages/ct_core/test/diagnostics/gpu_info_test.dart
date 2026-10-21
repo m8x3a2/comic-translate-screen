@@ -23,5 +23,7 @@ void main() {
     expect(GpuAdapter.fromWmi({'Name': ''}), isNull);
     expect(const GpuAdapter(name: 'AMD Radeon(TM) Graphics').integrated, isTrue);
     expect(const GpuAdapter(name: 'AMD Radeon RX 6600').integrated, isFalse);
+    expect(const GpuAdapter(name: 'Citrix Indirect Display Adapter').software, isTrue);
+    expect(const GpuAdapter(name: 'NVIDIA GeForce GTX 1660 Ti').software, isFalse);
   });
 }

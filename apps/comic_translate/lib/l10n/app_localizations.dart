@@ -500,6 +500,18 @@ abstract class AppLocalizations {
   /// **'Skip them'**
   String get handEditedSkip;
 
+  /// No description provided for @missingAddressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server address needed'**
+  String get missingAddressTitle;
+
+  /// No description provided for @missingAddressBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" has no server address. Enter it in Settings → Translator (for example https://openrouter.ai/api/v1, or http://localhost:1234/v1 for LM Studio), or choose another translator.'**
+  String missingAddressBody(String name);
+
   /// No description provided for @missingKeyTitle.
   ///
   /// In en, this message translates to:
@@ -2821,6 +2833,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking the graphics card…'**
   String get gpuChecking;
+
+  /// No description provided for @speedTestButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Test the speed'**
+  String get speedTestButton;
+
+  /// No description provided for @speedTestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Graphics card or processor'**
+  String get speedTestTitle;
+
+  /// No description provided for @speedTestNeedsModels.
+  ///
+  /// In en, this message translates to:
+  /// **'The test needs these models: {models}. Download them in Settings → Models.'**
+  String speedTestNeedsModels(String models);
+
+  /// No description provided for @speedTestRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Timing a test page on the {what}… (about a minute)'**
+  String speedTestRunning(String what);
+
+  /// No description provided for @speedTestOnCpu.
+  ///
+  /// In en, this message translates to:
+  /// **'processor'**
+  String get speedTestOnCpu;
+
+  /// No description provided for @speedTestOnGpu.
+  ///
+  /// In en, this message translates to:
+  /// **'graphics card'**
+  String get speedTestOnGpu;
+
+  /// No description provided for @speedSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{n} s'**
+  String speedSeconds(String n);
+
+  /// No description provided for @speedTestCpu.
+  ///
+  /// In en, this message translates to:
+  /// **'Processor: {time} per page'**
+  String speedTestCpu(String time);
+
+  /// No description provided for @speedTestGpu.
+  ///
+  /// In en, this message translates to:
+  /// **'Graphics card: {time} per page'**
+  String speedTestGpu(String time);
+
+  /// No description provided for @speedTestCpuFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Processor: error ({reason})'**
+  String speedTestCpuFailed(String reason);
+
+  /// No description provided for @speedTestGpuFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Graphics card: failed ({reason})'**
+  String speedTestGpuFailed(String reason);
+
+  /// No description provided for @speedTestGpuFaster.
+  ///
+  /// In en, this message translates to:
+  /// **'The graphics card is faster: it is better to use it.'**
+  String get speedTestGpuFaster;
+
+  /// No description provided for @speedTestCpuBetter.
+  ///
+  /// In en, this message translates to:
+  /// **'The processor is as fast or faster: there is no need to switch the graphics card on.'**
+  String get speedTestCpuBetter;
+
+  /// No description provided for @speedTestGpuFailedVerdict.
+  ///
+  /// In en, this message translates to:
+  /// **'These models do not run properly on this graphics card: the program will use the processor.'**
+  String get speedTestGpuFailedVerdict;
+
+  /// No description provided for @speedTestReport.
+  ///
+  /// In en, this message translates to:
+  /// **'A report for the developer is saved: {path}'**
+  String speedTestReport(String path);
+
+  /// No description provided for @speedTestUseGpu.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the graphics card'**
+  String get speedTestUseGpu;
+
+  /// No description provided for @speedTestKeepCpu.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the processor'**
+  String get speedTestKeepCpu;
+
+  /// No description provided for @speedTestUseGpuAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch it on anyway'**
+  String get speedTestUseGpuAnyway;
+
+  /// No description provided for @speedTestLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Last test: processor {cpu}, graphics card {gpu} per page.'**
+  String speedTestLast(String cpu, String gpu);
+
+  /// No description provided for @speedTestLastFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Last test: the graphics card failed; the processor is used.'**
+  String get speedTestLastFailed;
+
+  /// No description provided for @gpuFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'The graphics card could not run: {models}. These steps go on on the processor; the translation continues.'**
+  String gpuFallback(String models);
+
+  /// No description provided for @gpuFallbackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'If this happens again, switch the graphics card off. To help fix it, build a bug report and send it to the developer.'**
+  String get gpuFallbackHint;
+
+  /// No description provided for @gpuTurnOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch the graphics card off'**
+  String get gpuTurnOff;
 
   /// No description provided for @gpuFound.
   ///

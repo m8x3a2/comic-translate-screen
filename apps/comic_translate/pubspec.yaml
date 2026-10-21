@@ -47,3 +47,4 @@ flutter:
   # The font's licence goes with it (also next to exported PSD files).
   assets:
     - assets/fonts/Pangolin-OFL.txt
+    - assets/samples/speed_test_page.jpg

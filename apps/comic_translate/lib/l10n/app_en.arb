@@ -173,6 +173,9 @@
   },
   "handEditedTranslate": "Translate again",
   "handEditedSkip": "Skip them",
+  "missingAddressTitle": "Server address needed",
+  "missingAddressBody": "\"{name}\" has no server address. Enter it in Settings → Translator (for example https://openrouter.ai/api/v1, or http://localhost:1234/v1 for LM Studio), or choose another translator.",
+  "@missingAddressBody": {"placeholders": {"name": {"type": "String"}}},
   "missingKeyTitle": "API key needed",
   "missingKeyBody": "\"{name}\" sends text to {host}, which needs an API key. Enter it in Settings → Translator (it is stored in Windows secure storage), or choose a local translator.",
   "@missingKeyBody": {
@@ -962,6 +965,45 @@
   },
   "useGpuInfo": "Text finding, recognition and cleaning run on the graphics card through DirectML, which is part of Windows and works with NVIDIA, AMD and Intel. On a weak or old card it may be no faster than the processor. Translation is not sped up: it runs on the translator's server.",
   "gpuChecking": "Checking the graphics card…",
+  "speedTestButton": "Test the speed",
+  "speedTestTitle": "Graphics card or processor",
+  "speedTestNeedsModels": "The test needs these models: {models}. Download them in Settings → Models.",
+  "@speedTestNeedsModels": {"placeholders": {"models": {"type": "String"}}},
+  "speedTestRunning": "Timing a test page on the {what}… (about a minute)",
+  "@speedTestRunning": {"placeholders": {"what": {"type": "String"}}},
+  "speedTestOnCpu": "processor",
+  "speedTestOnGpu": "graphics card",
+  "speedSeconds": "{n} s",
+  "@speedSeconds": {"placeholders": {"n": {"type": "String"}}},
+  "speedTestCpu": "Processor: {time} per page",
+  "@speedTestCpu": {"placeholders": {"time": {"type": "String"}}},
+  "speedTestGpu": "Graphics card: {time} per page",
+  "@speedTestGpu": {"placeholders": {"time": {"type": "String"}}},
+  "speedTestCpuFailed": "Processor: error ({reason})",
+  "@speedTestCpuFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "speedTestGpuFailed": "Graphics card: failed ({reason})",
+  "@speedTestGpuFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "speedTestGpuFaster": "The graphics card is faster: it is better to use it.",
+  "speedTestCpuBetter": "The processor is as fast or faster: there is no need to switch the graphics card on.",
+  "speedTestGpuFailedVerdict": "These models do not run properly on this graphics card: the program will use the processor.",
+  "speedTestReport": "A report for the developer is saved: {path}",
+  "@speedTestReport": {"placeholders": {"path": {"type": "String"}}},
+  "speedTestUseGpu": "Use the graphics card",
+  "speedTestKeepCpu": "Keep the processor",
+  "speedTestUseGpuAnyway": "Switch it on anyway",
+  "speedTestLast": "Last test: processor {cpu}, graphics card {gpu} per page.",
+  "@speedTestLast": {"placeholders": {"cpu": {"type": "String"}, "gpu": {"type": "String"}}},
+  "speedTestLastFailed": "Last test: the graphics card failed; the processor is used.",
+  "gpuFallback": "The graphics card could not run: {models}. These steps go on on the processor; the translation continues.",
+  "@gpuFallback": {
+    "placeholders": {
+      "models": {
+        "type": "String"
+      }
+    }
+  },
+  "gpuFallbackHint": "If this happens again, switch the graphics card off. To help fix it, build a bug report and send it to the developer.",
+  "gpuTurnOff": "Switch the graphics card off",
   "gpuFound": "Works: {cards}. The most powerful one is used.",
   "@gpuFound": {
     "placeholders": {

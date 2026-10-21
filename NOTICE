@@ -16,6 +16,11 @@ The bundled lettering font Pangolin (Copyright 2016 The Pangolin Project
 Authors) is licensed under the SIL Open Font License 1.1; see
 apps/comic_translate/assets/fonts/Pangolin-OFL.txt.
 
+The page used by the graphics card speed test
+(apps/comic_translate/assets/samples/speed_test_page.jpg) is from Pepper&Carrot
+by David Revoy (https://www.peppercarrot.com), episode 6, page 5, licensed under
+Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/).
+
 The PSD text layer layout follows ag-psd (https://github.com/Agamnentzar/ag-psd,
 Copyright 2016 Agamnentzar, MIT License).
 

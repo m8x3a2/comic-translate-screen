@@ -27,6 +27,7 @@ abstract interface class BatchUi {
   void showError(Object error);
 
   /// The translator sends text to an internet service but has no API key.
+  /// An empty [host]: no server address is set at all.
   Future<void> explainMissingKey(PluginInfo translator, String host);
 
   /// [count] of the pages to translate were changed by hand: translate them
@@ -417,6 +418,11 @@ Future<bool> checkTranslatorKey(Ref ref, BatchUi ui) async {
   final info = services.registry.info(settings.translator);
   final config = await services.pluginConfig(settings.translator, settings);
   final endpoint = info.endpointFor(config);
+  // No server address at all: say that, not "sends to (nothing)".
+  if (endpoint != null && endpoint.host.isEmpty) {
+    await ui.explainMissingKey(info, '');
+    return false;
+  }
   final keys = info.settings.whereType<SecretSetting>();
   if (endpoint == null || endpoint.privacy != Privacy.cloud || keys.isEmpty) return true;
   if (keys.any((k) => config.secret(k.key) != null)) return true;

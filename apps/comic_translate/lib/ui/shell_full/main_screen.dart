@@ -1,6 +1,7 @@
 /// The main window: toolbar, page list, page viewer, text panel, status bar.
 library;
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' show AppExitResponse;
@@ -15,6 +16,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 
 import '../../app_info.dart';
+import '../../pipeline/pipeline_worker.dart' show GpuFallback, gpuFallbacks;
 import '../../state/app_state.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
@@ -209,6 +211,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onHardwareKey);
+    _gpuFallbackSub.cancel();
     _lifecycle.dispose();
     super.dispose();
   }
@@ -217,6 +220,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   void initState() {
     super.initState();
     HardwareKeyboard.instance.addHandler(_onHardwareKey);
+    _gpuFallbackSub = gpuFallbacks.stream.listen(_onGpuFallback);
     _lifecycle;
     final section = ref.read(settingsOnStartProvider);
     if (section != null) {
@@ -231,6 +235,56 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       await _open(inputs);
       if (mounted && ref.read(translateOnStartProvider)) await _translate();
     });
+  }
+
+  late final StreamSubscription<GpuFallback> _gpuFallbackSub;
+
+  /// Models that failed on the graphics card since the notice was closed.
+  final _gpuFailedModels = <String>{};
+
+  /// A model failed on the graphics card and went on on the processor: a
+  /// notice that stays until it is closed.
+  void _onGpuFallback(GpuFallback f) {
+    if (!mounted || f.speedTest) return;
+    final l = context.l10n;
+    final spec = ModelCatalog.all.where((m) => m.files.any((file) => file.name == f.model)).firstOrNull;
+    _gpuFailedModels.add(spec == null ? f.model : modelText(l, spec).$1);
+    final messenger = ScaffoldMessenger.of(context);
+    void close() {
+      _gpuFailedModels.clear();
+      messenger.hideCurrentMaterialBanner();
+    }
+
+    messenger
+      ..removeCurrentMaterialBanner()
+      ..showMaterialBanner(
+        MaterialBanner(
+          leading: const Icon(Icons.warning_amber_rounded),
+          content: Text('${l.gpuFallback(_gpuFailedModels.join(', '))}\n${l.gpuFallbackHint}'),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                final zip = await ref.read(servicesProvider).buildBugReport(note: 'GPU fallback: ${f.reason}');
+                if (mounted) {
+                  _snack(
+                    l.bugReportDone(zip.path),
+                    action: SnackBarAction(label: l.showInFolder, onPressed: () => showInExplorer(zip.path)),
+                  );
+                }
+              },
+              child: Text(l.bugReport),
+            ),
+            TextButton(
+              onPressed: () {
+                ref.read(settingsProvider.notifier).change((s) => s.useGpu = false);
+                close();
+              },
+              child: Text(l.gpuTurnOff),
+            ),
+            TextButton(onPressed: close, child: Text(l.close)),
+          ],
+        ),
+      );
   }
 
   void _snack(String text, {SnackBarAction? action}) =>

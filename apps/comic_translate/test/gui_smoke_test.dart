@@ -4,6 +4,7 @@ import 'package:comic_translate/app_info.dart';
 import 'package:comic_translate/bootstrap.dart';
 import 'package:comic_translate/import/pdf_pages.dart';
 import 'package:comic_translate/l10n/app_localizations.dart';
+import 'package:comic_translate/pipeline/pipeline_worker.dart' show GpuFallback, gpuFallbacks;
 import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/state/batch.dart';
 import 'package:comic_translate/state/export.dart';
@@ -237,6 +238,31 @@ void main() {
     await tester.runAsync(() => container.read(batchProvider.notifier).run(ui));
     expect(ui.missingKeys, ['cloud.example']);
     expect(container.read(workspaceProvider).pages.single.status, PageStatus.pending);
+  });
+
+  testWidgets('a translator without a server address is explained, not asked about', (tester) async {
+    desktopWindow(tester);
+    final (container, _) = await openPages(tester, fakeSettings()..translator = 'fake_no_address', 1);
+    final ui = _YesUi();
+    await tester.runAsync(() => container.read(batchProvider.notifier).run(ui));
+    expect(ui.missingKeys, [''], reason: 'empty host: no address');
+    expect(container.read(workspaceProvider).pages.single.status, PageStatus.pending);
+  });
+
+  testWidgets('a model failing on the graphics card shows a notice that stays until closed', (tester) async {
+    desktopWindow(tester);
+    await openPages(tester, fakeSettings(), 1);
+    gpuFallbacks.add(const GpuFallback('en_PP-OCRv5_rec_mobile_infer.onnx', 'Softmax failed'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.textContaining('Видеокарта не справилась'), findsOneWidget);
+    expect(find.textContaining('Английский'), findsOneWidget, reason: 'the model by name');
+    gpuFallbacks.add(const GpuFallback('x.onnx', 'test', speedTest: true));
+    await tester.pump(const Duration(seconds: 30));
+    expect(find.byType(MaterialBanner), findsOneWidget, reason: 'stays; speed-test failures are not added');
+    await tester.tap(find.widgetWithText(TextButton, 'Закрыть'));
+    await tester.pumpAndSettle();
+    expect(find.byType(MaterialBanner), findsNothing);
   });
 
   testWidgets('an error every page would repeat stops the run at once, with the reason', (tester) async {

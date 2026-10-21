@@ -122,6 +122,18 @@ class AppServices {
     extra: {'data_dir': paths.root.path, ...extra},
   );
 
+  /// A bug report zip (logs, environment with the graphics adapters,
+  /// settings without secrets), as the GUI buttons build it.
+  Future<File> buildBugReport({String? note}) async {
+    await appLog.flush();
+    final zip = await BugReportBuilder(
+      paths: paths,
+      redactor: redactor,
+    ).build(environment: await environmentWithGpu(), userNote: note);
+    appLog.info('bug_report', {'file': zip.path, 'with_images': false});
+    return zip;
+  }
+
   /// [environment] with the graphics adapters (slower: asks Windows).
   Future<Map<String, Object?>> environmentWithGpu() async => environment({
     'gpu': [for (final g in await GpuInfo.list()) g.toJson()],

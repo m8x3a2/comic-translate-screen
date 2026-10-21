@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:ct_core/ct_core.dart';
+import 'package:ct_onnx/ct_onnx.dart';
+import 'package:path/path.dart' as p;
 
 import '../bootstrap.dart';
 import 'cli_context.dart';
@@ -39,16 +41,20 @@ abstract class CtsCommand extends Command<int> {
 }
 
 CommandRunner<int> buildRunner(CliContextHolder holder) {
-  final runner = CommandRunner<int>(
-    'cts',
-    'Comic Translate Screen — command-line interface.\n'
-        'All pipeline functions are available here for testing without the GUI.',
-  )
-    ..argParser.addOption('data-dir',
-        help: 'Data directory (logs, runs, models). '
-            'Defaults to \$${AppPaths.dataDirEnv} or %LOCALAPPDATA%\\${AppPaths.windowsFolderName}.')
-    ..argParser.addFlag('json', negatable: false, help: 'Print one JSON document to stdout.')
-    ..argParser.addFlag('verbose', abbr: 'v', negatable: false, help: 'Print log events to stderr.');
+  final runner =
+      CommandRunner<int>(
+          'cts',
+          'Comic Translate Screen — command-line interface.\n'
+              'All pipeline functions are available here for testing without the GUI.',
+        )
+        ..argParser.addOption(
+          'data-dir',
+          help:
+              'Data directory (logs, runs, models). '
+              'Defaults to \$${AppPaths.dataDirEnv} or %LOCALAPPDATA%\\${AppPaths.windowsFolderName}.',
+        )
+        ..argParser.addFlag('json', negatable: false, help: 'Print one JSON document to stdout.')
+        ..argParser.addFlag('verbose', abbr: 'v', negatable: false, help: 'Print log events to stderr.');
 
   runner
     ..addCommand(VersionCommand(holder))
@@ -108,6 +114,14 @@ Future<int> runCli(
     secretStore: secretStore,
   );
   await services.init();
+  // A model that fails on the graphics card goes on on the CPU: say so.
+  OrtSession.onRuntimeFallback = (path, reason) {
+    services.appLog.warn('gpu_fallback', {'model': p.basename(path), 'reason': reason});
+    stderrSink.writeln(
+      'Warning: ${p.basename(path)} failed on the graphics card and goes on on the processor ($reason). '
+      'Run `cts report` and send the file to the developer.',
+    );
+  };
   holder._context = CliContext(
     services: services,
     json: results.flag('json'),
@@ -131,8 +145,10 @@ Future<int> runCli(
   } catch (e, st) {
     log.error('cli_crash', e, st);
     stderrSink.writeln(services.redactor.redact('Error: $e'));
-    stderrSink.writeln('Details are in ${services.paths.appLog.path}. '
-        'Run `cts report` to build a bug report.');
+    stderrSink.writeln(
+      'Details are in ${services.paths.appLog.path}. '
+      'Run `cts report` to build a bug report.',
+    );
     return ExitCodes.internal;
   } finally {
     await services.dispose();

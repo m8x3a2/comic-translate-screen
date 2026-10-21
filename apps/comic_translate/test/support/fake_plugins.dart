@@ -78,6 +78,18 @@ PluginRegistry fakeRegistryWith({Duration detectDelay = Duration.zero}) => Plugi
   ..register(PluginFactory<Translator>(fakeCloudInfo, (c, e) async => _FailingTranslator()))
   ..register(
     PluginFactory<Translator>(
+      const PluginInfo(
+        id: 'fake_no_address',
+        displayName: 'No address',
+        kind: PluginKind.translator,
+        privacy: Privacy.cloud,
+        endpoint: _noAddress,
+      ),
+      (c, e) async => _FailingTranslator(),
+    ),
+  )
+  ..register(
+    PluginFactory<Translator>(
       fakeInfo('fake_bad_reply', PluginKind.translator),
       (c, e) async => _FailingTranslator(TranslationErrorKind.badReply),
     ),
@@ -94,6 +106,9 @@ const fakeCloudInfo = PluginInfo(
 );
 
 PluginEndpoint _cloudEndpoint(PluginConfig config) => const PluginEndpoint(Privacy.cloud, 'cloud.example');
+
+/// An internet translator whose server address is not set.
+PluginEndpoint _noAddress(PluginConfig config) => const PluginEndpoint(Privacy.cloud, '');
 
 /// Fails every page as an out-of-credit server would.
 class _FailingTranslator implements Translator {

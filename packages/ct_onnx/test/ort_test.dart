@@ -48,10 +48,13 @@ void main() {
     expect(out['Z']!.asInt64, [2, 3, 4, 5]);
     expect(out['V']!.asUint8, [0, 127, 200, 255]);
 
-    final onlyZ = s.run({
-      'X': OrtTensor.int64(Int64List.fromList([0, 0, 0, 0]), [2, 2]),
-      'U': OrtTensor.uint8(Uint8List(4), [4]),
-    }, outputNames: ['Z']);
+    final onlyZ = s.run(
+      {
+        'X': OrtTensor.int64(Int64List.fromList([0, 0, 0, 0]), [2, 2]),
+        'U': OrtTensor.uint8(Uint8List(4), [4]),
+      },
+      outputNames: ['Z'],
+    );
     expect(onlyZ.keys, ['Z']);
   });
 
@@ -96,5 +99,25 @@ void main() {
     final a = OrtTensor.float32(Float32List.fromList([1, 1, 1]), [1, 3]);
     final out = s.run({'A': a, 'B': a})['C']!;
     expect(out.asFloat32, [2, 2, 2]);
+  });
+
+  test('a model failing on DirectML while running goes on on the CPU, and says so', () {
+    final s = OrtSession.open(fixture('add.onnx'), device: OrtDevice.directml);
+    addTearDown(s.dispose);
+    if (s.device != OrtDevice.directml) return; // No DirectML here.
+    final told = <String>[];
+    OrtSession.simulateDirectMLFailure = true;
+    OrtSession.onRuntimeFallback = (path, reason) => told.add(reason);
+    addTearDown(() {
+      OrtSession.simulateDirectMLFailure = false;
+      OrtSession.onRuntimeFallback = null;
+    });
+    final a = OrtTensor.float32(Float32List.fromList([1, 2, 3]), [1, 3]);
+    expect(s.run({'A': a, 'B': a})['C']!.asFloat32, [2, 4, 6]);
+    expect(s.device, OrtDevice.cpu);
+    expect(s.fallbackReason, contains('Simulated DirectML failure'));
+    expect(told, hasLength(1));
+    expect(s.run({'A': a, 'B': a})['C']!.asFloat32, [2, 4, 6], reason: 'stays on the CPU');
+    expect(told, hasLength(1));
   });
 }

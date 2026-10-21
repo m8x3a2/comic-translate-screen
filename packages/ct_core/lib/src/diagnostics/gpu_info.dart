@@ -16,15 +16,27 @@ class GpuAdapter {
   final String? driverVersion;
   final DateTime? driverDate;
 
-  /// Windows' own display drivers, remote desktop and similar: no real
-  /// graphics card behind them.
+  /// Windows' own display drivers, remote desktop, virtual machines, screen
+  /// sharing and USB display adapters: no graphics card to compute on.
   bool get software {
     final n = name.toLowerCase();
-    return n.contains('basic display') ||
-        n.contains('basic render') ||
-        n.contains('remote display') ||
-        n.contains('remote desktop') ||
-        n.contains('virtual');
+    const marks = [
+      'basic display',
+      'basic render',
+      'remote display',
+      'remote desktop',
+      'virtual',
+      'indirect display',
+      'citrix',
+      'hyper-v',
+      'vmware',
+      'virtualbox',
+      'parsec',
+      'spacedesk',
+      'displaylink',
+      'mirage driver',
+    ];
+    return marks.any(n.contains);
   }
 
   /// Built into the processor (Intel UHD / Iris, AMD Radeon Graphics of

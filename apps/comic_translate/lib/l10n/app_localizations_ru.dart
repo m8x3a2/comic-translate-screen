@@ -241,6 +241,14 @@ class AppLocalizationsRu extends AppLocalizations {
   String get handEditedSkip => 'Пропустить их';
 
   @override
+  String get missingAddressTitle => 'Нужен адрес сервера';
+
+  @override
+  String missingAddressBody(String name) {
+    return 'У переводчика «$name» не указан адрес сервера. Укажите его в «Настройки → Переводчик» (например, https://openrouter.ai/api/v1, а для LM Studio — http://localhost:1234/v1) или выберите другой переводчик.';
+  }
+
+  @override
   String get missingKeyTitle => 'Нужен ключ API';
 
   @override
@@ -1565,6 +1573,99 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gpuChecking => 'Проверяю видеокарту…';
+
+  @override
+  String get speedTestButton => 'Проверить скорость';
+
+  @override
+  String get speedTestTitle => 'Видеокарта или процессор';
+
+  @override
+  String speedTestNeedsModels(String models) {
+    return 'Для проверки нужны модели: $models. Скачайте их в «Настройки → Модели».';
+  }
+
+  @override
+  String speedTestRunning(String what) {
+    return 'Замеряю тестовую страницу: $what… (около минуты)';
+  }
+
+  @override
+  String get speedTestOnCpu => 'процессор';
+
+  @override
+  String get speedTestOnGpu => 'видеокарта';
+
+  @override
+  String speedSeconds(String n) {
+    return '$n с';
+  }
+
+  @override
+  String speedTestCpu(String time) {
+    return 'Процессор: $time на страницу';
+  }
+
+  @override
+  String speedTestGpu(String time) {
+    return 'Видеокарта: $time на страницу';
+  }
+
+  @override
+  String speedTestCpuFailed(String reason) {
+    return 'Процессор: ошибка ($reason)';
+  }
+
+  @override
+  String speedTestGpuFailed(String reason) {
+    return 'Видеокарта: не справилась ($reason)';
+  }
+
+  @override
+  String get speedTestGpuFaster => 'Видеокарта быстрее — лучше считать на ней.';
+
+  @override
+  String get speedTestCpuBetter =>
+      'Процессор не медленнее видеокарты — включать её не нужно.';
+
+  @override
+  String get speedTestGpuFailedVerdict =>
+      'На этой видеокарте модели работают с ошибками — программа будет считать на процессоре.';
+
+  @override
+  String speedTestReport(String path) {
+    return 'Отчёт для разработчика сохранён: $path';
+  }
+
+  @override
+  String get speedTestUseGpu => 'Включить видеокарту';
+
+  @override
+  String get speedTestKeepCpu => 'Оставить процессор';
+
+  @override
+  String get speedTestUseGpuAnyway => 'Всё равно включить';
+
+  @override
+  String speedTestLast(String cpu, String gpu) {
+    return 'Последняя проверка: процессор $cpu, видеокарта $gpu на страницу.';
+  }
+
+  @override
+  String get speedTestLastFailed =>
+      'Последняя проверка: видеокарта не справилась, считает процессор.';
+
+  @override
+  String gpuFallback(String models) {
+    return 'Видеокарта не справилась: $models. Эти шаги дальше считаются на процессоре, перевод продолжается.';
+  }
+
+  @override
+  String get gpuFallbackHint =>
+      'Если это повторяется, выключите видеокарту. Чтобы помочь исправить, соберите отчёт об ошибке и пришлите его разработчику.';
+
+  @override
+  String get gpuTurnOff => 'Выключить видеокарту';
 
   @override
   String gpuFound(String cards) {

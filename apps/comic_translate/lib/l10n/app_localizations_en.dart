@@ -240,6 +240,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get handEditedSkip => 'Skip them';
 
   @override
+  String get missingAddressTitle => 'Server address needed';
+
+  @override
+  String missingAddressBody(String name) {
+    return '\"$name\" has no server address. Enter it in Settings → Translator (for example https://openrouter.ai/api/v1, or http://localhost:1234/v1 for LM Studio), or choose another translator.';
+  }
+
+  @override
   String get missingKeyTitle => 'API key needed';
 
   @override
@@ -1562,6 +1570,100 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gpuChecking => 'Checking the graphics card…';
+
+  @override
+  String get speedTestButton => 'Test the speed';
+
+  @override
+  String get speedTestTitle => 'Graphics card or processor';
+
+  @override
+  String speedTestNeedsModels(String models) {
+    return 'The test needs these models: $models. Download them in Settings → Models.';
+  }
+
+  @override
+  String speedTestRunning(String what) {
+    return 'Timing a test page on the $what… (about a minute)';
+  }
+
+  @override
+  String get speedTestOnCpu => 'processor';
+
+  @override
+  String get speedTestOnGpu => 'graphics card';
+
+  @override
+  String speedSeconds(String n) {
+    return '$n s';
+  }
+
+  @override
+  String speedTestCpu(String time) {
+    return 'Processor: $time per page';
+  }
+
+  @override
+  String speedTestGpu(String time) {
+    return 'Graphics card: $time per page';
+  }
+
+  @override
+  String speedTestCpuFailed(String reason) {
+    return 'Processor: error ($reason)';
+  }
+
+  @override
+  String speedTestGpuFailed(String reason) {
+    return 'Graphics card: failed ($reason)';
+  }
+
+  @override
+  String get speedTestGpuFaster =>
+      'The graphics card is faster: it is better to use it.';
+
+  @override
+  String get speedTestCpuBetter =>
+      'The processor is as fast or faster: there is no need to switch the graphics card on.';
+
+  @override
+  String get speedTestGpuFailedVerdict =>
+      'These models do not run properly on this graphics card: the program will use the processor.';
+
+  @override
+  String speedTestReport(String path) {
+    return 'A report for the developer is saved: $path';
+  }
+
+  @override
+  String get speedTestUseGpu => 'Use the graphics card';
+
+  @override
+  String get speedTestKeepCpu => 'Keep the processor';
+
+  @override
+  String get speedTestUseGpuAnyway => 'Switch it on anyway';
+
+  @override
+  String speedTestLast(String cpu, String gpu) {
+    return 'Last test: processor $cpu, graphics card $gpu per page.';
+  }
+
+  @override
+  String get speedTestLastFailed =>
+      'Last test: the graphics card failed; the processor is used.';
+
+  @override
+  String gpuFallback(String models) {
+    return 'The graphics card could not run: $models. These steps go on on the processor; the translation continues.';
+  }
+
+  @override
+  String get gpuFallbackHint =>
+      'If this happens again, switch the graphics card off. To help fix it, build a bug report and send it to the developer.';
+
+  @override
+  String get gpuTurnOff => 'Switch the graphics card off';
 
   @override
   String gpuFound(String cards) {
