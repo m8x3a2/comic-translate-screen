@@ -13,7 +13,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
@@ -29,7 +29,7 @@ jobs:
 
       # Native build-hook outputs (OpenCV wrapper, ONNX Runtime download) take
       # several minutes to rebuild; keep them between runs.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .dart_tool/hooks_runner
           # v2: caches from before `--no-enable-record-use` carry a dartcv4
