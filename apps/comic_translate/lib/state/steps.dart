@@ -2,6 +2,10 @@
 /// boxes, recognize text, translate, make the mask, clean. A step does the
 /// steps before it that are missing (translating a fresh page detects and
 /// reads it first). Results are undo steps of the page.
+///
+/// In the webtoon mode a bubble cut by the edge between two pages belongs to
+/// the upper page: its steps look at the top of the page below as well (see
+/// `seams.dart` in ct_core).
 library;
 
 import 'dart:io';
@@ -16,6 +20,7 @@ import '../render/mask_raster.dart';
 import 'app_state.dart';
 import 'batch.dart';
 import 'editor.dart';
+import 'page_render.dart';
 import 'worker_pool.dart';
 import 'workspace.dart';
 
@@ -162,12 +167,15 @@ class StepsNotifier extends Notifier<StepState> {
           if (page == null) break;
           void commit(PageEntry Function(PageEntry p) change) =>
               workspace.edit(id, change, mergeKey: merge, mergeWindow: _stepMergeWindow);
+          final seams = await webtoonSeams(ref.read(workspaceProvider), page);
           switch (s) {
             case ManualStep.detect:
               final found = await worker.detect(
                 page.name,
                 path: page.path,
                 sourceLanguage: page.sourceOf(settings),
+                below: seams.below,
+                covered: seams.covered,
                 cancel: cancel,
               );
               commit((p) => p.copyWith(blocks: found));
@@ -184,6 +192,7 @@ class StepsNotifier extends Notifier<StepState> {
                 path: page.path,
                 blocks: [for (final i in which) page.blocks[i].copy()],
                 sourceLanguage: page.sourceOf(settings),
+                below: seams.below,
                 cancel: cancel,
               );
               commit((p) => p.copyWith(blocks: _replace(p.blocks, which, read, (old, b) => old.copy()..text = b.text)));
@@ -207,23 +216,36 @@ class StepsNotifier extends Notifier<StepState> {
                 ),
               );
             case ManualStep.mask:
-              final mask = await worker.makeMask(page.name, path: page.path, blocks: page.blocks);
+              final mask = await worker.makeMask(page.name, path: page.path, blocks: page.blocks, below: seams.below);
               final file = p.join(workspace.pageDir(id).path, 'mask_${_stamp()}.png');
               await worker.save([MaskOutput(file, mask)]);
               commit((p) => p.copyWith(maskPath: file));
               if (step == ManualStep.mask) ref.read(editorProvider.notifier).setTool(EditorTool.brush);
             case ManualStep.clean:
               final mask = await _currentMask(page);
-              final clean = await worker.inpaint(
+              final cleaned = await worker.inpaint(
                 page.name,
                 path: page.basePath,
                 mask: mask,
                 blocks: page.blocks,
+                below: seams.below,
                 cancel: cancel,
               );
-              final file = p.join(workspace.pageDir(id).path, 'clean_${_stamp()}.png');
-              await worker.save([ImageOutput(file, clean)]);
-              commit((p) => p.copyWith(cleanPath: file, maskPath: null, strokes: const []));
+              final dir = workspace.pageDir(id).path;
+              final file = p.join(dir, 'clean_${_stamp()}.png');
+              final overflow = cleaned.overflow;
+              final patch = overflow == null ? null : p.join(dir, 'overflow_${_stamp()}.png');
+              await worker.save([ImageOutput(file, cleaned.clean), if (patch != null) PatchOutput(patch, overflow!)]);
+              // A mask within the page leaves what was cleaned below it.
+              final reached = mask.height > cleaned.clean.height;
+              commit(
+                (p) => p.copyWith(
+                  cleanPath: file,
+                  maskPath: null,
+                  strokes: const [],
+                  overflowPath: reached ? patch : p.overflowPath,
+                ),
+              );
               ref.read(editorProvider.notifier).setView(ViewMode.result);
           }
         }
@@ -245,7 +267,8 @@ class StepsNotifier extends Notifier<StepState> {
     }
   }
 
-  /// The generated mask plus the strokes, at the page's size.
+  /// The generated mask plus the strokes, at the page's size (taller on a
+  /// webtoon page whose mask reaches into the page below).
   Future<GrayImage> _currentMask(PageEntry page) async {
     final maskPath = page.maskPath;
     final base = maskPath == null

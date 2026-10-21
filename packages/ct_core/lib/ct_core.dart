@@ -56,3 +56,4 @@ export 'src/translation/llm_protocol.dart';
 export 'src/translation/translation_error.dart';
 export 'src/usage/key_status.dart';
 export 'src/usage/usage_log.dart';
+export 'src/webtoon/seams.dart';

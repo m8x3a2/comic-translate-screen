@@ -33,6 +33,7 @@ Future<void> showShortcuts(BuildContext context) {
     ]),
     (l.keysGroupMouse, [
       (l.mouseWheel, l.mouseWheelHelp),
+      (l.mouseWheel, l.mouseWheelStrip),
       (l.mouseMiddle, l.mouseMiddleHelp),
       (l.mouseGrab, l.mouseMiddleHelp),
       (l.mouseDouble, l.mouseDoubleHelp),

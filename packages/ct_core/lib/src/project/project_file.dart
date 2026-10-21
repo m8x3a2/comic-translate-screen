@@ -29,6 +29,7 @@ class ProjectPage {
     this.source,
     this.cleanImage,
     this.mask,
+    this.overflow,
     this.blocks = const [],
     this.strokes = const [],
     this.state = const {},
@@ -49,6 +50,10 @@ class ProjectPage {
   /// The page with the text removed, and the generated mask (files).
   final String? cleanImage;
   final String? mask;
+
+  /// Webtoon pages: the cleaned part of the page below that this page's
+  /// blocks reach into (a transparent PNG, see `SeamPatch`).
+  final String? overflow;
   final List<TextBlock> blocks;
   final List<MaskStroke> strokes;
 
@@ -194,6 +199,7 @@ class ProjectFile {
             'image': blobOf(page.image, p.basename(page.name)),
             'clean': page.cleanImage == null ? null : blobOf(page.cleanImage!, 'clean${p.extension(page.cleanImage!)}'),
             'mask': page.mask == null ? null : blobOf(page.mask!, 'mask${p.extension(page.mask!)}'),
+            if (page.overflow != null) 'overflow': blobOf(page.overflow!, 'overflow.png'),
             'blocks': [for (final b in page.blocks) b.toJson()],
             'strokes': [for (final s in page.strokes) s.toJson()],
             'fonts': fonts,
@@ -300,6 +306,7 @@ class ProjectFile {
           image: materialize(j['image'], dir),
           cleanImage: j['clean'] == null ? null : materialize(j['clean'], dir),
           mask: j['mask'] == null ? null : materialize(j['mask'], dir),
+          overflow: j['overflow'] == null ? null : materialize(j['overflow'], dir),
           blocks: blocks,
           strokes: [
             for (final s in (j['strokes'] as List? ?? const [])) MaskStroke.fromJson((s as Map).cast<String, Object?>()),

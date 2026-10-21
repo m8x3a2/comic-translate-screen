@@ -90,6 +90,22 @@ class MaskOutput extends WorkerOutput {
   final GrayImage mask;
 }
 
+/// What cleaning produced: the page, and on webtoon pages the cleaned part
+/// of the next page that its blocks reach into.
+class CleanedImage {
+  const CleanedImage(this.clean, [this.overflow]);
+
+  final RgbImage clean;
+  final SeamPatch? overflow;
+}
+
+/// A transparent PNG ([SeamPatch]).
+class PatchOutput extends WorkerOutput {
+  const PatchOutput(super.path, this.patch);
+
+  final SeamPatch patch;
+}
+
 /// The worker failed in a way that cannot be sent back as the original
 /// exception.
 class WorkerException implements Exception {
@@ -168,12 +184,17 @@ class PipelineWorker {
   /// Detection, OCR, translation and cleaning of the image at [path] (or of
   /// [image]). [onStage] reports each stage as it starts. Cancelling [cancel]
   /// stops at the next step boundary with [CancelledException].
+  ///
+  /// Webtoon pages: [below] is the image of the next page and [covered] what
+  /// blocks of the page above reach into (see [PagePipeline.prepare]).
   Future<CleanPage> prepare(
     String page, {
     String? path,
     RgbImage? image,
     required String sourceLanguage,
     required String targetLanguage,
+    String? below,
+    List<BBox> covered = const [],
     CancelToken? cancel,
     void Function(String stage)? onStage,
   }) async => await _job(
@@ -183,6 +204,8 @@ class PipelineWorker {
     image: image,
     source: sourceLanguage,
     target: targetLanguage,
+    below: below,
+    covered: covered,
     cancel: cancel,
     onStage: onStage,
   ) as CleanPage;
@@ -190,23 +213,36 @@ class PipelineWorker {
   /// Loads [parts] now (errors such as a missing model come from here).
   Future<void> load(Set<PipelinePart> parts) => _job(_Op.load, '', parts: parts);
 
-  /// Text blocks found on the page, in reading order.
+  /// Text blocks found on the page, in reading order (webtoon pages: see
+  /// [detectOnStrip]; [below] is the image of the next page).
   Future<List<TextBlock>> detect(
     String page, {
     String? path,
     RgbImage? image,
     required String sourceLanguage,
+    String? below,
+    List<BBox> covered = const [],
     CancelToken? cancel,
-  }) async => (await _job(_Op.detect, page, path: path, image: image, source: sourceLanguage, cancel: cancel) as List)
-      .cast<TextBlock>();
+  }) async => (await _job(
+    _Op.detect,
+    page,
+    path: path,
+    image: image,
+    source: sourceLanguage,
+    below: below,
+    covered: covered,
+    cancel: cancel,
+  ) as List).cast<TextBlock>();
 
-  /// [blocks] with their text read.
+  /// [blocks] with their text read; blocks reaching below the page are read
+  /// on the page extended with the image [below].
   Future<List<TextBlock>> recognize(
     String page, {
     String? path,
     RgbImage? image,
     required List<TextBlock> blocks,
     required String sourceLanguage,
+    String? below,
     CancelToken? cancel,
   }) async => (await _job(
     _Op.recognize,
@@ -215,6 +251,7 @@ class PipelineWorker {
     image: image,
     blocks: blocks,
     source: sourceLanguage,
+    below: below,
     cancel: cancel,
   ) as List).cast<TextBlock>();
 
@@ -239,21 +276,40 @@ class PipelineWorker {
   ) as List).cast<TextBlock>();
 
   /// The text-removal mask of [blocks] (every block, as the original's
-  /// manual "Segment").
-  Future<GrayImage> makeMask(String page, {String? path, RgbImage? image, required List<TextBlock> blocks}) async =>
-      await _job(_Op.mask, page, path: path, image: image, blocks: blocks) as GrayImage;
+  /// manual "Segment"). With the image [below], blocks may reach below the
+  /// page: the mask is then taller than the page by the rows they need.
+  Future<GrayImage> makeMask(
+    String page, {
+    String? path,
+    RgbImage? image,
+    required List<TextBlock> blocks,
+    String? below,
+  }) async => await _job(_Op.mask, page, path: path, image: image, blocks: blocks, below: below) as GrayImage;
 
   /// The image with the [mask]ed parts cleaned; uniform bubbles of [blocks]
-  /// are filled without the network.
-  Future<RgbImage> inpaint(
+  /// are filled without the network. A mask taller than the page cleans the
+  /// top of the image [below] too: that part comes back as
+  /// [CleanedImage.overflow].
+  Future<CleanedImage> inpaint(
     String page, {
     String? path,
     RgbImage? image,
     required GrayImage mask,
     List<TextBlock> blocks = const [],
+    String? below,
     CancelToken? cancel,
   }) async =>
-      await _job(_Op.inpaint, page, path: path, image: image, mask: mask, blocks: blocks, cancel: cancel) as RgbImage;
+      await _job(
+            _Op.inpaint,
+            page,
+            path: path,
+            image: image,
+            mask: mask,
+            blocks: blocks,
+            below: below,
+            cancel: cancel,
+          )
+          as CleanedImage;
 
   Future<Object?> _job(
     _Op op,
@@ -265,13 +321,15 @@ class PipelineWorker {
     String source = '',
     String target = '',
     Set<PipelinePart> parts = const {},
+    String? below,
+    List<BBox> covered = const [],
     CancelToken? cancel,
     void Function(String stage)? onStage,
   }) {
     assert(op == _Op.load || (path == null) != (image == null), 'pass either path or image');
     final id = _nextId++;
     final pending = _Pending<Object?>(onStage);
-    _send(id, pending, _Job(id, op, page, path, image, blocks, mask, source, target, parts));
+    _send(id, pending, _Job(id, op, page, path, image, blocks, mask, source, target, parts, below, covered));
     cancel?.onCancel(() {
       if (_pending.containsKey(id)) _toWorker.send(_Cancel(id));
     });
@@ -368,6 +426,8 @@ class _Job {
     this.source,
     this.target,
     this.parts,
+    this.below,
+    this.covered,
   );
 
   final int id;
@@ -380,6 +440,11 @@ class _Job {
   final String source;
   final String target;
   final Set<PipelinePart> parts;
+
+  /// Webtoon pages: the image of the next page, and what blocks of the page
+  /// above reach into.
+  final String? below;
+  final List<BBox> covered;
 }
 
 class _Cancel {
@@ -530,6 +595,13 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
     }
     token.throwIfCancelled();
     final image = m.image ?? await ImageCodec.readFile(m.path!);
+    final next = m.below == null ? null : await ImageCodec.readFile(m.below!);
+    // The page with the rows of the next one that [blocks] reach into.
+    RgbImage strip(List<TextBlock> blocks) {
+      final rows = next == null ? 0 : seamRows(blocks, image.height, next.height);
+      return rows > 0 ? extendBelow(image, next!, rows) : image;
+    }
+
     final context = PluginContext(
       log: log.child(page: m.page),
       cancel: token,
@@ -541,12 +613,18 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
     switch (m.op) {
       case _Op.prepare:
         final pipeline = await plugins.pipeline(m.source, m.target);
-        return pipeline.prepare(image, context, onStage: (stage) => toMain.send(_Stage(m.id, stage)));
+        return pipeline.prepare(
+          image,
+          context,
+          onStage: (stage) => toMain.send(_Stage(m.id, stage)),
+          next: next,
+          covered: m.covered,
+        );
       case _Op.detect:
-        final found = await (await plugins.detector).detect(image, context);
+        final found = await detectOnStrip(await plugins.detector, image, context, next: next, covered: m.covered);
         return sortBlocks(found, rightToLeft: m.source == 'Japanese');
       case _Op.recognize:
-        await recognizeBlocks(await plugins.ocr, image, blocks, settings, context, sourceLanguage: m.source);
+        await recognizeBlocks(await plugins.ocr, strip(blocks), blocks, settings, context, sourceLanguage: m.source);
         return blocks;
       case _Op.translate:
         await translatePageBlocks(
@@ -560,17 +638,27 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
         );
         return blocks;
       case _Op.mask:
-        return generateMask(image, blocks);
+        return generateMask(strip(blocks), blocks);
       case _Op.inpaint:
         final inpainter = await plugins.inpainter;
-        return inpaintPage(
-          image,
-          m.mask!,
+        var mask = m.mask!;
+        var work = image;
+        if (next != null && mask.height > image.height) {
+          work = extendBelow(image, next, mask.height - image.height);
+          if (mask.height > work.height) mask = mask.crop(BBox(0, 0, mask.width, work.height));
+        } else if (mask.height != image.height || mask.width != image.width) {
+          mask = extendMask(mask, image.height).crop(BBox(0, 0, image.width, image.height));
+        }
+        final cleaned = await inpaintPage(
+          work,
+          mask,
           settings.inpaint,
           (img, mask) => inpainter.inpaint(img, mask, settings.inpaint, context),
           blocks: blocks,
           report: InpaintReport(),
         );
+        final (clean, overflow) = splitBelow(cleaned, mask, image.height);
+        return CleanedImage(clean, overflow);
       case _Op.load:
         return null;
     }
@@ -605,6 +693,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
             final bytes = switch (o) {
               ImageOutput(:final image, :final path) => ImageCodec.encodeByExtension(image, _extension(path)),
               MaskOutput(:final mask) => ImageCodec.encodeGrayPng(mask),
+              PatchOutput(:final patch) => ImageCodec.encodeRgbaPng(patch.image, patch.alpha),
               JsonOutput(:final json) => utf8.encode(const JsonEncoder.withIndent('  ').convert(json)),
             };
             await File(o.path).writeAsBytes(bytes, flush: true);

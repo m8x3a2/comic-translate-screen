@@ -72,7 +72,10 @@ Future<TextEngines> loadTextEngines(AppSettings settings, String targetLanguage,
 /// Lays out the translations of [blocks] on a [width]×[height] page. The
 /// page is enlarged first when [AppSettings.upscale] asks for it (auto:
 /// small source text, or many translations that do not fit even at the
-/// smallest font size). [blocks] are not changed.
+/// smallest font size), or by [scale] when given. [blocks] are not changed.
+///
+/// Blocks of a webtoon page may reach below its bottom (a bubble cut by the
+/// edge between two pages); their text is laid out in full there.
 RenderLayout layoutRender(
   int width,
   int height,
@@ -81,10 +84,12 @@ RenderLayout layoutRender(
   TextEngines engines, {
   required String targetLanguage,
   LayoutCache? cache,
+  double? scale,
 }) {
   final w0 = width, h0 = height;
+  final reach = h0 + overflowOf(blocks, h0);
   (int, int) sizeAt(double f) => (((w0 * f).round()), ((h0 * f).round()));
-  List<TextItem> layoutBlocks(List<TextBlock> copies, int w, int h) => layoutPage(
+  List<TextItem> layoutBlocks(List<TextBlock> copies, int w, int h, int areaHeight) => layoutPage(
     copies,
     w,
     h,
@@ -92,60 +97,122 @@ RenderLayout layoutRender(
     settings: settings.render,
     targetLanguage: targetLanguage,
     measurerFor: engines.of,
+    areaHeight: areaHeight,
   );
   List<TextItem> layoutAt(double f) {
     final (w, h) = sizeAt(f);
+    final area = (reach * f).round();
     final copies = f == 1.0 ? [for (final b in blocks) b.copy()] : scaleBlocks(blocks, w0, h0, w, h);
-    if (cache == null || copies.isEmpty) return layoutBlocks(copies, w, h);
+    if (cache == null || copies.isEmpty) return layoutBlocks(copies, w, h, area);
     // Block by block: the page's first block decides the render areas.
     final first = copies.first.sourceLang;
-    final prefix = '$w|$h|$first|$targetLanguage|${jsonEncode(settings.render.toJson())}|';
+    final prefix = '$w|$h|$area|$first|$targetLanguage|${jsonEncode(settings.render.toJson())}|';
     return [
       for (final c in copies)
         ?cache._lookup('$prefix${jsonEncode(c.toJson())}', () {
-          final one = layoutBlocks([c..sourceLang = first], w, h);
+          final one = layoutBlocks([c..sourceLang = first], w, h, area);
           return one.isEmpty ? null : one.single;
         }),
     ];
   }
 
   final upscale = settings.upscale;
-  var scale = upscale.mode == UpscaleMode.auto
-      ? autoUpscaleFactor(blocks, w0, h0)
-      : fixedUpscaleFactor(upscale, w0, h0);
-  var items = layoutAt(scale);
-  if (upscale.mode == UpscaleMode.auto && items.isNotEmpty) {
+  final fixed = scale != null;
+  var f =
+      scale ??
+      (upscale.mode == UpscaleMode.auto ? autoUpscaleFactor(blocks, w0, h0) : fixedUpscaleFactor(upscale, w0, h0));
+  var items = layoutAt(f);
+  if (!fixed && upscale.mode == UpscaleMode.auto && items.isNotEmpty) {
     final limit = (items.length * _overflowShare).ceil();
     for (final more in const [1.5, 2.0]) {
       if (items.where(_overflows).length < limit) break;
-      final next = limitUpscaleFactor(scale * more, w0, h0);
-      if (next <= scale) break;
-      scale = next;
-      items = layoutAt(scale);
+      final next = limitUpscaleFactor(f * more, w0, h0);
+      if (next <= f) break;
+      f = next;
+      items = layoutAt(f);
     }
   }
   final index = [
     for (final (i, b) in blocks.indexed)
       if (hasTranslatableContent(b.translation)) i,
   ];
-  return RenderLayout(scale, items, index.length == items.length ? index : const []);
+  return RenderLayout(f, items, index.length == items.length ? index : const []);
+}
+
+/// The page above a webtoon page, for drawing what of it reaches into this
+/// page: the translation of its blocks cut by the edge, over its cleaned
+/// patch.
+class PageAbove {
+  const PageAbove({
+    required this.width,
+    required this.height,
+    required this.blocks,
+    required this.targetLanguage,
+    this.patch,
+  });
+
+  final int width;
+  final int height;
+  final List<TextBlock> blocks;
+  final String targetLanguage;
+  final SeamPatch? patch;
+
+  /// Something of the page above shows on this page.
+  bool get reaches => patch != null || overflowOf(blocks, height) > 0;
+}
+
+/// The blocks of [above] that reach below it, laid out at [scale] and moved
+/// into the page below ([lowerWidth] wide); with their text engines.
+Future<(List<TextItem>, TextEngines)?> itemsFromAbove(
+  PageAbove above,
+  int lowerWidth,
+  AppSettings settings,
+  double scale, {
+  TextEngines? engines,
+}) async {
+  if (overflowOf(above.blocks, above.height) <= 0) return null;
+  final e = engines ?? await loadTextEngines(settings, above.targetLanguage, above.blocks);
+  final layout = layoutRender(
+    above.width,
+    above.height,
+    above.blocks,
+    settings,
+    e,
+    targetLanguage: above.targetLanguage,
+    scale: scale,
+  );
+  final dx = -seamDx(above.width, lowerWidth) * scale, dy = -above.height * scale;
+  final items = [
+    for (final i in layout.items)
+      if (i.y + i.height > above.height * scale) i.shifted(dx, dy),
+  ];
+  return items.isEmpty ? null : (items, e);
 }
 
 /// Lays out and draws the translations of [blocks] over [clean] (see
 /// [layoutRender]). Unlike the original, [blocks] keep their detected boxes
 /// and the translations as written, so the page can be edited and drawn
-/// again.
+/// again. On a webtoon page, what reaches into it from the page [above] is
+/// drawn too.
 Future<RenderedPage> renderPage(
   RgbImage clean,
   List<TextBlock> blocks,
   AppSettings settings, {
   required String targetLanguage,
+  PageAbove? above,
 }) async {
+  final patch = above?.patch;
+  final base = patch == null ? clean : applyPatch(clean, patch, above!.width);
   final engines = await loadTextEngines(settings, targetLanguage, blocks);
-  final layout = layoutRender(clean.width, clean.height, blocks, settings, engines, targetLanguage: targetLanguage);
+  final layout = layoutRender(base.width, base.height, blocks, settings, engines, targetLanguage: targetLanguage);
   final scale = layout.scale;
-  final page = scale == 1.0 ? clean : upscaleImage(clean, scale, method: settings.upscale.method);
-  return RenderedPage(await renderTextOnPage(page, layout.items, engines), layout.items, scale);
+  final page = scale == 1.0 ? base : upscaleImage(base, scale, method: settings.upscale.method);
+  var image = await renderTextOnPage(page, layout.items, engines);
+  if (above != null) {
+    final upper = await itemsFromAbove(above, base.width, settings, scale);
+    if (upper != null) image = await renderTextOnPage(image, upper.$1, upper.$2);
+  }
+  return RenderedPage(image, layout.items, scale);
 }
 
 /// The page after the heavy steps: blocks with text and translation, and the
@@ -157,12 +224,16 @@ class CleanPage {
     required this.clean,
     required this.inpaintReport,
     required this.timingsMs,
+    this.overflow,
   });
 
   final List<TextBlock> blocks;
   final GrayImage mask;
   final RgbImage clean;
   final InpaintReport inpaintReport;
+
+  /// Webtoon pages: the cleaned part of the next page that blocks reach into.
+  final SeamPatch? overflow;
 
   /// Stage name (`01_detect` … `05_inpaint`) → milliseconds.
   final Map<String, int> timingsMs;
@@ -369,7 +440,18 @@ class PagePipeline {
   /// Detection, OCR, translation and cleaning of [image]. [onStage] is called
   /// as each stage starts. Stage artifacts go to the context's recorder (test
   /// mode).
-  Future<CleanPage> prepare(RgbImage image, PluginContext context, {void Function(String stage)? onStage}) async {
+  ///
+  /// Webtoon pages: [next] is the page below, so that a bubble cut by the
+  /// edge between them is found, read and cleaned whole (see `seams.dart`);
+  /// [covered] are the parts of this page that blocks of the page above
+  /// reach into (not detected again here).
+  Future<CleanPage> prepare(
+    RgbImage image,
+    PluginContext context, {
+    void Function(String stage)? onStage,
+    RgbImage? next,
+    List<BBox> covered = const [],
+  }) async {
     final recorder = context.recorder;
     final page = context.page;
     final timings = <String, int>{};
@@ -386,12 +468,16 @@ class PagePipeline {
     }
 
     start('01_detect');
-    var blocks = await detector.detect(image, context);
+    var blocks = await detectOnStrip(detector, image, context, next: next, covered: covered);
     lap('01_detect');
     await recorder?.writeJsonArtifact('01_detect', 'blocks.json', [for (final b in blocks) b.toJson()], page: page);
 
+    // The page with the rows of the next one that its blocks reach into.
+    final rows = next == null ? 0 : seamRows(blocks, image.height, next.height);
+    final work = rows > 0 ? extendBelow(image, next!, rows) : image;
+
     start('02_ocr');
-    await recognizeBlocks(ocr, image, blocks, settings, context, sourceLanguage: sourceLanguage);
+    await recognizeBlocks(ocr, work, blocks, settings, context, sourceLanguage: sourceLanguage);
     blocks = sortBlocks(blocks, rightToLeft: sourceLanguage == 'Japanese');
     lap('02_ocr');
     await recorder?.writeJsonArtifact('02_ocr', 'blocks.json', [for (final b in blocks) b.toJson()], page: page);
@@ -410,23 +496,31 @@ class PagePipeline {
 
     start('04_mask');
     final inpaintBlocks = selectInpaintBlocks(blocks);
-    final mask = generateMask(image, inpaintBlocks);
+    final mask = generateMask(work, inpaintBlocks);
     lap('04_mask');
     await recorder?.writeArtifact('04_mask', 'mask.png', ImageCodec.encodeGrayPng(mask), page: page);
 
     start('05_inpaint');
     final report = InpaintReport();
-    final clean = await inpaintPage(
-      image,
+    final cleaned = await inpaintPage(
+      work,
       mask,
       settings.inpaint,
       (img, m) => inpainter.inpaint(img, m, settings.inpaint, context),
       blocks: inpaintBlocks,
       report: report,
     );
+    final (clean, overflow) = splitBelow(cleaned, mask, image.height);
     lap('05_inpaint');
     await recorder?.writeArtifact('05_inpaint', 'clean.png', ImageCodec.encodePng(clean), page: page);
-    return CleanPage(blocks: blocks, mask: mask, clean: clean, inpaintReport: report, timingsMs: timings);
+    return CleanPage(
+      blocks: blocks,
+      mask: mask,
+      clean: clean,
+      inpaintReport: report,
+      timingsMs: timings,
+      overflow: overflow,
+    );
   }
 
   /// Every step on [image], drawing included.
@@ -444,6 +538,24 @@ class PagePipeline {
 
 // Single steps, shared by the batch run and the manual steps of the editor
 // (original `manual_workflow.py`).
+
+/// Detection on a webtoon page: with the top of the [next] page below it, so
+/// that a bubble cut by the edge is found whole; blocks starting on the next
+/// page are left to it, and those in [covered] (reached into by blocks of
+/// the page above) are dropped. Without [next] and [covered]: plain
+/// detection.
+Future<List<TextBlock>> detectOnStrip(
+  TextDetector detector,
+  RgbImage image,
+  PluginContext context, {
+  RgbImage? next,
+  List<BBox> covered = const [],
+}) async {
+  final strip = next == null ? image : extendBelow(image, next, detectionReach(image.width, next.height));
+  var found = await detector.detect(strip, context);
+  if (next != null) found = ownBlocks(found, image.height);
+  return covered.isEmpty ? found : withoutCovered(found, covered);
+}
 
 /// OCR of [blocks] on [image] (small text enlarged first when the setting
 /// asks for it).

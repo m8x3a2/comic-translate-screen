@@ -934,5 +934,8 @@
   "fontSizeInfo": "The program picks the font size itself so that the translation fits the bubble, within these limits. When even the smallest does not fit, the page may be enlarged (see “Enlarging”).",
   "lineSpacingInfo": "1 is normal spacing, 1.5 is half as much again. A single bubble can have its own in “Text style”.",
   "outlineWidthInfo": "The outline is a light (or dark) edge around the letters so that the text reads over the drawing. The width is in pixels on each side of a letter.",
-  "imageFormatInfo": "“Same as the source” keeps the format of the original. PNG loses nothing but files are larger; JPG and WEBP are smaller, with a slight loss of quality."
+  "imageFormatInfo": "“Same as the source” keeps the format of the original. PNG loses nothing but files are larger; JPG and WEBP are smaller, with a slight loss of quality.",
+  "webtoonMode": "Webtoon",
+  "webtoonModeHelp": "All pages as one strip, as webtoons are read. A bubble cut by the edge between two pages is translated and cleaned whole. Wheel: scroll; Ctrl + wheel: zoom.",
+  "mouseWheelStrip": "Webtoon: scroll the strip; with Ctrl: zoom"
 }

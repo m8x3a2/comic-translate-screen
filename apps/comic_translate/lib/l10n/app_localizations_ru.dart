@@ -1549,4 +1549,14 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get imageFormatInfo =>
       '«Как у исходника» — в том же формате, что и оригинал. PNG — без потерь, но файлы больше; JPG и WEBP — меньше, с небольшой потерей качества.';
+
+  @override
+  String get webtoonMode => 'Вебтун';
+
+  @override
+  String get webtoonModeHelp =>
+      'Все страницы одной лентой, как читают вебтуны. Пузырь, разрезанный краем страницы, переводится и очищается целиком. Колесо — прокрутка, Ctrl + колесо — масштаб.';
+
+  @override
+  String get mouseWheelStrip => 'Вебтун: прокрутка ленты; с Ctrl — масштаб';
 }

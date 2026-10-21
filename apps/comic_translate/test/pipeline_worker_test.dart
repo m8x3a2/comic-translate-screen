@@ -134,7 +134,7 @@ void main() {
     expect(translated.single.translation, contains('HELLO'));
     final mask = await worker.makeMask('p', image: image, blocks: translated);
     expect([mask.width, mask.height], [100, 60]);
-    final clean = await worker.inpaint('p', image: image, mask: mask, blocks: translated);
+    final clean = (await worker.inpaint('p', image: image, mask: mask, blocks: translated)).clean;
     expect([clean.width, clean.height], [100, 60]);
     await worker.dispose();
     expect(worker.isClosed, isTrue);

@@ -185,6 +185,21 @@ class TextItem {
   /// style; null = the page's render settings.
   final RenderSettings? settings;
 
+  /// The same text moved by ([dx], [dy]).
+  TextItem shifted(double dx, double dy) => TextItem(
+    text: text,
+    fontSizePt: fontSizePt,
+    x: x + dx,
+    y: y + dy,
+    width: width,
+    height: height,
+    color: color,
+    vertical: vertical,
+    block: block,
+    angle: angle,
+    settings: settings,
+  );
+
   Map<String, Object?> toJson() => {
         'text': text,
         'font_size_pt': fontSizePt,
@@ -399,6 +414,9 @@ int smartTextColor(List<int>? detected, int settingColor) {
 /// Blocks with a [BlockStyle] get their own font, size, colours and text
 /// box; [measurerFor] measures text in such a block's settings (default:
 /// [measurer]).
+///
+/// [areaHeight] (default: [imageHeight]) is how far down text areas may go:
+/// on webtoon pages, blocks reach into the page below.
 List<TextItem> layoutPage(
   List<TextBlock> blocks,
   int imageWidth,
@@ -407,11 +425,12 @@ List<TextItem> layoutPage(
   required RenderSettings settings,
   required String targetLanguage,
   TextMeasurer Function(RenderSettings settings)? measurerFor,
+  int? areaHeight,
 }) {
   final code = Languages.byName(targetLanguage)?.code ?? '';
   setUpperCase(blocks, settings.upperCase);
   final chosen = [for (final b in blocks) b.style?.textBox];
-  adjustRenderAreas(blocks, imageWidth, imageHeight);
+  adjustRenderAreas(blocks, imageWidth, areaHeight ?? imageHeight);
   final noSpace = _isNoSpace(code);
   final items = <TextItem>[];
   for (final (i, b) in blocks.indexed) {

@@ -2785,6 +2785,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'“Same as the source” keeps the format of the original. PNG loses nothing but files are larger; JPG and WEBP are smaller, with a slight loss of quality.'**
   String get imageFormatInfo;
+
+  /// No description provided for @webtoonMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Webtoon'**
+  String get webtoonMode;
+
+  /// No description provided for @webtoonModeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'All pages as one strip, as webtoons are read. A bubble cut by the edge between two pages is translated and cleaned whole. Wheel: scroll; Ctrl + wheel: zoom.'**
+  String get webtoonModeHelp;
+
+  /// No description provided for @mouseWheelStrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Webtoon: scroll the strip; with Ctrl: zoom'**
+  String get mouseWheelStrip;
 }
 
 class _AppLocalizationsDelegate

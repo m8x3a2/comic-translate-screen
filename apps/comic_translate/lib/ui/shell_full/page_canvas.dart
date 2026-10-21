@@ -31,7 +31,17 @@ const _handle = 9.0;
 const _minBox = 6;
 
 class PageCanvas extends ConsumerStatefulWidget {
-  const PageCanvas({super.key, required this.page, required this.size, required this.transform, this.readOnly = false});
+  const PageCanvas({
+    super.key,
+    required this.page,
+    required this.size,
+    required this.transform,
+    this.readOnly = false,
+    this.active = true,
+    this.onActivate,
+    this.strip = false,
+    this.reachBelow = 0,
+  });
 
   final PageEntry page;
 
@@ -44,6 +54,19 @@ class PageCanvas extends ConsumerStatefulWidget {
 
   /// A step or "Translate all" works on the page: no editing.
   final bool readOnly;
+
+  /// The page is the current one (the webtoon strip shows others too: they
+  /// show no selection and become current when clicked, see [onActivate]).
+  final bool active;
+  final VoidCallback? onActivate;
+
+  /// Shown in the webtoon strip: what reaches below the page (text, the
+  /// cleaned part of the next page) is drawn over the page below; on its own
+  /// the page is cut at its edges.
+  final bool strip;
+
+  /// Rows of the next page that boxes may reach into (webtoon strip).
+  final int reachBelow;
 
   @override
   ConsumerState<PageCanvas> createState() => _PageCanvasState();
@@ -141,7 +164,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   Rect _rectOf(BBox b) => Rect.fromLTRB(b.x1.toDouble(), b.y1.toDouble(), b.x2.toDouble(), b.y2.toDouble());
 
   BBox _boxOf(Rect r) {
-    final w = widget.size.width, h = widget.size.height;
+    final w = widget.size.width, h = widget.size.height + widget.reachBelow;
     final n = Rect.fromLTRB(
       math.min(r.left, r.right).clamp(0, w),
       math.min(r.top, r.bottom).clamp(0, h),
@@ -194,7 +217,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   }
 
   /// Translated blocks (those whose text is drawn).
-  Set<int> _drawn(PageEntry page) => {...?ref.read(pageLayoutProvider)?.blockIndex};
+  Set<int> _drawn(PageEntry page) => {...?ref.read(pageLayoutOfProvider(page.id))?.blockIndex};
 
   Rect _resize(Rect r, int handle, Offset d) {
     var (l, t, rr, b) = (r.left, r.top, r.right, r.bottom);
@@ -213,6 +236,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       return;
     }
     if (e.buttons != kPrimaryButton) return;
+    // A click on another page of the strip makes it the page being edited.
+    if (!widget.active) widget.onActivate?.call();
     final ws = ref.read(workspaceProvider);
     final page = widget.page;
     final editor = ref.read(editorProvider);
@@ -372,12 +397,13 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   Widget build(BuildContext context) {
     final page = widget.page;
     final editor = ref.watch(editorProvider);
-    final selected = ref.watch(workspaceProvider.select((s) => s.selectedBlock));
+    final selected = widget.active ? ref.watch(workspaceProvider.select((s) => s.selectedBlock)) : null;
     final colors = Theme.of(context).colorScheme;
     final result = editor.view == ViewMode.result;
     _ensureMask(page.maskPath);
-    final layout = result ? ref.watch(pageLayoutProvider) : null;
-    final engines = ref.watch(textEnginesProvider).value;
+    final layout = result ? ref.watch(pageLayoutOfProvider(page.id)) : null;
+    final engines = ref.watch(pageEnginesProvider(page.id)).value;
+    final overflow = result && widget.strip ? page.overflowPath : null;
     final d = _drag;
     final showMask = result && (editor.paints || page.hasMask);
     final draftStroke = d?.mode == _Mode.paint
@@ -405,6 +431,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         onPointerUp: _up,
         onPointerCancel: (_) => setState(() => _drag = null),
         child: Stack(
+          clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
           children: [
             Positioned.fill(
               child: Image.file(
@@ -415,6 +442,22 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
                 errorBuilder: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined, size: 64)),
               ),
             ),
+            if (overflow != null)
+              Positioned(
+                left: 0,
+                top: widget.size.height,
+                width: widget.size.width,
+                child: IgnorePointer(
+                  child: Image.file(
+                    File(overflow),
+                    key: ValueKey(overflow),
+                    gaplessPlayback: true,
+                    fit: BoxFit.fitWidth,
+                    filterQuality: FilterQuality.medium,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
             if (showMask)
               Positioned.fill(
                 child: RepaintBoundary(child: CustomPaint(painter: _MaskPainter(_mask, page.strokes, draftStroke))),

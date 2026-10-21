@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import '../pipeline/page_pipeline.dart';
 import '../pipeline/pipeline_worker.dart';
 import 'app_state.dart';
+import 'page_render.dart';
 import 'worker_pool.dart';
 import 'workspace.dart';
 
@@ -229,11 +230,16 @@ class BatchNotifier extends Notifier<BatchState> {
         workspace.updatePage(page.id, (p) => p.copyWith(status: PageStatus.running, stage: '01_detect', reason: null));
         _update((b) => b.copyWith(done: i, pageName: page.name, stage: '01_detect'));
         try {
+          // Webtoon mode: bubbles cut by the edge to the next page are this
+          // page's; those of the page above (done just before) are its.
+          final seams = await webtoonSeams(ref.read(workspaceProvider), page);
           final cleaned = await worker.prepare(
             page.name,
             path: page.path,
             sourceLanguage: page.sourceOf(settings),
             targetLanguage: page.targetOf(settings),
+            below: seams.below,
+            covered: seams.covered,
             cancel: cancel,
             onStage: stage,
           );
@@ -245,16 +251,20 @@ class BatchNotifier extends Notifier<BatchState> {
             cleaned.blocks,
             settings,
             targetLanguage: page.targetOf(settings),
+            above: await pageAbove(ref.read(workspaceProvider), page, settings),
           );
           final renderMs = renderWatch.elapsedMilliseconds;
           final dir = workspace.pageDir(page.id);
           final run = _run++;
           final translated = p.join(dir.path, 'translated_$run.png');
           final clean = p.join(dir.path, 'clean_$run.png');
+          final overflow = cleaned.overflow;
+          final patch = overflow == null ? null : p.join(dir.path, 'overflow_$run.png');
           await worker.save(
             [
               ImageOutput(translated, render.image),
               ImageOutput(clean, cleaned.clean),
+              if (patch != null) PatchOutput(patch, overflow!),
               JsonOutput(p.join(dir.path, 'page.json'), {
                 'image': page.path,
                 'source_language': page.sourceOf(settings),
@@ -275,6 +285,7 @@ class BatchNotifier extends Notifier<BatchState> {
               translatedPath: translated,
               cleanPath: clean,
               maskPath: null,
+              overflowPath: patch,
               strokes: const [],
               blocks: cleaned.blocks,
               renderScale: render.scale,

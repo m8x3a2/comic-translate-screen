@@ -55,6 +55,7 @@ ProjectPage projectPageOf(PageEntry page) => ProjectPage(
   image: page.path,
   cleanImage: page.cleanPath,
   mask: page.maskPath,
+  overflow: page.overflowPath,
   blocks: page.blocks,
   strokes: page.strokes,
   state: {
@@ -84,6 +85,7 @@ PageEntry pageEntryOf(ProjectPage page) => PageEntry(
   reason: skipReasonFromJson(page.state['reason']),
   cleanPath: page.cleanImage,
   maskPath: page.mask,
+  overflowPath: page.overflow,
   strokes: page.strokes,
   blocks: page.blocks,
   renderScale: (page.state['render_scale'] as num?)?.toDouble() ?? 1,
@@ -94,7 +96,7 @@ PageEntry pageEntryOf(ProjectPage page) => PageEntry(
 
 ProjectData projectDataOf(WorkspaceState ws, {Map<String, Object?> extra = const {}}) => ProjectData(
   pages: [for (final page in ws.pages) projectPageOf(page)],
-  state: {'current': ws.current, ...extra},
+  state: {'current': ws.current, if (ws.webtoon) 'webtoon': true, ...extra},
 );
 
 // Isolate entry points: top-level, so nothing of the app is copied along.
@@ -163,6 +165,9 @@ class ProjectNotifier extends Notifier<ProjectState> {
       } else {
         _changed();
       }
+    });
+    ref.listen(workspaceProvider.select((s) => s.webtoon), (prev, next) {
+      if (!_loading && prev != next && ref.read(workspaceProvider).pages.isNotEmpty) _changed();
     });
     ref.onDispose(() {
       _autosave?.cancel();
@@ -279,6 +284,7 @@ class ProjectNotifier extends Notifier<ProjectState> {
           .loadPages(
             [for (final page in data.pages) pageEntryOf(page)],
             current: (data.state['current'] as num?)?.toInt() ?? 0,
+            webtoon: data.state['webtoon'] == true,
             session: session,
           );
       _loaded = ref.read(workspaceProvider).pages;

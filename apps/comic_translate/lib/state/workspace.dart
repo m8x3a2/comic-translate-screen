@@ -67,6 +67,7 @@ class PageEntry {
     this.translatedPath,
     this.cleanPath,
     this.maskPath,
+    this.overflowPath,
     this.strokes = const [],
     this.blocks = const [],
     this.renderScale = 1.0,
@@ -102,6 +103,11 @@ class PageEntry {
 
   /// Generated text-removal mask (PNG), before cleaning.
   final String? maskPath;
+
+  /// Webtoon pages: the cleaned part of the next page that blocks of this
+  /// page reach into (a transparent PNG drawn at this page's bottom-left
+  /// corner, see [SeamPatch]).
+  final String? overflowPath;
 
   /// Brush and eraser strokes over [maskPath], in page pixels.
   final List<MaskStroke> strokes;
@@ -142,6 +148,7 @@ class PageEntry {
     Object? translatedPath = _keep,
     Object? cleanPath = _keep,
     Object? maskPath = _keep,
+    Object? overflowPath = _keep,
     List<MaskStroke>? strokes,
     List<TextBlock>? blocks,
     double? renderScale,
@@ -162,6 +169,7 @@ class PageEntry {
       translatedPath: rendered,
       cleanPath: pick(cleanPath, this.cleanPath),
       maskPath: pick(maskPath, this.maskPath),
+      overflowPath: pick(overflowPath, this.overflowPath),
       strokes: strokes ?? this.strokes,
       blocks: blocks ?? this.blocks,
       renderScale: renderScale ?? this.renderScale,
@@ -178,6 +186,7 @@ class PageSnapshot {
     : blocks = [for (final b in p.blocks) b.copy()],
       cleanPath = p.cleanPath,
       maskPath = p.maskPath,
+      overflowPath = p.overflowPath,
       strokes = p.strokes,
       translatedPath = p.translatedPath,
       renderScale = p.renderScale;
@@ -185,6 +194,7 @@ class PageSnapshot {
   final List<TextBlock> blocks;
   final String? cleanPath;
   final String? maskPath;
+  final String? overflowPath;
   final List<MaskStroke> strokes;
   final String? translatedPath;
   final double renderScale;
@@ -193,6 +203,7 @@ class PageSnapshot {
     blocks: [for (final b in blocks) b.copy()],
     cleanPath: cleanPath,
     maskPath: maskPath,
+    overflowPath: overflowPath,
     strokes: strokes,
     translatedPath: translatedPath,
     renderScale: renderScale,
@@ -229,7 +240,12 @@ class WorkspaceState {
     this.selectedBlock,
     this.history = const {},
     this.selectedPages = const {},
+    this.webtoon = false,
   });
+
+  /// Webtoon mode: the pages are shown as one strip, and bubbles cut by the
+  /// edge between two pages are handled as one (original `webtoon_mode`).
+  final bool webtoon;
 
   final List<PageEntry> pages;
   final int current;
@@ -285,6 +301,7 @@ class WorkspaceState {
     bool clearBlock = false,
     Map<String, PageHistory>? history,
     Set<String>? selectedPages,
+    bool? webtoon,
   }) => WorkspaceState(
     pages: pages ?? this.pages,
     current: current ?? this.current,
@@ -292,6 +309,7 @@ class WorkspaceState {
     selectedBlock: clearBlock ? null : (selectedBlock ?? this.selectedBlock),
     history: history ?? this.history,
     selectedPages: selectedPages ?? this.selectedPages,
+    webtoon: webtoon ?? this.webtoon,
   );
 }
 
@@ -354,7 +372,7 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   /// Replaces the open pages with the pages of a project, whose files are in
   /// [session] (a [newSessionDir]); the old session's files are removed. No
   /// undo history: it is not kept in project files.
-  void loadPages(List<PageEntry> pages, {int current = 0, Directory? session}) {
+  void loadPages(List<PageEntry> pages, {int current = 0, Directory? session, bool webtoon = false}) {
     final old = _session;
     if (session != null) _session = session;
     var next = 0;
@@ -363,7 +381,11 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
       if (n != null && n >= next) next = n + 1;
     }
     _nextId = next;
-    state = WorkspaceState(pages: pages, current: pages.isEmpty ? 0 : current.clamp(0, pages.length - 1));
+    state = WorkspaceState(
+      pages: pages,
+      current: pages.isEmpty ? 0 : current.clamp(0, pages.length - 1),
+      webtoon: webtoon,
+    );
     if (old != null && session != null && !p.equals(old.path, session.path) && old.existsSync()) {
       try {
         old.deleteSync(recursive: true);
@@ -437,6 +459,27 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     state = state.copyWith(current: go, clearBlock: true, selectedPages: picked.length < 2 ? const {} : picked);
   }
 
+  /// Turns the webtoon mode on or off.
+  void setWebtoon(bool on) {
+    if (on == state.webtoon) return;
+    // Pages below a cut bubble are drawn with its part only in the mode.
+    final pages = state.pages;
+    state = state.copyWith(
+      webtoon: on,
+      pages: [
+        for (final (i, p) in pages.indexed)
+          i > 0 && pages[i - 1].overflowPath != null && p.translatedPath != null ? p.copyWith(translatedPath: null) : p,
+      ],
+    );
+  }
+
+  /// Makes page [index] current without changing the selection (scrolling
+  /// the webtoon strip, a click on another page of it).
+  void focusPage(int index) {
+    if (index < 0 || index >= state.pages.length || index == state.current) return;
+    state = state.copyWith(current: index, clearBlock: true);
+  }
+
   void clearPageSelection() => state = state.copyWith(selectedPages: const {});
 
   void selectBlock(int? index) =>
@@ -507,8 +550,21 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     var next = change(page);
     if (next.translatedPath == page.translatedPath) next = next.copyWith(translatedPath: null);
     next = next.copyWith(exported: false);
+    // Webtoon mode: the page below shows what reaches into it; it is drawn
+    // again too.
+    final below = state.webtoon && (!identical(next.blocks, page.blocks) || next.overflowPath != page.overflowPath)
+        ? state.pages.indexWhere((p) => p.id == id) + 1
+        : -1;
     state = state.copyWith(
-      pages: [for (final p in state.pages) p.id == id ? next : p],
+      pages: [
+        for (final (i, p) in state.pages.indexed)
+          if (p.id == id)
+            next
+          else if (i == below && p.translatedPath != null)
+            p.copyWith(translatedPath: null)
+          else
+            p,
+      ],
       history: {...state.history, id: history},
     );
   }

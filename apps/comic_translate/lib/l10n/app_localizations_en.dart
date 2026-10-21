@@ -1546,4 +1546,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get imageFormatInfo =>
       '“Same as the source” keeps the format of the original. PNG loses nothing but files are larger; JPG and WEBP are smaller, with a slight loss of quality.';
+
+  @override
+  String get webtoonMode => 'Webtoon';
+
+  @override
+  String get webtoonModeHelp =>
+      'All pages as one strip, as webtoons are read. A bubble cut by the edge between two pages is translated and cleaned whole. Wheel: scroll; Ctrl + wheel: zoom.';
+
+  @override
+  String get mouseWheelStrip => 'Webtoon: scroll the strip; with Ctrl: zoom';
 }

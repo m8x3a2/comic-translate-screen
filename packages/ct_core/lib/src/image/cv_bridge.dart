@@ -113,6 +113,54 @@ abstract final class ImageCodec {
     }
   }
 
+  /// Encodes [image] with [alpha] as a transparent PNG.
+  static Uint8List encodeRgbaPng(RgbImage image, GrayImage alpha) {
+    if (alpha.width != image.width || alpha.height != image.height) throw ArgumentError('alpha size differs');
+    final n = image.width * image.height;
+    final mat = cv.Mat.create(rows: image.height, cols: image.width, type: cv.MatType.CV_8UC4);
+    try {
+      final bgra = Uint8List(n * 4);
+      final rgb = image.data, a = alpha.data;
+      for (var i = 0; i < n; i++) {
+        bgra[i * 4] = rgb[i * 3 + 2];
+        bgra[i * 4 + 1] = rgb[i * 3 + 1];
+        bgra[i * 4 + 2] = rgb[i * 3];
+        bgra[i * 4 + 3] = a[i];
+      }
+      mat.data.setAll(0, bgra);
+      final (ok, bytes) = cv.imencode('.png', mat);
+      if (!ok) throw StateError('PNG encoding failed');
+      return bytes;
+    } finally {
+      mat.dispose();
+    }
+  }
+
+  /// Decodes an image with its alpha (255 everywhere when it has none).
+  static (RgbImage, GrayImage) decodeRgba(Uint8List bytes) {
+    if (bytes.isEmpty) throw ImageDecodeException('empty input');
+    final mat = cv.imdecode(bytes, cv.IMREAD_UNCHANGED);
+    try {
+      if (mat.isEmpty) throw ImageDecodeException('unsupported or corrupt image data');
+      if (mat.type != cv.MatType.CV_8UC4) {
+        final rgb = decode(bytes);
+        return (rgb, GrayImage(rgb.width, rgb.height, Uint8List(rgb.width * rgb.height)..fillRange(0, rgb.width * rgb.height, 255)));
+      }
+      final src = mat.isContinuous ? mat.data : mat.clone().data;
+      final n = mat.rows * mat.cols;
+      final rgb = Uint8List(n * 3), a = Uint8List(n);
+      for (var i = 0; i < n; i++) {
+        rgb[i * 3] = src[i * 4 + 2];
+        rgb[i * 3 + 1] = src[i * 4 + 1];
+        rgb[i * 3 + 2] = src[i * 4];
+        a[i] = src[i * 4 + 3];
+      }
+      return (RgbImage(mat.cols, mat.rows, rgb), GrayImage(mat.cols, mat.rows, a));
+    } finally {
+      mat.dispose();
+    }
+  }
+
   /// Encodes by file extension (`.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`).
   static Uint8List encodeByExtension(RgbImage image, String extension) {
     final ext = extension.toLowerCase();

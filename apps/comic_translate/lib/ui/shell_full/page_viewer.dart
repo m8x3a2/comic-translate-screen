@@ -17,6 +17,7 @@ import '../common/labels.dart';
 import 'batch_dialogs.dart';
 import 'page_canvas.dart';
 import 'shortcuts_dialog.dart';
+import 'webtoon_strip.dart';
 
 class PageViewer extends ConsumerStatefulWidget {
   const PageViewer({super.key});
@@ -27,6 +28,7 @@ class PageViewer extends ConsumerStatefulWidget {
 
 class _PageViewerState extends ConsumerState<PageViewer> {
   final _transform = TransformationController();
+  final _strip = GlobalKey<WebtoonStripState>();
   Size? _imageSize;
   Size _viewport = Size.zero;
   String? _shownPath;
@@ -61,6 +63,7 @@ class _PageViewerState extends ConsumerState<PageViewer> {
   }
 
   void _fit() {
+    if (ref.read(workspaceProvider).webtoon) return _strip.currentState?.fit();
     final size = _imageSize;
     if (size == null || _viewport.isEmpty || !mounted) return;
     final s = math.min(_viewport.width / size.width, _viewport.height / size.height) * 0.98;
@@ -94,15 +97,24 @@ class _PageViewerState extends ConsumerState<PageViewer> {
     final page = ws.currentPage;
     if (page == null) return const SizedBox.shrink();
     ref.listen(workspaceProvider.select((s) => s.currentPage?.id), (_, _) {
+      if (ref.read(workspaceProvider).webtoon) return;
       _shownPath = null;
       _imageSize = null;
     });
-    _watchImage(page.path);
+    // Back from the strip: the page fitted into the window again.
+    ref.listen(workspaceProvider.select((s) => s.webtoon), (_, on) {
+      if (on) return;
+      _shownPath = null;
+      _imageSize = null;
+    });
+    if (!ws.webtoon) _watchImage(page.path);
     final editor = ref.watch(editorProvider);
     final steps = ref.watch(stepsProvider);
     final batchRunning = ref.watch(batchProvider) is BatchRunning;
     final stepHere = steps.running && steps.pageId == page.id;
     final readOnly = batchRunning || stepHere || page.status == PageStatus.running;
+    bool readOnlyPage(PageEntry p) =>
+        batchRunning || (steps.running && steps.pageId == p.id) || p.status == PageStatus.running;
     final percent = _percent(MediaQuery.devicePixelRatioOf(context));
     final theme = Theme.of(context);
     return Column(
@@ -125,6 +137,9 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                   final size = _imageSize;
                   return Stack(
                     children: [
+                      if (ws.webtoon)
+                        WebtoonStrip(key: _strip, transform: _transform, readOnly: readOnlyPage, pan: batchRunning)
+                      else
                       InteractiveViewer(
                         transformationController: _transform,
                         constrained: false,
@@ -346,6 +361,16 @@ class _ToolBar extends ConsumerWidget {
                     onSelected: (_) => notifier.toggleBoxes(),
                   ),
               ],
+            ),
+          ),
+          Tooltip(
+            message: l.webtoonModeHelp,
+            child: FilterChip(
+              avatar: const Icon(Icons.view_day_outlined, size: 18),
+              label: Text(l.webtoonMode),
+              selected: ws.webtoon,
+              showCheckmark: false,
+              onSelected: (on) => ref.read(workspaceProvider.notifier).setWebtoon(on),
             ),
           ),
           IconButton(
