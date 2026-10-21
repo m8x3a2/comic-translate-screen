@@ -118,6 +118,29 @@ class TextBlock {
   /// `source_lang_direction`).
   String get sourceLangDirection => direction == TextDirection.vertical ? 'ver_rtl' : 'hor_ltr';
 
+  /// Gives the block a new box drawn by hand. A move takes the lines, the
+  /// bubble and the outline along, so the new place is read and cleaned. A
+  /// resize drops what no longer fits: the lines are found again when the
+  /// text is read, and the bubble stays only around a box still inside it.
+  void moveBoxTo(BBox box) {
+    final dx = box.x1 - xyxy.x1, dy = box.y1 - xyxy.y1;
+    final moved = box.width == xyxy.width && box.height == xyxy.height;
+    xyxy = box;
+    if (moved) {
+      Point2 shift(Point2 p) => Point2(p.x + dx, p.y + dy);
+      lines = [
+        for (final l in lines)
+          l.isPolygon ? TextLine.polygon([for (final p in l.polygon!) shift(p)]) : TextLine.box(l.box!.translate(dx, dy)),
+      ];
+      bubbleXyxy = bubbleXyxy?.translate(dx, dy);
+      segmentationPoints = segmentationPoints?.map(shift).toList();
+    } else {
+      lines = [];
+      segmentationPoints = null;
+      if (bubbleXyxy case final bubble? when !bubble.containsBox(box)) bubbleXyxy = null;
+    }
+  }
+
   TextBlock copy() => TextBlock(
         xyxy: xyxy,
         bubbleXyxy: bubbleXyxy,

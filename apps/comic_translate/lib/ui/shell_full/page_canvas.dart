@@ -344,7 +344,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       case _Mode.moveBox || _Mode.resizeBox:
         final box = d.draft == null ? null : _boxOf(d.draft!);
         if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
-          ws.changeBlock(d.index!, (b) => b.xyxy = box);
+          ws.changeBlock(d.index!, (b) => b.moveBoxTo(box));
         }
       case _Mode.moveText || _Mode.resizeText:
         final box = d.draft == null ? null : _boxOf(d.draft!);

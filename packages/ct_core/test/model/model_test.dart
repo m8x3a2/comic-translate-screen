@@ -96,4 +96,31 @@ void main() {
       expect(Languages.targets.length, 27);
     });
   });
+
+  group('a box changed by hand', () {
+    TextBlock detected() => TextBlock(
+          xyxy: const BBox(100, 100, 160, 140),
+          bubbleXyxy: const BBox(90, 90, 170, 150),
+          lines: [
+            const TextLine.box(BBox(102, 102, 158, 118)),
+            TextLine.polygon(const [Point2(104, 122), Point2(156, 122), Point2(156, 138), Point2(104, 138)]),
+          ],
+        );
+
+    test('moved: lines and bubble go along', () {
+      final b = detected()..moveBoxTo(const BBox(300, 50, 360, 90));
+      expect(b.xyxy, const BBox(300, 50, 360, 90));
+      expect(b.bubbleXyxy, const BBox(290, 40, 370, 100));
+      expect(b.lines.first.box, const BBox(302, 52, 358, 68));
+      expect(b.lines.last.polygon!.first, const Point2(304, 72));
+    });
+
+    test('resized: lines are dropped, the bubble stays only around it', () {
+      final inside = detected()..moveBoxTo(const BBox(95, 95, 165, 145));
+      expect(inside.lines, isEmpty);
+      expect(inside.bubbleXyxy, const BBox(90, 90, 170, 150));
+      final out = detected()..moveBoxTo(const BBox(80, 100, 160, 140));
+      expect(out.bubbleXyxy, isNull);
+    });
+  });
 }
