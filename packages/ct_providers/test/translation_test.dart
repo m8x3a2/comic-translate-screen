@@ -12,12 +12,12 @@ import 'package:test/test.dart';
 TextBlock block(String text) => TextBlock(xyxy: const BBox(0, 0, 10, 10), text: text);
 
 TranslationRequest request(List<TextBlock> blocks, {RgbImage? image}) => TranslationRequest(
-      blocks: blocks,
-      sourceLanguage: 'English',
-      targetLanguage: 'Russian',
-      extraContext: 'A comic about witches.',
-      pageImage: image,
-    );
+  blocks: blocks,
+  sourceLanguage: 'English',
+  targetLanguage: 'Russian',
+  extraContext: 'A comic about witches.',
+  pageImage: image,
+);
 
 /// A fake server; [handler] gets the decoded request and returns
 /// (status, body).
@@ -52,12 +52,12 @@ class FakeServer {
 }
 
 String chatReply(String content) => jsonEncode({
-      'choices': [
-        {
-          'message': {'role': 'assistant', 'content': content},
-        },
-      ],
-    });
+  'choices': [
+    {
+      'message': {'role': 'assistant', 'content': content},
+    },
+  ],
+});
 
 void main() {
   late FakeServer server;
@@ -87,7 +87,10 @@ void main() {
   test('page image is sent only when given; token parameter is configurable; no key, no header', () async {
     server.handler = (body) => (200, chatReply('{"block_0": "x"}'));
     final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', tokenLimitParam: 'max_tokens');
-    await t.translate(request([block('a')], image: RgbImage.filled(8, 8, 200, 10, 10)), PluginContext(log: EventLog.silent()));
+    await t.translate(
+      request([block('a')], image: RgbImage.filled(8, 8, 200, 10, 10)),
+      PluginContext(log: EventLog.silent()),
+    );
     final r = server.requests.single;
     expect(r.auth, isNull);
     expect(r.body.containsKey('max_completion_tokens'), isFalse);
@@ -97,15 +100,22 @@ void main() {
   });
 
   test('HTTP errors are reported with the server message, without the key', () async {
-    server.handler = (body) => (401, jsonEncode({'error': {'message': 'Invalid API key'}}));
+    server.handler = (body) => (
+      401,
+      jsonEncode({
+        'error': {'message': 'Invalid API key'},
+      }),
+    );
     final redactor = Redactor()..addSecret('sk-secret-abcdefgh');
     final sink = MemorySink(redactor);
     final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', apiKey: 'sk-secret-abcdefgh');
     await expectLater(
       t.translate(request([block('a')]), PluginContext(log: EventLog([sink]))),
-      throwsA(isA<TranslationException>()
-          .having((e) => e.message, 'message', contains('HTTP 401: Invalid API key'))
-          .having((e) => e.kind, 'kind', TranslationErrorKind.auth)),
+      throwsA(
+        isA<TranslationException>()
+            .having((e) => e.message, 'message', contains('HTTP 401: Invalid API key'))
+            .having((e) => e.kind, 'kind', TranslationErrorKind.auth),
+      ),
     );
     expect(sink.lines.join('\n'), isNot(contains('sk-secret-abcdefgh')));
   });
@@ -121,7 +131,10 @@ void main() {
     }
 
     OpenAiCompatibleTranslator make() => OpenAiCompatibleTranslator(
-        apiUrl: server.url, model: 'm', retryDelays: const [Duration(milliseconds: 5), Duration(milliseconds: 5)]);
+      apiUrl: server.url,
+      model: 'm',
+      retryDelays: const [Duration(milliseconds: 5), Duration(milliseconds: 5)],
+    );
 
     for (final (status, message, kind) in [
       (401, 'Invalid API key', TranslationErrorKind.auth),
@@ -131,7 +144,12 @@ void main() {
       (400, 'context too long', TranslationErrorKind.other),
     ]) {
       server.requests.clear();
-      server.handler = (body) => (status, jsonEncode({'error': {'message': message}}));
+      server.handler = (body) => (
+        status,
+        jsonEncode({
+          'error': {'message': message},
+        }),
+      );
       final e = await errorOf(make());
       expect([e.kind, e.statusCode], [kind, status], reason: message);
       expect(server.requests, hasLength(1), reason: 'not sent again: $message');
@@ -149,7 +167,12 @@ void main() {
     expect(server.requests, hasLength(2));
 
     server.requests.clear();
-    server.handler = (body) => (429, jsonEncode({'error': {'message': 'Rate limited'}}));
+    server.handler = (body) => (
+      429,
+      jsonEncode({
+        'error': {'message': 'Rate limited'},
+      }),
+    );
     expect((await errorOf(make())).kind, TranslationErrorKind.rateLimit);
     expect(server.requests, hasLength(3), reason: 'first try and two retries');
 
@@ -161,20 +184,42 @@ void main() {
     server.handler = (body) => (200, chatReply('{}'));
     server.delay = const Duration(seconds: 3);
     final slow = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', timeout: const Duration(seconds: 1));
-    await expectLater(slow.translate(request([block('a')]), PluginContext(log: EventLog.silent())),
-        throwsA(isA<TranslationException>().having((e) => e.message, 'message', contains('did not answer')).having((e) => e.kind, 'kind', TranslationErrorKind.timeout)));
+    await expectLater(
+      slow.translate(request([block('a')]), PluginContext(log: EventLog.silent())),
+      throwsA(
+        isA<TranslationException>()
+            .having((e) => e.message, 'message', contains('did not answer'))
+            .having((e) => e.kind, 'kind', TranslationErrorKind.timeout),
+      ),
+    );
 
     final closed = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
     final port = closed.port;
     await closed.close();
     final down = OpenAiCompatibleTranslator(apiUrl: 'http://127.0.0.1:$port/v1', model: 'm');
-    await expectLater(down.translate(request([block('a')]), PluginContext(log: EventLog.silent())),
-        throwsA(isA<TranslationException>().having((e) => e.message, 'message', contains('cannot connect')).having((e) => e.kind, 'kind', TranslationErrorKind.network)));
+    await expectLater(
+      down.translate(request([block('a')]), PluginContext(log: EventLog.silent())),
+      throwsA(
+        isA<TranslationException>()
+            .having((e) => e.message, 'message', contains('cannot connect'))
+            .having((e) => e.kind, 'kind', TranslationErrorKind.network),
+      ),
+    );
 
-    expect(() => OpenAiCompatibleTranslator(apiUrl: '', model: 'm').translate(request([block('a')]), PluginContext(log: EventLog.silent())),
-        throwsA(isA<TranslationException>()));
-    expect(() => OpenAiCompatibleTranslator(apiUrl: server.url, model: ' ').translate(request([block('a')]), PluginContext(log: EventLog.silent())),
-        throwsA(isA<TranslationException>()));
+    expect(
+      () => OpenAiCompatibleTranslator(
+        apiUrl: '',
+        model: 'm',
+      ).translate(request([block('a')]), PluginContext(log: EventLog.silent())),
+      throwsA(isA<TranslationException>()),
+    );
+    expect(
+      () => OpenAiCompatibleTranslator(
+        apiUrl: server.url,
+        model: ' ',
+      ).translate(request([block('a')]), PluginContext(log: EventLog.silent())),
+      throwsA(isA<TranslationException>()),
+    );
   });
 
   test('cancellation stops a running request', () async {
@@ -201,7 +246,10 @@ void main() {
     final config = PluginConfig.resolve(openAiCompatibleInfo.settings, {'api_url': 'http://localhost:11434/v1'});
     expect(openAiCompatibleInfo.endpointFor(config), isNull);
     final cloud = PluginConfig.resolve(openAiCompatibleInfo.settings, {'api_url': 'https://openrouter.ai/api/v1'});
-    expect(openAiCompatibleInfo.endpointFor(cloud)!.approvalKey('openai_compatible'), 'openai_compatible@openrouter.ai');
+    expect(
+      openAiCompatibleInfo.endpointFor(cloud)!.approvalKey('openai_compatible'),
+      'openai_compatible@openrouter.ai',
+    );
   });
 
   test('untranslatable blocks are skipped; mock goes through the JSON protocol', () async {
@@ -211,20 +259,44 @@ void main() {
     expect([for (final b in blocks) b.translation], ['[ru] Hello', '', '', '[ru] Bye "now"']);
   });
 
+  test('"Auto": the translator is told the language the scripts found', () async {
+    server.handler = (body) => (200, chatReply('{"block_0": "a", "block_1": "b"}'));
+    final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm');
+    String systemPrompt() =>
+        (((server.requests.last.body['messages'] as List).first as Map)['content'] as List).single['text'] as String;
+    TranslationRequest auto(List<TextBlock> blocks) =>
+        TranslationRequest(blocks: blocks, sourceLanguage: Languages.auto, targetLanguage: 'English');
+
+    await translateBlocks(
+      t,
+      auto([block('ダメ')..script = 'Japanese_vert', block('何')..script = 'Japanese']),
+      PluginContext(log: EventLog.silent()),
+    );
+    expect(systemPrompt(), llmSystemPrompt('Japanese', 'English'));
+
+    // Latin script does not tell the language.
+    await translateBlocks(
+      t,
+      auto([block('Hola')..script = 'Latin', block('Adiós')..script = 'Latin']),
+      PluginContext(log: EventLog.silent()),
+    );
+    expect(systemPrompt(), startsWith('You are an expert translator who translates text in any language to English.'));
+  });
+
   test('each answered request is counted: tokens and cost from the reply, else estimated', () async {
     final counted = <ServiceUsage>[];
     final context = PluginContext(log: EventLog.silent(), onUsage: counted.add);
     server.handler = (body) => (
-          200,
-          jsonEncode({
-            'choices': [
-              {
-                'message': {'content': '{"block_0": "Привет"}'},
-              },
-            ],
-            'usage': {'prompt_tokens': 812, 'completion_tokens': 9, 'total_tokens': 821, 'cost': 0.000231},
-          }),
-        );
+      200,
+      jsonEncode({
+        'choices': [
+          {
+            'message': {'content': '{"block_0": "Привет"}'},
+          },
+        ],
+        'usage': {'prompt_tokens': 812, 'completion_tokens': 9, 'total_tokens': 821, 'cost': 0.000231},
+      }),
+    );
     final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'deepseek/deepseek-chat-v3.1');
     await t.translate(request([block('Hello')]), context);
     final u = counted.single;
@@ -247,11 +319,8 @@ void main() {
   });
 
   test('OpenRouter key status: only for openrouter.ai, parsed from GET /key', () async {
-    PluginConfig config(String url, {String? key}) => PluginConfig.resolve(
-          openAiCompatibleInfo.settings,
-          {'api_url': url},
-          secrets: {'api_key': ?key},
-        );
+    PluginConfig config(String url, {String? key}) =>
+        PluginConfig.resolve(openAiCompatibleInfo.settings, {'api_url': url}, secrets: {'api_key': ?key});
     expect(openAiCompatibleInfo.keyStatus!(config('http://localhost:11434/v1')), isNull);
     expect(openAiCompatibleInfo.keyStatus!(config('https://api.deepseek.com/v1')), isNull);
     final query = openAiCompatibleInfo.keyStatus!(config('https://openrouter.ai/api/v1/', key: 'sk-or-1'))!;
@@ -267,24 +336,26 @@ void main() {
       req.response
         ..statusCode = status
         ..headers.contentType = ContentType.json
-        ..write(status == 200
-            ? jsonEncode({
-                'data': {
-                  'label': 'sk-or-v1-0e6...1c4',
-                  'limit': 1,
-                  'limit_reset': null,
-                  'limit_remaining': 0.874,
-                  'usage': 0.126,
-                  'usage_daily': 0.011,
-                  'usage_weekly': 0.05,
-                  'usage_monthly': 0.126,
-                  'is_free_tier': false,
-                  'free_model_daily_requests': {'used': 3, 'limit': 50, 'remaining': 47},
-                },
-              })
-            : jsonEncode({
-                'error': {'message': 'User not found.'},
-              }));
+        ..write(
+          status == 200
+              ? jsonEncode({
+                  'data': {
+                    'label': 'sk-or-v1-0e6...1c4',
+                    'limit': 1,
+                    'limit_reset': null,
+                    'limit_remaining': 0.874,
+                    'usage': 0.126,
+                    'usage_daily': 0.011,
+                    'usage_weekly': 0.05,
+                    'usage_monthly': 0.126,
+                    'is_free_tier': false,
+                    'free_model_daily_requests': {'used': 3, 'limit': 50, 'remaining': 47},
+                  },
+                })
+              : jsonEncode({
+                  'error': {'message': 'User not found.'},
+                }),
+        );
       await req.response.close();
     });
     final uri = Uri.parse('http://127.0.0.1:${keyServer.port}/api/v1/key');
@@ -297,9 +368,11 @@ void main() {
     status = 401;
     await expectLater(
       fetchOpenRouterKeyStatus(uri, 'sk-or-secret'),
-      throwsA(isA<TranslationException>()
-          .having((e) => e.kind, 'kind', TranslationErrorKind.auth)
-          .having((e) => e.message, 'message', allOf(contains('User not found'), isNot(contains('sk-or-secret'))))),
+      throwsA(
+        isA<TranslationException>()
+            .having((e) => e.kind, 'kind', TranslationErrorKind.auth)
+            .having((e) => e.message, 'message', allOf(contains('User not found'), isNot(contains('sk-or-secret')))),
+      ),
     );
 
     // No limit of its own, but a monthly budget.

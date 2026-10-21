@@ -18,6 +18,28 @@ void main() {
     }
   });
 
+  test('"Auto": a recognizer per script bucket, and the script model', () {
+    expect(ppocrLanguageForBucket('latin'), 'latin');
+    expect(ppocrLanguageForBucket('cyrillic'), 'ru');
+    expect(ppocrLanguageForBucket('japanese'), 'ja');
+    expect(ppocrLanguageForBucket('korean'), 'ko');
+    expect(ppocrLanguageForBucket('chinese'), 'ch');
+    expect(ppocrModelsFor('Auto'), [
+      'osd-script-id',
+      'ppocr-v5-rec-latin',
+      'ppocr-v5-rec-eslav',
+      'ppocr-v6-rec-small',
+      'ppocr-v5-rec-korean',
+    ]);
+    final r = builtInRegistry();
+    expect(r.info('default').requiredModels('Auto'), containsAll(['osd-script-id', 'manga-ocr-mobile']));
+    expect(r.info('windows_ocr').requiredModels('Auto'), ['osd-script-id']);
+    expect(r.info('windows_ocr').requiredModels('English'), isEmpty);
+    for (final bucket in scriptOcrBuckets.values) {
+      expect(windowsOcrBucketLanguages[bucket], isNotEmpty, reason: bucket);
+    }
+  });
+
   test('large free-text blocks go to PaddleOCR for Japanese', () {
     TextBlock block(BBox box, TextClass cls) => TextBlock(xyxy: box, textClass: cls);
     expect(shouldOverrideToPpocr(block(const BBox(0, 0, 100, 400), TextClass.free), 1000, 1000), isTrue);

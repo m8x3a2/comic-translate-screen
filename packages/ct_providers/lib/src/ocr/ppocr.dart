@@ -9,6 +9,8 @@ import 'dart:typed_data';
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_onnx/ct_onnx.dart';
 
+import 'script_id.dart';
+
 const ppocrInfo = PluginInfo(
   id: 'ppocr',
   displayName: 'PaddleOCR',
@@ -35,19 +37,37 @@ const ppocrRecModels = <String, (ModelSpec, String, String)>{
 };
 
 /// PP-OCR language for a source language (`OCRFactory._create_new_engine`).
+/// "Auto" has none: its blocks are routed by script ([ppocrLanguageForBucket]).
 String ppocrLanguageFor(String sourceLanguage) => switch (sourceLanguage) {
-      'English' => 'en',
-      'Korean' => 'ko',
-      'Chinese' => 'ch',
-      'Russian' => 'ru',
-      'Japanese' => 'ja',
-      'French' || 'Spanish' || 'Italian' || 'German' || 'Dutch' => 'latin',
-      'Auto' => throw UnsupportedError('Automatic source language detection is not available yet; choose the language.'),
-      _ => throw UnsupportedError('No OCR model for source language "$sourceLanguage".'),
-    };
+  'English' => 'en',
+  'Korean' => 'ko',
+  'Chinese' => 'ch',
+  'Russian' => 'ru',
+  'Japanese' => 'ja',
+  'French' || 'Spanish' || 'Italian' || 'German' || 'Dutch' => 'latin',
+  _ => throw UnsupportedError('No OCR model for source language "$sourceLanguage".'),
+};
 
-/// The recognizer model for [sourceLanguage].
-List<String> ppocrModelsFor(String sourceLanguage) => [ppocrRecModels[ppocrLanguageFor(sourceLanguage)]!.$1.id];
+/// PP-OCR language for an "Auto" OCR bucket (`script_factories`).
+String ppocrLanguageForBucket(String bucket) => switch (bucket) {
+  'latin' => 'latin',
+  'cyrillic' => 'ru',
+  'japanese' => 'ja',
+  'korean' => 'ko',
+  _ => 'ch',
+};
+
+/// The recognizer model for [sourceLanguage]; for "Auto", the script model
+/// and a recognizer for every script.
+List<String> ppocrModelsFor(String sourceLanguage) {
+  if (sourceLanguage == Languages.auto) {
+    return {
+      scriptModelId,
+      for (final bucket in scriptOcrBuckets.values) ppocrRecModels[ppocrLanguageForBucket(bucket)]!.$1.id,
+    }.toList();
+  }
+  return [ppocrRecModels[ppocrLanguageFor(sourceLanguage)]!.$1.id];
+}
 
 /// Sets every block's source language code, as the original OCR processor
 /// does before recognition.
@@ -65,6 +85,9 @@ class PpocrEngine implements OcrEngine {
   final OrtDevice device;
   final EventLog? log;
   final _recognizers = <String, PpocrRecognizer>{};
+
+  /// Script model for the "Auto" source language.
+  late final scripts = ScriptIdentifier(_models, log: log);
 
   @override
   PluginInfo get info => ppocrInfo;
@@ -94,6 +117,11 @@ class PpocrEngine implements OcrEngine {
     required String sourceLanguage,
     required PluginContext context,
   }) async {
+    if (sourceLanguage == Languages.auto) {
+      return recognizeAuto(scripts, image, blocks, context, (bucket, group) async {
+        (await recognizer(ppocrLanguageForBucket(bucket))).recognizeBlocks(image, group);
+      });
+    }
     applySourceLanguage(blocks, sourceLanguage);
     final rec = await recognizer(ppocrLanguageFor(sourceLanguage));
     context.cancel.throwIfCancelled();
@@ -106,6 +134,7 @@ class PpocrEngine implements OcrEngine {
       r.dispose();
     }
     _recognizers.clear();
+    scripts.dispose();
   }
 }
 
@@ -113,7 +142,12 @@ class PpocrEngine implements OcrEngine {
 class PpocrRecognizer {
   PpocrRecognizer._(this._session, this.decoder);
 
-  factory PpocrRecognizer.open(String modelPath, String dictionary, {required String lang, OrtDevice device = OrtDevice.cpu}) {
+  factory PpocrRecognizer.open(
+    String modelPath,
+    String dictionary, {
+    required String lang,
+    OrtDevice device = OrtDevice.cpu,
+  }) {
     final threads = switch (lang) {
       'latin' => 3,
       'ko' => 6,

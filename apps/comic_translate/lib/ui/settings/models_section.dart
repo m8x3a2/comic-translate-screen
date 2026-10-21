@@ -34,10 +34,7 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
   /// Several models are being downloaded or checked one after another.
   var _bulk = false;
 
-  static final _shown = [
-    for (final m in ModelCatalog.all)
-      if (modelGroupOf(m.id) != ModelGroup.hidden) m,
-  ];
+  static const _shown = ModelCatalog.all;
 
   @override
   void initState() {
@@ -269,7 +266,9 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
     ];
     final size = installed.fold<int>(0, (a, m) => a + m.totalSize);
     final busy = _bulk || _progress.isNotEmpty;
-    final language = Languages.byName(settings.sourceLanguage)?.nativeLabel ?? settings.sourceLanguage;
+    final language = settings.sourceLanguage == Languages.auto
+        ? l.languageAuto
+        : Languages.byName(settings.sourceLanguage)?.nativeLabel ?? settings.sourceLanguage;
     return SettingsGroup(
       children: [
         Text(

@@ -11,13 +11,22 @@ class OcrCommand extends CtsCommand {
   OcrCommand(super.holder) {
     argParser
       ..addOption('output', abbr: 'o', help: 'Output directory.', defaultsTo: 'cts_out')
-      ..addOption('blocks', help: 'Use blocks from a <name>.blocks.json of `cts detect` instead of detecting (one image only).')
-      ..addOption('lang', help: 'Source language, e.g. English, Japanese (default from settings).')
+      ..addOption(
+        'blocks',
+        help: 'Use blocks from a <name>.blocks.json of `cts detect` instead of detecting (one image only).',
+      )
+      ..addOption(
+        'lang',
+        help: 'Source language, e.g. English, Japanese, or Auto to find it per block (default from settings).',
+      )
       ..addOption('ocr', help: 'OCR plugin id (default from settings: ppocr).')
       ..addOption('detector', help: 'Detector plugin id (default from settings).')
       ..addFlag('gpu', help: 'Use the GPU (DirectML). Default from settings.', defaultsTo: null)
-      ..addFlag('upscale',
-          help: 'Enlarge pages with small text before reading (default from settings: on).', defaultsTo: null)
+      ..addFlag(
+        'upscale',
+        help: 'Enlarge pages with small text before reading (default from settings: on).',
+        defaultsTo: null,
+      )
       ..addFlag('debug', negatable: false, help: 'Test mode: save a run folder with artifacts and timings.');
   }
 
@@ -25,7 +34,8 @@ class OcrCommand extends CtsCommand {
   String get name => 'ocr';
 
   @override
-  String get description => 'Recognize the text of each block; writes <name>.ocr.json and prints the text in reading order.';
+  String get description =>
+      'Recognize the text of each block; writes <name>.ocr.json and prints the text in reading order.';
 
   @override
   String get invocation => 'cts ocr <image>... [--lang English] [--blocks f.blocks.json] [-o dir]';
@@ -60,8 +70,12 @@ class OcrCommand extends CtsCommand {
     try {
       ocr = await services.plugin<OcrEngine>(args.option('ocr') ?? settings.ocr, settings, useGpu: useGpu, log: log);
       if (blocksPath == null) {
-        detector = await services.plugin<TextDetector>(args.option('detector') ?? settings.detector, settings,
-            useGpu: useGpu, log: log);
+        detector = await services.plugin<TextDetector>(
+          args.option('detector') ?? settings.detector,
+          settings,
+          useGpu: useGpu,
+          log: log,
+        );
       }
     } on ModelNotInstalledException catch (e) {
       ctx.err.writeln(e);
@@ -97,17 +111,24 @@ class OcrCommand extends CtsCommand {
         } finally {
           reading.restore();
         }
-        if (settings.fixCyrillicLookalikes) fixOcrScript(blocks, Languages.byName(language)?.code ?? '');
+        if (settings.fixCyrillicLookalikes) {
+          final code = Languages.byName(language)?.code ?? '';
+          for (final b in blocks) {
+            fixOcrScript([b], code.isEmpty ? b.sourceLang : code);
+          }
+        }
         final ocrMs = sw.elapsedMilliseconds - detectMs;
         if (reading.scaled) pageLog.info('reading_upscaled', {'factor': reading.scaleX});
         recorder?.recordTiming('02_ocr', Duration(milliseconds: ocrMs), page: page);
 
-        final order = sortBlocks(blocks, rightToLeft: language == 'Japanese');
+        final detected = resolveAutoSourceLanguage(blocks, language);
+        final order = sortBlocks(blocks, rightToLeft: detected == 'Japanese');
         final out = {
           'image': page,
           'width': image.width,
           'height': image.height,
           'source_language': language,
+          if (language == Languages.auto) 'detected_language': detected,
           'ocr': ocr.info.id,
           'reading_scale': reading.scaleX,
           'blocks': [for (final b in blocks) b.toJson()],
@@ -127,7 +148,8 @@ class OcrCommand extends CtsCommand {
           'texts': [for (final b in order) b.text],
         });
         final scaleNote = reading.scaled ? ' (small text, read at ×${reading.scaleX.toStringAsFixed(1)})' : '';
-        ctx.say('$page: ${blocks.length} block(s), OCR $ocrMs ms$scaleNote → ${jsonFile.path}');
+        final langNote = language == Languages.auto ? ', language: $detected' : '';
+        ctx.say('$page: ${blocks.length} block(s), OCR $ocrMs ms$scaleNote$langNote → ${jsonFile.path}');
         for (final b in order) {
           ctx.say('  ${b.text}');
         }

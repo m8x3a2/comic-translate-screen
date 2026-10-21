@@ -6,7 +6,9 @@ library;
 
 import 'dart:convert';
 
+import '../model/language.dart';
 import '../model/text_block.dart';
+import '../ocr/auto_language.dart';
 import '../plugins/engines.dart';
 import '../plugins/plugin.dart';
 
@@ -17,8 +19,10 @@ const llmDefaultTemperature = 1.0;
 const llmDefaultMaxTokens = 5000;
 
 /// `LLMTranslation.get_system_prompt`, verbatim (including its indentation).
+/// An unresolved "Auto" source (Latin-script or mixed pages) is worded as
+/// "text in any language" rather than the original's literal "Auto".
 String llmSystemPrompt(String sourceLanguage, String targetLanguage) =>
-    '''You are an expert translator who translates $sourceLanguage to $targetLanguage. You pay attention to style, formality, idioms, slang etc and try to convey it in the way a $targetLanguage speaker would understand.
+    '''You are an expert translator who translates ${sourceLanguage == Languages.auto ? 'text in any language' : sourceLanguage} to $targetLanguage. You pay attention to style, formality, idioms, slang etc and try to convey it in the way a $targetLanguage speaker would understand.
         BE MORE NATURAL. NEVER USE 당신, 그녀, 그 or its Japanese equivalents.
         Specifically, you will be translating text OCR'd from a comic. The OCR is not perfect and as such you may receive text with typos or other mistakes.
         To aid you and provide context, You may be given the image of the page and/or extra context about the comic. You will be given a json string of the detected text blocks and the text to translate. Return the json string with the texts translated. DO NOT translate the keys of the json. For each block:
@@ -113,7 +117,11 @@ bool hasTranslatableContent(String? text) => text != null && _alnum.hasMatch(tex
 /// `Translator.translate` of the original processor: blocks without letters
 /// or digits get an empty translation; the rest go to [translator] in one
 /// request. Returns the blocks that were sent.
-Future<List<TextBlock>> translateBlocks(Translator translator, TranslationRequest request, PluginContext context) async {
+Future<List<TextBlock>> translateBlocks(
+  Translator translator,
+  TranslationRequest request,
+  PluginContext context,
+) async {
   final translatable = <TextBlock>[];
   for (final b in request.blocks) {
     if (hasTranslatableContent(b.text)) {
@@ -126,7 +134,9 @@ Future<List<TextBlock>> translateBlocks(Translator translator, TranslationReques
   await translator.translate(
     TranslationRequest(
       blocks: translatable,
-      sourceLanguage: request.sourceLanguage,
+      // "Auto": the language the block scripts tell (as the original's own
+      // service does), when they tell one.
+      sourceLanguage: resolveAutoSourceLanguage(request.blocks, request.sourceLanguage),
       targetLanguage: request.targetLanguage,
       pageImage: request.pageImage,
       extraContext: request.extraContext,

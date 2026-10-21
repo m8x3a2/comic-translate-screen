@@ -8,15 +8,18 @@ import 'package:ct_core/ct_core.dart';
 import 'package:ct_ocr_windows/ct_ocr_windows.dart';
 
 import 'ppocr.dart' show applySourceLanguage;
+import 'script_id.dart';
 
 const windowsOcrInfo = PluginInfo(
   id: 'windows_ocr',
   displayName: 'Windows OCR (built in)',
-  description: 'Uses the OCR built into Windows; nothing to download. Less accurate than PaddleOCR on stylised '
+  description:
+      'Uses the OCR built into Windows; nothing to download. Less accurate than PaddleOCR on stylised '
       'fonts and cannot read vertical text. Needs the Windows OCR pack of the source language.',
   kind: PluginKind.ocr,
   privacy: Privacy.local,
   platforms: {PlatformId.windows},
+  modelsForLanguage: _windowsOcrModels,
   settings: [
     IntSetting(
       key: 'min_text_height',
@@ -29,9 +32,22 @@ const windowsOcrInfo = PluginInfo(
   ],
 );
 
+/// Nothing to download, except the script model for "Auto".
+List<String> _windowsOcrModels(String sourceLanguage) => sourceLanguage == Languages.auto ? [scriptModelId] : [];
+
 final windowsOcrFactory = PluginFactory<OcrEngine>(windowsOcrInfo, (config, env) async {
-  return WindowsOcrEngine(minTextHeight: config.value<int>('min_text_height'));
+  return WindowsOcrEngine(minTextHeight: config.value<int>('min_text_height'), models: env.models, log: env.log);
 });
+
+/// Languages tried, in order, for an "Auto" OCR bucket: Latin script is read
+/// by any installed Latin-script recognizer, English first.
+const windowsOcrBucketLanguages = {
+  'latin': ['English', 'French', 'German', 'Spanish', 'Italian', 'Dutch'],
+  'cyrillic': ['Russian'],
+  'japanese': ['Japanese'],
+  'korean': ['Korean'],
+  'chinese': ['Chinese'],
+};
 
 /// Installed Windows OCR language tag for a source language, or null.
 String? windowsOcrLanguageTag(String sourceLanguage, List<String> installed) {
@@ -71,9 +87,11 @@ String windowsOcrInstallHint(String sourceLanguage) {
 }
 
 class WindowsOcrEngine implements OcrEngine {
-  WindowsOcrEngine({this.minTextHeight = 40});
+  WindowsOcrEngine({this.minTextHeight = 40, ModelManager? models, EventLog? log})
+    : _scripts = models == null ? null : ScriptIdentifier(models, log: log);
 
   final int minTextHeight;
+  final ScriptIdentifier? _scripts;
 
   @override
   PluginInfo get info => windowsOcrInfo;
@@ -85,12 +103,36 @@ class WindowsOcrEngine implements OcrEngine {
     required String sourceLanguage,
     required PluginContext context,
   }) async {
-    applySourceLanguage(blocks, sourceLanguage);
     final info = WindowsOcr.info();
+    if (sourceLanguage == Languages.auto) {
+      final scripts = _scripts;
+      if (scripts == null) throw StateError('Automatic source language needs the script model.');
+      return recognizeAuto(scripts, image, blocks, context, (bucket, group) async {
+        final candidates = windowsOcrBucketLanguages[bucket]!;
+        final language = candidates.firstWhere(
+          (l) => windowsOcrLanguageTag(l, info.languages) != null,
+          orElse: () => candidates.first,
+        );
+        _read(image, group, language, info, context);
+      });
+    }
+    applySourceLanguage(blocks, sourceLanguage);
+    _read(image, blocks, sourceLanguage, info, context);
+  }
+
+  void _read(
+    RgbImage image,
+    List<TextBlock> blocks,
+    String sourceLanguage,
+    ({List<String> languages, int maxDimension}) info,
+    PluginContext context,
+  ) {
     final tag = windowsOcrLanguageTag(sourceLanguage, info.languages);
     if (tag == null) {
-      throw StateError('Windows OCR has no "$sourceLanguage" language pack '
-          '(installed: ${info.languages.join(', ')}). ${windowsOcrInstallHint(sourceLanguage)}');
+      throw StateError(
+        'Windows OCR has no "$sourceLanguage" language pack '
+        '(installed: ${info.languages.join(', ')}). ${windowsOcrInstallHint(sourceLanguage)}',
+      );
     }
     final noSpace = isNoSpaceLanguageCode(Languages.byName(sourceLanguage)?.code ?? '');
     for (final block in blocks) {
@@ -102,7 +144,10 @@ class WindowsOcrEngine implements OcrEngine {
         continue;
       }
       final result = WindowsOcr.recognize(crop.data, crop.width, crop.height, language: tag);
-      block.texts = [for (final l in result.lines) if (l.text.trim().isNotEmpty) l.text.trim()];
+      block.texts = [
+        for (final l in result.lines)
+          if (l.text.trim().isNotEmpty) l.text.trim(),
+      ];
       block.text = noSpace ? block.texts.join() : block.texts.join(' ');
     }
   }
@@ -132,5 +177,5 @@ class WindowsOcrEngine implements OcrEngine {
   }
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async => _scripts?.dispose();
 }

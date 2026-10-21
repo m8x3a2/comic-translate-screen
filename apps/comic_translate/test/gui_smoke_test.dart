@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:comic_translate/app_info.dart';
 import 'package:comic_translate/bootstrap.dart';
 import 'package:comic_translate/import/pdf_pages.dart';
+import 'package:comic_translate/l10n/app_localizations.dart';
 import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/state/batch.dart';
 import 'package:comic_translate/state/export.dart';
@@ -151,7 +152,8 @@ void main() {
     final out = Directory(p.join(dir.path, 'out'));
     final ids = [for (final page in ws.pages) page.id];
     final result = await tester.runAsync(
-      () => exportOpenPages(container.read, ids, const ExportOptions(imageFormat: 'jpg'), out.path, bookName: 'chapter'),
+      () =>
+          exportOpenPages(container.read, ids, const ExportOptions(imageFormat: 'jpg'), out.path, bookName: 'chapter'),
     );
     expect(result!.pages, 2);
     expect(out.listSync().map((f) => p.basename(f.path)).toList()..sort(), ['page1.jpg', 'page2.jpg']);
@@ -159,7 +161,8 @@ void main() {
     // A PDF of the chapter opens again as its pages (PDFium reads it).
     final pdf = p.join(dir.path, 'chapter.pdf');
     await tester.runAsync(
-      () => exportOpenPages(container.read, ids, const ExportOptions(container: ExportContainer.pdf), pdf, bookName: 'c'),
+      () =>
+          exportOpenPages(container.read, ids, const ExportOptions(container: ExportContainer.pdf), pdf, bookName: 'c'),
     );
     final back = await tester.runAsync(
       () => importPages([pdf], cacheDir: Directory(p.join(dir.path, 'reopen')), pdf: rasterizePdf),
@@ -182,6 +185,25 @@ void main() {
     await tester.runAsync(() => container.read(workspaceProvider.notifier).addInputs([page.path]));
     await tester.pump();
     expect(find.text('Перевести всё'), findsOneWidget);
+  });
+
+  testWidgets('"Auto" is the first source language and explains itself', (tester) async {
+    desktopWindow(tester);
+    await tester.pumpWidget(app(fakeSettings()..sourceLanguage = Languages.auto));
+    final page = File(p.join(dir.path, 'auto.png'));
+    await tester.runAsync(() => ImageCodec.writeFile(page.path, RgbImage.filled(60, 90, 255, 255, 255)));
+    final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    await tester.runAsync(() => container.read(workspaceProvider.notifier).addInputs([page.path]));
+    await tester.pump();
+    expect(find.text('Авто'), findsOneWidget);
+    expect(find.byTooltip(lookupAppLocalizations(const Locale('ru')).languageAutoHint), findsOneWidget);
+
+    await tester.tap(find.text('Авто'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('English').last);
+    await tester.pumpAndSettle();
+    expect(container.read(settingsProvider).sourceLanguage, 'English');
+    expect(container.read(workspaceProvider).currentPage!.sourceOf(container.read(settingsProvider)), 'English');
   });
 
   Future<(ProviderContainer, Directory)> openPages(WidgetTester tester, AppSettings settings, int count) async {

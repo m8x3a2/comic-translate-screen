@@ -809,32 +809,43 @@ class _LanguagePickers extends ConsumerWidget {
       ref.read(workspaceProvider.notifier).setLanguages(source: source, target: target);
     }
 
-    Widget picker(String tooltip, String value, Iterable<Language> options, void Function(String v) apply) => Tooltip(
-      message: tooltip,
-      child: SizedBox(
-        width: 136,
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          underline: const SizedBox.shrink(),
-          borderRadius: BorderRadius.circular(8),
-          items: [
-            for (final lang in options)
-              DropdownMenuItem(
-                value: lang.name,
-                child: Text(lang.nativeLabel, overflow: TextOverflow.ellipsis),
-              ),
-          ],
-          onChanged: running ? null : (v) => apply(v!),
-        ),
-      ),
-    );
+    Widget picker(String tooltip, String value, List<(String, String)> options, void Function(String v) apply) =>
+        Tooltip(
+          message: tooltip,
+          child: SizedBox(
+            width: 136,
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              underline: const SizedBox.shrink(),
+              borderRadius: BorderRadius.circular(8),
+              items: [
+                for (final (name, label) in options)
+                  DropdownMenuItem(
+                    value: name,
+                    child: Text(label, overflow: TextOverflow.ellipsis),
+                  ),
+              ],
+              onChanged: running ? null : (v) => apply(v!),
+            ),
+          ),
+        );
+    final sources = [
+      (Languages.auto, l.languageAuto),
+      for (final lang in Languages.sources) (lang.name, lang.nativeLabel),
+    ];
+    final targets = [for (final lang in Languages.targets) (lang.name, lang.nativeLabel)];
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        picker(l.sourceLanguage, source, Languages.all.where((x) => x.source), (v) => choose(source: v)),
+        picker(
+          source == Languages.auto ? l.languageAutoHint : l.sourceLanguage,
+          source,
+          sources,
+          (v) => choose(source: v),
+        ),
         const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Icon(Icons.arrow_forward, size: 18)),
-        picker(l.targetLanguage, target, Languages.all.where((x) => x.target), (v) => choose(target: v)),
+        picker(l.targetLanguage, target, targets, (v) => choose(target: v)),
         // Only while the pages have different languages.
         if (differ)
           IconButton(

@@ -19,7 +19,11 @@ void main() {
   late AppServices services;
   setUp(() {
     dir = Directory.systemTemp.createTempSync('cts_models_ui_test_');
-    services = AppServices.create(dataDirOverride: dir.path, secretStore: MemorySecretStore(), registry: fakeRegistry());
+    services = AppServices.create(
+      dataDirOverride: dir.path,
+      secretStore: MemorySecretStore(),
+      registry: fakeRegistry(),
+    );
   });
   tearDown(() async {
     await services.dispose();
@@ -87,9 +91,9 @@ void main() {
       expect(find.text(group), findsOneWidget);
     }
     expect(find.text('Японский (manga-ocr)'), findsOneWidget);
-    expect(find.text('Определение языка'), findsNothing, reason: 'not used yet');
-    expect(find.byType(InfoHint), findsNWidgets(ModelCatalog.all.length - 1));
-    expect(find.text('Скачано 0 из ${ModelCatalog.all.length - 1} · 0 B на диске'), findsOneWidget);
+    expect(find.text('Определение языка'), findsOneWidget, reason: 'for the source language "Auto"');
+    expect(find.byType(InfoHint), findsNWidgets(ModelCatalog.all.length));
+    expect(find.text('Скачано 0 из ${ModelCatalog.all.length} · 0 B на диске'), findsOneWidget);
 
     // "Download all" shows what comes from where first; nothing starts on Cancel.
     await tester.tap(find.text('Скачать все'));

@@ -55,7 +55,8 @@ class MangaOcrEngine implements OcrEngine {
     required String sourceLanguage,
     required PluginContext context,
   }) async {
-    applySourceLanguage(blocks, sourceLanguage);
+    // manga-ocr reads only Japanese, whatever "Auto" would find.
+    applySourceLanguage(blocks, sourceLanguage == Languages.auto ? 'Japanese' : sourceLanguage);
     final m = await model();
     m.recognizeBlocks(image, blocks, context: context);
   }
@@ -121,7 +122,12 @@ class MangaOcrModel {
   /// `process_single`: greedy decoding of one crop.
   String read(RgbImage crop) {
     final hidden = _encoder.run({
-      _encoder.inputs.first.name: OrtTensor.float32(mangaOcrPreprocess(crop), [1, 3, mangaOcrImageSize, mangaOcrImageSize]),
+      _encoder.inputs.first.name: OrtTensor.float32(mangaOcrPreprocess(crop), [
+        1,
+        3,
+        mangaOcrImageSize,
+        mangaOcrImageSize,
+      ]),
     })[_encoder.outputs.first.name]!;
     final hiddenData = Float32List.fromList(hidden.asFloat32);
     final hiddenShape = hidden.shape;

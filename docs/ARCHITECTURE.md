@@ -30,8 +30,25 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 - The PP-OCR line *detector* is not ported. The original runs it only when no
   block has text lines; the heuristic line splitter always produces lines, and a
   block without lines is read as a whole instead.
-- Automatic source language ("Auto") needs the script-identification model and
-  arrives with M12; until then a language must be chosen.
+- Automatic source language ("Auto", M12) is the original's: the OSD LSTM
+  model (Tesseract's script detector in ONNX, `osd-script-id`) reads the
+  largest line of each block, and each block is read by the recognizer of its
+  script (Latin, Cyrillic, Japanese, Hangul, Chinese), or of the page's main
+  script when its own is unclear. Differences: scripts are identified inside
+  the OCR step, on the page as prepared for reading (enlarged when its text is
+  small), not right after detection; the translator is told the language the
+  scripts give (Japanese, Korean, Chinese, Russian; the original tells local
+  LLMs the word "Auto"), and "text in any language" for Latin-script or mixed
+  pages; a page found to be Japanese is read right to left in "Translate all"
+  (single steps keep the detection order, as the original always does for
+  "Auto"). `windows_ocr` takes the installed Windows language of each script
+  (any Latin-script one for Latin, English first). On the Korean test page the
+  original takes the text for Latin (its line splitter cuts the block as
+  vertical text, so the model reads a rotated line); here the page's small
+  text is read enlarged and is found Korean (with `tools.upscale_small_text`
+  off the result is the original's). Latin pages are read by the Latin
+  recognizer, which sometimes adds accents to English (HÁPPENS); English is
+  still the default source language and reads English more accurately.
 - `windows_ocr` is new (system OCR, no download).
 - Small text (screenshots, low-resolution scans) is read on an enlarged copy
   of the page: when the smaller text lines are thinner than about 30 px, the

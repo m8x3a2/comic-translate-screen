@@ -8,6 +8,7 @@ import 'package:ct_onnx/ct_onnx.dart';
 
 import 'manga_ocr.dart';
 import 'ppocr.dart';
+import 'script_id.dart';
 
 const defaultOcrInfo = PluginInfo(
   id: 'default',
@@ -20,9 +21,13 @@ const defaultOcrInfo = PluginInfo(
   modelsForLanguage: _defaultOcrModels,
 );
 
-/// Japanese: manga-ocr, plus PaddleOCR for large free text.
-List<String> _defaultOcrModels(String sourceLanguage) =>
-    sourceLanguage == 'Japanese' ? ['manga-ocr-mobile', ...ppocrModelsFor('Japanese')] : ppocrModelsFor(sourceLanguage);
+/// Japanese: manga-ocr, plus PaddleOCR for large free text. "Auto" may meet
+/// any script, Japanese included.
+List<String> _defaultOcrModels(String sourceLanguage) => switch (sourceLanguage) {
+  'Japanese' => ['manga-ocr-mobile', ...ppocrModelsFor('Japanese')],
+  Languages.auto => [...ppocrModelsFor(sourceLanguage), 'manga-ocr-mobile'],
+  _ => ppocrModelsFor(sourceLanguage),
+};
 
 final defaultOcrFactory = PluginFactory<OcrEngine>(defaultOcrInfo, (config, env) async {
   final device = env.useGpu ? OrtDevice.directml : OrtDevice.cpu;
@@ -56,17 +61,34 @@ class DefaultOcrEngine implements OcrEngine {
     required String sourceLanguage,
     required PluginContext context,
   }) async {
+    if (sourceLanguage == Languages.auto) {
+      return recognizeAuto(ppocr.scripts, image, blocks, context, (bucket, group) async {
+        if (bucket == 'japanese') return _readJapanese(image, group, context);
+        (await ppocr.recognizer(ppocrLanguageForBucket(bucket))).recognizeBlocks(image, group);
+      });
+    }
     if (sourceLanguage != 'Japanese') {
       return ppocr.recognize(image, blocks, sourceLanguage: sourceLanguage, context: context);
     }
     applySourceLanguage(blocks, sourceLanguage);
-    final override = [for (final b in blocks) if (shouldOverrideToPpocr(b, image.width, image.height)) b];
-    final normal = [for (final b in blocks) if (!override.contains(b)) b];
+    await _readJapanese(image, blocks, context);
+  }
+
+  /// `_dispatch_with_override` for manga-ocr.
+  Future<void> _readJapanese(RgbImage image, List<TextBlock> blocks, PluginContext context) async {
+    final override = [
+      for (final b in blocks)
+        if (shouldOverrideToPpocr(b, image.width, image.height)) b,
+    ];
+    final normal = [
+      for (final b in blocks)
+        if (!override.contains(b)) b,
+    ];
     if (override.isNotEmpty) {
       (await ppocr.recognizer('ja')).recognizeBlocks(image, override);
     }
     if (normal.isNotEmpty) {
-      await mangaOcr.recognize(image, normal, sourceLanguage: sourceLanguage, context: context);
+      (await mangaOcr.model()).recognizeBlocks(image, normal, context: context);
     }
   }
 

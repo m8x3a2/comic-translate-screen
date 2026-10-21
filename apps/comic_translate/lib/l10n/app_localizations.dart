@@ -266,6 +266,18 @@ abstract class AppLocalizations {
   /// **'Target language'**
   String get targetLanguage;
 
+  /// No description provided for @languageAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get languageAuto;
+
+  /// No description provided for @languageAutoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Source language: found by the letters of each bubble (Latin, Cyrillic, Japanese, Korean, Chinese). For English pages, choosing English reads more accurately.'**
+  String get languageAutoHint;
+
   /// No description provided for @viewOriginal.
   ///
   /// In en, this message translates to:
@@ -2627,7 +2639,7 @@ abstract class AppLocalizations {
   /// No description provided for @modelOsdInfo.
   ///
   /// In en, this message translates to:
-  /// **'Tells the language of the original by its letters. Not used yet.'**
+  /// **'Tells the language of the original by its letters, for the source language \"Auto\". Small (3.7 MB), runs on the processor.'**
   String get modelOsdInfo;
 
   /// No description provided for @modelsCore.

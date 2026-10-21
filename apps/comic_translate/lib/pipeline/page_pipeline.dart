@@ -478,7 +478,8 @@ class PagePipeline {
 
     start('02_ocr');
     await recognizeBlocks(ocr, work, blocks, settings, context, sourceLanguage: sourceLanguage);
-    blocks = sortBlocks(blocks, rightToLeft: sourceLanguage == 'Japanese');
+    // "Auto": read right to left when the page turned out to be Japanese.
+    blocks = sortBlocks(blocks, rightToLeft: resolveAutoSourceLanguage(blocks, sourceLanguage) == 'Japanese');
     lap('02_ocr');
     await recorder?.writeJsonArtifact('02_ocr', 'blocks.json', [for (final b in blocks) b.toJson()], page: page);
 
@@ -574,7 +575,12 @@ Future<void> recognizeBlocks(
   } finally {
     reading.restore();
   }
-  if (settings.fixCyrillicLookalikes) fixOcrScript(blocks, code);
+  if (settings.fixCyrillicLookalikes) {
+    // "Auto": each block has the language of its script.
+    for (final b in blocks) {
+      fixOcrScript([b], code.isEmpty ? b.sourceLang : code);
+    }
+  }
 }
 
 /// Translation of [blocks] (the page image goes along when the setting

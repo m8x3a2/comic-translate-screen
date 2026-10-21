@@ -130,7 +130,7 @@ class PrivacyBadge extends StatelessWidget {
 }
 
 /// Groups of the models screen.
-enum ModelGroup { core, language, extra, hidden }
+enum ModelGroup { core, language, extra }
 
 ModelGroup modelGroupOf(String id) => switch (id) {
   'rtdetr-v2-int8' || 'aot-inpainting' => ModelGroup.core,
@@ -139,9 +139,8 @@ ModelGroup modelGroupOf(String id) => switch (id) {
   'ppocr-v5-rec-eslav' ||
   'ppocr-v5-rec-korean' ||
   'ppocr-v6-rec-small' ||
-  'manga-ocr-mobile' => ModelGroup.language,
-  // Nothing uses it before automatic source language (M12).
-  'osd-script-id' => ModelGroup.hidden,
+  'manga-ocr-mobile' ||
+  'osd-script-id' => ModelGroup.language,
   _ => ModelGroup.extra,
 };
 

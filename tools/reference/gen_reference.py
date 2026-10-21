@@ -389,6 +389,7 @@ OCR_MODEL_DIRS = {
     "PPOCR_V5_REC_KOREAN_MOBILE": "ppocr-v5-rec-korean",
     "PPOCR_V6_REC_SMALL": "ppocr-v6-rec-small",
     "MANGA_OCR_MOBILE_ONNX": "manga-ocr-mobile",
+    "OSD_SCRIPT_DETECTOR_ONNX": "osd-script-id",
 }
 
 # Page -> (PP-OCR language, source language code) runs.
@@ -412,6 +413,7 @@ def patch_model_downloader(models_dir: Path) -> None:
     ModelDownloader.ensure = classmethod(lambda cls, models: None)
     ModelDownloader.file_path_map = classmethod(lambda cls, model: local_map(model))
     ModelDownloader.primary_path = classmethod(lambda cls, model: next(iter(local_map(model).values())))
+    ModelDownloader.get_file_path = classmethod(lambda cls, model, file_name: local_map(model)[file_name])
 
 
 def gen_ocr(out: Path, pages_dir: Path, models_dir: Path, detection_dir: Path) -> None:
@@ -529,6 +531,106 @@ def gen_manga_ocr(out: Path, pages_dir: Path, models_dir: Path, detection_dir: P
     samples += ["a" + mojibake + "b", mojibake[:3] * 2 + "x"]
     text_cases = [{"in": t, "out": model._postprocess(t)} for t in samples]
     write_json(out / "manga_ocr.json", {"pages": pages, "postprocess": text_cases, "vocab_size": model.vocab_size})
+
+
+# ----------------------------------------------------------------- script ---
+
+# Labels beyond the model's own, for the "Auto" language helpers.
+EXTRA_SCRIPT_LABELS = ["", "Japanese_vert", "HanS_vert", "HanT-dn", "Latin_vert-dn", "Hangul_vert", "Unknown"]
+
+
+def gen_script(out: Path, pages_dir: Path, models_dir: Path, detection_dir: Path) -> None:
+    """OSD script identification of the detected blocks ("Auto" source language) and the
+    helpers that route blocks by script: OCR bucket, language code, page language."""
+    import modules.detection.script_detection as sd
+    from modules.utils.language_utils import (
+        get_dominant_page_script, get_lang_code_for_script, get_ocr_bucket_for_script,
+        get_source_language_for_script, is_supported_script, normalize_script, resolve_auto_source_language,
+    )
+    from modules.utils.textblock import TextBlock
+
+    patch_model_downloader(models_dir)
+    detector = sd.ScriptDetector()
+    detector.initialize()
+
+    pages = []
+    for ref_path in sorted(detection_dir.glob("*.json")):
+        ref = json.loads(ref_path.read_text(encoding="utf-8"))
+        name = ref["page"]
+        if name.startswith("webtoon_"):
+            continue
+        image = decode_rgb(pages_dir / f"{name}.jpg")
+        # With the detector's lines; without them (lines found again in the crop); white on black.
+        variants = {"lines": (image, True), "no_lines": (image, False), "inverted": (255 - image, True)}
+        page: dict = {"page": name, "variants": {}}
+        for variant, (img, keep_lines) in variants.items():
+            blocks = [
+                TextBlock(
+                    text_bbox=np.array(b["xyxy"]),
+                    bubble_bbox=None if b["bubble_xyxy"] is None else np.array(b["bubble_xyxy"]),
+                    text_class=b["text_class"],
+                    lines=b["lines"] if keep_lines else [],
+                    direction=b["direction"] if keep_lines else "",
+                )
+                for b in ref["blocks"]
+            ]
+            results = []
+            for blk in blocks:
+                entry: dict = {}
+                found = sd._largest_line_crop(img, blk)
+                if found is not None:
+                    crop, direction = found
+                    entry["crop"] = [int(crop.shape[0]), int(crop.shape[1])]
+                    entry["direction"] = direction
+                    if crop.size and crop.shape[0] >= 3 and crop.shape[1] >= 3:
+                        if direction == "vertical":
+                            crop = np.rot90(crop, k=1)
+                        pixels = sd._preprocess(crop)
+                        entry["input_width"] = int(pixels.shape[-1])
+                        entry["input_sha256"] = sha256(pixels)
+                        if pixels.shape[-1] >= 3:
+                            scores = detector.session.run(None, {"image": pixels})[0]
+                            entry["scores_shape"] = list(scores.shape)
+                            entry["ids"] = scores.argmax(axis=1).tolist()
+                blk.script = detector.detect_block_script(img, blk)
+                entry["script"] = blk.script
+                results.append(entry)
+            page["variants"][variant] = {
+                "blocks": results,
+                "dominant": get_dominant_page_script(blocks),
+                "dominant_any": get_dominant_page_script(blocks, 0.0),
+                "resolved": resolve_auto_source_language(blocks, "Auto"),
+            }
+        pages.append(page)
+
+    labels = list(detector.labels) + EXTRA_SCRIPT_LABELS
+    helpers = [{
+        "label": label,
+        "normalized": normalize_script(label),
+        "supported": is_supported_script(label),
+        "bucket": get_ocr_bucket_for_script(label),
+        "code": get_lang_code_for_script(label),
+        "source": get_source_language_for_script(label),
+    } for label in labels]
+
+    # Page language from block scripts weighted by area.
+    rng = random.Random(SEED + 11)
+    choices = ["Latin", "Cyrillic", "Japanese", "Japanese_vert", "Hangul", "HanS", "HanT", "", "Greek", "Arabic"]
+    dominant = []
+    for _ in range(80):
+        blocks = []
+        for _ in range(rng.randint(0, 8)):
+            x1, y1 = rng.randint(0, 400), rng.randint(0, 400)
+            box = [x1, y1, x1 + rng.randint(-3, 200), y1 + rng.randint(-3, 150)]
+            blocks.append(TextBlock(text_bbox=np.array(box), script=rng.choice(choices)))
+        dominant.append({
+            "blocks": [{"xyxy": b.xyxy.tolist(), "script": b.script} for b in blocks],
+            "dominant": get_dominant_page_script(blocks),
+            "dominant_any": get_dominant_page_script(blocks, 0.0),
+            "resolved": resolve_auto_source_language(blocks, "Auto"),
+        })
+
+    write_json(out / "script.json", {"labels": detector.labels, "pages": pages, "helpers": helpers, "dominant": dominant})
 
 
 # ------------------------------------------------------------ translation ---
@@ -818,7 +920,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask", "inpaint", "render"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "translation", "mask", "inpaint", "render"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -844,7 +946,7 @@ def main() -> None:
         "decoder": "cv2.imdecode(IMREAD_COLOR) + BGR2RGB",
     })
 
-    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "translation", "mask", "inpaint", "render"])
+    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "translation", "mask", "inpaint", "render"])
     if "primitives" in only:
         gen_primitives(args.out)
     if "geometry" in only:
@@ -857,6 +959,8 @@ def main() -> None:
         gen_ocr(args.out, args.pages, args.models, args.out / "detection")
     if "manga_ocr" in only:
         gen_manga_ocr(args.out, args.pages, args.models, args.out / "detection")
+    if "script" in only:
+        gen_script(args.out, args.pages, args.models, args.out / "detection")
     if "translation" in only:
         gen_translation(args.out)
     if "mask" in only:

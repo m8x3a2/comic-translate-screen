@@ -102,6 +102,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get targetLanguage => 'Target language';
 
   @override
+  String get languageAuto => 'Auto';
+
+  @override
+  String get languageAutoHint =>
+      'Source language: found by the letters of each bubble (Latin, Cyrillic, Japanese, Korean, Chinese). For English pages, choosing English reads more accurately.';
+
+  @override
   String get viewOriginal => 'Original';
 
   @override
@@ -1446,7 +1453,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelOsdInfo =>
-      'Tells the language of the original by its letters. Not used yet.';
+      'Tells the language of the original by its letters, for the source language \"Auto\". Small (3.7 MB), runs on the processor.';
 
   @override
   String get modelsCore => 'Main (always needed)';

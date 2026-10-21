@@ -102,6 +102,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get targetLanguage => 'Язык перевода';
 
   @override
+  String get languageAuto => 'Авто';
+
+  @override
+  String get languageAutoHint =>
+      'Язык оригинала определяется по буквам каждого пузыря (латиница, кириллица, японский, корейский, китайский). Английские страницы точнее читаются, если выбрать English.';
+
+  @override
   String get viewOriginal => 'Оригинал';
 
   @override
@@ -1449,7 +1456,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get modelOsdInfo =>
-      'Определяет язык оригинала по буквам. Пока не используется.';
+      'Определяет язык оригинала по буквам — для языка «Авто». Маленькая (3,7 МБ), работает на процессоре.';
 
   @override
   String get modelsCore => 'Основные (нужны всегда)';

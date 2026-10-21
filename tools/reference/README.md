@@ -15,13 +15,14 @@ with small tolerances.
 | `detection` | RT-DETR-v2 on every test page: raw outputs, blocks, lines, colours | `packages/ct_providers/test/rtdetr_v2_parity_test.dart` (needs the model) |
 | `ocr` | PaddleOCR on the detected blocks: line crops, recognizer inputs, texts | `packages/ct_providers/test/ppocr_parity_test.dart` (needs the models) |
 | `manga_ocr` | manga-ocr on two pages (inputs, tokens, texts) and its text clean-up | `packages/ct_providers/test/manga_ocr_parity_test.dart`, `packages/ct_core/test/parity/manga_ocr_text_test.dart` |
+| `script` | script identification ("Auto"): the line read in each block, model inputs and best paths, script labels, page language (with lines, without, inverted) | `packages/ct_core/test/parity/script_test.dart`, `packages/ct_providers/test/script_id_parity_test.dart` (needs the model) |
 | `mask` | mahotas morphology, imkit contours, Pillow blur and "L" resize; generate_mask on every page | `packages/ct_core/test/parity/mask_test.dart` |
 | `inpaint` | fast bubble fill, patch/full routing, AOT and LaMa results with each high-resolution strategy | `packages/ct_providers/test/inpaint_parity_test.dart` (needs the models) |
 | `heuristics` | line splitting and text direction on ~500 crops (blocks, bubbles, rotated, inverted, random regions) | `packages/ct_core/test/parity/heuristics_test.dart` |
 
 `gen_manga_ocr_tables.py` generates the jaconv tables used by the Dart port.
 
-`heuristics`, `ocr` and `manga_ocr` reuse the blocks of `detection`, so generate `detection` first
+`heuristics`, `ocr`, `manga_ocr` and `script` reuse the blocks of `detection`, so generate `detection` first
 (it needs the model: `cts models download rtdetr-v2-int8`).
 
 The original repository is only read. Point `CT_ORIGINAL_DIR` at a checkout
