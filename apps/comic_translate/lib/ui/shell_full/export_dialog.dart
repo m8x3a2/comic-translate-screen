@@ -5,6 +5,7 @@ library;
 
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../common/labels.dart';
 
@@ -23,6 +24,7 @@ Future<ExportChoice?> showExportDialog(
   required int chapters,
   required bool currentAvailable,
   required bool hasSevenZip,
+  bool webtoon = false,
 }) => showDialog<ExportChoice>(
   context: context,
   builder: (_) => _ExportDialog(
@@ -31,6 +33,7 @@ Future<ExportChoice?> showExportDialog(
     chapters: chapters,
     currentAvailable: currentAvailable,
     hasSevenZip: hasSevenZip,
+    webtoon: webtoon,
   ),
 );
 
@@ -41,6 +44,7 @@ class _ExportDialog extends StatefulWidget {
     required this.chapters,
     required this.currentAvailable,
     required this.hasSevenZip,
+    required this.webtoon,
   });
 
   final ExportSettings initial;
@@ -48,6 +52,9 @@ class _ExportDialog extends StatefulWidget {
   final int chapters;
   final bool currentAvailable;
   final bool hasSevenZip;
+
+  /// The webtoon mode: the strip can be saved joined or cut again.
+  final bool webtoon;
 
   @override
   State<_ExportDialog> createState() => _ExportDialogState();
@@ -58,6 +65,13 @@ class _ExportDialogState extends State<_ExportDialog> {
       ? widget.initial.copyWith(container: ExportContainer.cbz)
       : widget.initial;
   bool _currentOnly = false;
+  late final _slice = TextEditingController(text: '${widget.initial.sliceHeight}');
+
+  @override
+  void dispose() {
+    _slice.dispose();
+    super.dispose();
+  }
 
   bool get _ready => _s.container.forReaders
       ? _s.withTranslated || _s.withCleaned
@@ -144,6 +158,41 @@ class _ExportDialogState extends State<_ExportDialog> {
                 ],
                 onChanged: (v) => setState(() => _s = _s.copyWith(imageFormat: v)),
               ),
+              if (widget.webtoon) ...[
+                heading(l.exportStrip),
+                SegmentedButton<StripExport>(
+                  segments: [
+                    ButtonSegment(value: StripExport.pages, label: Text(l.exportStripPages)),
+                    ButtonSegment(value: StripExport.single, label: Text(l.exportStripSingle)),
+                    ButtonSegment(value: StripExport.slices, label: Text(l.exportStripSlices)),
+                  ],
+                  selected: {_s.strip},
+                  onSelectionChanged: (v) => setState(() => _s = _s.copyWith(strip: v.first)),
+                ),
+                if (_s.strip == StripExport.single)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(l.exportStripSingleHelp, style: theme.textTheme.bodySmall),
+                  ),
+                if (_s.strip == StripExport.slices)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: TextField(
+                      controller: _slice,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(
+                        labelText: l.exportSliceHeight,
+                        helperText: l.exportStripHelp,
+                        helperMaxLines: 3,
+                      ),
+                      onChanged: (v) {
+                        final n = int.tryParse(v);
+                        if (n != null) _s = _s.copyWith(sliceHeight: n.clamp(minSliceHeight, maxSliceHeight));
+                      },
+                    ),
+                  ),
+              ],
               heading(l.exportWhich),
               SegmentedButton<bool>(
                 segments: [

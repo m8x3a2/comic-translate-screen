@@ -937,5 +937,12 @@
   "imageFormatInfo": "“Same as the source” keeps the format of the original. PNG loses nothing but files are larger; JPG and WEBP are smaller, with a slight loss of quality.",
   "webtoonMode": "Webtoon",
   "webtoonModeHelp": "All pages as one strip, as webtoons are read. A bubble cut by the edge between two pages is translated and cleaned whole. Wheel: scroll; Ctrl + wheel: zoom.",
-  "mouseWheelStrip": "Webtoon: scroll the strip; with Ctrl: zoom"
+  "mouseWheelStrip": "Webtoon: scroll the strip; with Ctrl: zoom",
+  "exportStrip": "Webtoon strip",
+  "exportStripPages": "Page by page",
+  "exportStripSingle": "One picture",
+  "exportStripSlices": "Cut again",
+  "exportSliceHeight": "Height of a part, px",
+  "exportStripHelp": "Each cut goes along an even row near this height (between panels), not through a bubble. Pictures taller than JPEG or WebP allow are saved as PNG.",
+  "exportStripSingleHelp": "All pages (of each chapter) one below the other in one picture. A very tall picture is saved as PNG."
 }

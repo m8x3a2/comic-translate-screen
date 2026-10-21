@@ -1559,4 +1559,27 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get mouseWheelStrip => 'Вебтун: прокрутка ленты; с Ctrl — масштаб';
+
+  @override
+  String get exportStrip => 'Лента вебтуна';
+
+  @override
+  String get exportStripPages => 'По страницам';
+
+  @override
+  String get exportStripSingle => 'Одной картинкой';
+
+  @override
+  String get exportStripSlices => 'Нарезать заново';
+
+  @override
+  String get exportSliceHeight => 'Высота части, px';
+
+  @override
+  String get exportStripHelp =>
+      'Разрез проходит по ровной строке рядом с этой высотой (между кадрами), а не через пузырь. Картинки выше, чем допускают JPEG или WebP, сохраняются в PNG.';
+
+  @override
+  String get exportStripSingleHelp =>
+      'Все страницы (каждой главы) одна под другой в одной картинке. Очень длинная картинка сохраняется в PNG.';
 }

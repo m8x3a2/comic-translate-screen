@@ -2803,6 +2803,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Webtoon: scroll the strip; with Ctrl: zoom'**
   String get mouseWheelStrip;
+
+  /// No description provided for @exportStrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Webtoon strip'**
+  String get exportStrip;
+
+  /// No description provided for @exportStripPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Page by page'**
+  String get exportStripPages;
+
+  /// No description provided for @exportStripSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'One picture'**
+  String get exportStripSingle;
+
+  /// No description provided for @exportStripSlices.
+  ///
+  /// In en, this message translates to:
+  /// **'Cut again'**
+  String get exportStripSlices;
+
+  /// No description provided for @exportSliceHeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Height of a part, px'**
+  String get exportSliceHeight;
+
+  /// No description provided for @exportStripHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Each cut goes along an even row near this height (between panels), not through a bubble. Pictures taller than JPEG or WebP allow are saved as PNG.'**
+  String get exportStripHelp;
+
+  /// No description provided for @exportStripSingleHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'All pages (of each chapter) one below the other in one picture. A very tall picture is saved as PNG.'**
+  String get exportStripSingleHelp;
 }
 
 class _AppLocalizationsDelegate

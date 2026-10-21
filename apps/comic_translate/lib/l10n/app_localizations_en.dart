@@ -1556,4 +1556,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mouseWheelStrip => 'Webtoon: scroll the strip; with Ctrl: zoom';
+
+  @override
+  String get exportStrip => 'Webtoon strip';
+
+  @override
+  String get exportStripPages => 'Page by page';
+
+  @override
+  String get exportStripSingle => 'One picture';
+
+  @override
+  String get exportStripSlices => 'Cut again';
+
+  @override
+  String get exportSliceHeight => 'Height of a part, px';
+
+  @override
+  String get exportStripHelp =>
+      'Each cut goes along an even row near this height (between panels), not through a bubble. Pictures taller than JPEG or WebP allow are saved as PNG.';
+
+  @override
+  String get exportStripSingleHelp =>
+      'All pages (of each chapter) one below the other in one picture. A very tall picture is saved as PNG.';
 }

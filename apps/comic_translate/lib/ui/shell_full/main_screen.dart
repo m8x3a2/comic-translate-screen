@@ -309,11 +309,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       chapters: chapterCount(done),
       currentAvailable: current != null && current.isDone,
       hasSevenZip: findSevenZip() != null,
+      webtoon: ws.webtoon,
     );
     if (choice == null || !mounted) return;
     await ref.read(settingsProvider.notifier).change((s) => s.export = choice.settings);
     final pages = choice.currentOnly ? [current!] : done;
-    final options = choice.settings.options;
+    // Pages are joined or cut again only as a webtoon strip.
+    final options = (ws.webtoon ? choice.settings : choice.settings.copyWith(strip: StripExport.pages)).options;
     final split = options.byChapter && chapterCount(pages) > 1;
     final chapter = chapterOf(pages.first);
     final book =

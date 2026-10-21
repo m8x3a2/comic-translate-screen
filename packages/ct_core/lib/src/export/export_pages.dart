@@ -6,6 +6,7 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:archive/archive_io.dart';
 import 'package:path/path.dart' as p;
@@ -13,6 +14,7 @@ import 'package:path/path.dart' as p;
 import '../image/cv_bridge.dart';
 import '../import/page_import.dart';
 import 'pdf_writer.dart';
+import 'strip_export.dart';
 
 enum ExportContainer {
   folder,
@@ -72,6 +74,8 @@ class ExportOptions {
     this.recognizedText = false,
     this.translatedText = false,
     this.byChapter = false,
+    this.strip = StripExport.pages,
+    this.sliceHeight = 1280,
   });
 
   final ExportContainer container;
@@ -86,6 +90,11 @@ class ExportOptions {
 
   /// One file (or folder) per chapter.
   final bool byChapter;
+
+  /// Webtoons: the pages as they are, as one picture, or cut again into
+  /// parts of about [sliceHeight] rows (per chapter).
+  final StripExport strip;
+  final int sliceHeight;
 }
 
 class ExportResult {
@@ -145,109 +154,166 @@ Future<ExportResult> exportPages(
   final outputs = <String>[];
   final written = <ExportPage>{};
   final usedNames = <String>{};
-  for (final MapEntry(key: chapter, value: group) in groups.entries) {
-    final title = safeFileStem(chapter.isEmpty ? bookName : chapter);
-    final names = _pageNames(group);
-    if (o.container == ExportContainer.pdf) {
-      final file = split ? p.join(output, _unique('$title.pdf', usedNames)) : output;
-      Directory(p.dirname(file)).createSync(recursive: true);
-      final pdf = ImagePdfWriter(file);
-      try {
-        for (final page in group) {
-          final source = kinds.first == 'translated' ? page.translatedImage : page.cleanImage;
-          if (source == null) continue;
-          final image = await ImageCodec.readFile(source);
-          if (o.imageFormat == 'png') {
-            pdf.addRgb(image);
-          } else {
-            pdf.addJpeg(ImageCodec.encodeJpeg(image, quality: 92), image.width, image.height);
-          }
-          written.add(page);
-        }
-      } finally {
-        pdf.close();
-      }
-      outputs.add(file);
-      continue;
-    }
-
-    final Directory dir;
-    final Directory? staging;
-    if (o.container == ExportContainer.folder) {
-      dir = Directory(split ? p.join(output, _unique(title, usedNames)) : output);
-      staging = null;
-    } else {
-      staging = Directory.systemTemp.createTempSync('cts_export_');
-      dir = staging;
-    }
-    try {
-      dir.createSync(recursive: true);
-      for (final kind in kinds) {
-        final into = kinds.length == 1 ? dir.path : p.join(dir.path, kind);
-        Directory(into).createSync(recursive: true);
-        for (final (i, page) in group.indexed) {
-          final name = names[i];
-          switch (kind) {
-            case 'translated' || 'cleaned':
-              final source = kind == 'translated' ? page.translatedImage : page.cleanImage;
-              if (source == null) continue;
-              final ext = o.imageFormat == 'source' ? _writable(page.sourceExtension) : '.${o.imageFormat}';
-              final target = p.join(into, '$name$ext');
-              if (p.extension(source).toLowerCase() == ext) {
-                File(source).copySync(target);
-              } else {
-                await ImageCodec.writeFile(target, await ImageCodec.readFile(source));
-              }
-              written.add(page);
-            case 'raw_texts' || 'translated_texts':
-              final texts = kind == 'raw_texts' ? page.recognized : page.translations;
-              if (texts == null) continue;
-              final suffix = kind == 'raw_texts' ? 'raw' : 'translated';
-              File(p.join(into, '${name}_$suffix.json'))
-                  .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(texts));
-              written.add(page);
-          }
-        }
-      }
-      if (staging == null) {
-        outputs.add(dir.path);
-        continue;
-      }
-      final file = split ? p.join(output, _unique('$title${o.container.extension}', usedNames)) : output;
-      Directory(p.dirname(file)).createSync(recursive: true);
-      if (File(file).existsSync()) File(file).deleteSync();
-      if (o.container == ExportContainer.cb7) {
-        final r = await Process.run(sevenZip!, ['a', '-t7z', '-mx=1', '-bd', '-y', file, '.${Platform.pathSeparator}*'],
-            workingDirectory: staging.path);
-        if (r.exitCode != 0) throw ExportException('7-Zip could not write ${p.basename(file)}: ${'${r.stderr}'.trim()}');
-      } else {
-        final zip = ZipFileEncoder()..create(file);
-        final streams = <InputFileStream>[];
+  final strips = o.strip == StripExport.pages ? null : Directory.systemTemp.createTempSync('cts_strip_');
+  try {
+    for (final MapEntry(key: chapter, value: group) in groups.entries) {
+      final title = safeFileStem(chapter.isEmpty ? bookName : chapter);
+      // Webtoons joined or cut again: the pictures are new, the texts stay
+      // per page.
+      final pictures = strips == null
+          ? group
+          : await _joined(group, o, p.join(strips.path, '${groups.keys.toList().indexOf(chapter)}'), title);
+      final names = _pageNames(group);
+      final pictureNames = identical(pictures, group) ? names : _pageNames(pictures);
+      if (o.container == ExportContainer.pdf) {
+        final file = split ? p.join(output, _unique('$title.pdf', usedNames)) : output;
+        Directory(p.dirname(file)).createSync(recursive: true);
+        final pdf = ImagePdfWriter(file);
         try {
-          final files = staging.listSync(recursive: true).whereType<File>().toList()
-            ..sort((a, b) => naturalCompare(a.path, b.path));
-          for (final f in files) {
-            // Pictures are compressed already: stored as they are.
-            final stream = InputFileStream(f.path);
-            streams.add(stream);
-            zip.addArchiveFile(
-              ArchiveFile.stream(p.relative(f.path, from: staging.path).replaceAll(r'\', '/'), stream)
-                ..compression = CompressionType.none,
-            );
+          for (final page in pictures) {
+            final source = kinds.first == 'translated' ? page.translatedImage : page.cleanImage;
+            if (source == null) continue;
+            final image = await ImageCodec.readFile(source);
+            if (o.imageFormat == 'png') {
+              pdf.addRgb(image);
+            } else {
+              pdf.addJpeg(ImageCodec.encodeJpeg(image, quality: 92), image.width, image.height);
+            }
+            written.addAll(identical(pictures, group) ? [page] : group);
           }
         } finally {
-          zip.closeSync();
-          for (final s in streams) {
-            s.closeSync();
+          pdf.close();
+        }
+        outputs.add(file);
+        continue;
+      }
+
+      final Directory dir;
+      final Directory? staging;
+      if (o.container == ExportContainer.folder) {
+        dir = Directory(split ? p.join(output, _unique(title, usedNames)) : output);
+        staging = null;
+      } else {
+        staging = Directory.systemTemp.createTempSync('cts_export_');
+        dir = staging;
+      }
+      try {
+        dir.createSync(recursive: true);
+        for (final kind in kinds) {
+          final into = kinds.length == 1 ? dir.path : p.join(dir.path, kind);
+          Directory(into).createSync(recursive: true);
+          final isPicture = kind == 'translated' || kind == 'cleaned';
+          for (final (i, page) in (isPicture ? pictures : group).indexed) {
+            final name = isPicture ? pictureNames[i] : names[i];
+            switch (kind) {
+              case 'translated' || 'cleaned':
+                final source = kind == 'translated' ? page.translatedImage : page.cleanImage;
+                if (source == null) continue;
+                final ext = o.imageFormat == 'source' ? _writable(page.sourceExtension) : '.${o.imageFormat}';
+                final target = p.join(into, '$name$ext');
+                if (p.extension(source).toLowerCase() == ext) {
+                  File(source).copySync(target);
+                } else {
+                  await ImageCodec.writeFile(target, await ImageCodec.readFile(source));
+                }
+                written.addAll(identical(pictures, group) ? [page] : group);
+              case 'raw_texts' || 'translated_texts':
+                final texts = kind == 'raw_texts' ? page.recognized : page.translations;
+                if (texts == null) continue;
+                final suffix = kind == 'raw_texts' ? 'raw' : 'translated';
+                File(p.join(into, '${name}_$suffix.json'))
+                    .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(texts));
+                written.add(page);
+            }
           }
         }
+        if (staging == null) {
+          outputs.add(dir.path);
+          continue;
+        }
+        final file = split ? p.join(output, _unique('$title${o.container.extension}', usedNames)) : output;
+        Directory(p.dirname(file)).createSync(recursive: true);
+        if (File(file).existsSync()) File(file).deleteSync();
+        if (o.container == ExportContainer.cb7) {
+          final r = await Process.run(sevenZip!, [
+            'a',
+            '-t7z',
+            '-mx=1',
+            '-bd',
+            '-y',
+            file,
+            '.${Platform.pathSeparator}*',
+          ], workingDirectory: staging.path);
+          if (r.exitCode != 0) {
+            throw ExportException('7-Zip could not write ${p.basename(file)}: ${'${r.stderr}'.trim()}');
+          }
+        } else {
+          final zip = ZipFileEncoder()..create(file);
+          final streams = <InputFileStream>[];
+          try {
+            final files = staging.listSync(recursive: true).whereType<File>().toList()
+              ..sort((a, b) => naturalCompare(a.path, b.path));
+            for (final f in files) {
+              // Pictures are compressed already: stored as they are.
+              final stream = InputFileStream(f.path);
+              streams.add(stream);
+              zip.addArchiveFile(
+                ArchiveFile.stream(p.relative(f.path, from: staging.path).replaceAll(r'\', '/'), stream)
+                  ..compression = CompressionType.none,
+              );
+            }
+          } finally {
+            zip.closeSync();
+            for (final s in streams) {
+              s.closeSync();
+            }
+          }
+        }
+        outputs.add(file);
+      } finally {
+        if (staging != null && staging.existsSync()) staging.deleteSync(recursive: true);
       }
-      outputs.add(file);
-    } finally {
-      if (staging != null && staging.existsSync()) staging.deleteSync(recursive: true);
     }
+  } finally {
+    if (strips != null && strips.existsSync()) strips.deleteSync(recursive: true);
   }
   return ExportResult(outputs, written.length);
+}
+
+/// The pictures of [group] joined into one strip, or cut again (see
+/// [joinStrip]), as pages named after [title]; translated and cleaned
+/// pictures are cut at the same rows.
+Future<List<ExportPage>> _joined(List<ExportPage> group, ExportOptions o, String dir, String title) async {
+  final slice = o.strip == StripExport.slices ? o.sliceHeight.clamp(minSliceHeight, maxSliceHeight) : null;
+  final translated = [for (final page in group) ?page.translatedImage];
+  final cleaned = [for (final page in group) ?page.cleanImage];
+  // Only when every page has the picture: a strip with holes would not fit.
+  List<String>? tFiles, cFiles;
+  List<int>? cuts;
+  if (o.translated && translated.length == group.length) {
+    (tFiles, cuts) = await joinStrip(translated, p.join(dir, 't'), title, '.png', sliceHeight: slice);
+  }
+  if (o.cleaned && cleaned.length == group.length) {
+    (cFiles, _) = await joinStrip(
+      cleaned,
+      p.join(dir, 'c'),
+      title,
+      '.png',
+      sliceHeight: slice,
+      cuts: slice == null || cuts == null ? null : cuts,
+    );
+  }
+  final n = math.max(tFiles?.length ?? 0, cFiles?.length ?? 0);
+  return [
+    for (var i = 0; i < n; i++)
+      ExportPage(
+        name: p.basenameWithoutExtension((tFiles ?? cFiles)![i]),
+        chapter: group.first.chapter,
+        sourceExtension: group.first.sourceExtension,
+        translatedImage: tFiles != null && i < tFiles.length ? tFiles[i] : null,
+        cleanImage: cFiles != null && i < cFiles.length ? cFiles[i] : null,
+      ),
+  ];
 }
 
 /// Unique file names for the pages, in their order: readers sort pages by

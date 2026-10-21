@@ -5,6 +5,7 @@ import 'package:ct_core/ct_core.dart';
 import 'package:path/path.dart' as p;
 
 import '../../pipeline/page_pipeline.dart';
+import '../../render/mask_raster.dart';
 import '../cli.dart';
 import '../cli_context.dart';
 
@@ -71,7 +72,13 @@ class ExportCommand extends CtsCommand {
           help: 'Pages with the translation, cleaned pages, recognized text, translations (JSON).')
       ..addOption('image-format', allowed: ExportSettings.formats, defaultsTo: 'source')
       ..addFlag('by-chapter', negatable: false, help: 'One file per chapter (source archive or PDF); --output is then a folder.')
-      ..addOption('to', help: 'Language of the translation, for drawing it (default: that of each page, else settings).');
+      ..addOption('to', help: 'Language of the translation, for drawing it (default: that of each page, else settings).')
+      ..addOption('strip',
+          allowed: [for (final v in StripExport.values) v.name],
+          defaultsTo: 'pages',
+          help: 'Webtoons: save the pages as they are, as one picture per chapter, or cut again into parts.')
+      ..addOption('slice-height', defaultsTo: '1280', help: 'With --strip slices: height of a part in pixels (about; '
+          'each cut goes along an even row near it).');
   }
 
   @override
@@ -102,6 +109,8 @@ class ExportCommand extends CtsCommand {
       recognizedText: what.contains('raw'),
       translatedText: what.contains('translations'),
       byChapter: args.flag('by-chapter'),
+      strip: StripExport.parse(args.option('strip')),
+      sliceHeight: (int.tryParse(args.option('slice-height')!) ?? 1280).clamp(minSliceHeight, maxSliceHeight),
     );
     final settings = await ctx.services.settingsStore.load();
     // Each page has its language (--to overrides it).
@@ -122,7 +131,13 @@ class ExportCommand extends CtsCommand {
         String? translated;
         if (options.translated) {
           final base = await ImageCodec.readFile(page.cleanImage ?? page.image);
-          final render = await renderPage(base, page.blocks, settings, targetLanguage: targetOf(page));
+          final render = await renderPage(
+            base,
+            page.blocks,
+            settings,
+            targetLanguage: targetOf(page),
+            above: data.state['webtoon'] == true && i > 0 ? await _above(data.pages[i - 1], targetOf) : null,
+          );
           translated = p.join(work.path, 'drawn', '$i.png');
           File(translated)
             ..parent.createSync(recursive: true)
@@ -170,4 +185,17 @@ class ExportCommand extends CtsCommand {
       work.deleteSync(recursive: true);
     }
   }
+}
+
+/// Webtoon projects: what of the page [prev] above reaches into the next.
+Future<PageAbove?> _above(ProjectPage prev, String Function(ProjectPage page) targetOf) async {
+  final (w, h) = await imageFileSize(prev.image);
+  final file = prev.overflow;
+  if (file == null && overflowOf(prev.blocks, h) <= 0) return null;
+  SeamPatch? patch;
+  if (file != null) {
+    final (rgb, alpha) = ImageCodec.decodeRgba(await File(file).readAsBytes());
+    patch = SeamPatch(rgb, alpha);
+  }
+  return PageAbove(width: w, height: h, blocks: prev.blocks, targetLanguage: targetOf(prev), patch: patch);
 }

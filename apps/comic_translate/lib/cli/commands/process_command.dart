@@ -83,7 +83,11 @@ class ProcessCommand extends CtsCommand {
       ..addFlag('remember', negatable: false, help: 'With --allow-network: remember the approval for this server.')
       ..addFlag('gpu', help: 'Use the GPU (DirectML). Default from settings.', defaultsTo: null)
       ..addFlag('debug', negatable: false, help: 'Test mode: save every stage (blocks, masks, images, timings).')
-      ..addOption('project', help: 'Also save the results as a project (.ctsproj) to open in the window.');
+      ..addOption('project', help: 'Also save the results as a project (.ctsproj) to open in the window.')
+      ..addFlag('webtoon',
+          negatable: false,
+          help: 'The pages are one webtoon strip: a bubble cut by the edge between two pages is read, cleaned and '
+              'drawn whole.');
   }
 
   @override
@@ -169,6 +173,11 @@ class ProcessCommand extends CtsCommand {
     final projectPath = args.option('project');
     final projectPages = <ProjectPage>[];
     final cleanDir = projectPath == null ? null : Directory.systemTemp.createTempSync('cts_project_');
+    final webtoon = args.flag('webtoon');
+    // Webtoon: the next page (read ahead) and what of the last page reaches
+    // into the following one.
+    (int, RgbImage)? ahead;
+    PageAbove? above;
     for (final (index, input) in inputs.indexed) {
       // Pages from archives and PDFs are named after the archive: book_001.
       final stem = input.source == null
@@ -180,9 +189,38 @@ class ProcessCommand extends CtsCommand {
       final context = PluginContext(log: pageLog, recorder: recorder, page: page, onUsage: ctx.services.usage.record);
       try {
         final sw = Stopwatch()..start();
-        final image = await ImageCodec.readFile(input.path);
+        final image = ahead?.$1 == index ? ahead!.$2 : await ImageCodec.readFile(input.path);
+        ahead = null;
+        RgbImage? next;
+        if (webtoon && index + 1 < inputs.length) {
+          try {
+            next = await ImageCodec.readFile(inputs[index + 1].path);
+            ahead = (index + 1, next);
+          } on Exception {
+            // An unreadable next page fails on its own turn.
+          }
+        }
         final decodeMs = sw.elapsedMilliseconds;
-        final r = await pipeline.run(image, context);
+        final cleaned = await pipeline.prepare(
+          image,
+          context,
+          next: next,
+          covered: above == null ? const [] : reachInto(above.blocks, above.height, above.width, image.width),
+        );
+        final renderWatch = Stopwatch()..start();
+        final render = await renderPage(cleaned.clean, cleaned.blocks, settings, targetLanguage: target, above: above);
+        final renderMs = renderWatch.elapsedMilliseconds;
+        await recordRender(recorder, page, render.image, render.items, renderMs);
+        final r = PageResult.of(cleaned, render, renderMs);
+        above = webtoon
+            ? PageAbove(
+                width: image.width,
+                height: image.height,
+                blocks: cleaned.blocks,
+                targetLanguage: target,
+                patch: cleaned.overflow,
+              )
+            : null;
         final timings = {'00_decode': decodeMs, ...r.timingsMs};
         final outPng = File(p.join(outDir.path, '$stem.translated.png'))..writeAsBytesSync(ImageCodec.encodePng(r.rendered));
         final outJson = File(p.join(outDir.path, '$stem.json'))
@@ -190,12 +228,18 @@ class ProcessCommand extends CtsCommand {
               .convert({...r.toJson(image: page, source: source, target: target), 'timings_ms': timings}));
         if (cleanDir != null) {
           final clean = File(p.join(cleanDir.path, '$index.png'))..writeAsBytesSync(ImageCodec.encodePng(r.clean));
+          final patch = cleaned.overflow;
+          final overflow = patch == null
+              ? null
+              : (File(p.join(cleanDir.path, '$index.overflow.png'))
+                  ..writeAsBytesSync(ImageCodec.encodeRgbaPng(patch.image, patch.alpha)));
           projectPages.add(ProjectPage(
             id: '$index',
             name: input.name,
             source: input.source,
             image: input.path,
             cleanImage: clean.path,
+            overflow: overflow?.path,
             blocks: r.blocks,
             state: {'status': 'done', if (r.renderScale != 1) 'render_scale': r.renderScale},
           ));
@@ -215,6 +259,7 @@ class ProcessCommand extends CtsCommand {
             '$total ms → ${outPng.path}');
       } catch (e, st) {
         ok = false;
+        above = null;
         pageLog.error('process_failed', e, st);
         results.add({'image': origin, 'page': input.name, 'error': e.toString()});
         ctx.err.writeln('$page: $e');
@@ -240,7 +285,12 @@ class ProcessCommand extends CtsCommand {
     }
     if (projectPath != null && projectPages.isNotEmpty) {
       try {
-        ProjectFile.save(projectPath, ProjectData(pages: projectPages), appVersion: AppInfo.version, replace: true);
+        ProjectFile.save(
+          projectPath,
+          ProjectData(pages: projectPages, state: {if (webtoon) 'webtoon': true}),
+          appVersion: AppInfo.version,
+          replace: true,
+        );
         ctx.say('Project: $projectPath (${projectPages.length} page(s))');
       } catch (e, st) {
         ok = false;

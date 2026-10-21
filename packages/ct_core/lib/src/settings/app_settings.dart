@@ -1,4 +1,5 @@
 import '../export/export_pages.dart';
+import '../export/strip_export.dart';
 import '../plugins/engines.dart';
 import '../render/layout.dart';
 import '../render/upscale.dart';
@@ -222,6 +223,8 @@ class ExportSettings {
     this.withRawText = false,
     this.withTranslatedText = false,
     this.byChapter = true,
+    this.strip = StripExport.pages,
+    this.sliceHeight = 1280,
   });
 
   static const formats = ['source', 'png', 'jpg', 'webp'];
@@ -241,6 +244,11 @@ class ExportSettings {
   /// One file per chapter (source archive) when there are several.
   final bool byChapter;
 
+  /// Webtoons: pages as they are, one picture, or cut again into parts of
+  /// about [sliceHeight] rows.
+  final StripExport strip;
+  final int sliceHeight;
+
   bool get anyAutomatic => rawText || translatedText || cleanedImage;
 
   /// The Export window's choices.
@@ -252,6 +260,8 @@ class ExportSettings {
         recognizedText: withRawText,
         translatedText: withTranslatedText,
         byChapter: byChapter,
+        strip: strip,
+        sliceHeight: sliceHeight,
       );
 
   ExportSettings copyWith({
@@ -265,6 +275,8 @@ class ExportSettings {
     bool? withRawText,
     bool? withTranslatedText,
     bool? byChapter,
+    StripExport? strip,
+    int? sliceHeight,
   }) =>
       ExportSettings(
         imageFormat: imageFormat ?? this.imageFormat,
@@ -277,6 +289,8 @@ class ExportSettings {
         withRawText: withRawText ?? this.withRawText,
         withTranslatedText: withTranslatedText ?? this.withTranslatedText,
         byChapter: byChapter ?? this.byChapter,
+        strip: strip ?? this.strip,
+        sliceHeight: sliceHeight ?? this.sliceHeight,
       );
 
   Map<String, Object?> toJson() => {
@@ -290,6 +304,8 @@ class ExportSettings {
         'with_raw_text': withRawText,
         'with_translated_text': withTranslatedText,
         'by_chapter': byChapter,
+        'strip': strip.name,
+        'slice_height': sliceHeight,
       };
 
   factory ExportSettings.fromJson(Map<String, Object?> json) {
@@ -307,6 +323,8 @@ class ExportSettings {
       withRawText: flag('with_raw_text', d.withRawText),
       withTranslatedText: flag('with_translated_text', d.withTranslatedText),
       byChapter: flag('by_chapter', d.byChapter),
+      strip: StripExport.parse(json['strip'] as String?),
+      sliceHeight: (json['slice_height'] as num?)?.toInt().clamp(minSliceHeight, maxSliceHeight) ?? d.sliceHeight,
     );
   }
 }
