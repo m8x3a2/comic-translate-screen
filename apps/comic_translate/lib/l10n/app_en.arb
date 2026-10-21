@@ -985,6 +985,8 @@
   "@speedTestGpuFailed": {"placeholders": {"reason": {"type": "String"}}},
   "speedTestGpuFaster": "The graphics card is faster: it is better to use it.",
   "speedTestCpuBetter": "The processor is as fast or faster: there is no need to switch the graphics card on.",
+  "speedTestSmallGain": "The graphics card is faster by only {percent} %: too little to be worth it, the processor is enough.",
+  "@speedTestSmallGain": {"placeholders": {"percent": {"type": "String"}}},
   "speedTestGpuFailedVerdict": "These models do not run properly on this graphics card: the program will use the processor.",
   "speedTestReport": "A report for the developer is saved: {path}",
   "@speedTestReport": {"placeholders": {"path": {"type": "String"}}},
@@ -1003,6 +1005,8 @@
     }
   },
   "gpuFallbackHint": "If this happens again, switch the graphics card off. To help fix it, build a bug report and send it to the developer.",
+  "gpuFallbackOcr": "text recognition ({language})",
+  "@gpuFallbackOcr": {"placeholders": {"language": {"type": "String"}}},
   "gpuTurnOff": "Switch the graphics card off",
   "gpuFound": "Works: {cards}. The most powerful one is used.",
   "@gpuFound": {

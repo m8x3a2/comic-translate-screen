@@ -1627,6 +1627,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'The processor is as fast or faster: there is no need to switch the graphics card on.';
 
   @override
+  String speedTestSmallGain(String percent) {
+    return 'The graphics card is faster by only $percent %: too little to be worth it, the processor is enough.';
+  }
+
+  @override
   String get speedTestGpuFailedVerdict =>
       'These models do not run properly on this graphics card: the program will use the processor.';
 
@@ -1661,6 +1666,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get gpuFallbackHint =>
       'If this happens again, switch the graphics card off. To help fix it, build a bug report and send it to the developer.';
+
+  @override
+  String gpuFallbackOcr(String language) {
+    return 'text recognition ($language)';
+  }
 
   @override
   String get gpuTurnOff => 'Switch the graphics card off';

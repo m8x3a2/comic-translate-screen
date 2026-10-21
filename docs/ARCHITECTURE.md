@@ -133,6 +133,17 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   are centred on each other, as in the original. New: export of the strip
   as one picture per chapter, or cut again into parts of about N px along
   the calmest row within 40 % of N (`src/export/strip_export.dart`).
+- Graphics card (M12, new): a model that fails on DirectML while running
+  (a GTX 1660 Ti refused a Softmax of PaddleOCR) is loaded again on the CPU
+  and the run repeated (`OrtSession.run`); the window shows a notice that
+  stays until closed, `cts` prints a warning, both are logged
+  (`gpu_fallback`). Switching the GPU setting on lists the adapters (virtual
+  ones such as Citrix left out), runs a tiny model through DirectML, then
+  times a bundled test page on the CPU and on the card in the background
+  worker and recommends the card only when it is at least 15 % faster and
+  nothing fell back; a failed test builds a bug report at once.
+  `CTS_SIMULATE_DML_FAILURE=1` makes the first DirectML run of every real
+  model fail, for checks on computers where DirectML works.
 - PSD (M11): written and read in pure Dart (`ct_core` `src/psd/`; it is a file
   format, not inference), not through PhotoshopAPI as in the original: that
   library has no C interface, needs C++20 with vcpkg and has no Android

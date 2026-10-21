@@ -56,5 +56,7 @@ void main() {
       reason: 'fast only because a model ran on the processor',
     );
     expect(const GpuBenchmarkResult(cpuMs: 1400, gpuMs: 900).toJson()['verdict'], 'gpuFaster');
+    expect(const GpuBenchmarkResult(cpuMs: 11098, gpuMs: 10208).gainPercent, 8);
+    expect(const GpuBenchmarkResult(cpuMs: 1900, gpuMs: 2200).gainPercent, -16);
   });
 }

@@ -247,7 +247,8 @@ class OrtSession {
   static void Function(String modelPath, String reason)? onRuntimeFallback;
 
   /// For checks on computers where DirectML works: the first run of every
-  /// DirectML session fails (environment variable CTS_SIMULATE_DML_FAILURE=1).
+  /// DirectML session of a real model fails (environment variable
+  /// CTS_SIMULATE_DML_FAILURE=1).
   static bool simulateDirectMLFailure = Platform.environment['CTS_SIMULATE_DML_FAILURE'] == '1';
   var _simulated = false;
 
@@ -493,7 +494,8 @@ class OrtSession {
     if (isDisposed) throw StateError('Session is disposed');
     if (device != OrtDevice.directml) return _run(feeds, outputNames);
     try {
-      if (simulateDirectMLFailure && !_simulated) {
+      // Not the self-test model: real models fail, as on a GTX 1660 Ti.
+      if (simulateDirectMLFailure && !_simulated && !modelPath.endsWith('add.onnx')) {
         _simulated = true;
         throw OrtException(6, 'Simulated DirectML failure (CTS_SIMULATE_DML_FAILURE)');
       }

@@ -248,7 +248,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     if (!mounted || f.speedTest) return;
     final l = context.l10n;
     final spec = ModelCatalog.all.where((m) => m.files.any((file) => file.name == f.model)).firstOrNull;
-    _gpuFailedModels.add(spec == null ? f.model : modelText(l, spec).$1);
+    _gpuFailedModels.add(switch (spec) {
+      null => f.model,
+      final s when modelGroupOf(s.id) == ModelGroup.language => l.gpuFallbackOcr(modelText(l, s).$1.toLowerCase()),
+      final s => modelText(l, s).$1,
+    });
     final messenger = ScaffoldMessenger.of(context);
     void close() {
       _gpuFailedModels.clear();

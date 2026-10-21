@@ -102,7 +102,11 @@ void main() {
   });
 
   test('a model failing on DirectML while running goes on on the CPU, and says so', () {
-    final s = OrtSession.open(fixture('add.onnx'), device: OrtDevice.directml);
+    // Under another name: the self-test model (add.onnx) is never made to fail.
+    final dir = Directory.systemTemp.createTempSync('ct_onnx_fallback_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final model = File(fixture('add.onnx')).copySync('${dir.path}${Platform.pathSeparator}model.onnx');
+    final s = OrtSession.open(model.path, device: OrtDevice.directml);
     addTearDown(s.dispose);
     if (s.device != OrtDevice.directml) return; // No DirectML here.
     final told = <String>[];

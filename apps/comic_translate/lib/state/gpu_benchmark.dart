@@ -32,6 +32,14 @@ class GpuBenchmarkResult {
   /// Models that failed on the graphics card and went on on the processor.
   final List<GpuFallback> fallbacks;
 
+  /// How much faster the graphics card is, in whole percent (negative when
+  /// slower; 0 when unknown).
+  int get gainPercent {
+    final cpu = cpuMs, gpu = gpuMs;
+    if (cpu == null || gpu == null || cpu == 0) return 0;
+    return ((cpu - gpu) * 100 / cpu).round();
+  }
+
   GpuVerdict get verdict {
     if (gpuError != null || fallbacks.isNotEmpty || gpuMs == null) return GpuVerdict.gpuFailed;
     final cpu = cpuMs;

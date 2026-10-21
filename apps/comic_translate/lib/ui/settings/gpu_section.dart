@@ -108,6 +108,7 @@ class _GpuSwitchState extends ConsumerState<GpuSwitch> {
       _gpuLine(l, result),
       switch (result.verdict) {
         GpuVerdict.gpuFaster => l.speedTestGpuFaster,
+        GpuVerdict.cpuBetter when result.gainPercent > 0 => l.speedTestSmallGain('${result.gainPercent}'),
         GpuVerdict.cpuBetter => l.speedTestCpuBetter,
         GpuVerdict.gpuFailed => l.speedTestGpuFailedVerdict,
       },

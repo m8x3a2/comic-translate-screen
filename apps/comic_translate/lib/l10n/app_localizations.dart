@@ -2912,6 +2912,12 @@ abstract class AppLocalizations {
   /// **'The processor is as fast or faster: there is no need to switch the graphics card on.'**
   String get speedTestCpuBetter;
 
+  /// No description provided for @speedTestSmallGain.
+  ///
+  /// In en, this message translates to:
+  /// **'The graphics card is faster by only {percent} %: too little to be worth it, the processor is enough.'**
+  String speedTestSmallGain(String percent);
+
   /// No description provided for @speedTestGpuFailedVerdict.
   ///
   /// In en, this message translates to:
@@ -2965,6 +2971,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'If this happens again, switch the graphics card off. To help fix it, build a bug report and send it to the developer.'**
   String get gpuFallbackHint;
+
+  /// No description provided for @gpuFallbackOcr.
+  ///
+  /// In en, this message translates to:
+  /// **'text recognition ({language})'**
+  String gpuFallbackOcr(String language);
 
   /// No description provided for @gpuTurnOff.
   ///

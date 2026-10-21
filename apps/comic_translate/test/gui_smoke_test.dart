@@ -256,7 +256,7 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.textContaining('Видеокарта не справилась'), findsOneWidget);
-    expect(find.textContaining('Английский'), findsOneWidget, reason: 'the model by name');
+    expect(find.textContaining('распознавание текста (английский)'), findsOneWidget, reason: 'the model by name');
     gpuFallbacks.add(const GpuFallback('x.onnx', 'test', speedTest: true));
     await tester.pump(const Duration(seconds: 30));
     expect(find.byType(MaterialBanner), findsOneWidget, reason: 'stays; speed-test failures are not added');

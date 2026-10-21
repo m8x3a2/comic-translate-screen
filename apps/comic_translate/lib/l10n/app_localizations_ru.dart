@@ -1629,6 +1629,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Процессор не медленнее видеокарты — включать её не нужно.';
 
   @override
+  String speedTestSmallGain(String percent) {
+    return 'Видеокарта быстрее всего на $percent % — разница небольшая, хватит и процессора.';
+  }
+
+  @override
   String get speedTestGpuFailedVerdict =>
       'На этой видеокарте модели работают с ошибками — программа будет считать на процессоре.';
 
@@ -1663,6 +1668,11 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get gpuFallbackHint =>
       'Если это повторяется, выключите видеокарту. Чтобы помочь исправить, соберите отчёт об ошибке и пришлите его разработчику.';
+
+  @override
+  String gpuFallbackOcr(String language) {
+    return 'распознавание текста ($language)';
+  }
 
   @override
   String get gpuTurnOff => 'Выключить видеокарту';
