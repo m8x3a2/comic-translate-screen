@@ -2816,6 +2816,54 @@ abstract class AppLocalizations {
   /// **'Text finding, recognition and cleaning run on the graphics card through DirectML, which is part of Windows and works with NVIDIA, AMD and Intel. On a weak or old card it may be no faster than the processor. Translation is not sped up: it runs on the translator\'s server.'**
   String get useGpuInfo;
 
+  /// No description provided for @gpuChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking the graphics card…'**
+  String get gpuChecking;
+
+  /// No description provided for @gpuFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Works: {cards}. The most powerful one is used.'**
+  String gpuFound(String cards);
+
+  /// No description provided for @gpuOnlyIntegrated.
+  ///
+  /// In en, this message translates to:
+  /// **'This graphics is built into the processor: it is rarely faster than the processor itself.'**
+  String get gpuOnlyIntegrated;
+
+  /// No description provided for @gpuOldDriver.
+  ///
+  /// In en, this message translates to:
+  /// **'The driver of {card} is from {year}; if something goes wrong, update it from the maker\'s site.'**
+  String gpuOldDriver(String card, String year);
+
+  /// No description provided for @gpuNotUsableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The graphics card cannot be used'**
+  String get gpuNotUsableTitle;
+
+  /// No description provided for @gpuNoCard.
+  ///
+  /// In en, this message translates to:
+  /// **'No graphics card was found, only the standard Windows display driver ({names}).'**
+  String gpuNoCard(String names);
+
+  /// No description provided for @gpuDirectmlFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'A test run on the graphics card failed: {reason}'**
+  String gpuDirectmlFailed(String reason);
+
+  /// No description provided for @gpuNotUsableTail.
+  ///
+  /// In en, this message translates to:
+  /// **'The work stays on the processor: it runs on any computer, only slower. If there is a graphics card, update its driver and try again.'**
+  String get gpuNotUsableTail;
+
   /// No description provided for @testModeInfo.
   ///
   /// In en, this message translates to:

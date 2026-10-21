@@ -40,7 +40,7 @@ void notifyUnexpectedError(AppServices services) {
             final zip = await BugReportBuilder(
               paths: services.paths,
               redactor: services.redactor,
-            ).build(environment: services.environment());
+            ).build(environment: await services.environmentWithGpu());
             services.appLog.info('bug_report', {'file': zip.path, 'with_images': false});
             messenger.showSnackBar(SnackBar(content: Text(l.bugReportDone(zip.path)), showCloseIcon: true));
           },

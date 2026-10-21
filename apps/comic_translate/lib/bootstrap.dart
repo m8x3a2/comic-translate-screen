@@ -43,7 +43,11 @@ class AppServices {
 
   /// Resolves the configuration of plugin [id]: stored values from
   /// [settings], then [overrides], plus its secrets from secure storage.
-  Future<PluginConfig> pluginConfig(String id, AppSettings settings, {Map<String, Object?> overrides = const {}}) async {
+  Future<PluginConfig> pluginConfig(
+    String id,
+    AppSettings settings, {
+    Map<String, Object?> overrides = const {},
+  }) async {
     final info = registry.info(id);
     final secrets = <String, String>{};
     for (final field in info.settings.whereType<SecretSetting>()) {
@@ -112,14 +116,16 @@ class AppServices {
   }
 
   Map<String, Object?> environment([Map<String, Object?> extra = const {}]) => EnvInfo.collect(
-        appVersion: AppInfo.version,
-        gitSha: AppInfo.gitSha,
-        flutterVersion: AppInfo.flutterVersion,
-        extra: {
-          'data_dir': paths.root.path,
-          ...extra,
-        },
-      );
+    appVersion: AppInfo.version,
+    gitSha: AppInfo.gitSha,
+    flutterVersion: AppInfo.flutterVersion,
+    extra: {'data_dir': paths.root.path, ...extra},
+  );
+
+  /// [environment] with the graphics adapters (slower: asks Windows).
+  Future<Map<String, Object?>> environmentWithGpu() async => environment({
+    'gpu': [for (final g in await GpuInfo.list()) g.toJson()],
+  });
 
   Future<void> dispose() async {
     await registry.disposeInstances();

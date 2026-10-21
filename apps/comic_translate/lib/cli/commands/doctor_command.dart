@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_ocr_windows/ct_ocr_windows.dart';
-import 'package:ct_onnx/ct_onnx.dart';
 import 'package:path/path.dart' as p;
 
 import '../../render/render_probe.dart';
+import '../../state/gpu_check.dart';
 import '../cli.dart';
 import '../cli_context.dart';
 
@@ -44,8 +44,7 @@ class DoctorCommand extends CtsCommand {
   String get name => 'doctor';
 
   @override
-  String get description =>
-      'Check the environment: data directory, text rendering, OpenCV, secure storage, models.';
+  String get description => 'Check the environment: data directory, text rendering, OpenCV, secure storage, models.';
 
   @override
   Future<int> run() async {
@@ -58,14 +57,20 @@ class DoctorCommand extends CtsCommand {
       await guardedCheck('secure storage', _checkSecrets),
       ...await _checkModels(),
     ];
-    final env = ctx.services.environment();
+    final env = ctx.services.environment({
+      'gpu': [for (final g in _gpus) g.toJson()],
+    });
     final allOk = checks.every((c) => c.ok);
     ctx.services.appLog.info('doctor', {
       'checks': [for (final c in checks) c.toJson()],
     });
 
     if (ctx.json) {
-      ctx.printJson({'ok': allOk, 'environment': env, 'checks': [for (final c in checks) c.toJson()]});
+      ctx.printJson({
+        'ok': allOk,
+        'environment': env,
+        'checks': [for (final c in checks) c.toJson()],
+      });
     } else {
       final app = env['app'] as Map;
       final runtime = env['runtime'] as Map;
@@ -117,20 +122,40 @@ class DoctorCommand extends CtsCommand {
   }
 
   Future<List<DoctorCheck>> _checkOnnxRuntime() async {
-    final r = await OrtSelfTest.run();
+    final gpu = await GpuCheck.run();
+    _gpus = gpu.adapters;
+    final r = gpu.ort;
     if (r.error != null) return [DoctorCheck.fail('ONNX Runtime', r.error!)];
+    final old = gpu.oldDrivers(DateTime.now());
     return [
       r.cpuOk
           ? DoctorCheck.ok('ONNX Runtime (CPU)', '${r.version}, ${r.providers.join(', ')}')
           : DoctorCheck.fail('ONNX Runtime (CPU)', 'test model returned wrong values'),
       if (!r.directmlRequested)
         DoctorCheck.warn('ONNX Runtime (GPU, DirectML)', 'not available in this build/platform; CPU is used')
-      else if (r.directmlOk)
+      else if (gpu.usable)
         DoctorCheck.ok('ONNX Runtime (GPU, DirectML)', 'works (high-performance adapter preferred)')
       else
-        DoctorCheck.warn('ONNX Runtime (GPU, DirectML)', 'falls back to CPU: ${r.directmlFallbackReason ?? 'unknown'}'),
+        DoctorCheck.warn('ONNX Runtime (GPU, DirectML)', 'falls back to CPU: ${gpu.problem}'),
+      if (Platform.isWindows)
+        gpu.adapters.isEmpty
+            ? DoctorCheck.warn('graphics cards', 'Windows did not list any')
+            : old.isEmpty
+            ? DoctorCheck.ok('graphics cards', _describeGpus(gpu.adapters))
+            : DoctorCheck.warn(
+                'graphics cards',
+                '${_describeGpus(gpu.adapters)}; driver older than 4 years: ${old.map((a) => a.name).join(', ')} '
+                    '(update it if the GPU setting misbehaves)',
+              ),
     ];
   }
+
+  List<GpuAdapter> _gpus = const [];
+
+  static String _describeGpus(List<GpuAdapter> adapters) => [
+    for (final a in adapters)
+      [gpuLabel(a), if (a.driverDate != null) 'driver ${a.driverDate!.toIso8601String().substring(0, 10)}'].join(', '),
+  ].join('; ');
 
   Future<DoctorCheck> _checkWindowsOcr() async {
     final info = WindowsOcr.info();
@@ -152,10 +177,14 @@ class DoctorCommand extends CtsCommand {
       final name = 'model ${m.id}';
       checks.add(switch (status) {
         ModelStatus.installed => DoctorCheck.ok(name, 'downloaded'),
-        ModelStatus.missing =>
-          DoctorCheck.warn(name, 'not downloaded (${formatBytes(m.totalSize)}): cts models download ${m.id}'),
-        ModelStatus.corrupt =>
-          DoctorCheck.fail(name, 'damaged: run cts models delete ${m.id} && cts models download ${m.id}'),
+        ModelStatus.missing => DoctorCheck.warn(
+          name,
+          'not downloaded (${formatBytes(m.totalSize)}): cts models download ${m.id}',
+        ),
+        ModelStatus.corrupt => DoctorCheck.fail(
+          name,
+          'damaged: run cts models delete ${m.id} && cts models download ${m.id}',
+        ),
       });
     }
     return checks;

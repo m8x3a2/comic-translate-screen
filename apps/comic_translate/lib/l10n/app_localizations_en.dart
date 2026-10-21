@@ -1561,6 +1561,40 @@ class AppLocalizationsEn extends AppLocalizations {
       'Text finding, recognition and cleaning run on the graphics card through DirectML, which is part of Windows and works with NVIDIA, AMD and Intel. On a weak or old card it may be no faster than the processor. Translation is not sped up: it runs on the translator\'s server.';
 
   @override
+  String get gpuChecking => 'Checking the graphics card…';
+
+  @override
+  String gpuFound(String cards) {
+    return 'Works: $cards. The most powerful one is used.';
+  }
+
+  @override
+  String get gpuOnlyIntegrated =>
+      'This graphics is built into the processor: it is rarely faster than the processor itself.';
+
+  @override
+  String gpuOldDriver(String card, String year) {
+    return 'The driver of $card is from $year; if something goes wrong, update it from the maker\'s site.';
+  }
+
+  @override
+  String get gpuNotUsableTitle => 'The graphics card cannot be used';
+
+  @override
+  String gpuNoCard(String names) {
+    return 'No graphics card was found, only the standard Windows display driver ($names).';
+  }
+
+  @override
+  String gpuDirectmlFailed(String reason) {
+    return 'A test run on the graphics card failed: $reason';
+  }
+
+  @override
+  String get gpuNotUsableTail =>
+      'The work stays on the processor: it runs on any computer, only slower. If there is a graphics card, update its driver and try again.';
+
+  @override
   String get testModeInfo =>
       'While it is on, the steps of every processed page are saved: the boxes found, the recognized text, the request to the translator (without the key), the mask, the cleaning and the result. Clicks and edits (font, spacing) are not recorded. A short log is always kept.\n\nWhen something goes wrong:\n1. Turn test mode on.\n2. Do the same thing again.\n3. Press “Make a bug report”.\n4. Send the archive to the developer. Then test mode can be turned off.';
 

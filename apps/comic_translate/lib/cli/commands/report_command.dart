@@ -30,7 +30,7 @@ class ReportCommand extends CtsCommand {
     await services.appLog.flush();
     final output = args.option('output');
     final zip = await BugReportBuilder(paths: services.paths, redactor: services.redactor).build(
-      environment: services.environment(),
+      environment: await services.environmentWithGpu(),
       runId: args.option('run'),
       includeImages: args.flag('with-images'),
       userNote: args.option('note'),

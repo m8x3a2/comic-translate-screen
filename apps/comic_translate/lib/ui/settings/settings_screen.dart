@@ -10,7 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_info.dart';
+import '../../l10n/app_localizations.dart';
 import '../../state/app_state.dart';
+import '../../state/gpu_check.dart';
 import '../../state/settings_reset.dart';
 import '../../render/text_renderer.dart' show defaultFontFamily;
 import '../common/fonts.dart';
@@ -353,6 +355,94 @@ class _PluginPicker extends ConsumerWidget {
 
 // Sections.
 
+/// "Use the graphics card": switching it on first checks that there is a
+/// card DirectML can run on; it stays off, with the reason, when not.
+class _GpuSwitch extends ConsumerStatefulWidget {
+  const _GpuSwitch();
+
+  @override
+  ConsumerState<_GpuSwitch> createState() => _GpuSwitchState();
+}
+
+class _GpuSwitchState extends ConsumerState<_GpuSwitch> {
+  /// The last check, kept while the program runs.
+  static GpuCheck? _last;
+  var _checking = false;
+
+  Future<void> _turnOn() async {
+    setState(() => _checking = true);
+    final check = await GpuCheck.run();
+    final services = ref.read(servicesProvider);
+    services.appLog.info('gpu_check', {
+      'usable': check.usable,
+      'adapters': [for (final a in check.adapters) a.toJson()],
+      if (!check.usable) 'problem': check.problem,
+    });
+    if (!mounted) return;
+    setState(() {
+      _checking = false;
+      _last = check;
+    });
+    if (check.usable) {
+      _change(ref, (s) => s.useGpu = true);
+      return;
+    }
+    final l = context.l10n;
+    final why = check.ort.directmlOk && check.cards.isEmpty
+        ? l.gpuNoCard(check.adapters.map((a) => a.name).join(', '))
+        : l.gpuDirectmlFailed(check.problem);
+    await showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        icon: const Icon(Icons.memory),
+        title: Text(l.gpuNotUsableTitle),
+        content: SizedBox(width: 460, child: Text('$why\n\n${l.gpuNotUsableTail}')),
+        actions: [FilledButton(onPressed: () => Navigator.pop(c), child: Text(l.ok))],
+      ),
+    );
+  }
+
+  String? _status(AppLocalizations l) {
+    final check = _last;
+    if (check == null || !check.usable) return null;
+    return [
+      l.gpuFound(check.cards.map(gpuLabel).join(', ')),
+      if (check.onlyIntegrated) l.gpuOnlyIntegrated,
+      for (final a in check.oldDrivers(DateTime.now())) l.gpuOldDriver(a.name, '${a.driverDate!.year}'),
+    ].join('\n');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final on = ref.watch(settingsProvider.select((s) => s.useGpu));
+    final status = _status(l);
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: titleWithInfo(l.useGpu, l.useGpuInfo),
+      subtitle: _checking
+          ? Row(
+              children: [
+                const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+                const SizedBox(width: 8),
+                Text(l.gpuChecking),
+              ],
+            )
+          : Text(on && status != null ? status : l.useGpuHelp),
+      value: on,
+      onChanged: _checking
+          ? null
+          : (v) {
+              if (v) {
+                _turnOn();
+              } else {
+                _change(ref, (s) => s.useGpu = false);
+              }
+            },
+    );
+  }
+}
+
 class _GeneralSection extends ConsumerWidget {
   const _GeneralSection();
 
@@ -378,13 +468,7 @@ class _GeneralSection extends ConsumerWidget {
               options: {'system': l.themeSystem, 'light': l.themeLight, 'dark': l.themeDark},
               onChanged: (v) => _change(ref, (s) => s.theme = v),
             ),
-            _switch(
-              l.useGpu,
-              s.useGpu,
-              (v) => _change(ref, (s) => s.useGpu = v),
-              help: l.useGpuHelp,
-              info: l.useGpuInfo,
-            ),
+            const _GpuSwitch(),
           ],
         ),
         SettingsGroup(
@@ -423,7 +507,7 @@ class _GeneralSection extends ConsumerWidget {
                     final zip = await BugReportBuilder(
                       paths: services.paths,
                       redactor: services.redactor,
-                    ).build(environment: services.environment());
+                    ).build(environment: await services.environmentWithGpu());
                     services.appLog.info('bug_report', {'file': zip.path, 'with_images': false});
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
