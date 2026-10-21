@@ -825,6 +825,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get sizeAuto => 'Авто';
 
   @override
+  String get sizeUnknown => 'Размер подберётся, когда в пузыре будет перевод';
+
+  @override
   String get colorAuto => 'Как в оригинале';
 
   @override

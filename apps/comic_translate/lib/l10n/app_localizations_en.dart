@@ -823,6 +823,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sizeAuto => 'Auto';
 
   @override
+  String get sizeUnknown =>
+      'The size is chosen once the bubble has a translation';
+
+  @override
   String get colorAuto => 'As in the original';
 
   @override

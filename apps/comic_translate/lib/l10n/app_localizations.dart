@@ -1538,6 +1538,12 @@ abstract class AppLocalizations {
   /// **'Auto'**
   String get sizeAuto;
 
+  /// No description provided for @sizeUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'The size is chosen once the bubble has a translation'**
+  String get sizeUnknown;
+
   /// No description provided for @colorAuto.
   ///
   /// In en, this message translates to:

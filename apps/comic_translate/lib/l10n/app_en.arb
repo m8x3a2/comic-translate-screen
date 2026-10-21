@@ -484,6 +484,7 @@
   "fontFile": "Font file…",
   "fontSize": "Size",
   "sizeAuto": "Auto",
+  "sizeUnknown": "The size is chosen once the bubble has a translation",
   "colorAuto": "As in the original",
   "textStyle": "Style",
   "verticalText": "Vertical text",

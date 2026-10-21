@@ -84,9 +84,7 @@ class BlockStyleEditor extends ConsumerWidget {
                 icon: const Icon(Icons.folder_open_outlined, size: 20),
                 onPressed: () async {
                   final file = await openFile(
-                    acceptedTypeGroups: [
-                      const XTypeGroup(label: 'Fonts', extensions: fontExtensions),
-                    ],
+                    acceptedTypeGroups: [const XTypeGroup(label: 'Fonts', extensions: fontExtensions)],
                   );
                   if (file != null) set((s) => s.copyWith(fontFamily: file.path));
                 },
@@ -105,22 +103,34 @@ class BlockStyleEditor extends ConsumerWidget {
                 visualDensity: VisualDensity.compact,
                 onSelected: (auto) => set((s) => s.copyWith(fontSizePt: auto ? null : (fitted ?? r.maxFontSize))),
               ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.remove, size: 18),
-                onPressed: () => set(
-                  (s) => s.copyWith(fontSizePt: ((s.fontSizePt ?? fitted ?? r.maxFontSize) - 1).clamp(4, 200)),
-                  merge: 'size:$index',
-                ),
-              ),
-              Text('${s.fontSizePt ?? fitted ?? '–'}', style: theme.textTheme.bodyMedium),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.add, size: 18),
-                onPressed: () => set(
-                  (s) => s.copyWith(fontSizePt: ((s.fontSizePt ?? fitted ?? r.minFontSize) + 1).clamp(4, 200)),
-                  merge: 'size:$index',
-                ),
+              // − size + wrap as one group.
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.remove, size: 18),
+                    onPressed: () => set(
+                      (s) => s.copyWith(fontSizePt: ((s.fontSizePt ?? fitted ?? r.maxFontSize) - 1).clamp(4, 200)),
+                      merge: 'size:$index',
+                    ),
+                  ),
+                  if (s.fontSizePt ?? fitted case final size?)
+                    Text('$size', style: theme.textTheme.bodyMedium)
+                  else
+                    Tooltip(
+                      message: l.sizeUnknown,
+                      child: Icon(Icons.help_outline, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.add, size: 18),
+                    onPressed: () => set(
+                      (s) => s.copyWith(fontSizePt: ((s.fontSizePt ?? fitted ?? r.minFontSize) + 1).clamp(4, 200)),
+                      merge: 'size:$index',
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
