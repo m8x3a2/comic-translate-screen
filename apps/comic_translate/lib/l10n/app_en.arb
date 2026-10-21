@@ -996,7 +996,7 @@
   "speedTestLast": "Last test: processor {cpu}, graphics card {gpu} per page.",
   "@speedTestLast": {"placeholders": {"cpu": {"type": "String"}, "gpu": {"type": "String"}}},
   "speedTestLastFailed": "Last test: the graphics card failed; the processor is used.",
-  "gpuFallback": "The graphics card could not run: {models}. These steps go on on the processor; the translation continues.",
+  "gpuFallback": "The graphics card could not run: {models}. These steps go on on the processor; the translation continues. This is remembered: next time they start on the processor (Settings → General).",
   "@gpuFallback": {
     "placeholders": {
       "models": {
@@ -1005,6 +1005,11 @@
     }
   },
   "gpuFallbackHint": "If this happens again, switch the graphics card off. To help fix it, build a bug report and send it to the developer.",
+  "speedTestPartial": "These steps do not run on this graphics card and stay on the processor (already counted in its time): {models}.",
+  "@speedTestPartial": {"placeholders": {"models": {"type": "String"}}},
+  "gpuCpuModelsNote": "Do not run on this graphics card, so they run on the processor: {models}.",
+  "@gpuCpuModelsNote": {"placeholders": {"models": {"type": "String"}}},
+  "gpuCpuModelsRetry": "Try again",
   "gpuFallbackOcr": "text recognition ({language})",
   "@gpuFallbackOcr": {"placeholders": {"language": {"type": "String"}}},
   "gpuTurnOff": "Switch the graphics card off",

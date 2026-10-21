@@ -100,12 +100,17 @@ class _GpuSwitchState extends ConsumerState<GpuSwitch> {
     );
     _bench = result;
     final failed = result.verdict == GpuVerdict.gpuFailed;
-    final zip = failed ? await services.buildBugReport(note: 'GPU speed test: ${jsonEncode(result.toJson())}') : null;
+    final zip = failed || result.partial
+        ? await services.buildBugReport(note: 'GPU speed test: ${jsonEncode(result.toJson())}')
+        : null;
     if (!mounted) return;
     setState(() => _step = null);
+    // Steps on the processor: failed now, or remembered from before.
+    final onCpu = {for (final f in result.fallbacks) f.model, ...ref.read(settingsProvider).gpuCpuModels.keys};
     final lines = [
       _cpuLine(l, result),
       _gpuLine(l, result),
+      if (!failed && onCpu.isNotEmpty) l.speedTestPartial(onCpu.map((m) => modelFileLabel(l, m)).join(', ')),
       switch (result.verdict) {
         GpuVerdict.gpuFaster => l.speedTestGpuFaster,
         GpuVerdict.cpuBetter when result.gainPercent > 0 => l.speedTestSmallGain('${result.gainPercent}'),
@@ -124,7 +129,7 @@ class _GpuSwitchState extends ConsumerState<GpuSwitch> {
         FilledButton(onPressed: () => Navigator.pop(context, false), child: Text(l.speedTestKeepCpu)),
       ],
       GpuVerdict.gpuFailed => [
-        TextButton(onPressed: () => showInExplorer(zip!.path), child: Text(l.showInFolder)),
+        if (zip != null) TextButton(onPressed: () => showInExplorer(zip.path), child: Text(l.showInFolder)),
         FilledButton(onPressed: () => Navigator.pop(context, false), child: Text(l.ok)),
       ],
     });
@@ -177,6 +182,7 @@ class _GpuSwitchState extends ConsumerState<GpuSwitch> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final on = ref.watch(settingsProvider.select((s) => s.useGpu));
+    final onCpu = ref.watch(settingsProvider.select((s) => s.gpuCpuModels));
     final step = _step;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -210,6 +216,29 @@ class _GpuSwitchState extends ConsumerState<GpuSwitch> {
                   }
                 },
         ),
+        // What this computer's graphics card cannot run (kept in the settings).
+        if (onCpu.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(padding: EdgeInsets.only(top: 2, right: 8), child: Icon(Icons.memory, size: 18)),
+                Expanded(
+                  child: Tooltip(
+                    message: onCpu.entries.map((e) => '${e.key}: ${e.value}').join('\n'),
+                    child: Text(l.gpuCpuModelsNote(onCpu.keys.map((m) => modelFileLabel(l, m)).join(', '))),
+                  ),
+                ),
+                TextButton(
+                  onPressed: step != null
+                      ? null
+                      : () => ref.read(settingsProvider.notifier).change((s) => s.gpuCpuModels.clear()),
+                  child: Text(l.gpuCpuModelsRetry),
+                ),
+              ],
+            ),
+          ),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(

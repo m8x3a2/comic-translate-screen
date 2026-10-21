@@ -587,6 +587,8 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
       );
     }
     log = recorder?.log ?? EventLog([forward]);
+    // Models that failed on this graphics card before open on the CPU.
+    OrtSession.cpuOnlyModels = settings.gpuCpuModels.keys.toSet();
     OrtSession.onRuntimeFallback = (path, reason) {
       log.warn('gpu_fallback', {'model': p.basename(path), 'reason': reason});
       toMain.send(GpuFallback(p.basename(path), reason, speedTest: setup.runLabel == 'gpu_benchmark'));

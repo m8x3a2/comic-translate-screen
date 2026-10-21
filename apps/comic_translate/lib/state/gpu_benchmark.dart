@@ -40,8 +40,13 @@ class GpuBenchmarkResult {
     return ((cpu - gpu) * 100 / cpu).round();
   }
 
+  /// Some models did not run on the card and went on on the processor; the
+  /// card's time already includes them there (the timed run comes after the
+  /// warm-up run in which they failed).
+  bool get partial => fallbacks.isNotEmpty;
+
   GpuVerdict get verdict {
-    if (gpuError != null || fallbacks.isNotEmpty || gpuMs == null) return GpuVerdict.gpuFailed;
+    if (gpuError != null || gpuMs == null) return GpuVerdict.gpuFailed;
     final cpu = cpuMs;
     if (cpu == null) return GpuVerdict.gpuFaster;
     return gpuMs! < cpu * (1 - gpuFasterShare) ? GpuVerdict.gpuFaster : GpuVerdict.cpuBetter;
@@ -56,6 +61,7 @@ class GpuBenchmarkResult {
       for (final f in fallbacks) {'model': f.model, 'reason': f.reason},
     ],
     'verdict': verdict.name,
+    'partial': partial,
   };
 }
 

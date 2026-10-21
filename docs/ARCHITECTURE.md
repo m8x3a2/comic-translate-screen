@@ -140,8 +140,13 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   (`gpu_fallback`). Switching the GPU setting on lists the adapters (virtual
   ones such as Citrix left out), runs a tiny model through DirectML, then
   times a bundled test page on the CPU and on the card in the background
-  worker and recommends the card only when it is at least 15 % faster and
-  nothing fell back; a failed test builds a bug report at once.
+  worker and recommends the card only when it is at least 15 % faster,
+  counting the steps that run on the CPU because they fail on the card (the
+  result says which); a failed or partial
+  test builds a bug report at once. Models that failed on DirectML are
+  remembered in the settings (`tools.gpu_cpu_models`, shown under the switch
+  with "Try again") and open on the CPU from then on
+  (`OrtSession.cpuOnlyModels`), so the failure and its notice come once.
   `CTS_SIMULATE_DML_FAILURE=1` makes the first DirectML run of every real
   model fail, for checks on computers where DirectML works.
 - PSD (M11): written and read in pure Dart (`ct_core` `src/psd/`; it is a file

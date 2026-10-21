@@ -38,6 +38,7 @@ void main() {
       },
       approvedNetworkPlugins: {'openai_compatible'},
       shortcuts: {'undo': 'Ctrl+U', 'help': ''},
+      gpuCpuModels: {'rec.onnx': 'Softmax failed'},
       extra: {'future_feature': 42},
     );
     await store.save(s);
@@ -49,6 +50,7 @@ void main() {
     expect(loaded.upscaleSmallText, isFalse);
     expect(loaded.upperCase, isTrue);
     expect(loaded.shortcuts, {'undo': 'Ctrl+U', 'help': ''});
+    expect(loaded.gpuCpuModels, {'rec.onnx': 'Softmax failed'});
   });
 
   test('corrupt file falls back to defaults and is kept as backup', () async {

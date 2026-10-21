@@ -50,3 +50,10 @@ String gpuLabel(GpuAdapter a) {
   final mem = a.memoryBytes;
   return mem == null ? a.name : '${a.name} (${formatBytes(mem)})';
 }
+
+/// A failure message as kept in the settings: one line, at most 300
+/// characters.
+String shortGpuReason(String reason) {
+  final line = reason.replaceAll(RegExp(r'\s+'), ' ').trim();
+  return line.length > 300 ? '${line.substring(0, 300)}…' : line;
+}

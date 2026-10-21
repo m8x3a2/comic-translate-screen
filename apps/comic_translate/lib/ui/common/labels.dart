@@ -198,3 +198,14 @@ String shortcutGroupLabel(AppLocalizations l, ShortcutGroup g) => switch (g) {
   ShortcutGroup.edit => l.keysGroupEdit,
   ShortcutGroup.window => l.keysGroupWindow,
 };
+
+/// What a model file does, by its file name (`en_PP-OCRv5_rec_mobile_infer.onnx`
+/// → "text recognition (english)"); the file name when unknown.
+String modelFileLabel(AppLocalizations l, String file) {
+  final spec = ModelCatalog.all.where((m) => m.files.any((f) => f.name == file)).firstOrNull;
+  return switch (spec) {
+    null => file,
+    final s when modelGroupOf(s.id) == ModelGroup.language => l.gpuFallbackOcr(modelText(l, s).$1.toLowerCase()),
+    final s => modelText(l, s).$1,
+  };
+}

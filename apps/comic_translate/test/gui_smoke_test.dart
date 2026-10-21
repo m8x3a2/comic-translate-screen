@@ -251,10 +251,15 @@ void main() {
 
   testWidgets('a model failing on the graphics card shows a notice that stays until closed', (tester) async {
     desktopWindow(tester);
-    await openPages(tester, fakeSettings(), 1);
+    final (container, _) = await openPages(tester, fakeSettings(), 1);
     gpuFallbacks.add(const GpuFallback('en_PP-OCRv5_rec_mobile_infer.onnx', 'Softmax failed'));
     await tester.pump();
     await tester.pump();
+    expect(
+      container.read(settingsProvider).gpuCpuModels,
+      {'en_PP-OCRv5_rec_mobile_infer.onnx': 'Softmax failed'},
+      reason: 'remembered: next time it opens on the processor',
+    );
     expect(find.textContaining('Видеокарта не справилась'), findsOneWidget);
     expect(find.textContaining('распознавание текста (английский)'), findsOneWidget, reason: 'the model by name');
     gpuFallbacks.add(const GpuFallback('x.onnx', 'test', speedTest: true));

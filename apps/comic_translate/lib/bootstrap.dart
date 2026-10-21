@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
+import 'package:ct_onnx/ct_onnx.dart';
 import 'package:path/path.dart' as p;
 import 'package:ct_providers/ct_providers.dart';
 
 import 'app_info.dart';
 import 'services/secure_secret_store.dart';
+import 'state/gpu_check.dart' show shortGpuReason;
 
 /// Shared services created once per process, for both GUI and CLI.
 class AppServices {
@@ -104,7 +106,19 @@ class AppServices {
     } catch (e, st) {
       appLog.error('secret_store_unavailable', e, st);
     }
-    useModelsDir((await settingsStore.load()).modelsDir);
+    final settings = await settingsStore.load();
+    useModelsDir(settings.modelsDir);
+    OrtSession.cpuOnlyModels = settings.gpuCpuModels.keys.toSet();
+  }
+
+  /// Remembers in the settings that [model] failed on the graphics card, so
+  /// it opens on the processor from now on (`cts`; the window goes through
+  /// its settings provider).
+  Future<void> rememberGpuFailure(String model, String reason) async {
+    final settings = await settingsStore.load();
+    settings.gpuCpuModels[model] = shortGpuReason(reason);
+    await settingsStore.save(settings);
+    OrtSession.cpuOnlyModels.add(model);
   }
 
   /// Switches to the models folder [dir] (empty: the default folder).

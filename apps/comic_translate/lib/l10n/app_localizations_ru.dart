@@ -1662,12 +1662,25 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String gpuFallback(String models) {
-    return 'Видеокарта не справилась: $models. Эти шаги дальше считаются на процессоре, перевод продолжается.';
+    return 'Видеокарта не справилась: $models. Эти шаги дальше считаются на процессоре, перевод продолжается. Программа это запомнила и в следующий раз сразу запустит их на процессоре (Настройки → Общие).';
   }
 
   @override
   String get gpuFallbackHint =>
       'Если это повторяется, выключите видеокарту. Чтобы помочь исправить, соберите отчёт об ошибке и пришлите его разработчику.';
+
+  @override
+  String speedTestPartial(String models) {
+    return 'Эти шаги на этой видеокарте не работают и считаются на процессоре (время видеокарты это уже учитывает): $models.';
+  }
+
+  @override
+  String gpuCpuModelsNote(String models) {
+    return 'Не работают на этой видеокарте, поэтому считаются на процессоре: $models.';
+  }
+
+  @override
+  String get gpuCpuModelsRetry => 'Попробовать снова';
 
   @override
   String gpuFallbackOcr(String language) {

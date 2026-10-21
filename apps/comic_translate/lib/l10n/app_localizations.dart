@@ -2963,7 +2963,7 @@ abstract class AppLocalizations {
   /// No description provided for @gpuFallback.
   ///
   /// In en, this message translates to:
-  /// **'The graphics card could not run: {models}. These steps go on on the processor; the translation continues.'**
+  /// **'The graphics card could not run: {models}. These steps go on on the processor; the translation continues. This is remembered: next time they start on the processor (Settings → General).'**
   String gpuFallback(String models);
 
   /// No description provided for @gpuFallbackHint.
@@ -2971,6 +2971,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'If this happens again, switch the graphics card off. To help fix it, build a bug report and send it to the developer.'**
   String get gpuFallbackHint;
+
+  /// No description provided for @speedTestPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'These steps do not run on this graphics card and stay on the processor (already counted in its time): {models}.'**
+  String speedTestPartial(String models);
+
+  /// No description provided for @gpuCpuModelsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not run on this graphics card, so they run on the processor: {models}.'**
+  String gpuCpuModelsNote(String models);
+
+  /// No description provided for @gpuCpuModelsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get gpuCpuModelsRetry;
 
   /// No description provided for @gpuFallbackOcr.
   ///

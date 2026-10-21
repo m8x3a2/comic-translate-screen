@@ -50,11 +50,9 @@ void main() {
     expect(const GpuBenchmarkResult(cpuMs: 2000, gpuMs: 1800).verdict, GpuVerdict.cpuBetter);
     expect(const GpuBenchmarkResult(cpuMs: 1900, gpuMs: 2200).verdict, GpuVerdict.cpuBetter);
     expect(const GpuBenchmarkResult(cpuMs: 1400, gpuError: 'Softmax').verdict, GpuVerdict.gpuFailed);
-    expect(
-      const GpuBenchmarkResult(cpuMs: 1400, gpuMs: 900, fallbacks: [GpuFallback('rec.onnx', 'Softmax')]).verdict,
-      GpuVerdict.gpuFailed,
-      reason: 'fast only because a model ran on the processor',
-    );
+    // GTX 1660 Ti: recognition fell back, the rest was 20 % faster on the card.
+    const partial = GpuBenchmarkResult(cpuMs: 6895, gpuMs: 5462, fallbacks: [GpuFallback('rec.onnx', 'Softmax')]);
+    expect([partial.verdict, partial.partial, partial.gainPercent], [GpuVerdict.gpuFaster, true, 21]);
     expect(const GpuBenchmarkResult(cpuMs: 1400, gpuMs: 900).toJson()['verdict'], 'gpuFaster');
     expect(const GpuBenchmarkResult(cpuMs: 11098, gpuMs: 10208).gainPercent, 8);
     expect(const GpuBenchmarkResult(cpuMs: 1900, gpuMs: 2200).gainPercent, -16);

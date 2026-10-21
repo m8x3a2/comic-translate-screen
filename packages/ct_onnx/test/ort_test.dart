@@ -101,6 +101,17 @@ void main() {
     expect(out.asFloat32, [2, 2, 2]);
   });
 
+  test('a model that failed on the graphics card before opens on the CPU', () {
+    OrtSession.cpuOnlyModels = {'add.onnx'};
+    addTearDown(() => OrtSession.cpuOnlyModels = {});
+    expect(OrtSession.modelFileName(r'C:\models\x\add.onnx'), 'add.onnx');
+    expect(OrtSession.modelFileName('/models/x/add.onnx'), 'add.onnx');
+    final s = OrtSession.open(fixture('add.onnx'), device: OrtDevice.directml);
+    addTearDown(s.dispose);
+    expect(s.device, OrtDevice.cpu);
+    expect(s.fallbackReason, contains('before'));
+  });
+
   test('a model failing on DirectML while running goes on on the CPU, and says so', () {
     // Under another name: the self-test model (add.onnx) is never made to fail.
     final dir = Directory.systemTemp.createTempSync('ct_onnx_fallback_');

@@ -1660,12 +1660,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String gpuFallback(String models) {
-    return 'The graphics card could not run: $models. These steps go on on the processor; the translation continues.';
+    return 'The graphics card could not run: $models. These steps go on on the processor; the translation continues. This is remembered: next time they start on the processor (Settings → General).';
   }
 
   @override
   String get gpuFallbackHint =>
       'If this happens again, switch the graphics card off. To help fix it, build a bug report and send it to the developer.';
+
+  @override
+  String speedTestPartial(String models) {
+    return 'These steps do not run on this graphics card and stay on the processor (already counted in its time): $models.';
+  }
+
+  @override
+  String gpuCpuModelsNote(String models) {
+    return 'Do not run on this graphics card, so they run on the processor: $models.';
+  }
+
+  @override
+  String get gpuCpuModelsRetry => 'Try again';
 
   @override
   String gpuFallbackOcr(String language) {

@@ -30,6 +30,7 @@ class AppSettings {
     this.theme = 'dark',
     this.uiLanguage = 'ru',
     Map<String, String>? shortcuts,
+    Map<String, String>? gpuCpuModels,
     this.testMode = false,
     this.projectAutosave = true,
     List<String>? recentProjects,
@@ -37,6 +38,7 @@ class AppSettings {
     Set<String>? approvedNetworkPlugins,
     Map<String, Object?>? extra,
   }) : shortcuts = shortcuts ?? {},
+       gpuCpuModels = gpuCpuModels ?? {},
        recentProjects = recentProjects ?? [],
        plugins = plugins ?? {},
        approvedNetworkPlugins = approvedNetworkPlugins ?? {},
@@ -51,6 +53,11 @@ class AppSettings {
   String inpainter;
 
   bool useGpu;
+
+  /// Models that failed on this computer's graphics card: model file name
+  /// → why. With the GPU on they open on the processor right away. Cleared
+  /// by "Try again" in the settings.
+  Map<String, String> gpuCpuModels;
 
   /// Enlarge pages with small text (screenshots, low-resolution scans)
   /// before line splitting and OCR. New in this project.
@@ -133,6 +140,7 @@ class AppSettings {
       'translator': translator,
       'inpainter': inpainter,
       'use_gpu': useGpu,
+      if (gpuCpuModels.isNotEmpty) 'gpu_cpu_models': gpuCpuModels,
       'upscale_small_text': upscaleSmallText,
       'fix_cyrillic_lookalikes': fixCyrillicLookalikes,
     },
@@ -190,6 +198,10 @@ class AppSettings {
       translator: pick(tools, 'translator', defaults.translator),
       inpainter: pick(tools, 'inpainter', defaults.inpainter),
       useGpu: pick(tools, 'use_gpu', defaults.useGpu),
+      gpuCpuModels: {
+        for (final e in ((tools['gpu_cpu_models'] as Map?) ?? const {}).entries)
+          if (e.key is String && e.value is String) e.key as String: e.value as String,
+      },
       upscaleSmallText: pick(tools, 'upscale_small_text', defaults.upscaleSmallText),
       fixCyrillicLookalikes: pick(tools, 'fix_cyrillic_lookalikes', defaults.fixCyrillicLookalikes),
       inpaint: InpaintConfig(

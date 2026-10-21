@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -6,7 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../app_info.dart';
 import '../bootstrap.dart';
 import '../l10n/app_localizations.dart';
+import '../pipeline/pipeline_worker.dart' show GpuFallback, gpuFallbacks;
 import '../state/app_state.dart';
+import '../state/gpu_check.dart' show shortGpuReason;
 import '../state/window_mode.dart';
 import 'common/key_bindings.dart';
 import 'shell_full/main_screen.dart';
@@ -54,16 +58,23 @@ class ComicTranslateApp extends ConsumerStatefulWidget {
 
 class _ComicTranslateAppState extends ConsumerState<ComicTranslateApp> {
   static const _seed = Color(0xFF3B6FE0);
+  late final StreamSubscription<GpuFallback> _gpuFallbackSub;
 
   @override
   void initState() {
     super.initState();
     HardwareKeyboard.instance.addHandler(_onKey);
+    // A model that failed on the graphics card opens on the processor from
+    // now on (the notice is the main screen's).
+    _gpuFallbackSub = gpuFallbacks.stream.listen(
+      (f) => ref.read(settingsProvider.notifier).change((s) => s.gpuCpuModels[f.model] = shortGpuReason(f.reason)),
+    );
   }
 
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
+    _gpuFallbackSub.cancel();
     super.dispose();
   }
 

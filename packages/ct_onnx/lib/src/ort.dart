@@ -246,6 +246,13 @@ class OrtSession {
   /// DirectML failed while running and goes on on the CPU.
   static void Function(String modelPath, String reason)? onRuntimeFallback;
 
+  /// Model file names that failed on this computer's graphics card before:
+  /// asked for DirectML, they open on the CPU at once.
+  static Set<String> cpuOnlyModels = {};
+
+  /// The file name of [path] (`aot.onnx`), as [cpuOnlyModels] holds it.
+  static String modelFileName(String path) => path.split(RegExp(r'[\\/]')).last;
+
   /// For checks on computers where DirectML works: the first run of every
   /// DirectML session of a real model fails (environment variable
   /// CTS_SIMULATE_DML_FAILURE=1).
@@ -267,6 +274,9 @@ class OrtSession {
     if (!File(modelPath).existsSync()) throw ArgumentError('Model file not found: $modelPath');
     final rt = OrtRuntime.instance;
     if (device == OrtDevice.directml) {
+      if (cpuOnlyModels.contains(modelFileName(modelPath))) {
+        return _open(rt, modelPath, OrtDevice.cpu, config, 'Failed on this graphics card before; runs on the CPU');
+      }
       try {
         return _open(rt, modelPath, OrtDevice.directml, config, null);
       } on OrtException catch (e) {

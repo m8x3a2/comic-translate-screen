@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:args/args.dart';
@@ -121,6 +122,7 @@ Future<int> runCli(
       'Warning: ${p.basename(path)} failed on the graphics card and goes on on the processor ($reason). '
       'Run `cts report` and send the file to the developer.',
     );
+    unawaited(services.rememberGpuFailure(p.basename(path), reason));
   };
   holder._context = CliContext(
     services: services,
