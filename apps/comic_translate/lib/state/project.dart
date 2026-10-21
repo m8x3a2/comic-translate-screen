@@ -26,7 +26,11 @@ bool isProjectPath(String path) => p.extension(path).toLowerCase() == ProjectFil
 
 Map<String, Object?> skipReasonToJson(SkipReason reason) => switch (reason) {
   ModelMissingReason(:final model) => {'kind': 'model_missing', 'model': model},
-  TranslationFailedReason(:final kind, :final message) => {'kind': 'translation', 'error': kind.name, 'message': message},
+  TranslationFailedReason(:final kind, :final message) => {
+    'kind': 'translation',
+    'error': kind.name,
+    'message': message,
+  },
   WorkerStoppedReason() => {'kind': 'worker_stopped'},
   UnreadableImageReason() => {'kind': 'unreadable_image'},
   OtherReason(:final message) => {'kind': 'other', 'message': message},
@@ -67,6 +71,7 @@ ProjectPage projectPageOf(PageEntry page) => ProjectPage(
     if (page.reason != null) 'reason': skipReasonToJson(page.reason!),
     if (page.renderScale != 1) 'render_scale': page.renderScale,
     if (page.exported) 'exported': true,
+    if (page.handEdited) 'hand_edited': true,
     'source_language': ?page.sourceLanguage,
     'target_language': ?page.targetLanguage,
   },
@@ -90,6 +95,7 @@ PageEntry pageEntryOf(ProjectPage page) => PageEntry(
   blocks: page.blocks,
   renderScale: (page.state['render_scale'] as num?)?.toDouble() ?? 1,
   exported: page.state['exported'] == true,
+  handEdited: page.state['hand_edited'] == true,
   sourceLanguage: page.state['source_language'] as String?,
   targetLanguage: page.state['target_language'] as String?,
 );

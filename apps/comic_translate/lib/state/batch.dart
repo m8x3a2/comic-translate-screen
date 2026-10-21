@@ -3,7 +3,6 @@
 /// `batch_processor.py` and `batch_report.py`).
 library;
 
-
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -29,7 +28,13 @@ abstract interface class BatchUi {
 
   /// The translator sends text to an internet service but has no API key.
   Future<void> explainMissingKey(PluginInfo translator, String host);
+
+  /// [count] of the pages to translate were changed by hand: translate them
+  /// again (losing those changes), skip them, or stop?
+  Future<HandEditedChoice> confirmHandEdited(int count);
 }
+
+enum HandEditedChoice { translate, skip, cancel }
 
 /// After this many pages in a row whose translation failed, the run stops.
 /// Errors that every page would repeat (key, balance, address, connection)
@@ -172,13 +177,28 @@ class BatchNotifier extends Notifier<BatchState> {
     final services = ref.read(servicesProvider);
     final workspace = ref.read(workspaceProvider.notifier);
     final pages = ref.read(workspaceProvider).pages;
-    final todo = all || pages.every((p) => p.isDone)
+    var todo = all || pages.every((p) => p.isDone)
         ? pages
         : [
             for (final p in pages)
               if (!p.isDone) p,
           ];
     if (todo.isEmpty) return;
+    // Translating again would lose what was changed by hand: ask first.
+    final edited = todo.where((p) => p.handEdited).length;
+    if (edited > 0) {
+      switch (await ui.confirmHandEdited(edited)) {
+        case HandEditedChoice.cancel:
+          return;
+        case HandEditedChoice.skip:
+          todo = [
+            for (final p in todo)
+              if (!p.handEdited) p,
+          ];
+          if (todo.isEmpty) return;
+        case HandEditedChoice.translate:
+      }
+    }
     final last = switch (state) {
       BatchIdle(:final last) => last,
       _ => null,
@@ -290,7 +310,9 @@ class BatchNotifier extends Notifier<BatchState> {
               blocks: cleaned.blocks,
               renderScale: render.scale,
               stage: null,
+              handEdited: false,
             ),
+            byHand: false,
           );
           done++;
           failuresInARow = 0;

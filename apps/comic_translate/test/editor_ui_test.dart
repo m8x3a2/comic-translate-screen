@@ -39,6 +39,16 @@ class _YesUi implements BatchUi {
 
   @override
   void showError(Object error) => errors.add(error);
+
+  /// Pages changed by hand: what to answer.
+  HandEditedChoice handEdited = HandEditedChoice.translate;
+  int handEditedAsked = 0;
+
+  @override
+  Future<HandEditedChoice> confirmHandEdited(int count) async {
+    handEditedAsked = count;
+    return handEdited;
+  }
 }
 
 void main() {
@@ -211,6 +221,18 @@ void main() {
     await tester.pump();
     await ctrl(tester, LogicalKeyboardKey.keyZ);
     expect(container.read(workspaceProvider).currentPage!.blocks.single.translation, contains('HELLO'));
+  });
+
+  testWidgets('the editor shows how much the page is enlarged for drawing', (tester) async {
+    final container = await openTranslatedPage(tester);
+    container.read(settingsProvider.notifier).change((s) => s.upscale = s.upscale.copyWith(mode: UpscaleMode.off));
+    await tester.pump();
+    expect(find.textContaining('×'), findsNothing);
+
+    container.read(settingsProvider.notifier).change((s) => s.upscale = s.upscale.copyWith(mode: UpscaleMode.x2));
+    await tester.pump();
+    expect(find.text('×2'), findsOneWidget);
+    expect(find.byTooltip('Увеличена ×2 для чёткого текста'), findsOneWidget);
   });
 
   testWidgets('the step buttons run on the current page', (tester) async {

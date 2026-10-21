@@ -96,6 +96,11 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 - Projects (M9): autosave is on by default (the original's is off); the undo
   history is not kept in a project file (the original keeps image history).
   Recovery copies are made only by the first window of the program.
+- "Translate all" over pages changed by hand since they were last translated
+  whole (text, boxes, formatting, brush; kept in project files as
+  `hand_edited`) first asks whether to translate them again or skip them
+  (M12); the original translates them again. Undo brings the hand-made
+  version back.
 - Manual mode (M8): there is no Manual/Automatic switch; the single steps
   are always above the page and act on the current page, or on the pages
   picked with Ctrl / Shift in the page list (as the original). A step does the steps it needs

@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
 import '../../state/steps.dart';
+import '../../state/page_layout.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
 import 'batch_dialogs.dart';
@@ -139,28 +140,28 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                       if (ws.webtoon)
                         WebtoonStrip(key: _strip, transform: _transform, readOnly: readOnlyPage, pan: batchRunning)
                       else
-                      InteractiveViewer(
-                        transformationController: _transform,
-                        constrained: false,
-                        minScale: 0.02,
-                        maxScale: 32,
-                        panEnabled: editor.tool == EditorTool.pan || readOnly,
-                        boundaryMargin: const EdgeInsets.all(double.infinity),
-                        onInteractionUpdate: (_) => setState(() {}),
-                        child: size == null
-                            ? const SizedBox(width: 1, height: 1)
-                            : SizedBox(
-                                width: size.width,
-                                height: size.height,
-                                child: PageCanvas(
-                                  key: ValueKey(page.id),
-                                  page: page,
-                                  size: size,
-                                  transform: _transform,
-                                  readOnly: readOnly,
+                        InteractiveViewer(
+                          transformationController: _transform,
+                          constrained: false,
+                          minScale: 0.02,
+                          maxScale: 32,
+                          panEnabled: editor.tool == EditorTool.pan || readOnly,
+                          boundaryMargin: const EdgeInsets.all(double.infinity),
+                          onInteractionUpdate: (_) => setState(() {}),
+                          child: size == null
+                              ? const SizedBox(width: 1, height: 1)
+                              : SizedBox(
+                                  width: size.width,
+                                  height: size.height,
+                                  child: PageCanvas(
+                                    key: ValueKey(page.id),
+                                    page: page,
+                                    size: size,
+                                    transform: _transform,
+                                    readOnly: readOnly,
+                                  ),
                                 ),
-                              ),
-                      ),
+                        ),
                       Positioned(
                         right: 12,
                         bottom: 12,
@@ -168,6 +169,7 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              const _EnlargedBadge(),
                               IconButton(
                                 tooltip: l.zoomOut,
                                 onPressed: () => _zoom(1 / 1.25),
@@ -269,6 +271,29 @@ class _PageViewerState extends ConsumerState<PageViewer> {
 /// Pixels the "all boxes" menu adds or takes on each side (the original's
 /// default).
 const allBoxesStep = 3;
+
+/// How much the current page is enlarged before its translation is drawn
+/// (setting "Enlarge pages"), as export will do it; nothing at ×1.
+class _EnlargedBadge extends ConsumerWidget {
+  const _EnlargedBadge();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scale = ref.watch(pageLayoutProvider.select((layout) => layout?.scale ?? 1.0));
+    if (scale <= 1.0) return const SizedBox.shrink();
+    final factor = formatFactor(context, scale);
+    return Tooltip(
+      message: context.l10n.pageEnlarged(factor),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 12, right: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [const Icon(Icons.zoom_out_map, size: 16), const SizedBox(width: 4), Text('×$factor')],
+        ),
+      ),
+    );
+  }
+}
 
 class _ToolBar extends ConsumerWidget {
   const _ToolBar();
@@ -443,15 +468,22 @@ class _StepStrip extends ConsumerWidget {
         }
         final picked = ref.watch(workspaceProvider.select((s) => s.selectedPages.length));
         if (steps.running && steps.pages > 1) {
-          children.add(Padding(
-            padding: const EdgeInsets.only(left: 12),
-            child: Text(l.progressPage('${steps.page}', '${steps.pages}'), style: Theme.of(context).textTheme.labelMedium),
-          ));
+          children.add(
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(
+                l.progressPage('${steps.page}', '${steps.pages}'),
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
+            ),
+          );
         } else if (picked > 1) {
-          children.add(Padding(
-            padding: const EdgeInsets.only(left: 12),
-            child: Text(l.stepsForPicked('$picked'), style: Theme.of(context).textTheme.labelMedium),
-          ));
+          children.add(
+            Padding(
+              padding: const EdgeInsets.only(left: 12),
+              child: Text(l.stepsForPicked('$picked'), style: Theme.of(context).textTheme.labelMedium),
+            ),
+          );
         }
         return Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),

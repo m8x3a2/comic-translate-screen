@@ -226,6 +226,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get handEditedTitle => 'Pages changed by hand';
+
+  @override
+  String handEditedBody(String count) {
+    return 'Pages to translate that were changed by hand (text, boxes, formatting or cleaning): $count. Translating them again replaces those changes; Ctrl+Z on a page brings them back while the program is open.';
+  }
+
+  @override
+  String get handEditedTranslate => 'Translate again';
+
+  @override
+  String get handEditedSkip => 'Skip them';
+
+  @override
   String get missingKeyTitle => 'API key needed';
 
   @override

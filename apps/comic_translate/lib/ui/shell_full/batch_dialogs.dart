@@ -121,6 +121,29 @@ class DialogBatchUi implements BatchUi {
   }
 
   @override
+  Future<HandEditedChoice> confirmHandEdited(int count) async {
+    if (!context.mounted) return HandEditedChoice.cancel;
+    final l = context.l10n;
+    final choice = await showDialog<HandEditedChoice>(
+      context: context,
+      builder: (c) => AlertDialog(
+        icon: const Icon(Icons.edit_note),
+        title: Text(l.handEditedTitle),
+        content: SizedBox(width: 460, child: Text(l.handEditedBody('$count'))),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, HandEditedChoice.cancel), child: Text(l.cancel)),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(c, HandEditedChoice.translate),
+            child: Text(l.handEditedTranslate),
+          ),
+          FilledButton(onPressed: () => Navigator.pop(c, HandEditedChoice.skip), child: Text(l.handEditedSkip)),
+        ],
+      ),
+    );
+    return choice ?? HandEditedChoice.cancel;
+  }
+
+  @override
   void showError(Object error) {
     if (!context.mounted) return;
     final l = context.l10n;

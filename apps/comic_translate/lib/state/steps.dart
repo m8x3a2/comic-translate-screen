@@ -166,7 +166,7 @@ class StepsNotifier extends Notifier<StepState> {
           // Removed meanwhile: on to the next page.
           if (page == null) break;
           void commit(PageEntry Function(PageEntry p) change) =>
-              workspace.edit(id, change, mergeKey: merge, mergeWindow: _stepMergeWindow);
+              workspace.edit(id, change, mergeKey: merge, mergeWindow: _stepMergeWindow, byHand: false);
           final seams = await webtoonSeams(ref.read(workspaceProvider), page);
           switch (s) {
             case ManualStep.detect:

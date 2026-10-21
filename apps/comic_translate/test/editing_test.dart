@@ -34,6 +34,16 @@ class _YesUi implements BatchUi {
 
   @override
   void showError(Object error) => errors.add(error);
+
+  /// Pages changed by hand: what to answer.
+  HandEditedChoice handEdited = HandEditedChoice.translate;
+  int handEditedAsked = 0;
+
+  @override
+  Future<HandEditedChoice> confirmHandEdited(int count) async {
+    handEditedAsked = count;
+    return handEdited;
+  }
 }
 
 void main() {
@@ -141,7 +151,9 @@ void main() {
   });
 
   test('pages picked with Ctrl or Shift: a step runs on each, one undo step per page', () async {
-    final more = [for (final n in ['p2.png', 'p3.png']) p.join(dir.path, n)];
+    final more = [
+      for (final n in ['p2.png', 'p3.png']) p.join(dir.path, n),
+    ];
     for (final f in more) {
       await ImageCodec.writeFile(f, RgbImage.filled(100, 60, 255, 255, 255));
     }
@@ -212,5 +224,31 @@ void main() {
     final drawn = await drawMissingPages(container.read, [page().id]);
     expect(File(drawn.single.translatedPath!).existsSync(), isTrue);
     expect(container.read(stepsProvider).running, isFalse);
+  });
+
+  test('"Translate all" asks before translating again pages changed by hand', () async {
+    final ui = _YesUi();
+    final batch = container.read(batchProvider.notifier);
+    await batch.run(ui);
+    expect(page().isDone, isTrue);
+    expect(page().handEdited, isFalse, reason: 'translated by the program');
+    expect(ui.handEditedAsked, 0);
+
+    ws().editBlock(page().id, 0, (b) => b.translation = 'Моё');
+    expect(page().handEdited, isTrue);
+
+    ui.handEdited = HandEditedChoice.skip;
+    await batch.run(ui);
+    expect(ui.handEditedAsked, 1);
+    expect(page().blocks.single.translation, 'Моё', reason: 'skipped');
+
+    ui.handEdited = HandEditedChoice.translate;
+    await batch.run(ui);
+    expect(page().blocks.single.translation, isNot('Моё'));
+    expect(page().handEdited, isFalse);
+
+    ws().undo();
+    expect(page().blocks.single.translation, 'Моё', reason: 'the hand-made text comes back');
+    expect(page().handEdited, isTrue);
   });
 }

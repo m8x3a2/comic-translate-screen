@@ -162,6 +162,17 @@
       }
     }
   },
+  "handEditedTitle": "Pages changed by hand",
+  "handEditedBody": "Pages to translate that were changed by hand (text, boxes, formatting or cleaning): {count}. Translating them again replaces those changes; Ctrl+Z on a page brings them back while the program is open.",
+  "@handEditedBody": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "handEditedTranslate": "Translate again",
+  "handEditedSkip": "Skip them",
   "missingKeyTitle": "API key needed",
   "missingKeyBody": "\"{name}\" sends text to {host}, which needs an API key. Enter it in Settings → Translator (it is stored in Windows secure storage), or choose a local translator.",
   "@missingKeyBody": {

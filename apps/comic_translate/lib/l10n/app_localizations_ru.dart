@@ -227,6 +227,20 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get handEditedTitle => 'Есть страницы, исправленные вручную';
+
+  @override
+  String handEditedBody(String count) {
+    return 'Страниц, исправленных вручную (текст, рамки, оформление или очистка): $count. Если перевести их заново, правки заменятся; вернуть их можно Ctrl+Z на странице, пока программа открыта.';
+  }
+
+  @override
+  String get handEditedTranslate => 'Перевести заново';
+
+  @override
+  String get handEditedSkip => 'Пропустить их';
+
+  @override
   String get missingKeyTitle => 'Нужен ключ API';
 
   @override

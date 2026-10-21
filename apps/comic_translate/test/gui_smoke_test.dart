@@ -38,6 +38,16 @@ class _YesUi implements BatchUi {
 
   @override
   void showError(Object error) => errors.add(error);
+
+  /// Pages changed by hand: what to answer.
+  HandEditedChoice handEdited = HandEditedChoice.translate;
+  int handEditedAsked = 0;
+
+  @override
+  Future<HandEditedChoice> confirmHandEdited(int count) async {
+    handEditedAsked = count;
+    return handEdited;
+  }
 }
 
 /// The window size of a laptop screen (the minimum window is 1024 wide).

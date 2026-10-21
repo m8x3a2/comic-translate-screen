@@ -75,6 +75,7 @@ class PageEntry {
     this.exported = false,
     this.sourceLanguage,
     this.targetLanguage,
+    this.handEdited = false,
   });
 
   final String id;
@@ -128,6 +129,10 @@ class PageEntry {
   final String? sourceLanguage;
   final String? targetLanguage;
 
+  /// Changed by hand since it was last translated whole: "Translate all"
+  /// asks before doing it again, which would lose those changes.
+  final bool handEdited;
+
   String sourceOf(AppSettings settings) => sourceLanguage ?? settings.sourceLanguage;
   String targetOf(AppSettings settings) => targetLanguage ?? settings.targetLanguage;
 
@@ -156,6 +161,7 @@ class PageEntry {
     bool? exported,
     Object? sourceLanguage = _keep,
     Object? targetLanguage = _keep,
+    bool? handEdited,
   }) {
     T? pick<T>(Object? v, T? old) => identical(v, _keep) ? old : v as T?;
     final rendered = pick<String>(translatedPath, this.translatedPath);
@@ -177,6 +183,7 @@ class PageEntry {
       exported: exported ?? (rendered != null && rendered != this.translatedPath ? false : this.exported),
       sourceLanguage: pick(sourceLanguage, this.sourceLanguage),
       targetLanguage: pick(targetLanguage, this.targetLanguage),
+      handEdited: handEdited ?? this.handEdited,
     );
   }
 }
@@ -190,7 +197,8 @@ class PageSnapshot {
       overflowPath = p.overflowPath,
       strokes = p.strokes,
       translatedPath = p.translatedPath,
-      renderScale = p.renderScale;
+      renderScale = p.renderScale,
+      handEdited = p.handEdited;
 
   final List<TextBlock> blocks;
   final String? cleanPath;
@@ -199,6 +207,7 @@ class PageSnapshot {
   final List<MaskStroke> strokes;
   final String? translatedPath;
   final double renderScale;
+  final bool handEdited;
 
   PageEntry applyTo(PageEntry p) => p.copyWith(
     blocks: [for (final b in blocks) b.copy()],
@@ -209,6 +218,7 @@ class PageSnapshot {
     translatedPath: translatedPath,
     renderScale: renderScale,
     exported: false,
+    handEdited: handEdited,
   );
 }
 
@@ -536,12 +546,14 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   /// within [mergeWindow] of each other (typing in a field, dragging) become
   /// one step. The
   /// drawn page is cleared unless [change] brings a new one, and the page
-  /// counts as not exported.
+  /// counts as not exported. A change [byHand] marks the page as edited by
+  /// hand (the steps and "Translate all" are not).
   void edit(
     String id,
     PageEntry Function(PageEntry page) change, {
     String? mergeKey,
     Duration mergeWindow = defaultMergeWindow,
+    bool byHand = true,
   }) {
     final page = state.byId(id);
     if (page == null) return;
@@ -561,7 +573,7 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     );
     var next = change(page);
     if (next.translatedPath == page.translatedPath) next = next.copyWith(translatedPath: null);
-    next = next.copyWith(exported: false);
+    next = next.copyWith(exported: false, handEdited: byHand ? true : null);
     // Webtoon mode: the page below shows what reaches into it; it is drawn
     // again too.
     final below = state.webtoon && (!identical(next.blocks, page.blocks) || next.overflowPath != page.overflowPath)

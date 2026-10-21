@@ -303,13 +303,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   Future<void> _translate() async {
     final l = context.l10n;
-    await ref.read(batchProvider.notifier).run(DialogBatchUi(context));
-    if (!mounted) return;
-    final report = switch (ref.read(batchProvider)) {
+    BatchReport? lastReport() => switch (ref.read(batchProvider)) {
       BatchIdle(:final last) => last,
       _ => null,
     };
-    if (report == null) return;
+    final before = lastReport();
+    await ref.read(batchProvider.notifier).run(DialogBatchUi(context));
+    if (!mounted) return;
+    final report = lastReport();
+    // Not run (cancelled before starting): no report of an earlier run.
+    if (report == null || identical(report, before)) return;
     if (report.skipped.isNotEmpty || report.cancelled || report.exportDirs.isNotEmpty) {
       await showBatchReport(context, report);
     } else {

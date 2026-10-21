@@ -76,6 +76,14 @@ String formatDuration(Duration d) {
   return s >= 3600 ? '${s ~/ 3600}:${two(s ~/ 60 % 60)}:${two(s % 60)}' : '${s ~/ 60}:${two(s % 60)}';
 }
 
+/// An enlargement factor with at most one decimal, in the interface
+/// language's style: `1.5`, `2` (`1,5` in Russian and other comma languages).
+String formatFactor(BuildContext context, double f) {
+  final text = (f * 10).round() % 10 == 0 ? '${f.round()}' : f.toStringAsFixed(1);
+  const pointLanguages = {'en', 'ja', 'ko', 'zh'};
+  return pointLanguages.contains(Localizations.localeOf(context).languageCode) ? text : text.replaceAll('.', ',');
+}
+
 IconData privacyIcon(Privacy p) => switch (p) {
   Privacy.local => Icons.computer,
   Privacy.lan => Icons.lan_outlined,

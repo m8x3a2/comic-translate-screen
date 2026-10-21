@@ -22,11 +22,17 @@ class _YesUi implements BatchUi {
   Future<bool> confirmDownload(List<ModelSpec> models) async => true;
 
   @override
-  Future<NetworkChoice> confirmNetwork(PluginInfo translator, PluginEndpoint endpoint, {required bool sendsImage}) async =>
-      NetworkChoice.once;
+  Future<NetworkChoice> confirmNetwork(
+    PluginInfo translator,
+    PluginEndpoint endpoint, {
+    required bool sendsImage,
+  }) async => NetworkChoice.once;
 
   @override
   void showError(Object error) => fail('$error');
+
+  @override
+  Future<HandEditedChoice> confirmHandEdited(int count) async => HandEditedChoice.translate;
 }
 
 void main() {
@@ -50,7 +56,11 @@ void main() {
 
   setUp(() async {
     dir = Directory.systemTemp.createTempSync('cts_project_app_test_');
-    services = AppServices.create(dataDirOverride: dir.path, secretStore: MemorySecretStore(), registry: fakeRegistry());
+    services = AppServices.create(
+      dataDirOverride: dir.path,
+      secretStore: MemorySecretStore(),
+      registry: fakeRegistry(),
+    );
     Directory(p.join(dir.path, 'chapter')).createSync();
     for (final (i, name) in ['001.png', '002.png'].indexed) {
       await ImageCodec.writeFile(p.join(dir.path, 'chapter', name), RgbImage.filled(80 + i, 60, 255, 255, 255));

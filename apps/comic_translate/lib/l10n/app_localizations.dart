@@ -476,6 +476,30 @@ abstract class AppLocalizations {
   /// **'Translation stopped: {reason}. The remaining pages were not sent.'**
   String reportStopped(String reason);
 
+  /// No description provided for @handEditedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages changed by hand'**
+  String get handEditedTitle;
+
+  /// No description provided for @handEditedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages to translate that were changed by hand (text, boxes, formatting or cleaning): {count}. Translating them again replaces those changes; Ctrl+Z on a page brings them back while the program is open.'**
+  String handEditedBody(String count);
+
+  /// No description provided for @handEditedTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate again'**
+  String get handEditedTranslate;
+
+  /// No description provided for @handEditedSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip them'**
+  String get handEditedSkip;
+
   /// No description provided for @missingKeyTitle.
   ///
   /// In en, this message translates to:
