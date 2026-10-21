@@ -216,6 +216,7 @@
   "license": "Лицензия: Apache 2.0",
   "dataFolder": "Папка данных",
   "thirdPartyLicenses": "Лицензии компонентов",
+  "aboutAuthor": "Автор: {author}",
   "version": "Версия {version}",
   "drawingPages": "Рисую изменённые страницы…",
   "toolPan": "Рука: двигать страницу, щелчок выбирает пузырь (H)",

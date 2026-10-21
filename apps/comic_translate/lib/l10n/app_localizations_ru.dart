@@ -746,6 +746,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get thirdPartyLicenses => 'Лицензии компонентов';
 
   @override
+  String aboutAuthor(String author) {
+    return 'Автор: $author';
+  }
+
+  @override
   String version(String version) {
     return 'Версия $version';
   }

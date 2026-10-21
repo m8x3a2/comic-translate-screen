@@ -898,6 +898,8 @@ class _AboutSection extends ConsumerWidget {
       children: [
         Text(AppInfo.name, style: theme.textTheme.titleLarge),
         Text(l.version('${AppInfo.version}$sha')),
+        Text(l.aboutAuthor(AppInfo.author)),
+        SelectableText(AppInfo.repository),
         const SizedBox(height: 12),
         Text(l.aboutIndependent),
         const SizedBox(height: 8),

@@ -453,6 +453,14 @@
   "license": "License: Apache 2.0",
   "dataFolder": "Data folder",
   "thirdPartyLicenses": "Third-party licenses",
+  "aboutAuthor": "Author: {author}",
+  "@aboutAuthor": {
+    "placeholders": {
+      "author": {
+        "type": "String"
+      }
+    }
+  },
   "version": "Version {version}",
   "@version": {
     "placeholders": {

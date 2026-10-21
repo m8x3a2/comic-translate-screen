@@ -745,6 +745,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get thirdPartyLicenses => 'Third-party licenses';
 
   @override
+  String aboutAuthor(String author) {
+    return 'Author: $author';
+  }
+
+  @override
   String version(String version) {
     return 'Version $version';
   }

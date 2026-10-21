@@ -1394,6 +1394,12 @@ abstract class AppLocalizations {
   /// **'Third-party licenses'**
   String get thirdPartyLicenses;
 
+  /// No description provided for @aboutAuthor.
+  ///
+  /// In en, this message translates to:
+  /// **'Author: {author}'**
+  String aboutAuthor(String author);
+
   /// No description provided for @version.
   ///
   /// In en, this message translates to:

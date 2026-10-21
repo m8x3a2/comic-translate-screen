@@ -5,6 +5,8 @@
 Translate comics, manga, manhwa and webtoons on your own computer: detect text,
 recognize it, translate it, clean the bubbles and typeset the translation.
 
+Author: [m8x3a2](https://github.com/m8x3a2).
+
 > **Independent project.** Comic Translate Screen is a Dart/Flutter rewrite based on
 > [ogkalu2/comic-translate](https://github.com/ogkalu2/comic-translate) (Apache-2.0).
 > It is **not** an official version of Comic Translate and is not affiliated with
@@ -99,3 +101,7 @@ The build produces two executables in `apps/comic_translate/build/windows/x64/ru
 ## License
 
 [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for attribution.
+
+If you use this project — change it, build your own on top of it, or take parts of
+it — keep the [NOTICE](NOTICE) file (the license requires it) and please credit the
+author, **m8x3a2**, with a link to https://github.com/m8x3a2/comic-translate-screen.

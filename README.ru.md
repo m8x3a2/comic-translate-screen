@@ -5,6 +5,8 @@
 Перевод комиксов, манги, манхвы и вебтунов на своём компьютере: программа находит
 текст, распознаёт, переводит, очищает пузыри и вписывает перевод.
 
+Автор: [m8x3a2](https://github.com/m8x3a2).
+
 > **Независимый проект.** Comic Translate Screen — переписанная на Dart/Flutter версия
 > на основе [ogkalu2/comic-translate](https://github.com/ogkalu2/comic-translate) (Apache-2.0).
 > Это **не** официальная версия Comic Translate, проект не связан с её авторами.
@@ -187,3 +189,7 @@ flutter build windows
 ## Лицензия
 
 [Apache License 2.0](LICENSE), атрибуция — в [NOTICE](NOTICE).
+
+Если вы используете проект — меняете его, делаете на его основе свой или берёте части
+кода, — сохраните файл [NOTICE](NOTICE) (этого требует лицензия) и, пожалуйста, упомяните
+автора, **m8x3a2**, со ссылкой на https://github.com/m8x3a2/comic-translate-screen.
