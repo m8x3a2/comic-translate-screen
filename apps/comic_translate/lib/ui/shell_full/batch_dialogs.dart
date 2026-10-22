@@ -155,6 +155,7 @@ class DialogBatchUi implements BatchUi {
     if (!context.mounted) return;
     final l = context.l10n;
     final text = switch (error) {
+      ModelDownloadException(network: true) => l.downloadNetworkFailed,
       ModelDownloadException(:final message) => l.downloadFailed(message),
       _ => l.runFailed(reasonLabel(l, skipReasonFor(error))),
     };

@@ -50,9 +50,15 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
     super.dispose();
   }
 
-  ModelManager get _models => ref.read(servicesProvider).models;
+  ModelManager? _lastModels;
+
+  /// The models folder of the settings; after the screen is left (a download
+  /// still finishing), the one it had.
+  ModelManager get _models => mounted ? _lastModels = ref.read(servicesProvider).models : _lastModels!;
 
   Future<void> _refresh() async {
+    // Left the screen while a download ran.
+    if (!mounted) return;
     final status = {for (final m in ModelCatalog.all) m.id: await _models.status(m)};
     if (mounted) setState(() => _status = status);
   }
@@ -78,7 +84,13 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
       // Stopped by the user.
       return false;
     } catch (e) {
-      if (mounted) _snack(context.l10n.downloadFailed('$e'));
+      if (mounted) {
+        _snack(
+          e is ModelDownloadException && e.network
+              ? context.l10n.downloadNetworkFailed
+              : context.l10n.downloadFailed('$e'),
+        );
+      }
       return false;
     } finally {
       _cancels.remove(spec.id);

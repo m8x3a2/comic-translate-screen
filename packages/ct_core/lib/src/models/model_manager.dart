@@ -29,15 +29,20 @@ class ModelNotInstalledException implements Exception {
   final ModelSpec spec;
 
   @override
-  String toString() => 'Model "${spec.displayName}" is not downloaded '
+  String toString() =>
+      'Model "${spec.displayName}" is not downloaded '
       '(${formatBytes(spec.totalSize)} from ${spec.hosts.join(', ')}). '
       'Download it in Settings or run: cts models download ${spec.id}';
 }
 
 class ModelDownloadException implements Exception {
-  ModelDownloadException(this.message);
+  ModelDownloadException(this.message, {this.network = false});
 
   final String message;
+
+  /// The connection failed or broke: worth trying again (the download
+  /// resumes where it stopped).
+  final bool network;
 
   @override
   String toString() => 'ModelDownloadException: $message';
@@ -59,9 +64,19 @@ class DownloadProgress {
 /// Downloads never start implicitly: callers pass `allowDownload: true` only
 /// after the user agreed (GUI dialog) or asked for it (`cts models download`).
 class ModelManager {
-  ModelManager(this.root, {EventLog? log, HttpClient Function()? httpClientFactory})
-      : _log = log ?? EventLog.silent(),
-        _httpClientFactory = httpClientFactory ?? _defaultClient;
+  ModelManager(
+    this.root, {
+    EventLog? log,
+    HttpClient Function()? httpClientFactory,
+    this.downloadAttempts = 4,
+    this.retryDelay = const Duration(seconds: 3),
+  }) : _log = log ?? EventLog.silent(),
+       _httpClientFactory = httpClientFactory ?? _defaultClient;
+
+  /// Tries per file when the connection fails or breaks (the next try
+  /// resumes the partial file), waiting [retryDelay] × the try number.
+  final int downloadAttempts;
+  final Duration retryDelay;
 
   final Directory root;
   final EventLog _log;
@@ -79,14 +94,23 @@ class ModelManager {
   File fileOf(ModelSpec spec, String name) => File(p.join(dirOf(spec).path, name));
 
   /// Path of [name] in [spec], downloading first if [allowDownload].
-  Future<String> ensureFile(ModelSpec spec, String name,
-      {bool allowDownload = false, void Function(DownloadProgress)? onProgress, CancelToken? cancel}) async {
+  Future<String> ensureFile(
+    ModelSpec spec,
+    String name, {
+    bool allowDownload = false,
+    void Function(DownloadProgress)? onProgress,
+    CancelToken? cancel,
+  }) async {
     await ensure(spec, allowDownload: allowDownload, onProgress: onProgress, cancel: cancel);
     return fileOf(spec, name).path;
   }
 
-  Future<void> ensure(ModelSpec spec,
-      {bool allowDownload = false, void Function(DownloadProgress)? onProgress, CancelToken? cancel}) async {
+  Future<void> ensure(
+    ModelSpec spec, {
+    bool allowDownload = false,
+    void Function(DownloadProgress)? onProgress,
+    CancelToken? cancel,
+  }) async {
     if (await status(spec) == ModelStatus.installed) return;
     if (!allowDownload) throw ModelNotInstalledException(spec);
     await download(spec, onProgress: onProgress, cancel: cancel);
@@ -226,9 +250,23 @@ class ModelManager {
         if (target.existsSync() && await target.length() == f.size && await _sha256(target) == f.sha256) {
           await _writeMarker(target, f);
         } else {
-          await _downloadFile(f, target, token, (received) {
-            onProgress?.call(DownloadProgress(doneBefore + received, total, f.name));
-          });
+          for (var attempt = 1; ; attempt++) {
+            try {
+              await _downloadFile(f, target, token, (received) {
+                onProgress?.call(DownloadProgress(doneBefore + received, total, f.name));
+              });
+              break;
+            } on ModelDownloadException catch (e) {
+              if (!e.network || attempt >= downloadAttempts) rethrow;
+              log.warn('model_download_retry', {
+                'model': spec.id,
+                'file': f.name,
+                'attempt': attempt,
+                'error': e.message,
+              });
+              await token.wait(retryDelay * attempt);
+            }
+          }
         }
         doneBefore += f.size;
         onProgress?.call(DownloadProgress(doneBefore, total, f.name));
@@ -282,17 +320,23 @@ class ModelManager {
       }
     } on SocketException catch (e) {
       cancel.throwIfCancelled();
-      throw ModelDownloadException('Network error while downloading ${f.name}: ${e.message}');
+      throw ModelDownloadException('Network error while downloading ${f.name}: ${e.message}', network: true);
     } on HttpException catch (e) {
       cancel.throwIfCancelled();
-      throw ModelDownloadException('Network error while downloading ${f.name}: ${e.message}');
+      throw ModelDownloadException('Network error while downloading ${f.name}: ${e.message}', network: true);
+    } on TlsException catch (e) {
+      cancel.throwIfCancelled();
+      throw ModelDownloadException('Secure connection broke while downloading ${f.name}: ${e.message}', network: true);
     } finally {
       client.close(force: true);
     }
 
     final size = await part.length();
     if (size != f.size) {
-      throw ModelDownloadException('${f.name}: expected ${f.size} bytes, got $size (download incomplete, retry to resume)');
+      throw ModelDownloadException(
+        '${f.name}: expected ${f.size} bytes, got $size (download incomplete, retry to resume)',
+        network: true,
+      );
     }
     final actual = await _sha256(part);
     if (actual != f.sha256) {
@@ -312,8 +356,7 @@ class ModelManager {
     final marker = _marker(file);
     if (!marker.existsSync()) return false;
     final stat = await file.stat();
-    return (await marker.readAsString()).trim() ==
-        '${f.sha256} ${stat.size} ${stat.modified.millisecondsSinceEpoch}';
+    return (await marker.readAsString()).trim() == '${f.sha256} ${stat.size} ${stat.modified.millisecondsSinceEpoch}';
   }
 
   Future<void> _writeMarker(File file, ModelFile f) async {

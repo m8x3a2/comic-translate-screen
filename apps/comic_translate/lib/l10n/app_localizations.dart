@@ -3404,6 +3404,12 @@ abstract class AppLocalizations {
   /// **'Translates on this computer without internet or keys (translator \"Offline (OPUS-MT)\"). About 0.4–0.7 s per bubble. Licence CC-BY 4.0, Helsinki-NLP.'**
   String get modelOpusInfo;
 
+  /// No description provided for @downloadNetworkFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not download a model: the connection to the model site keeps breaking (4 tries). Check the internet and try again — the download continues where it stopped. If the site cannot be reached, download the files on another computer and add them with \"Import from disk…\" in \"Models\".'**
+  String get downloadNetworkFailed;
+
   /// No description provided for @panelHide.
   ///
   /// In en, this message translates to:

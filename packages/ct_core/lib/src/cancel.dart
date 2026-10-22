@@ -1,3 +1,5 @@
+import 'dart:async';
+
 /// Cooperative cancellation for long-running operations (batch runs, model
 /// downloads). Stages call [throwIfCancelled] between steps.
 class CancelToken {
@@ -26,6 +28,21 @@ class CancelToken {
 
   void throwIfCancelled() {
     if (_cancelled) throw const CancelledException();
+  }
+
+  /// Waits [duration], or less when cancelled meanwhile (then throws
+  /// [CancelledException]).
+  Future<void> wait(Duration duration) async {
+    final done = Completer<void>();
+    final timer = Timer(duration, () {
+      if (!done.isCompleted) done.complete();
+    });
+    onCancel(() {
+      timer.cancel();
+      if (!done.isCompleted) done.complete();
+    });
+    await done.future;
+    throwIfCancelled();
   }
 
   /// A token that is never cancelled.

@@ -54,15 +54,20 @@ class FakeModelServer {
 }
 
 ModelSpec specFor(Uri url, Uint8List payload, {String? sha}) => ModelSpec(
-      id: 'test-model',
-      displayName: 'Test model',
-      purpose: 'tests',
-      license: 'MIT',
-      homepage: 'https://example.com',
-      files: [
-        ModelFile(name: 'model.bin', url: url.toString(), sha256: sha ?? sha256.convert(payload).toString(), size: payload.length),
-      ],
-    );
+  id: 'test-model',
+  displayName: 'Test model',
+  purpose: 'tests',
+  license: 'MIT',
+  homepage: 'https://example.com',
+  files: [
+    ModelFile(
+      name: 'model.bin',
+      url: url.toString(),
+      sha256: sha ?? sha256.convert(payload).toString(),
+      size: payload.length,
+    ),
+  ],
+);
 
 void main() {
   late Directory tmp;
@@ -100,9 +105,13 @@ void main() {
 
     await manager.delete(spec);
     final zip = File(p.join(tmp.path, 'models.zip'))
-      ..writeAsBytesSync(ZipEncoder().encode(Archive()
-        ..add(ArchiveFile.bytes('pack/model.bin', payload))
-        ..add(ArchiveFile.bytes('pack/readme.txt', 'hi'.codeUnits))));
+      ..writeAsBytesSync(
+        ZipEncoder().encode(
+          Archive()
+            ..add(ArchiveFile.bytes('pack/model.bin', payload))
+            ..add(ArchiveFile.bytes('pack/readme.txt', 'hi'.codeUnits)),
+        ),
+      );
     results = await manager.importFiles([zip.path], catalog: [spec]);
     expect(results.where((r) => r.imported).single.path, endsWith('pack/model.bin'));
     expect(await manager.status(spec), ModelStatus.installed);
@@ -127,7 +136,12 @@ void main() {
     final manager = ModelManager(tmp, log: EventLog([mem]));
     final spec = specFor(server.url, payload);
     final progress = <double>[];
-    final path = await manager.ensureFile(spec, 'model.bin', allowDownload: true, onProgress: (p) => progress.add(p.fraction));
+    final path = await manager.ensureFile(
+      spec,
+      'model.bin',
+      allowDownload: true,
+      onProgress: (p) => progress.add(p.fraction),
+    );
     expect(File(path).readAsBytesSync(), payload);
     expect(progress.last, 1.0);
     expect(await manager.status(spec), ModelStatus.installed);
@@ -138,7 +152,7 @@ void main() {
   });
 
   test('interrupted download resumes with a Range request', () async {
-    final manager = ModelManager(tmp);
+    final manager = ModelManager(tmp, downloadAttempts: 1);
     final spec = specFor(server.url, payload);
     server.cutAfter = 100000;
     await expectLater(manager.download(spec), throwsA(isA<ModelDownloadException>()));
@@ -147,6 +161,28 @@ void main() {
     await manager.download(spec);
     expect(server.rangeHeaders.last, 'bytes=100000-');
     expect(manager.fileOf(spec, 'model.bin').readAsBytesSync(), payload);
+  });
+
+  test('a broken connection is tried again at once, resuming the file', () async {
+    final mem = MemorySink(Redactor());
+    final manager = ModelManager(tmp, log: EventLog([mem]), retryDelay: const Duration(milliseconds: 10));
+    final spec = specFor(server.url, payload);
+    server.cutAfter = 100000;
+    await manager.download(spec);
+    expect(server.rangeHeaders.last, 'bytes=100000-');
+    expect(manager.fileOf(spec, 'model.bin').readAsBytesSync(), payload);
+    expect(mem.events.map((e) => e.event), contains('model_download_retry'));
+  });
+
+  test('a server that cannot be reached fails after the tries, as a network error', () async {
+    final spec = specFor(server.url, payload);
+    await server.stop();
+    final manager = ModelManager(tmp, retryDelay: const Duration(milliseconds: 10));
+    await expectLater(
+      manager.download(spec),
+      throwsA(isA<ModelDownloadException>().having((e) => e.network, 'network', isTrue)),
+    );
+    await server.start();
   });
 
   test('checksum mismatch deletes the file and fails', () async {
@@ -172,9 +208,13 @@ void main() {
     final manager = ModelManager(tmp);
     final spec = specFor(server.url, payload);
     final cancel = CancelToken();
-    final future = manager.download(spec, cancel: cancel, onProgress: (p) {
-      if (p.received > 0) cancel.cancel();
-    });
+    final future = manager.download(
+      spec,
+      cancel: cancel,
+      onProgress: (p) {
+        if (p.received > 0) cancel.cancel();
+      },
+    );
     await expectLater(future, throwsA(isA<CancelledException>()));
     expect(manager.fileOf(spec, 'model.bin').existsSync(), isFalse);
   });
