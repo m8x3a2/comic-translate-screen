@@ -238,7 +238,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
     final canApply = export != null && (_match?.replies.isNotEmpty ?? false);
     return Dialog(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 980, maxHeight: 820),
+        constraints: const BoxConstraints(maxWidth: 1280, maxHeight: 860),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
           child: Column(
@@ -276,15 +276,30 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
               const SizedBox(height: 12),
               Expanded(
                 child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (!existing) _options(l),
-                      const SizedBox(height: 12),
-                      _sendCard(l, theme),
-                      const SizedBox(height: 12),
-                      _answerCard(l, theme),
-                    ],
+                  child: LayoutBuilder(
+                    // Wide: what to send and the answer side by side, both in sight.
+                    builder: (context, c) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Room for the floating labels of the fields.
+                        if (!existing) Padding(padding: const EdgeInsets.only(top: 8), child: _options(l)),
+                        const SizedBox(height: 12),
+                        if (c.maxWidth >= 1000)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: _sendCard(l, theme)),
+                              const SizedBox(width: 12),
+                              Expanded(child: _answerCard(l, theme)),
+                            ],
+                          )
+                        else ...[
+                          _sendCard(l, theme),
+                          const SizedBox(height: 12),
+                          _answerCard(l, theme),
+                        ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -480,10 +495,26 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
           children: [
             Text(l.chatStep2, style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
+            if (match != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                l.chatFound(match.replies.length, total),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: match.replies.length == total ? Colors.green.shade600 : null,
+                ),
+              ),
+              if (_fromFiles case final files? when files.isNotEmpty) Text(l.chatFromFilesNote(files.join(', '))),
+              if (match.missing.isNotEmpty) Text(l.chatMissing(_codes(match.missing)), style: warn),
+              if (match.unknown.isNotEmpty) Text(l.chatUnknown(_codes(match.unknown)), style: warn),
+              if (match.missingArrow.isNotEmpty) Text(l.chatNoArrow(_codes(match.missingArrow)), style: warn),
+              if (match.repeated.isNotEmpty) Text(l.chatRepeated(_codes(match.repeated))),
+            ],
+            if (match != null) const SizedBox(height: 8),
             TextField(
               controller: _answer,
               minLines: 6,
-              maxLines: 12,
+              maxLines: 9,
               style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
               decoration: InputDecoration(
                 hintText: _mode == ExchangeMode.both ? l.chatAnswerHintBoth : l.chatAnswerHint,
@@ -511,21 +542,6 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
                 ),
               ],
             ),
-            if (match != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                l.chatFound(match.replies.length, total),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: match.replies.length == total ? Colors.green.shade600 : null,
-                ),
-              ),
-              if (_fromFiles case final files? when files.isNotEmpty) Text(l.chatFromFilesNote(files.join(', '))),
-              if (match.missing.isNotEmpty) Text(l.chatMissing(_codes(match.missing)), style: warn),
-              if (match.unknown.isNotEmpty) Text(l.chatUnknown(_codes(match.unknown)), style: warn),
-              if (match.missingArrow.isNotEmpty) Text(l.chatNoArrow(_codes(match.missingArrow)), style: warn),
-              if (match.repeated.isNotEmpty) Text(l.chatRepeated(_codes(match.repeated))),
-            ],
           ],
         ),
       ),
