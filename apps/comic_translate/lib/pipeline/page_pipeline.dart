@@ -14,6 +14,7 @@ import 'package:ct_core/ct_core.dart';
 
 import '../bootstrap.dart';
 import '../render/text_renderer.dart';
+import 'word_list.dart';
 
 /// What [renderPage] drew.
 class RenderedPage {
@@ -581,10 +582,18 @@ Future<void> recognizeBlocks(
       fixOcrScript([b], code.isEmpty ? b.sourceLang : code);
     }
   }
+  if (settings.splitGluedWords) (await loadGluedWords())?.splitBlocks(blocks, sourceLanguage: sourceLanguage);
 }
 
+/// Told to the translator when some of the text was read from very small
+/// letters (see [isSmallText]).
+const smallTextTranslatorNote =
+    'Some of the source text was recognized from very small letters: words may be glued together and letters '
+    'misread. Translate what was most likely meant.';
+
 /// Translation of [blocks] (the page image goes along when the setting
-/// allows it).
+/// allows it). Blocks of very small text add [smallTextTranslatorNote] to
+/// the context.
 Future<void> translatePageBlocks(
   Translator translator,
   RgbImage image,
@@ -600,7 +609,9 @@ Future<void> translatePageBlocks(
     sourceLanguage: sourceLanguage,
     targetLanguage: targetLanguage,
     pageImage: settings.sendPageImage ? image : null,
-    extraContext: settings.extraContext,
+    extraContext: blocks.any(isSmallText)
+        ? [settings.extraContext, smallTextTranslatorNote].where((s) => s.trim().isNotEmpty).join('\n')
+        : settings.extraContext,
   ),
   context,
 );

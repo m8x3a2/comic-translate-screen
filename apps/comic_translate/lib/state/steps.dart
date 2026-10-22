@@ -195,7 +195,18 @@ class StepsNotifier extends Notifier<StepState> {
                 below: seams.below,
                 cancel: cancel,
               );
-              commit((p) => p.copyWith(blocks: _replace(p.blocks, which, read, (old, b) => old.copy()..text = b.text)));
+              commit(
+                (p) => p.copyWith(
+                  blocks: _replace(
+                    p.blocks,
+                    which,
+                    read,
+                    (old, b) => old.copy()
+                      ..text = b.text
+                      ..linePx = b.linePx,
+                  ),
+                ),
+              );
             case ManualStep.translate:
               final which = [
                 for (final (i, b) in page.blocks.indexed)

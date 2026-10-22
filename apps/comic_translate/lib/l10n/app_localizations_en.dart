@@ -1890,4 +1890,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get psdFeatureOpacity => 'layer opacity';
+
+  @override
+  String get splitWords =>
+      'Split glued words on this page or the selected pages (English): \"REALLIFE\" becomes \"REAL LIFE\"';
+
+  @override
+  String get splitWordsBlock => 'Split glued words in this bubble (English)';
+
+  @override
+  String splitWordsDone(String count) {
+    return 'Words split: $count. Undo with Ctrl+Z.';
+  }
+
+  @override
+  String get splitWordsNone =>
+      'No glued words found (only English text is checked).';
+
+  @override
+  String get splitWordsMissing =>
+      'The word list is missing from the program folder (data\\flutter_assets\\assets\\dict).';
+
+  @override
+  String get splitGluedWords => 'Split glued English words after recognition';
+
+  @override
+  String get splitGluedWordsInfo =>
+      'On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.';
+
+  @override
+  String smallTextWarning(String px) {
+    return 'Very small text (lines of about $px px): words may be glued together and letters misread. A larger screenshot reads better. The translator is told about it.';
+  }
 }

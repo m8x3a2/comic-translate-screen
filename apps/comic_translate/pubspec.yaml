@@ -48,3 +48,6 @@ flutter:
   assets:
     - assets/fonts/Pangolin-OFL.txt
     - assets/samples/speed_test_page.jpg
+    # English words for splitting glued words after OCR (MIT, see the licence file).
+    - assets/dict/en_words.txt
+    - assets/dict/en_words-LICENSE.txt

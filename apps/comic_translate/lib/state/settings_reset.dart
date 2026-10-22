@@ -36,6 +36,7 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..inpainter = d.inpainter
           ..upscaleSmallText = d.upscaleSmallText
           ..fixCyrillicLookalikes = d.fixCyrillicLookalikes
+          ..splitGluedWords = d.splitGluedWords
           ..inpaint = d.inpaint;
         forgetPlugins({PluginKind.detector, PluginKind.ocr, PluginKind.inpainter});
       case SettingsPart.text:

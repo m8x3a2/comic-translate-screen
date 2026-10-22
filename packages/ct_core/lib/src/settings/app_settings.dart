@@ -18,6 +18,7 @@ class AppSettings {
     this.useGpu = false,
     this.upscaleSmallText = true,
     this.fixCyrillicLookalikes = false,
+    this.splitGluedWords = false,
     this.inpaint = const InpaintConfig(),
     this.sourceLanguage = 'English',
     this.targetLanguage = 'Russian',
@@ -68,6 +69,11 @@ class AppSettings {
   /// returns in Cyrillic text ("HET" → "НЕТ"). Off by default: Latin words in
   /// the comic (signs, "OK") would become Cyrillic too. New in this project.
   bool fixCyrillicLookalikes;
+
+  /// After OCR, split English words the recognizer glued together
+  /// ("REALLIFE" → "REAL LIFE", see `glued_words.dart`). Off by default: the
+  /// button in the text panel does it on demand. New in this project.
+  bool splitGluedWords;
   InpaintConfig inpaint;
 
   /// Default languages for new pages (canonical English names).
@@ -148,6 +154,7 @@ class AppSettings {
       if (gpuCpuModels.isNotEmpty) 'gpu_cpu_models': gpuCpuModels,
       'upscale_small_text': upscaleSmallText,
       'fix_cyrillic_lookalikes': fixCyrillicLookalikes,
+      'split_glued_words': splitGluedWords,
     },
     'inpaint': inpaint.toJson(),
     'languages': {'source': sourceLanguage, 'target': targetLanguage},
@@ -211,6 +218,7 @@ class AppSettings {
       },
       upscaleSmallText: pick(tools, 'upscale_small_text', defaults.upscaleSmallText),
       fixCyrillicLookalikes: pick(tools, 'fix_cyrillic_lookalikes', defaults.fixCyrillicLookalikes),
+      splitGluedWords: pick(tools, 'split_glued_words', defaults.splitGluedWords),
       inpaint: InpaintConfig(
         strategy: HdStrategy.values.firstWhere((s) => s.name == strategyName, orElse: () => HdStrategy.resize),
         resizeLimit: pick<num>(inpaint, 'resize_limit', defaults.inpaint.resizeLimit).toInt(),

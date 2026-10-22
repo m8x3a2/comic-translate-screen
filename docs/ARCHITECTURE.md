@@ -64,6 +64,17 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   Cyrillic words ("HET" for "НЕТ") are replaced with Cyrillic ones (setting
   `tools.fix_cyrillic_lookalikes`, off by default; never applied to other
   source languages).
+- Glued words (new, `glued_words.dart`): English words the OCR read as one on
+  tiny text ("REALLIFE") are split into dictionary words, by word frequency
+  (the SymSpell list, 80 000 words, bundled in `assets/dict`). Only words
+  missing from the dictionary are split, short pieces must be among the 1 000
+  most frequent words, letters never change. A button of the text panel (page
+  or selected pages, one block) and `tools.split_glued_words` (after OCR, off
+  by default). On the OCR output of the step 2 experiment: 8 % more right
+  words, fewer wrong ones.
+- Very small text (new): each block remembers its line thickness on the page
+  (`line_px`, measured before reading). Below 14 px the text panel warns, and
+  the translator is told that words may be glued and letters misread.
 - MI-GAN is not included (its download URL in the original returns 404).
 - Translator errors are sorted by kind (key refused, no credits, wrong address
   or model, no connection, rate limit, server error, timeout, unreadable

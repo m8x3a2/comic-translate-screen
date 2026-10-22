@@ -576,6 +576,12 @@ class _ToolsSection extends ConsumerWidget {
               (v) => _change(ref, (s) => s.fixCyrillicLookalikes = v),
               help: l.fixCyrillicHelp,
             ),
+            _switch(
+              l.splitGluedWords,
+              s.splitGluedWords,
+              (v) => _change(ref, (s) => s.splitGluedWords = v),
+              info: l.splitGluedWordsInfo,
+            ),
           ],
         ),
         pluginWithForm(l.inpainter, PluginKind.inpainter, s.inpainter, (s, v) => s.inpainter = v),

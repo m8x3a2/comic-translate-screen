@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:ct_core/ct_core.dart';
 import 'package:path/path.dart' as p;
 
+import '../../pipeline/word_list.dart';
 import '../cli.dart';
 import '../cli_context.dart';
 
@@ -25,6 +26,11 @@ class OcrCommand extends CtsCommand {
       ..addFlag(
         'upscale',
         help: 'Enlarge pages with small text before reading (default from settings: on).',
+        defaultsTo: null,
+      )
+      ..addFlag(
+        'split-words',
+        help: 'Split English words glued together by the OCR (default from settings: off).',
         defaultsTo: null,
       )
       ..addFlag('debug', negatable: false, help: 'Test mode: save a run folder with artifacts and timings.');
@@ -116,6 +122,10 @@ class OcrCommand extends CtsCommand {
           for (final b in blocks) {
             fixOcrScript([b], code.isEmpty ? b.sourceLang : code);
           }
+        }
+        if (args.wasParsed('split-words') ? args.flag('split-words') : settings.splitGluedWords) {
+          final split = (await loadGluedWords())?.splitBlocks(blocks, sourceLanguage: language) ?? 0;
+          if (split > 0) pageLog.info('glued_words_split', {'words': split});
         }
         final ocrMs = sw.elapsedMilliseconds - detectMs;
         if (reading.scaled) pageLog.info('reading_upscaled', {'factor': reading.scaleX});

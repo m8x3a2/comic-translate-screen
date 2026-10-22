@@ -3331,6 +3331,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'layer opacity'**
   String get psdFeatureOpacity;
+
+  /// No description provided for @splitWords.
+  ///
+  /// In en, this message translates to:
+  /// **'Split glued words on this page or the selected pages (English): \"REALLIFE\" becomes \"REAL LIFE\"'**
+  String get splitWords;
+
+  /// No description provided for @splitWordsBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Split glued words in this bubble (English)'**
+  String get splitWordsBlock;
+
+  /// No description provided for @splitWordsDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Words split: {count}. Undo with Ctrl+Z.'**
+  String splitWordsDone(String count);
+
+  /// No description provided for @splitWordsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No glued words found (only English text is checked).'**
+  String get splitWordsNone;
+
+  /// No description provided for @splitWordsMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'The word list is missing from the program folder (data\\flutter_assets\\assets\\dict).'**
+  String get splitWordsMissing;
+
+  /// No description provided for @splitGluedWords.
+  ///
+  /// In en, this message translates to:
+  /// **'Split glued English words after recognition'**
+  String get splitGluedWords;
+
+  /// No description provided for @splitGluedWordsInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.'**
+  String get splitGluedWordsInfo;
+
+  /// No description provided for @smallTextWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Very small text (lines of about {px} px): words may be glued together and letters misread. A larger screenshot reads better. The translator is told about it.'**
+  String smallTextWarning(String px);
 }
 
 class _AppLocalizationsDelegate

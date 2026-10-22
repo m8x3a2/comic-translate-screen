@@ -225,6 +225,32 @@ void main() {
     expect(container.read(workspaceProvider).currentPage!.blocks.single.translation, contains('HELLO'));
   });
 
+  testWidgets('glued words are split by the button, very small text is pointed out', (tester) async {
+    final container = await openTranslatedPage(tester);
+    final ws = container.read(workspaceProvider.notifier);
+    ws.changeBlock(0, (b) => b..text = 'THIS ISREALLIFE');
+    await tester.pump();
+    expect(find.textContaining('Очень мелкий текст'), findsNothing);
+    ws.changeBlock(0, (b) => b.linePx = 11);
+    await tester.pump();
+    expect(find.textContaining('строки около 11 точек'), findsOneWidget);
+
+    final split = find.byWidgetPredicate(
+      (w) => w is IconButton && (w.tooltip ?? '').startsWith('Разделить слипшиеся слова на этой странице'),
+    );
+    expect(tester.widget<IconButton>(split).onPressed, isNotNull);
+    await tester.runAsync(() async {
+      await tester.tap(split);
+      await Future<void>.delayed(const Duration(seconds: 2));
+    });
+    await tester.pump();
+    await tester.pump();
+    expect(container.read(workspaceProvider).currentPage!.blocks.single.text, 'THIS IS REAL LIFE');
+    expect(find.textContaining('Разделено слов: 1'), findsOneWidget);
+    ws.undo();
+    expect(container.read(workspaceProvider).currentPage!.blocks.single.text, 'THIS ISREALLIFE');
+  });
+
   testWidgets('the editor shows how much the page is enlarged for drawing', (tester) async {
     final container = await openTranslatedPage(tester);
     container.read(settingsProvider.notifier).change((s) => s.upscale = s.upscale.copyWith(mode: UpscaleMode.off));

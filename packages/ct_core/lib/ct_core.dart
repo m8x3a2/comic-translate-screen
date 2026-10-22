@@ -38,6 +38,7 @@ export 'src/inpainting/inpaint_page.dart';
 export 'src/inpainting/mask.dart';
 export 'src/models/model_catalog.dart';
 export 'src/ocr/auto_language.dart';
+export 'src/ocr/glued_words.dart';
 export 'src/ocr/manga_ocr.dart';
 export 'src/ocr/ppocr.dart';
 export 'src/ocr/reading_scale.dart';

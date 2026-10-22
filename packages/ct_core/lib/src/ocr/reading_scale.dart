@@ -88,6 +88,10 @@ ReadingPage prepareReading(RgbImage image, List<TextBlock> blocks, {String sourc
       // The heuristics gave up: those blocks are read whole, as before.
     }
   }
+  for (final b in blocks) {
+    final t = lineThicknesses([b]);
+    if (t.isNotEmpty) b.linePx = npPercentile(t, 50);
+  }
   final f = enabled ? readingScaleFactor(image, blocks) : 1.0;
   final boxes = [for (final b in blocks) b.xyxy];
   final bubbles = [for (final b in blocks) b.bubbleXyxy];

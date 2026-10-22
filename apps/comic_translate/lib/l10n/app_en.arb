@@ -1111,5 +1111,27 @@
   "psdFeatureClipping": "clipping masks",
   "psdFeatureAdjustments": "adjustment layers",
   "psdFeatureBlendModes": "blend modes",
-  "psdFeatureOpacity": "layer opacity"
+  "psdFeatureOpacity": "layer opacity",
+  "splitWords": "Split glued words on this page or the selected pages (English): \"REALLIFE\" becomes \"REAL LIFE\"",
+  "splitWordsBlock": "Split glued words in this bubble (English)",
+  "splitWordsDone": "Words split: {count}. Undo with Ctrl+Z.",
+  "@splitWordsDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "splitWordsNone": "No glued words found (only English text is checked).",
+  "splitWordsMissing": "The word list is missing from the program folder (data\\flutter_assets\\assets\\dict).",
+  "splitGluedWords": "Split glued English words after recognition",
+  "splitGluedWordsInfo": "On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.",
+  "smallTextWarning": "Very small text (lines of about {px} px): words may be glued together and letters misread. A larger screenshot reads better. The translator is told about it.",
+  "@smallTextWarning": {
+    "placeholders": {
+      "px": {
+        "type": "String"
+      }
+    }
+  }
 }

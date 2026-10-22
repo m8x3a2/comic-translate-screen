@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/batch.dart';
 import '../../state/editor.dart';
+import '../../state/glued_words.dart';
 import '../../state/steps.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
@@ -75,6 +76,11 @@ class _TextPanelState extends ConsumerState<TextPanel> {
             children: [
               Expanded(child: Text(l.textPanel, style: theme.textTheme.titleSmall)),
               IconButton(
+                tooltip: l.splitWords,
+                onPressed: busy || blocks.isEmpty ? null : () => _splitWords(context, ref),
+                icon: const Icon(Icons.space_bar),
+              ),
+              IconButton(
                 tooltip: l.findReplace,
                 isSelected: findOpen,
                 onPressed: () => ref.read(findOpenProvider.notifier).set(!findOpen),
@@ -84,6 +90,18 @@ class _TextPanelState extends ConsumerState<TextPanel> {
           ),
         ),
         if (findOpen) const FindReplacePanel(),
+        if (smallTextLinePxOf(blocks) case final px?)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.warning_amber, size: 18, color: theme.colorScheme.tertiary),
+                const SizedBox(width: 8),
+                Expanded(child: Text(l.smallTextWarning('${px.round()}'), style: theme.textTheme.bodySmall)),
+              ],
+            ),
+          ),
         Expanded(
           child: blocks.isEmpty
               ? Center(
@@ -106,6 +124,25 @@ class _TextPanelState extends ConsumerState<TextPanel> {
       ],
     );
   }
+}
+
+/// Splits glued words on the step pages, or in [block] of the current page,
+/// and says how many.
+Future<void> _splitWords(BuildContext context, WidgetRef ref, {int? block}) async {
+  final l = context.l10n;
+  final messenger = ScaffoldMessenger.of(context);
+  final n = await splitGluedWordsOnPages(ref, block: block);
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(
+        n == null
+            ? l.splitWordsMissing
+            : n == 0
+            ? l.splitWordsNone
+            : l.splitWordsDone('$n'),
+      ),
+    ),
+  );
 }
 
 class _BlockCard extends ConsumerWidget {
@@ -220,6 +257,12 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
                   ? null
                   : () => ref.read(stepsProvider.notifier).run(ManualStep.recognize, DialogBatchUi(context), block: i),
               icon: const Icon(Icons.abc, size: 20),
+            ),
+            IconButton(
+              tooltip: l.splitWordsBlock,
+              visualDensity: VisualDensity.compact,
+              onPressed: busy || widget.block.text.trim().isEmpty ? null : () => _splitWords(context, ref, block: i),
+              icon: const Icon(Icons.space_bar, size: 20),
             ),
             IconButton(
               tooltip: l.translateBlock,

@@ -62,6 +62,7 @@ class TextBlock {
     this.fontColor,
     this.direction = TextDirection.unknown,
     this.style,
+    this.linePx,
   })  : lines = lines ?? [],
         texts = texts ?? [],
         skippedSmallTexts = skippedSmallTexts ?? [],
@@ -110,6 +111,10 @@ class TextBlock {
 
   /// How the translation is drawn when the user changed it by hand.
   BlockStyle? style;
+
+  /// Median thickness of the text lines on the page (pixels), measured when
+  /// the block is read; null before. Not in the original.
+  double? linePx;
 
   BBox get bbox => xyxy;
   Point2 get center => xyxy.center;
@@ -163,6 +168,7 @@ class TextBlock {
         fontColor: fontColor == null ? null : List.of(fontColor!),
         direction: direction,
         style: style,
+        linePx: linePx,
       )..text = text;
 
   /// JSON with the original attribute names, so artifacts can be compared
@@ -190,6 +196,7 @@ class TextBlock {
         'font_color': fontColor,
         'direction': direction.id,
         if (style != null && !style!.isEmpty) 'style': style!.toJson(),
+        if (linePx != null) 'line_px': linePx,
       };
 
   factory TextBlock.fromJson(Map<String, Object?> json) {
@@ -218,6 +225,7 @@ class TextBlock {
       fontColor: parseColor(json['font_color']),
       direction: TextDirection.parse(json['direction'] as String?),
       style: json['style'] is Map ? BlockStyle.fromJson((json['style'] as Map).cast<String, Object?>()) : null,
+      linePx: (json['line_px'] as num?)?.toDouble(),
     );
     // `text` is stored explicitly; it may differ from texts.join(' ').
     block.text = json['text'] as String? ?? block.text;

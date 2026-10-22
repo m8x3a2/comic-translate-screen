@@ -1891,4 +1891,38 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get psdFeatureOpacity => 'непрозрачность слоёв';
+
+  @override
+  String get splitWords =>
+      'Разделить слипшиеся слова на этой странице или выбранных страницах (английский): «REALLIFE» станет «REAL LIFE»';
+
+  @override
+  String get splitWordsBlock =>
+      'Разделить слипшиеся слова в этом пузыре (английский)';
+
+  @override
+  String splitWordsDone(String count) {
+    return 'Разделено слов: $count. Отменить — Ctrl+Z.';
+  }
+
+  @override
+  String get splitWordsNone =>
+      'Слипшихся слов не найдено (проверяется только английский текст).';
+
+  @override
+  String get splitWordsMissing =>
+      'В папке программы нет словаря (data\\flutter_assets\\assets\\dict).';
+
+  @override
+  String get splitGluedWords =>
+      'Разделять слипшиеся английские слова сразу после распознавания';
+
+  @override
+  String get splitGluedWordsInfo =>
+      'На очень мелком тексте распознавание часто читает два слова как одно: «REALLIFE», «MYINSTINCTS». Слова, которых нет в словаре, делятся на слова из словаря; буквы не меняются. То же делает кнопка в панели «Текст» — для страницы или одного пузыря.';
+
+  @override
+  String smallTextWarning(String px) {
+    return 'Очень мелкий текст (строки около $px точек): слова могут слипаться, буквы — путаться. Снимок покрупнее распознается лучше. Переводчику об этом сказано.';
+  }
 }
