@@ -2107,7 +2107,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatCopyPrompt => 'Copy the instructions';
 
   @override
-  String get chatCopyOne => 'Click to copy only this picture';
+  String get chatCopyOne => 'Copy only this picture';
 
   @override
   String get chatShowPrompt => 'Instructions for the chat';
@@ -2176,8 +2176,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatNoArrow(String labels) {
-    return 'Without \"-->\" (all taken as the translation): $labels';
+  String chatNoArrow(String sep, String labels) {
+    return 'Without \"$sep\" (all taken as the translation): $labels';
   }
 
   @override
@@ -2311,4 +2311,99 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatPromptDefault => 'Back to the built-in one';
+
+  @override
+  String chatCopySelected(int count) {
+    return 'Copy the picked ($count)';
+  }
+
+  @override
+  String get chatSelectAll => 'Pick all';
+
+  @override
+  String get chatSelectNone => 'Pick none';
+
+  @override
+  String get chatGalleryOpen => 'Open the pictures large';
+
+  @override
+  String get chatGalleryPictures => 'Pictures';
+
+  @override
+  String get chatGalleryPieces => 'Pieces and sheets';
+
+  @override
+  String get chatPiecesHelp =>
+      'All the pieces in order. Click a piece to start a new sheet with it; click again to undo.';
+
+  @override
+  String chatGroupsNow(String groups) {
+    return 'Sheets: $groups';
+  }
+
+  @override
+  String get chatGroupsAuto => 'as set above';
+
+  @override
+  String get chatGroupsClear => 'Remove all breaks';
+
+  @override
+  String get chatGroupsApply => 'Use these sheets';
+
+  @override
+  String get chatNewSheetHere => 'A new sheet from here';
+
+  @override
+  String chatGroupsNumbers(String first, int count, String last) {
+    return '1 = [$first] … $count = [$last]';
+  }
+
+  @override
+  String get chatPromptChanged =>
+      'Instructions for the chat (changed this time)';
+
+  @override
+  String get chatPromptUndo => 'Undo my changes';
+
+  @override
+  String get chatPromptTemplate => 'Change for good…';
+
+  @override
+  String get chatOneField => 'One field';
+
+  @override
+  String get chatTwoFields => 'Two fields';
+
+  @override
+  String get chatOriginalField => 'Original';
+
+  @override
+  String get chatTranslationField => 'Translation';
+
+  @override
+  String get chatAnswerHintTranslation => '[01-003] translation';
+
+  @override
+  String get chatApart => 'Original and translation as two lists';
+
+  @override
+  String get chatApartHelp =>
+      'When reading and translating in one message: the chat writes all the originals, then ===, then all the translations; the answer goes into two fields.';
+
+  @override
+  String get chatPromptBothApart => 'Read and translate, two lists';
+
+  @override
+  String get chatSplitFiles => 'Original and translation in separate files';
+
+  @override
+  String get chatSplitFilesHelp =>
+      'ALL_original.txt for the original text and ALL_translation.txt for the translation only (the same for the page files).';
+
+  @override
+  String get chatSeparator => 'Between the original and the translation';
+
+  @override
+  String get chatSeparatorHelp =>
+      'Any sign, --> by default. It goes into the instructions; the usual arrows are understood as well.';
 }

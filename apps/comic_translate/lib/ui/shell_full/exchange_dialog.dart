@@ -8,6 +8,7 @@ import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,8 @@ import '../../state/app_state.dart';
 import '../../state/exchange.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
+import '../settings/settings_screen.dart';
+import 'exchange_gallery.dart';
 import 'main_screen.dart' show showInExplorer;
 
 /// Opens the exchange window for [request]; with [existing], the folder of
@@ -50,10 +53,29 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
   var _again = false;
   Timer? _debounce;
 
+  /// One folder for this window: the pictures are made again in it when
+  /// the options change, so what was copied never disappears.
+  Directory? _dir;
+
+  /// What the text files were written for: they are written again only
+  /// when it changes (the user may have written into them).
+  String? _textsKey;
+
   final _groups = TextEditingController();
   String? _groupsError;
 
+  /// The instructions, changed by the user for this time or not.
+  final _prompt = TextEditingController();
+  var _promptChanged = false;
+
+  /// Pictures picked for copying (file names); none: all of them.
+  final _selected = <String>{};
+  final _strip = ScrollController();
+
+  /// The answer; with two fields, [_answer] holds the originals and
+  /// [_answer2] the translations.
   final _answer = TextEditingController();
+  final _answer2 = TextEditingController();
   ExchangeMatch? _match;
 
   /// The answer came from the text files of the folder.
@@ -62,23 +84,36 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
   /// What the last copy did.
   String? _note;
 
+  ExchangeSettings get _options => ref.read(settingsProvider).exchange;
+
+  /// Two answer fields: reading and translating in one message, as two lists.
+  bool get _twoFields => _mode == ExchangeMode.both && _options.apart;
+
+  String get _separator => widget.existing?.separator ?? _options.separator;
+
   @override
   void initState() {
     super.initState();
     final existing = widget.existing;
     if (existing != null) {
       _export = existing.export;
+      _prompt.text = existing.export?.prompt ?? '';
+      _dir = Directory(existing.export?.dir ?? '');
     } else {
       unawaited(_rebuild());
     }
     _answer.addListener(_parse);
+    _answer2.addListener(_parse);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
     _groups.dispose();
+    _prompt.dispose();
+    _strip.dispose();
     _answer.dispose();
+    _answer2.dispose();
     super.dispose();
   }
 
@@ -105,12 +140,31 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
       _exportError = null;
     });
     try {
-      final dir = newExchangeDir(ref.read(servicesProvider).paths);
-      final out = await exportExchange(dir, ref.read(workspaceProvider), pages, _mode, settings, groups: groups);
+      final dir = _dir ??= newExchangeDir(ref.read(servicesProvider).paths);
+      final e = settings.exchange;
+      final textsKey = '${_mode.name}|${e.splitFiles}|${e.textFiles.name}';
+      final out = await exportExchange(
+        dir,
+        ref.read(workspaceProvider),
+        pages,
+        _mode,
+        settings,
+        groups: groups,
+        keepTexts: textsKey == _textsKey,
+        promptText: _promptChanged ? _prompt.text : null,
+      );
+      _textsKey = textsKey;
+      if (!mounted) return;
+      // The same image files are written again: show the new pictures.
+      for (final f in [...out.pictures, ...out.previews.values]) {
+        await FileImage(File(p.join(dir.path, f))).evict();
+      }
       if (!mounted) return;
       setState(() {
         _export = out;
         _note = null;
+        _selected.removeWhere((f) => !out.pictures.contains(f));
+        if (!_promptChanged) _prompt.text = out.prompt;
       });
       _parse();
     } catch (e, st) {
@@ -135,16 +189,44 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
     _rebuildSoon();
   }
 
+  /// Other instructions apply (mode or two fields changed): own changes of
+  /// this time go.
+  void _resetPrompt() => _promptChanged = false;
+
   void _parse() {
     final export = _export;
     if (export == null) return;
-    final text = _answer.text;
+    final sep = _separator;
+    final ExchangeAnswer? answer;
+    if (_twoFields) {
+      answer = _answer.text.trim().isEmpty && _answer2.text.trim().isEmpty
+          ? null
+          : mergeExchangeAnswers(
+              parseExchangeAnswer(_answer.text, ExchangeMode.recognize, separator: sep),
+              parseExchangeAnswer(_answer2.text, ExchangeMode.translate, separator: sep),
+            );
+    } else {
+      answer = _answer.text.trim().isEmpty ? null : parseExchangeAnswer(_answer.text, export.mode, separator: sep);
+    }
     setState(() {
       _fromFiles = null;
-      _match = text.trim().isEmpty
-          ? null
-          : matchExchangeAnswer(export.items, parseExchangeAnswer(text, export.mode), export.mode);
+      _match = answer == null ? null : matchExchangeAnswer(export.items, answer, export.mode);
     });
+  }
+
+  void _setAnswer(String text) {
+    if (_twoFields) {
+      if (splitExchangeLists(text) case (final originals, final translations)) {
+        _answer.text = originals;
+        _answer2.text = translations;
+      } else if (_answer.text.trim().isEmpty) {
+        _answer.text = text;
+      } else {
+        _answer2.text = text;
+      }
+    } else {
+      _answer.text = text;
+    }
   }
 
   Future<void> _fromTextFiles() async {
@@ -153,9 +235,11 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
     final dir = Directory(export.dir);
     final match = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
     if (!mounted) return;
-    _answer.removeListener(_parse);
-    _answer.clear();
-    _answer.addListener(_parse);
+    for (final c in [_answer, _answer2]) {
+      c.removeListener(_parse);
+      c.clear();
+      c.addListener(_parse);
+    }
     setState(() {
       _match = match;
       _fromFiles = {...match.sources.values}.toList()..sort();
@@ -169,31 +253,61 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
       ],
     );
     if (file == null) return;
-    _answer.text = await File(file.path).readAsString();
+    _setAnswer(await File(file.path).readAsString());
   }
 
   Future<void> _paste() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text case final text?) _answer.text = text;
+    if (data?.text case final text?) _setAnswer(text);
   }
 
-  void _copyPictures(List<String> files) {
+  /// Copies [files] (names in the folder); returns what happened.
+  String _copy(List<String> files) {
     final export = _export;
-    if (export == null) return;
     final l = context.l10n;
+    if (export == null) return '';
     final ok = copyFilesToClipboard([for (final f in files) p.join(export.dir, f)]);
-    setState(
-      () => _note = ok
-          ? (files.length == 1 ? l.chatCopiedOne(p.basename(files.single)) : l.chatCopiedPictures(files.length))
-          : l.chatCopyFailed,
-    );
+    return ok
+        ? (files.length == 1 ? l.chatCopiedOne(p.basename(files.single)) : l.chatCopiedPictures(files.length))
+        : l.chatCopyFailed;
   }
+
+  void _copyPictures(List<String> files) => setState(() => _note = _copy(files));
 
   Future<void> _copyPrompt() async {
+    await Clipboard.setData(ClipboardData(text: _prompt.text));
+    if (mounted) setState(() => _note = context.l10n.chatCopiedPrompt);
+  }
+
+  Future<void> _openGallery({bool pieces = false}) async {
     final export = _export;
     if (export == null) return;
-    await Clipboard.setData(ClipboardData(text: export.prompt));
-    if (mounted) setState(() => _note = context.l10n.chatCopiedPrompt);
+    final result = await showExchangeGallery(
+      context,
+      export,
+      selected: _selected,
+      groups: _groups.text,
+      onCopy: _copy,
+      pieces: pieces,
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _selected
+        ..clear()
+        ..addAll(result.selected);
+    });
+    if (result.groups case final groups?) {
+      _groups.text = groups;
+      unawaited(_rebuild());
+    }
+  }
+
+  Future<void> _editTemplate() async {
+    await Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen(initial: SettingsSection.exchange)));
+    if (!mounted) return;
+    setState(_resetPrompt);
+    unawaited(_rebuild());
   }
 
   void _apply() {
@@ -261,6 +375,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
                         setState(() {
                           _mode = s.first;
                           _match = null;
+                          _resetPrompt();
                         });
                         unawaited(_rebuild());
                       },
@@ -282,7 +397,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Room for the floating labels of the fields.
-                        if (!existing) Padding(padding: const EdgeInsets.only(top: 8), child: _options(l)),
+                        if (!existing) Padding(padding: const EdgeInsets.only(top: 8), child: _optionsRow(l, theme)),
                         const SizedBox(height: 12),
                         if (c.maxWidth >= 1000)
                           Row(
@@ -329,16 +444,17 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
     );
   }
 
-  Widget _options(AppLocalizations l) {
+  Widget _optionsRow(AppLocalizations l, ThemeData theme) {
     final s = ref.watch(settingsProvider.select((s) => s.exchange));
     final sheets = _mode.sendsImages;
-    Widget dropdown<T>(String label, T value, Map<T, String> items, void Function(T v) onChanged) => SizedBox(
+    final items = _export?.items ?? const <ExchangeItem>[];
+    Widget dropdown<T>(String label, T value, Map<T, String> options, void Function(T v) onChanged) => SizedBox(
       width: 200,
       child: DropdownButtonFormField<T>(
         initialValue: value,
         isDense: true,
         decoration: InputDecoration(labelText: label, isDense: true, border: const OutlineInputBorder()),
-        items: [for (final e in items.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+        items: [for (final e in options.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
         onChanged: (v) {
           if (v != null) onChanged(v);
         },
@@ -356,7 +472,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
           }, (v) => _changeOptions((e) => e.copyWith(grouping: v))),
           if (s.grouping == SheetGrouping.count)
             dropdown(l.chatPerSheet, s.perSheet, {
-              for (final n in {2, 4, 6, 8, 10, 12, 16, 20, 30, s.perSheet}.toList()..sort()) n: '$n',
+              for (final n in {1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 30, s.perSheet}.toList()..sort()) n: '$n',
             }, (v) => _changeOptions((e) => e.copyWith(perSheet: v))),
           dropdown(l.chatSheetSize, s.sheetMaxPx, {
             for (final n in {1200, 1600, 2000, 2400, 3000, s.sheetMaxPx}.toList()..sort()) n: '$n px',
@@ -369,16 +485,25 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
         }, (v) => _changeOptions((e) => e.copyWith(contextImage: v))),
         if (sheets) ...[
           SizedBox(
-            width: 200,
+            width: 220,
             child: TextField(
               controller: _groups,
               decoration: InputDecoration(
                 labelText: l.chatGroups,
                 hintText: l.chatGroupsHint,
+                // Which number is which piece.
+                helperText: items.isEmpty
+                    ? null
+                    : l.chatGroupsNumbers(items.first.label.code, items.length, items.last.label.code),
                 errorText: _groupsError,
                 errorMaxLines: 3,
                 isDense: true,
                 border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  tooltip: l.chatGalleryPieces,
+                  onPressed: _export == null || _export!.previews.isEmpty ? null : () => _openGallery(pieces: true),
+                  icon: const Icon(Icons.content_cut),
+                ),
               ),
               onChanged: (_) => _rebuildSoon(),
             ),
@@ -396,6 +521,10 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
   Widget _sendCard(AppLocalizations l, ThemeData theme) {
     final export = _export;
     final pictures = export?.pictures ?? const <String>[];
+    final picked = [
+      for (final f in pictures)
+        if (_selected.contains(f)) f,
+    ];
     return Card.outlined(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -422,18 +551,27 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   if (pictures.isNotEmpty)
                     FilledButton.tonalIcon(
-                      onPressed: () => _copyPictures(pictures),
+                      onPressed: () => _copyPictures(picked.isEmpty ? pictures : picked),
                       icon: const Icon(Icons.collections_outlined),
-                      label: Text(l.chatCopyPictures(pictures.length)),
+                      label: Text(
+                        picked.isEmpty ? l.chatCopyPictures(pictures.length) : l.chatCopySelected(picked.length),
+                      ),
                     ),
                   FilledButton.tonalIcon(
                     onPressed: _copyPrompt,
                     icon: const Icon(Icons.content_copy),
                     label: Text(l.chatCopyPrompt),
                   ),
+                  if (pictures.isNotEmpty)
+                    IconButton(
+                      tooltip: l.chatGalleryOpen,
+                      onPressed: _openGallery,
+                      icon: const Icon(Icons.open_in_full),
+                    ),
                   if (_exporting)
                     const Padding(
                       padding: EdgeInsets.all(8),
@@ -445,34 +583,43 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
                 const SizedBox(height: 8),
                 Text(_note!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
               ],
-              if (pictures.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 132,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: pictures.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) => _Thumb(
-                      file: p.join(export.dir, pictures[i]),
-                      name: pictures[i],
-                      tooltip: l.chatCopyOne,
-                      onTap: () => _copyPictures([pictures[i]]),
-                    ),
-                  ),
-                ),
-              ],
+              if (pictures.isNotEmpty) ...[const SizedBox(height: 12), _pictureStrip(l, export, pictures)],
               const SizedBox(height: 4),
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
-                title: Text(l.chatShowPrompt, style: theme.textTheme.bodyMedium),
+                title: Text(_promptChanged ? l.chatPromptChanged : l.chatShowPrompt, style: theme.textTheme.bodyMedium),
                 children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    constraints: const BoxConstraints(maxHeight: 220),
-                    child: SingleChildScrollView(child: SelectableText(export.prompt)),
+                  TextField(
+                    controller: _prompt,
+                    minLines: 6,
+                    maxLines: 14,
+                    style: const TextStyle(fontSize: 13),
+                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                    onChanged: (_) {
+                      if (!_promptChanged) setState(() => _promptChanged = true);
+                    },
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      if (_promptChanged)
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _resetPrompt();
+                              _prompt.text = export.prompt;
+                            });
+                            unawaited(_rebuild());
+                          },
+                          child: Text(l.chatPromptUndo),
+                        ),
+                      TextButton.icon(
+                        onPressed: _editTemplate,
+                        icon: const Icon(Icons.tune),
+                        label: Text(l.chatPromptTemplate),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -483,20 +630,99 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
     );
   }
 
+  /// The pictures in a row: the wheel scrolls it sideways, arrows at the
+  /// ends, a tick on each to pick it for copying.
+  Widget _pictureStrip(AppLocalizations l, ExchangeExport export, List<String> pictures) {
+    void by(double dx) {
+      if (!_strip.hasClients) return;
+      final to = (_strip.offset + dx).clamp(0.0, _strip.position.maxScrollExtent);
+      unawaited(_strip.animateTo(to, duration: const Duration(milliseconds: 200), curve: Curves.easeOut));
+    }
+
+    return Row(
+      children: [
+        IconButton(onPressed: () => by(-320), icon: const Icon(Icons.chevron_left)),
+        Expanded(
+          child: Listener(
+            onPointerSignal: (e) {
+              if (e is PointerScrollEvent && _strip.hasClients) {
+                final d = e.scrollDelta.dx != 0 ? e.scrollDelta.dx : e.scrollDelta.dy;
+                _strip.jumpTo((_strip.offset + d).clamp(0.0, _strip.position.maxScrollExtent));
+              }
+            },
+            child: Scrollbar(
+              controller: _strip,
+              thumbVisibility: true,
+              child: SizedBox(
+                height: 168,
+                child: ListView.separated(
+                  controller: _strip,
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(bottom: 14),
+                  itemCount: pictures.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final f = pictures[i];
+                    return _Thumb(
+                      file: p.join(export.dir, f),
+                      name: f,
+                      range: pieceRange(export, f),
+                      selected: _selected.contains(f),
+                      onToggle: () => setState(() => _selected.contains(f) ? _selected.remove(f) : _selected.add(f)),
+                      onCopy: () => _copyPictures([f]),
+                      copyTooltip: l.chatCopyOne,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+        IconButton(onPressed: () => by(320), icon: const Icon(Icons.chevron_right)),
+      ],
+    );
+  }
+
   Widget _answerCard(AppLocalizations l, ThemeData theme) {
     final match = _match;
     final total = _export?.items.length ?? 0;
     final warn = TextStyle(color: theme.colorScheme.error);
+    final s = ref.watch(settingsProvider.select((s) => s.exchange));
+    final two = _mode == ExchangeMode.both && s.apart;
+    final sep = _separator;
+    TextField field(TextEditingController c, String hint, {String? label}) => TextField(
+      controller: c,
+      minLines: two ? 5 : 6,
+      maxLines: 9,
+      style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
+      decoration: InputDecoration(labelText: label, hintText: hint, border: const OutlineInputBorder()),
+    );
     return Card.outlined(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l.chatStep2, style: theme.textTheme.titleMedium),
+            Row(
+              children: [
+                Expanded(child: Text(l.chatStep2, style: theme.textTheme.titleMedium)),
+                if (_mode == ExchangeMode.both && widget.existing == null)
+                  SegmentedButton<bool>(
+                    showSelectedIcon: false,
+                    segments: [
+                      ButtonSegment(value: false, label: Text(l.chatOneField)),
+                      ButtonSegment(value: true, label: Text(l.chatTwoFields)),
+                    ],
+                    selected: {s.apart},
+                    onSelectionChanged: (v) {
+                      setState(_resetPrompt);
+                      unawaited(_changeOptions((e) => e.copyWith(apart: v.first)).then((_) => _parse()));
+                    },
+                  ),
+              ],
+            ),
             const SizedBox(height: 8),
             if (match != null) ...[
-              const SizedBox(height: 4),
               Text(
                 l.chatFound(match.replies.length, total),
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -507,20 +733,16 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
               if (_fromFiles case final files? when files.isNotEmpty) Text(l.chatFromFilesNote(files.join(', '))),
               if (match.missing.isNotEmpty) Text(l.chatMissing(_codes(match.missing)), style: warn),
               if (match.unknown.isNotEmpty) Text(l.chatUnknown(_codes(match.unknown)), style: warn),
-              if (match.missingArrow.isNotEmpty) Text(l.chatNoArrow(_codes(match.missingArrow)), style: warn),
+              if (match.missingArrow.isNotEmpty) Text(l.chatNoArrow(sep, _codes(match.missingArrow)), style: warn),
               if (match.repeated.isNotEmpty) Text(l.chatRepeated(_codes(match.repeated))),
+              const SizedBox(height: 8),
             ],
-            if (match != null) const SizedBox(height: 8),
-            TextField(
-              controller: _answer,
-              minLines: 6,
-              maxLines: 9,
-              style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
-              decoration: InputDecoration(
-                hintText: _mode == ExchangeMode.both ? l.chatAnswerHintBoth : l.chatAnswerHint,
-                border: const OutlineInputBorder(),
-              ),
-            ),
+            if (two) ...[
+              field(_answer, l.chatAnswerHint, label: l.chatOriginalField),
+              const SizedBox(height: 8),
+              field(_answer2, l.chatAnswerHintTranslation, label: l.chatTranslationField),
+            ] else
+              field(_answer, _mode == ExchangeMode.both ? "[01-003] I'M LATE! $sep Я ОПОЗДАЛ!" : l.chatAnswerHint),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -562,34 +784,66 @@ String _modeLabel(AppLocalizations l, ExchangeMode mode) => switch (mode) {
 };
 
 class _Thumb extends StatelessWidget {
-  const _Thumb({required this.file, required this.name, required this.tooltip, required this.onTap});
+  const _Thumb({
+    required this.file,
+    required this.name,
+    required this.range,
+    required this.selected,
+    required this.onToggle,
+    required this.onCopy,
+    required this.copyTooltip,
+  });
 
   final String file;
   final String name;
-  final String tooltip;
-  final VoidCallback onTap;
+
+  /// Running numbers of the pieces on it (`1–4`).
+  final String range;
+  final bool selected;
+  final VoidCallback onToggle;
+  final VoidCallback onCopy;
+  final String copyTooltip;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(6),
-        child: Column(
-          children: [
-            Container(
-              height: 108,
-              constraints: const BoxConstraints(minWidth: 60, maxWidth: 220),
-              decoration: BoxDecoration(border: Border.all(color: theme.dividerColor)),
-              child: Image.file(File(file), fit: BoxFit.contain, cacheHeight: 216),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            height: 108,
+            constraints: const BoxConstraints(minWidth: 60, maxWidth: 220),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: selected ? theme.colorScheme.primary : theme.dividerColor,
+                width: selected ? 3 : 1,
+              ),
             ),
-            const SizedBox(height: 4),
-            Text(name, style: theme.textTheme.labelSmall),
+            child: Image.file(File(file), fit: BoxFit.contain, cacheHeight: 216),
+          ),
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: Checkbox(value: selected, onChanged: (_) => onToggle()),
+            ),
+            Text(range.isEmpty ? name : range, style: theme.textTheme.labelSmall),
+            IconButton(
+              tooltip: copyTooltip,
+              visualDensity: VisualDensity.compact,
+              iconSize: 16,
+              onPressed: onCopy,
+              icon: const Icon(Icons.content_copy),
+            ),
           ],
         ),
-      ),
+      ],
     );
   }
 }

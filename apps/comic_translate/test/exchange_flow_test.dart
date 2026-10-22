@@ -245,4 +245,60 @@ void main() {
     expect(applied, isTrue);
     expect([for (final b in pages().first.blocks) b.translation], ['Привет', '']);
   });
+
+  testWidgets('two fields: originals and translations apart, an answer with === splits itself', (tester) async {
+    final settings = fakeSettings();
+    settings.exchange = settings.exchange.copyWith(apart: true);
+    await tester.runAsync(() => start(settings));
+    final id = pages().first.id;
+    container
+        .read(workspaceProvider.notifier)
+        .edit(
+          id,
+          (p) => p.copyWith(
+            blocks: [
+              TextBlock(xyxy: const BBox(10, 10, 50, 30)),
+              TextBlock(xyxy: const BBox(10, 35, 50, 55)),
+            ],
+          ),
+        );
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showExchangeDialog(context, ExchangeRequest(pageIds: [id], mode: ExchangeMode.both)),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    for (var i = 0; i < 80 && find.text('Копировать картинки (1)').evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+    }
+    expect(find.text('Копировать картинки (1)'), findsOneWidget);
+    final folder = Directory(p.join(dir.path, 'exchange')).listSync().single.path;
+    expect(File(p.join(folder, 'prompt.txt')).readAsStringSync(), contains('Then a line with only ==='));
+
+    final original = find.widgetWithText(TextField, 'Оригинал');
+    final translation = find.widgetWithText(TextField, 'Перевод');
+    await tester.enterText(original, '[01-001] Hi\n[01-002] Bye');
+    await tester.enterText(translation, '[01-001] Привет');
+    await tester.pump();
+    expect(find.text('Найдено ответов: 2 из 2'), findsOneWidget);
+
+    await tester.tap(find.text('Применить'));
+    await tester.pumpAndSettle();
+    expect([for (final b in pages().first.blocks) (b.text, b.translation)], [('Hi', 'Привет'), ('Bye', '')]);
+  });
 }

@@ -944,10 +944,11 @@ class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
     final l = context.l10n;
     final e = ref.watch(settingsProvider.select((s) => s.exchange));
     void set(ExchangeSettings Function(ExchangeSettings e) f) => _change(ref, (s) => s.exchange = f(s.exchange));
-    final modes = {
-      ExchangeMode.both: l.chatModeBoth,
-      ExchangeMode.recognize: l.chatModeRecognize,
-      ExchangeMode.translate: l.chatModeTranslate,
+    final kinds = {
+      ExchangePrompt.both: l.chatModeBoth,
+      ExchangePrompt.bothApart: l.chatPromptBothApart,
+      ExchangePrompt.recognize: l.chatModeRecognize,
+      ExchangePrompt.translate: l.chatModeTranslate,
     };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -957,6 +958,7 @@ class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
             Text(l.chatSettingsHelp, style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 8),
             _switch(l.chatTogether, e.together, (v) => set((e) => e.copyWith(together: v)), help: l.chatTogetherHelp),
+            _switch(l.chatApart, e.apart, (v) => set((e) => e.copyWith(apart: v)), help: l.chatApartHelp),
           ],
         ),
         SettingsGroup(
@@ -1039,17 +1041,31 @@ class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
               help: l.chatPlaceholderHelp,
               onChanged: (v) => set((e) => e.copyWith(placeholder: v)),
             ),
+            _switch(
+              l.chatSplitFiles,
+              e.splitFiles,
+              (v) => set((e) => e.copyWith(splitFiles: v)),
+              help: l.chatSplitFilesHelp,
+            ),
+            DebouncedTextField(
+              key: const ValueKey('exchange.separator'),
+              value: e.separator,
+              label: l.chatSeparator,
+              help: l.chatSeparatorHelp,
+              onChanged: (v) =>
+                  set((e) => e.copyWith(separator: v.trim().isEmpty ? defaultExchangeSeparator : v.trim())),
+            ),
           ],
         ),
         SettingsGroup(
           title: l.chatPromptsTitle,
           children: [
             Text(
-              l.chatPromptsHelp('{source}, {target}, {labels}, {lines}, {context}, {pictures}, {kind}'),
+              l.chatPromptsHelp('{source}, {target}, {labels}, {lines}, {context}, {pictures}, {kind}, {separator}'),
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
-            for (final m in modes.entries) ...[
+            for (final m in kinds.entries) ...[
               DebouncedTextField(
                 key: ValueKey('exchange.prompt.${m.key.name}.$_promptResets'),
                 value: e.promptFor(m.key).isEmpty ? defaultExchangePrompts[m.key]! : e.promptFor(m.key),

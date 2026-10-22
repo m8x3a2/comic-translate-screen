@@ -37,10 +37,12 @@ List<ExchangeMode> chatRounds(AppSettings settings, {bool read = true, bool tran
   return [if (r) ExchangeMode.recognize, if (t) ExchangeMode.translate];
 }
 
-/// Exchange folders kept in the data folder (older ones are removed).
+/// Exchange folders kept in the data folder (older ones are removed when a
+/// new exchange window opens, never while one is open).
 const keptExchangeFolders = 20;
 
-/// A new folder under `exchange` in the data folder.
+/// A new folder under `exchange` in the data folder, one per exchange
+/// window.
 Directory newExchangeDir(AppPaths paths) {
   final root = Directory(p.join(paths.root.path, 'exchange'))..createSync(recursive: true);
   final old = root.listSync().whereType<Directory>().toList()..sort((a, b) => b.path.compareTo(a.path));
@@ -69,7 +71,8 @@ List<ExchangePage> exchangePages(WorkspaceState ws, ExchangeRequest request) => 
       ExchangePage(id: id, number: i + 1, name: ws.pages[i].name, blocks: ws.pages[i].blocks, only: request.only[id]),
 ];
 
-/// Writes the exchange folder for [pages] in the background.
+/// Writes the exchange folder for [pages] in the background (see
+/// [writeExchange] for [keepTexts] and [promptText]).
 Future<ExchangeExport> exportExchange(
   Directory dir,
   WorkspaceState ws,
@@ -77,6 +80,8 @@ Future<ExchangeExport> exportExchange(
   ExchangeMode mode,
   AppSettings settings, {
   List<List<int>> groups = const [],
+  bool keepTexts = false,
+  String? promptText,
 }) {
   final first = ws.byId(pages.isEmpty ? '' : pages.first.id);
   final source = first?.sourceOf(settings) ?? settings.sourceLanguage;
@@ -109,6 +114,9 @@ Future<ExchangeExport> exportExchange(
       extraContext: context,
       screens: screens,
       groups: groups,
+      keepTexts: keepTexts,
+      promptText: promptText,
+      previews: true,
     );
   });
 }

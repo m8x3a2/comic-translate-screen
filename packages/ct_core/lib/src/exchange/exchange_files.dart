@@ -94,6 +94,7 @@ class ExchangeExport {
     this.contexts = const [],
     this.crops = const [],
     this.previews = const {},
+    this.sheetLabels = const {},
   });
 
   final String dir;
@@ -105,6 +106,9 @@ class ExchangeExport {
   final List<String> sheets;
   final List<String> contexts;
   final List<String> crops;
+
+  /// The labels on each sheet (file → label codes, in order).
+  final Map<String, List<String>> sheetLabels;
 
   /// Small pictures of the pieces for the app's own view (label code → file
   /// in [dir]); not for the chat.
@@ -304,6 +308,7 @@ Future<ExchangeExport> writeExchange(
     contexts: contexts,
     crops: crops,
     previews: previewFiles,
+    sheetLabels: {for (final (n, s) in sheets.indexed) s: sheetLabels[n]},
   );
 }
 
@@ -356,6 +361,10 @@ class ExchangeManifest {
         items: items,
         prompt: await promptFile.exists() ? await promptFile.readAsString() : '',
         sheets: [for (final s in (json['sheets'] as List? ?? const [])) (s as Map)['file'] as String],
+        sheetLabels: {
+          for (final s in (json['sheets'] as List? ?? const []))
+            (s as Map)['file'] as String: [...?(s['labels'] as List?)?.whereType<String>()],
+        },
         contexts: [...?(json['contexts'] as List?)?.whereType<String>()],
         crops: [...?(json['crops'] as List?)?.whereType<String>()],
       ),

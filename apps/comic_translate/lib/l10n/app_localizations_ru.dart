@@ -2110,7 +2110,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatCopyPrompt => 'Копировать инструкцию';
 
   @override
-  String get chatCopyOne => 'Щелчок — скопировать только эту картинку';
+  String get chatCopyOne => 'Скопировать только эту картинку';
 
   @override
   String get chatShowPrompt => 'Инструкция для чата';
@@ -2179,8 +2179,8 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String chatNoArrow(String labels) {
-    return 'Без «-->» (всё взято как перевод): $labels';
+  String chatNoArrow(String sep, String labels) {
+    return 'Без «$sep» (всё взято как перевод): $labels';
   }
 
   @override
@@ -2314,4 +2314,98 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get chatPromptDefault => 'Вернуть стандартную';
+
+  @override
+  String chatCopySelected(int count) {
+    return 'Копировать выбранные ($count)';
+  }
+
+  @override
+  String get chatSelectAll => 'Выбрать все';
+
+  @override
+  String get chatSelectNone => 'Снять выбор';
+
+  @override
+  String get chatGalleryOpen => 'Раскрыть картинки крупно';
+
+  @override
+  String get chatGalleryPictures => 'Картинки';
+
+  @override
+  String get chatGalleryPieces => 'Пузыри и листы';
+
+  @override
+  String get chatPiecesHelp =>
+      'Все пузыри по порядку. Щёлкните пузырь — с него начнётся новый лист; ещё раз — отменить.';
+
+  @override
+  String chatGroupsNow(String groups) {
+    return 'Листы: $groups';
+  }
+
+  @override
+  String get chatGroupsAuto => 'как задано в окне';
+
+  @override
+  String get chatGroupsClear => 'Убрать все разрывы';
+
+  @override
+  String get chatGroupsApply => 'Применить листы';
+
+  @override
+  String get chatNewSheetHere => 'Новый лист отсюда';
+
+  @override
+  String chatGroupsNumbers(String first, int count, String last) {
+    return '1 = [$first] … $count = [$last]';
+  }
+
+  @override
+  String get chatPromptChanged => 'Инструкция для чата (изменена на этот раз)';
+
+  @override
+  String get chatPromptUndo => 'Отменить мои правки';
+
+  @override
+  String get chatPromptTemplate => 'Изменить насовсем…';
+
+  @override
+  String get chatOneField => 'Одно поле';
+
+  @override
+  String get chatTwoFields => 'Два поля';
+
+  @override
+  String get chatOriginalField => 'Оригинал';
+
+  @override
+  String get chatTranslationField => 'Перевод';
+
+  @override
+  String get chatAnswerHintTranslation => '[01-003] перевод';
+
+  @override
+  String get chatApart => 'Оригинал и перевод двумя списками';
+
+  @override
+  String get chatApartHelp =>
+      'Когда распознаём и переводим одним сообщением: чат пишет все оригиналы, потом ===, потом все переводы; ответ раскладывается по двум полям.';
+
+  @override
+  String get chatPromptBothApart => 'Распознать и перевести двумя списками';
+
+  @override
+  String get chatSplitFiles => 'Оригинал и перевод в разных файлах';
+
+  @override
+  String get chatSplitFilesHelp =>
+      'ALL_original.txt — текст оригинала, ALL_translation.txt — только перевод (так же для файлов страниц).';
+
+  @override
+  String get chatSeparator => 'Между оригиналом и переводом';
+
+  @override
+  String get chatSeparatorHelp =>
+      'Любой знак, по умолчанию -->. Он попадёт в инструкцию для чата; обычные стрелки тоже понимаются.';
 }

@@ -35,18 +35,7 @@ final _globalFree = _kernel32.lookupFunction<IntPtr Function(IntPtr), int Functi
 /// program holds the clipboard, or not on Windows).
 bool copyFilesToClipboard(List<String> paths) {
   if (!Platform.isWindows || paths.isEmpty) return false;
-  // DROPFILES: offset of the list, a point, two flags (wide names); then the
-  // names, each ending with a zero, and one more zero at the end.
-  final names = [for (final path in paths) ...File(path).absolute.path.codeUnits, 0];
-  names.add(0);
-  final header = ByteData(20)
-    ..setUint32(0, 20, Endian.little)
-    ..setUint32(16, 1, Endian.little);
-  final bytes = Uint8List(20 + names.length * 2)..setRange(0, 20, header.buffer.asUint8List());
-  for (final (i, c) in names.indexed) {
-    bytes[20 + i * 2] = c & 0xff;
-    bytes[21 + i * 2] = c >> 8;
-  }
+  final bytes = dropFiles([for (final path in paths) File(path).absolute.path]);
   final effect = Uint8List(4)..buffer.asByteData().setUint32(0, _dropEffectCopy, Endian.little);
 
   for (var attempt = 0; attempt < 5; attempt++) {
@@ -67,6 +56,25 @@ bool copyFilesToClipboard(List<String> paths) {
   } finally {
     _closeClipboard();
   }
+}
+
+/// The clipboard's file list (DROPFILES): offset of the list, a point, two
+/// flags (wide names); then the names, each ending with a zero, and one more
+/// zero at the end.
+Uint8List dropFiles(List<String> paths) {
+  final names = [
+    for (final path in paths) ...[...path.codeUnits, 0],
+    0,
+  ];
+  final bytes = Uint8List(20 + names.length * 2);
+  bytes.buffer.asByteData()
+    ..setUint32(0, 20, Endian.little)
+    ..setUint32(16, 1, Endian.little);
+  for (final (i, c) in names.indexed) {
+    bytes[20 + i * 2] = c & 0xff;
+    bytes[21 + i * 2] = c >> 8;
+  }
+  return bytes;
 }
 
 bool _put(int format, Uint8List data) {

@@ -3695,7 +3695,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatCopyOne.
   ///
   /// In en, this message translates to:
-  /// **'Click to copy only this picture'**
+  /// **'Copy only this picture'**
   String get chatCopyOne;
 
   /// No description provided for @chatShowPrompt.
@@ -3803,8 +3803,8 @@ abstract class AppLocalizations {
   /// No description provided for @chatNoArrow.
   ///
   /// In en, this message translates to:
-  /// **'Without \"-->\" (all taken as the translation): {labels}'**
-  String chatNoArrow(String labels);
+  /// **'Without \"{sep}\" (all taken as the translation): {labels}'**
+  String chatNoArrow(String sep, String labels);
 
   /// No description provided for @chatRepeated.
   ///
@@ -4033,6 +4033,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back to the built-in one'**
   String get chatPromptDefault;
+
+  /// No description provided for @chatCopySelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the picked ({count})'**
+  String chatCopySelected(int count);
+
+  /// No description provided for @chatSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick all'**
+  String get chatSelectAll;
+
+  /// No description provided for @chatSelectNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick none'**
+  String get chatSelectNone;
+
+  /// No description provided for @chatGalleryOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the pictures large'**
+  String get chatGalleryOpen;
+
+  /// No description provided for @chatGalleryPictures.
+  ///
+  /// In en, this message translates to:
+  /// **'Pictures'**
+  String get chatGalleryPictures;
+
+  /// No description provided for @chatGalleryPieces.
+  ///
+  /// In en, this message translates to:
+  /// **'Pieces and sheets'**
+  String get chatGalleryPieces;
+
+  /// No description provided for @chatPiecesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'All the pieces in order. Click a piece to start a new sheet with it; click again to undo.'**
+  String get chatPiecesHelp;
+
+  /// No description provided for @chatGroupsNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheets: {groups}'**
+  String chatGroupsNow(String groups);
+
+  /// No description provided for @chatGroupsAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'as set above'**
+  String get chatGroupsAuto;
+
+  /// No description provided for @chatGroupsClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all breaks'**
+  String get chatGroupsClear;
+
+  /// No description provided for @chatGroupsApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Use these sheets'**
+  String get chatGroupsApply;
+
+  /// No description provided for @chatNewSheetHere.
+  ///
+  /// In en, this message translates to:
+  /// **'A new sheet from here'**
+  String get chatNewSheetHere;
+
+  /// No description provided for @chatGroupsNumbers.
+  ///
+  /// In en, this message translates to:
+  /// **'1 = [{first}] … {count} = [{last}]'**
+  String chatGroupsNumbers(String first, int count, String last);
+
+  /// No description provided for @chatPromptChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions for the chat (changed this time)'**
+  String get chatPromptChanged;
+
+  /// No description provided for @chatPromptUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo my changes'**
+  String get chatPromptUndo;
+
+  /// No description provided for @chatPromptTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Change for good…'**
+  String get chatPromptTemplate;
+
+  /// No description provided for @chatOneField.
+  ///
+  /// In en, this message translates to:
+  /// **'One field'**
+  String get chatOneField;
+
+  /// No description provided for @chatTwoFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Two fields'**
+  String get chatTwoFields;
+
+  /// No description provided for @chatOriginalField.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get chatOriginalField;
+
+  /// No description provided for @chatTranslationField.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation'**
+  String get chatTranslationField;
+
+  /// No description provided for @chatAnswerHintTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'[01-003] translation'**
+  String get chatAnswerHintTranslation;
+
+  /// No description provided for @chatApart.
+  ///
+  /// In en, this message translates to:
+  /// **'Original and translation as two lists'**
+  String get chatApart;
+
+  /// No description provided for @chatApartHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'When reading and translating in one message: the chat writes all the originals, then ===, then all the translations; the answer goes into two fields.'**
+  String get chatApartHelp;
+
+  /// No description provided for @chatPromptBothApart.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and translate, two lists'**
+  String get chatPromptBothApart;
+
+  /// No description provided for @chatSplitFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Original and translation in separate files'**
+  String get chatSplitFiles;
+
+  /// No description provided for @chatSplitFilesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'ALL_original.txt for the original text and ALL_translation.txt for the translation only (the same for the page files).'**
+  String get chatSplitFilesHelp;
+
+  /// No description provided for @chatSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **'Between the original and the translation'**
+  String get chatSeparator;
+
+  /// No description provided for @chatSeparatorHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Any sign, --> by default. It goes into the instructions; the usual arrows are understood as well.'**
+  String get chatSeparatorHelp;
 }
 
 class _AppLocalizationsDelegate

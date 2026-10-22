@@ -1350,7 +1350,7 @@
     }
   },
   "chatCopyPrompt": "Copy the instructions",
-  "chatCopyOne": "Click to copy only this picture",
+  "chatCopyOne": "Copy only this picture",
   "chatShowPrompt": "Instructions for the chat",
   "chatOpenFolder": "Open the folder",
   "chatCopiedPictures": "Pictures copied: {count}. Paste them into the chat: Ctrl+V.",
@@ -1413,9 +1413,12 @@
       }
     }
   },
-  "chatNoArrow": "Without \"-->\" (all taken as the translation): {labels}",
+  "chatNoArrow": "Without \"{sep}\" (all taken as the translation): {labels}",
   "@chatNoArrow": {
     "placeholders": {
+      "sep": {
+        "type": "String"
+      },
       "labels": {
         "type": "String"
       }
@@ -1486,5 +1489,60 @@
       }
     }
   },
-  "chatPromptDefault": "Back to the built-in one"
+  "chatPromptDefault": "Back to the built-in one",
+  "chatCopySelected": "Copy the picked ({count})",
+  "@chatCopySelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatSelectAll": "Pick all",
+  "chatSelectNone": "Pick none",
+  "chatGalleryOpen": "Open the pictures large",
+  "chatGalleryPictures": "Pictures",
+  "chatGalleryPieces": "Pieces and sheets",
+  "chatPiecesHelp": "All the pieces in order. Click a piece to start a new sheet with it; click again to undo.",
+  "chatGroupsNow": "Sheets: {groups}",
+  "@chatGroupsNow": {
+    "placeholders": {
+      "groups": {
+        "type": "String"
+      }
+    }
+  },
+  "chatGroupsAuto": "as set above",
+  "chatGroupsClear": "Remove all breaks",
+  "chatGroupsApply": "Use these sheets",
+  "chatNewSheetHere": "A new sheet from here",
+  "chatGroupsNumbers": "1 = [{first}] … {count} = [{last}]",
+  "@chatGroupsNumbers": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      },
+      "last": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPromptChanged": "Instructions for the chat (changed this time)",
+  "chatPromptUndo": "Undo my changes",
+  "chatPromptTemplate": "Change for good…",
+  "chatOneField": "One field",
+  "chatTwoFields": "Two fields",
+  "chatOriginalField": "Original",
+  "chatTranslationField": "Translation",
+  "chatAnswerHintTranslation": "[01-003] translation",
+  "chatApart": "Original and translation as two lists",
+  "chatApartHelp": "When reading and translating in one message: the chat writes all the originals, then ===, then all the translations; the answer goes into two fields.",
+  "chatPromptBothApart": "Read and translate, two lists",
+  "chatSplitFiles": "Original and translation in separate files",
+  "chatSplitFilesHelp": "ALL_original.txt for the original text and ALL_translation.txt for the translation only (the same for the page files).",
+  "chatSeparator": "Between the original and the translation",
+  "chatSeparatorHelp": "Any sign, --> by default. It goes into the instructions; the usual arrows are understood as well."
 }

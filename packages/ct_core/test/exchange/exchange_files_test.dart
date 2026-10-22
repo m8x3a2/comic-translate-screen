@@ -159,6 +159,10 @@ void main() {
       expect(out.prompt, contains('Pictures of the whole pages'));
       final manifest = jsonDecode(File(p.join(dir.path, 'exchange.json')).readAsStringSync()) as Map;
       expect((manifest['sheets'] as List).single['labels'], ['01-001', '01-002', '02-001']);
+      expect(out.sheetLabels, {
+        'sheet_01.png': ['01-001', '01-002', '02-001'],
+      });
+      expect((await ExchangeManifest.read(dir)).export!.sheetLabels, out.sheetLabels);
     });
 
     test('translate: only blocks with letters, the text in the prompt and in ALL.txt, no pictures', () async {
