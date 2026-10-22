@@ -272,4 +272,24 @@ void main() {
     expect(tester.getRect(note).right, lessThanOrEqualTo(tester.getRect(find.byType(TextPanel)).left));
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('the page taken away while the mouse button is down is no error', (tester) async {
+    final container = await openTranslatedPage(tester);
+    final canvas = find.byType(PageCanvas);
+    for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
+    await mouse.addPointer(location: tester.getCenter(canvas));
+    await mouse.down(tester.getCenter(canvas));
+    await tester.pump();
+    // The page goes (another page opened, pages removed) while the button is held.
+    container.read(workspaceProvider.notifier).remove(container.read(workspaceProvider).currentPage!.id);
+    await tester.pump();
+    await mouse.cancel();
+    await mouse.removePointer();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
 }

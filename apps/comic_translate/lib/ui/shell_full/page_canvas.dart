@@ -416,10 +416,13 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       cursor: _cursor(editor),
       onEnter: (_) => _inside = true,
       onHover: (e) => editor.paints ? setState(() => _hover = e.localPosition) : null,
-      onExit: (_) => setState(() {
+      // Exit and cancel also come when the page is taken away under the mouse (another page opened or the
+      // pages changed mid-drag): by then this state may be gone.
+      onExit: (_) {
         _hover = null;
         _inside = false;
-      }),
+        if (mounted) setState(() {});
+      },
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: _down,
@@ -428,7 +431,10 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           _move(e);
         },
         onPointerUp: _up,
-        onPointerCancel: (_) => setState(() => _drag = null),
+        onPointerCancel: (_) {
+          _drag = null;
+          if (mounted) setState(() {});
+        },
         child: Stack(
           clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
           children: [
