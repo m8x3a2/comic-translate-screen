@@ -3374,6 +3374,36 @@ abstract class AppLocalizations {
   /// **'On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.'**
   String get splitGluedWordsInfo;
 
+  /// No description provided for @modelLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Text line finder (PP-OCR)'**
+  String get modelLines;
+
+  /// No description provided for @modelLinesInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Finds lines of ordinary text for \"Sites and games\": screenshots, games, visual novels. Small and fast.'**
+  String get modelLinesInfo;
+
+  /// No description provided for @modelOpusEnRu.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline translation English → Russian (OPUS-MT)'**
+  String get modelOpusEnRu;
+
+  /// No description provided for @modelOpusRuEn.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline translation Russian → English (OPUS-MT)'**
+  String get modelOpusRuEn;
+
+  /// No description provided for @modelOpusInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Translates on this computer without internet or keys (translator \"Offline (OPUS-MT)\"). About 0.4–0.7 s per bubble. Licence CC-BY 4.0, Helsinki-NLP.'**
+  String get modelOpusInfo;
+
   /// No description provided for @panelHide.
   ///
   /// In en, this message translates to:

@@ -90,6 +90,18 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 - Very small text (new): each block remembers its line thickness on the page
   (`line_px`, measured before reading). Below 14 px the text panel warns, and
   the translator is told that words may be glued and letters misread.
+- Offline translation (new, `opus_mt`): OPUS-MT English ↔ Russian (Helsinki-NLP,
+  CC-BY 4.0; int8 ONNX exports of Xenova, 110 MB per direction) on the
+  processor (int8 models do not run on DirectML). The SentencePiece tokenizer
+  (`sentencepiece.dart`: model file, `nmt_nfkc` character map, unigram
+  Viterbi) and greedy decoding match the Python `sentencepiece` and the same
+  models run from Python (`test_data/reference/opus_mt.json`). Comic text is
+  prepared first: capitals in sentence case, hyphen breaks joined, each
+  sentence translated on its own (the models drop sentences of long inputs).
+  "Better" is a beam search of 4 (length-normalized, pad banned, as the
+  models' generation config). About 0.4 s (fast) / 0.7 s (better) per bubble
+  on the owner's i5-8265U. NLLB-200 600M was compared and left out (6× slower,
+  950 MB, invents text on short lines).
 - MI-GAN is not included (its download URL in the original returns 404).
 - Translator errors are sorted by kind (key refused, no credits, wrong address
   or model, no connection, rate limit, server error, timeout, unreadable

@@ -60,6 +60,9 @@ class OrtTensor {
   OrtTensor.uint8(Uint8List data, List<int> shape) : this._(OrtElementType.uint8, List.unmodifiable(shape), data);
   OrtTensor.float64(Float64List data, List<int> shape) : this._(OrtElementType.float64, List.unmodifiable(shape), data);
 
+  /// Booleans, one byte each (0 or 1).
+  OrtTensor.bool_(Uint8List data, List<int> shape) : this._(OrtElementType.bool_, List.unmodifiable(shape), data);
+
   final OrtElementType type;
   final List<int> shape;
   final TypedData data;

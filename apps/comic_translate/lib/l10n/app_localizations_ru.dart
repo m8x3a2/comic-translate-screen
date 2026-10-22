@@ -1922,6 +1922,23 @@ class AppLocalizationsRu extends AppLocalizations {
       'На очень мелком тексте распознавание часто читает два слова как одно: «REALLIFE», «MYINSTINCTS». Слова, которых нет в словаре, делятся на слова из словаря; буквы не меняются. То же делает кнопка в панели «Текст» — для страницы или одного пузыря.';
 
   @override
+  String get modelLines => 'Поиск строк текста (PP-OCR)';
+
+  @override
+  String get modelLinesInfo =>
+      'Находит строки обычного текста для «Сайтов и игр»: скриншоты, игры, визуальные новеллы. Небольшая и быстрая.';
+
+  @override
+  String get modelOpusEnRu => 'Офлайн-перевод английский → русский (OPUS-MT)';
+
+  @override
+  String get modelOpusRuEn => 'Офлайн-перевод русский → английский (OPUS-MT)';
+
+  @override
+  String get modelOpusInfo =>
+      'Переводит прямо на компьютере, без интернета и ключей (переводчик «Офлайн (OPUS-MT)»). Около 0,4–0,7 с на пузырь. Лицензия CC-BY 4.0, Helsinki-NLP.';
+
+  @override
   String panelHide(String name) {
     return 'Скрыть: $name';
   }

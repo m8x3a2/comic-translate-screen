@@ -273,9 +273,79 @@ abstract final class ModelCatalog {
     ],
   );
 
+  static const opusMtEnRu = ModelSpec(
+    id: 'opus-mt-en-ru',
+    displayName: 'OPUS-MT translator, English to Russian',
+    purpose: 'Offline translation from English to Russian',
+    license: 'CC-BY-4.0',
+    homepage: 'https://huggingface.co/Helsinki-NLP/opus-mt-en-ru',
+    files: [
+      ModelFile(
+        name: 'source.spm',
+        url: 'https://huggingface.co/Xenova/opus-mt-en-ru/resolve/main/source.spm',
+        sha256: '16bebef1389a0b8ab452772c4e35b9e605e5713f8ac7baa71ca701394eaa086d',
+        size: 802781,
+      ),
+      ModelFile(
+        name: 'vocab.json',
+        url: 'https://huggingface.co/Xenova/opus-mt-en-ru/resolve/main/vocab.json',
+        sha256: '5cf0d95d930d8d3e783c9e2f46a72f08b43a18060dab4ddefbcb66a733efedcb',
+        size: 2726796,
+      ),
+      ModelFile(
+        name: 'encoder_model_quantized.onnx',
+        url: 'https://huggingface.co/Xenova/opus-mt-en-ru/resolve/main/onnx/encoder_model_quantized.onnx',
+        sha256: '97f28d8295d231b7da721ded06fa8c034787df2122cd8f85b904abdc4d15bd53',
+        size: 51628446,
+      ),
+      ModelFile(
+        name: 'decoder_model_merged_quantized.onnx',
+        url: 'https://huggingface.co/Xenova/opus-mt-en-ru/resolve/main/onnx/decoder_model_merged_quantized.onnx',
+        sha256: '7efefcd793a5663bc204224a92a123524f3dfe2ffad59e5f73d6734d1b11ad04',
+        size: 58931576,
+      ),
+    ],
+  );
+
+  static const opusMtRuEn = ModelSpec(
+    id: 'opus-mt-ru-en',
+    displayName: 'OPUS-MT translator, Russian to English',
+    purpose: 'Offline translation from Russian to English',
+    license: 'CC-BY-4.0',
+    homepage: 'https://huggingface.co/Helsinki-NLP/opus-mt-ru-en',
+    files: [
+      ModelFile(
+        name: 'source.spm',
+        url: 'https://huggingface.co/Xenova/opus-mt-ru-en/resolve/main/source.spm',
+        sha256: '745998e51ba5b058e38b7ac7765c25c43ed5c1c39cc92b27163b9b2e323c9d7c',
+        size: 1080169,
+      ),
+      ModelFile(
+        name: 'vocab.json',
+        url: 'https://huggingface.co/Xenova/opus-mt-ru-en/resolve/main/vocab.json',
+        sha256: '5cf0d95d930d8d3e783c9e2f46a72f08b43a18060dab4ddefbcb66a733efedcb',
+        size: 2726796,
+      ),
+      ModelFile(
+        name: 'encoder_model_quantized.onnx',
+        url: 'https://huggingface.co/Xenova/opus-mt-ru-en/resolve/main/onnx/encoder_model_quantized.onnx',
+        sha256: 'c10df0466540534bb70c4402d539c349b8bfa9968184cad89f51408cf13e7eb7',
+        size: 51628446,
+      ),
+      ModelFile(
+        name: 'decoder_model_merged_quantized.onnx',
+        url: 'https://huggingface.co/Xenova/opus-mt-ru-en/resolve/main/onnx/decoder_model_merged_quantized.onnx',
+        sha256: '25e7ff97b201bce64ab9c39749761d657b70b8602bcbc1ce01c67f713e90ffdf',
+        size: 58931576,
+      ),
+    ],
+  );
+
   static const all = [
     rtdetrV2,
     ppocrDet,
+    opusMtEnRu,
+    opusMtRuEn,
     ppocrRecEn,
     ppocrRecLatin,
     ppocrRecEslav,

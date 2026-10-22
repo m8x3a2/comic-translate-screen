@@ -14,6 +14,14 @@ const _ru = <String, String>{
   'rtdetr_v2.confidence.info':
       'Насколько программа должна быть уверена, что нашла текст (от 0,05 до 0,95). Меньше — найдёт больше, '
       'но может принять рисунок за текст. Больше — пропустит бледный или мелкий текст. Обычно 0,3.',
+  'ppocr_lines': 'PP-OCR, строки текста (сайты, игры)',
+  'ppocr_lines.desc':
+      'Находит строки обычного текста, а не только пузыри: скриншоты, сайты, игры, новеллы. Работает на компьютере.',
+  'ppocr_lines.box_threshold': 'Порог уверенности',
+  'ppocr_lines.box_threshold.help': 'Строки с меньшей оценкой отбрасываются.',
+  'ppocr_lines.box_threshold.info':
+      'Насколько программа должна быть уверена, что нашла строку текста (от 0,2 до 0,9). Меньше — найдёт '
+      'бледный текст, но может принять узор за текст. Больше — пропустит мелкие и бледные строки. Обычно 0,5.',
   'default': 'По умолчанию (PaddleOCR, manga-ocr для японского)',
   'default.desc': 'Сам выбирает лучшую локальную модель для языка оригинала.',
   'ppocr': 'PaddleOCR',
@@ -36,6 +44,17 @@ const _ru = <String, String>{
   'mock': 'Тестовый переводчик (без сети)',
   'mock.desc': 'Ничего не переводит: помечает текст языком перевода. Для проверки работы без сети.',
   'mock.style': 'Вывод',
+  'opus_mt': 'Офлайн (OPUS-MT)',
+  'opus_mt.desc':
+      'Переводит между английским и русским прямо на компьютере: без интернета и ключей. Проще больших '
+      'онлайн-моделей.',
+  'opus_mt.quality': 'Качество',
+  'opus_mt.quality.fast': 'Быстро',
+  'opus_mt.quality.better': 'Лучше',
+  'opus_mt.quality.help': '«Лучше» сравнивает четыре варианта каждой фразы.',
+  'opus_mt.quality.info':
+      'Быстро: около 0,4 с на пузырь на слабом ноутбуке. Лучше: модель взвешивает четыре варианта каждой фразы '
+      'и берёт лучший; примерно в 1,7 раза медленнее, заметно меньше странных фраз.',
   'openai_compatible': 'OpenAI-совместимый API',
   'openai_compatible.desc':
       'Перевод большой языковой моделью через любой OpenAI-совместимый сервер: OpenRouter, '
@@ -81,3 +100,6 @@ String fieldHelp(BuildContext context, PluginInfo info, SettingField field) =>
 
 String fieldInfo(BuildContext context, PluginInfo info, SettingField field) =>
     _lookup(context, '${info.id}.${field.key}.info') ?? field.info;
+
+String optionLabel(BuildContext context, PluginInfo info, SettingField field, String value, String label) =>
+    _lookup(context, '${info.id}.${field.key}.$value') ?? label;

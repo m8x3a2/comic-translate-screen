@@ -1919,6 +1919,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.';
 
   @override
+  String get modelLines => 'Text line finder (PP-OCR)';
+
+  @override
+  String get modelLinesInfo =>
+      'Finds lines of ordinary text for \"Sites and games\": screenshots, games, visual novels. Small and fast.';
+
+  @override
+  String get modelOpusEnRu => 'Offline translation English → Russian (OPUS-MT)';
+
+  @override
+  String get modelOpusRuEn => 'Offline translation Russian → English (OPUS-MT)';
+
+  @override
+  String get modelOpusInfo =>
+      'Translates on this computer without internet or keys (translator \"Offline (OPUS-MT)\"). About 0.4–0.7 s per bubble. Licence CC-BY 4.0, Helsinki-NLP.';
+
+  @override
   String panelHide(String name) {
     return 'Hide: $name';
   }

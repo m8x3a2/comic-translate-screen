@@ -48,7 +48,10 @@ class PluginSettingsForm extends ConsumerWidget {
                     labelText: fieldLabel(context, info, field),
                     helperText: _helpText(context, field),
                   ),
-                  items: [for (final e in options.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+                  items: [
+                    for (final e in options.entries)
+                      DropdownMenuItem(value: e.key, child: Text(optionLabel(context, info, field, e.key, e.value))),
+                  ],
                   onChanged: (v) => set(field.key, v),
                 ),
                 fieldInfo(context, info, field),
