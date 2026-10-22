@@ -139,6 +139,11 @@ class _GalleryState extends State<_Gallery> {
                 else
                   Text(l.chatGalleryPictures, style: theme.textTheme.titleLarge),
                 const Spacer(),
+                // Always in the same place: the line of sheets beside it grows.
+                if (_piecesTab) ...[
+                  FilledButton(onPressed: _close, child: Text(l.chatGroupsApply)),
+                  const SizedBox(width: 8),
+                ],
                 IconButton(tooltip: l.close, onPressed: _close, icon: const Icon(Icons.close)),
               ],
             ),
@@ -209,7 +214,6 @@ class _GalleryState extends State<_Gallery> {
               }),
               child: Text(l.chatGroupsClear),
             ),
-          FilledButton(onPressed: _close, child: Text(l.chatGroupsApply)),
         ],
       ),
       const SizedBox(height: 12),

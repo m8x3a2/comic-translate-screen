@@ -692,7 +692,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
     final sep = _separator;
     TextField field(TextEditingController c, String hint, {String? label}) => TextField(
       controller: c,
-      minLines: two ? 5 : 6,
+      minLines: 6,
       maxLines: 9,
       style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
       decoration: InputDecoration(labelText: label, hintText: hint, border: const OutlineInputBorder()),
@@ -737,11 +737,16 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
               if (match.repeated.isNotEmpty) Text(l.chatRepeated(_codes(match.repeated))),
               const SizedBox(height: 8),
             ],
-            if (two) ...[
-              field(_answer, l.chatAnswerHint, label: l.chatOriginalField),
-              const SizedBox(height: 8),
-              field(_answer2, l.chatAnswerHintTranslation, label: l.chatTranslationField),
-            ] else
+            if (two)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: field(_answer, l.chatAnswerHint, label: l.chatOriginalField)),
+                  const SizedBox(width: 8),
+                  Expanded(child: field(_answer2, l.chatAnswerHintTranslation, label: l.chatTranslationField)),
+                ],
+              )
+            else
               field(_answer, _mode == ExchangeMode.both ? "[01-003] I'M LATE! $sep Я ОПОЗДАЛ!" : l.chatAnswerHint),
             const SizedBox(height: 8),
             Wrap(
