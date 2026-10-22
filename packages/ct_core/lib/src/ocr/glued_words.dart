@@ -38,7 +38,13 @@ const _contractions = [
   'theyre', 'theyve', 'theyll', 'theyd', 'weve', 'thats', 'theres', 'heres', 'whos', 'whats', 'wheres',
 ];
 
+const _contractionRank = 500;
+
+/// What follows the apostrophe of a contraction ("I'M", "IT'S", "WE'LL").
+const _suffixes = ['LL', 'RE', 'VE', 'S', 'T', 'M', 'D'];
+
 final _word = RegExp(r"[A-Za-z]+(?:['’][A-Za-z]+)*");
+final _apostrophe = RegExp("['’]");
 final _camel = RegExp('[a-z][A-Z]');
 
 /// An English word list with frequencies, splitting glued words.
@@ -67,6 +73,12 @@ class GluedWords {
     }
     final known = <String>{for (final (w, _) in words) w, for (final c in _contractions) c.toUpperCase()};
     final pieces = <String, double>{};
+    // Contractions of four letters or more are pieces too ("CLEARLYISNT"),
+    // as common as the word of rank [_contractionRank].
+    final common = words.length > _contractionRank ? words[_contractionRank].$2 : 1;
+    for (final c in _contractions) {
+      if (c.length >= 4) pieces[c.toUpperCase()] = -math.log(common / total);
+    }
     for (final (rank, (w, count)) in words.indexed) {
       if (w.length == 1 && w != 'A' && w != 'I') continue;
       if (w.length <= _shortWordLength && rank >= _shortWordRank) continue;
@@ -115,13 +127,32 @@ class GluedWords {
     return out.toString();
   }
 
+  /// A word with an apostrophe glued to the next word ("I'MDONE" →
+  /// "I'M DONE", "DON'TKNOW" → "DON'T KNOW"), or [word] itself.
+  String splitAfterApostrophe(String word) {
+    final parts = word.split(_apostrophe);
+    if (parts.length != 2 || _camel.hasMatch(word)) return word;
+    final tail = parts[1];
+    final up = tail.toUpperCase();
+    for (final s in _suffixes) {
+      if (!up.startsWith(s) || up.length - s.length < 2) continue;
+      final rest = tail.substring(s.length);
+      final restUp = rest.toUpperCase();
+      final split = _pieces.containsKey(restUp) ? rest : splitWord(rest);
+      if (identical(split, rest) && !_pieces.containsKey(restUp)) continue;
+      final cut = word.length - rest.length;
+      return '${word.substring(0, cut)} $split';
+    }
+    return word;
+  }
+
   /// [text] with its glued words split, and how many were split. Case,
   /// punctuation and line breaks stay.
   (String, int) splitText(String text) {
     var count = 0;
     final out = text.replaceAllMapped(_word, (m) {
       final w = m[0]!;
-      final s = splitWord(w);
+      final s = _apostrophe.hasMatch(w) ? splitAfterApostrophe(w) : splitWord(w);
       if (!identical(s, w)) count++;
       return s;
     });

@@ -15,12 +15,26 @@ void main() {
       ('YOURFIRSTMISSION', 'YOUR FIRST MISSION'),
       ('THERESTOF', 'THE REST OF'),
       ('BUTIDUNNO', 'BUT I DUNNO'),
+      ('CLEARLYISNT', 'CLEARLY ISNT'),
+      ("I'MDONE", "I'M DONE"),
+      ("DON'TKNOW", "DON'T KNOW"),
     ]) {
-      expect(words.splitWord(glued), split);
+      expect(words.splitText(glued).$1, split);
     }
     // Words, contractions without the apostrophe and misread letters stay.
-    for (final word in ['INSTINCTS', 'ARENT', 'DONT', 'SECLRE', 'DELMERY', 'KRAKOOM', 'YouTube']) {
-      expect(words.splitWord(word), word);
+    for (final word in [
+      'INSTINCTS',
+      'ARENT',
+      'DONT',
+      'SECLRE',
+      'DELMERY',
+      'KRAKOOM',
+      'YouTube',
+      "I'M",
+      "DON'T",
+      "O'BRIEN",
+    ]) {
+      expect(words.splitText(word).$1, word);
     }
   });
 }

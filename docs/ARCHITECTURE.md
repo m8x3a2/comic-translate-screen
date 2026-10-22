@@ -42,7 +42,10 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   into paragraph blocks (`groupLinesIntoBlocks`, new). Boxes are grown by 1.4
   instead of 2.0: the original's tall boxes make the recognizer misread long
   lines (English game screenshots: 93 % of words right against 71 %; the
-  comic detector: 65 %). These lines are kept (`fixed_lines`) when the page
+  comic detector: 65 %). Pieces side by side are merged only across one line
+  height (the original allows two, or 8 % of the page), so that two columns
+  of a phone screenshot stay apart; blocks are read row by row, each row from
+  the left. These lines are kept (`fixed_lines`) when the page
   is enlarged for reading.
 - A moved box takes its lines, bubble and outline along (the original keeps
   them in place); a resized one loses its lines and keeps its bubble only while

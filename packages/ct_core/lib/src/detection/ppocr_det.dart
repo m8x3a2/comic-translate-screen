@@ -353,12 +353,15 @@ BBox axisBox(Quad q) => BBox(
   pyRound(q.map((p) => p.y).reduce(math.max)),
 );
 
-/// `_merge_line_boxes`: pieces of one line put together.
-List<BBox> mergeLineBoxes(List<BBox> lines, int width, int height) {
+/// `_merge_line_boxes`: pieces of one line put together. Pieces side by side
+/// are merged across a gap of up to 8 % of the page or two line heights;
+/// with [maxGap] (line heights, new) only up to that: two columns of text
+/// often stand closer than that.
+List<BBox> mergeLineBoxes(List<BBox> lines, int width, int height, {double? maxGap}) {
   final sorted = [...lines]..sort((a, b) => a.y1 != b.y1 ? a.y1.compareTo(b.y1) : a.x1.compareTo(b.x1));
   final groups = <BBox>[];
   for (final line in sorted) {
-    final i = groups.indexWhere((g) => _shouldMerge(g, line, width));
+    final i = groups.indexWhere((g) => _shouldMerge(g, line, width, maxGap));
     if (i < 0) {
       groups.add(line);
     } else {
@@ -383,7 +386,7 @@ BBox _clamp(BBox b, int w, int h) {
   return BBox(math.min(x1, x2), math.min(y1, y2), math.max(x1, x2), math.max(y1, y2));
 }
 
-bool _shouldMerge(BBox a, BBox b, int imageWidth) {
+bool _shouldMerge(BBox a, BBox b, int imageWidth, double? maxGap) {
   final wa = a.x2 - a.x1, ha = a.y2 - a.y1, wb = b.x2 - b.x1, hb = b.y2 - b.y1;
   final aVertical = ha > wa * 1.25, bVertical = hb > wb * 1.25;
   final aHorizontal = wa > ha * 1.25, bHorizontal = wb > hb * 1.25;
@@ -393,7 +396,8 @@ bool _shouldMerge(BBox a, BBox b, int imageWidth) {
   final centerDelta = (((a.y1 + a.y2) / 2) - ((b.y1 + b.y2) / 2)).abs();
   final gapX = math.max(0, math.max(a.x1, b.x1) - math.min(a.x2, b.x2));
   final sameHorizontal = overlapY / minHeight >= 0.55 || centerDelta <= minHeight * 0.35;
-  final horizontalMerge = sameHorizontal && gapX <= math.max(imageWidth * 0.08, minHeight * 2);
+  final horizontalMerge =
+      sameHorizontal && gapX <= (maxGap == null ? math.max(imageWidth * 0.08, minHeight * 2) : minHeight * maxGap);
   if (!aVertical && !bVertical && (aHorizontal || bHorizontal || horizontalMerge)) return horizontalMerge;
 
   final overlapX = math.max(0, math.min(a.x2, b.x2) - math.max(a.x1, b.x1));
@@ -462,6 +466,19 @@ List<TextBlock> groupLinesIntoBlocks(List<BBox> lines, {double maxGap = 0.9}) {
       )..fixedLines = true,
     );
   }
-  blocks.sort((a, b) => a.xyxy.y1 != b.xyxy.y1 ? a.xyxy.y1.compareTo(b.xyxy.y1) : a.xyxy.x1.compareTo(b.xyxy.x1));
-  return blocks;
+  // Reading order: rows from the top (blocks overlapping a row's band by
+  // half their height belong to it), each row from the left.
+  blocks.sort((a, b) => a.xyxy.y1.compareTo(b.xyxy.y1));
+  final rows = <(int, int, List<TextBlock>)>[];
+  for (final b in blocks) {
+    final box = b.xyxy;
+    final i = rows.indexWhere((r) => math.min(r.$2, box.y2) - math.max(r.$1, box.y1) >= box.height / 2);
+    if (i < 0) {
+      rows.add((box.y1, box.y2, [b]));
+    } else {
+      final (top, bottom, members) = rows[i];
+      rows[i] = (top, math.max(bottom, box.y2), members..add(b));
+    }
+  }
+  return [for (final (_, _, members) in rows) ...members..sort((a, b) => a.xyxy.x1.compareTo(b.xyxy.x1))];
 }

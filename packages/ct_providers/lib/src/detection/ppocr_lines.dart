@@ -47,13 +47,19 @@ final ppocrLinesFactory = PluginFactory<TextDetector>(ppocrLinesInfo, (config, e
 /// 71 %), and 1.4 loses least on tiny comic text.
 const lineUnclipRatio = 1.4;
 
+/// Pieces of one line are merged across a gap of at most this many line
+/// heights (the original allows two, or 8 % of the page, which joins two
+/// columns of a phone screenshot into one line).
+const lineMergeGap = 1.0;
+
 class PpocrLineDetector implements TextDetector {
-  PpocrLineDetector._(this._session, this.post);
+  PpocrLineDetector._(this._session, this.post, this.lineGap);
 
   factory PpocrLineDetector.open(
     String modelPath, {
     double boxThreshold = 0.5,
     double unclipRatio = lineUnclipRatio,
+    double? lineGap = lineMergeGap,
     OrtDevice device = OrtDevice.cpu,
     EventLog? log,
   }) {
@@ -63,11 +69,14 @@ class PpocrLineDetector implements TextDetector {
       'device': session.device.name,
       if (session.fallbackReason != null) 'fallback': session.fallbackReason,
     });
-    return PpocrLineDetector._(session, DbPostProcessor(boxThresh: boxThreshold, unclipRatio: unclipRatio));
+    return PpocrLineDetector._(session, DbPostProcessor(boxThresh: boxThreshold, unclipRatio: unclipRatio), lineGap);
   }
 
   final OrtSession _session;
   final DbPostProcessor post;
+
+  /// See [lineMergeGap]; null: the original's rule.
+  final double? lineGap;
 
   /// Very tall pages (webtoons, long screenshots) are read in overlapping
   /// slices, as RT-DETR does.
@@ -85,12 +94,12 @@ class PpocrLineDetector implements TextDetector {
       context.cancel.throwIfCancelled();
       return (bubbles: const <BBox>[], texts: detectLines(slice));
     });
-    return groupLinesIntoBlocks(mergeLineBoxes(found.texts, image.width, image.height));
+    return groupLinesIntoBlocks(mergeLineBoxes(found.texts, image.width, image.height, maxGap: lineGap));
   }
 
   /// `PPOCRLineDetector.detect_lines`: whole text lines of [image].
   List<BBox> detectLines(RgbImage image) =>
-      mergeLineBoxes([for (final q in detectQuads(image)) axisBox(q)], image.width, image.height);
+      mergeLineBoxes([for (final q in detectQuads(image)) axisBox(q)], image.width, image.height, maxGap: lineGap);
 
   /// The line quadrilaterals the model finds on [image] (page pixels).
   List<Quad> detectQuads(RgbImage image) {

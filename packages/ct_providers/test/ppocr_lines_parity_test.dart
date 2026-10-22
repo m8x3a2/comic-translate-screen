@@ -28,7 +28,7 @@ void main() {
 
   late PpocrLineDetector detector;
   setUpAll(() {
-    if (hasModel) detector = PpocrLineDetector.open(modelPath, unclipRatio: 2.0);
+    if (hasModel) detector = PpocrLineDetector.open(modelPath, unclipRatio: 2.0, lineGap: null);
   });
   tearDownAll(() async {
     if (hasModel) await detector.dispose();

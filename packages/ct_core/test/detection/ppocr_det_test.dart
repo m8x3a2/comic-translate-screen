@@ -31,6 +31,21 @@ void main() {
     expect(title, hasLength(2), reason: 'a big title over small text');
   });
 
+  test('buttons of one row are read from the left', () {
+    final blocks = groupLinesIntoBlocks(const [
+      BBox(300, 603, 350, 623),
+      BBox(100, 606, 150, 628),
+      BBox(200, 604, 250, 626),
+    ]);
+    expect([for (final b in blocks) b.xyxy.x1], [100, 200, 300]);
+  });
+
+  test('two columns stay apart', () {
+    final lines = mergeLineBoxes(const [BBox(160, 100, 550, 150), BBox(615, 100, 980, 150)], 1080, 2400, maxGap: 1.0);
+    expect(lines, hasLength(2));
+    expect(mergeLineBoxes(const [BBox(160, 100, 550, 150), BBox(615, 100, 980, 150)], 1080, 2400), hasLength(1));
+  });
+
   test('pieces of one line are merged', () {
     final merged = mergeLineBoxes(const [BBox(10, 10, 100, 30), BBox(110, 11, 200, 31)], 1000, 1000);
     expect(merged, [const BBox(10, 10, 200, 31)]);
