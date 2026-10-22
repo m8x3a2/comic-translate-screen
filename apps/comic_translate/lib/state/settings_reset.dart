@@ -21,7 +21,8 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..useGpu = d.useGpu
           ..projectAutosave = d.projectAutosave
           ..testMode = d.testMode
-          ..autoBugReport = d.autoBugReport;
+          ..autoBugReport = d.autoBugReport
+          ..hiddenPanels.clear();
       case SettingsPart.translator:
         s
           ..translator = d.translator

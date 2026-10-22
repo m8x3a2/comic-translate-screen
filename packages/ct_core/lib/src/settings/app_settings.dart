@@ -42,6 +42,7 @@ class AppSettings {
     this.theme = 'dark',
     this.uiLanguage = 'ru',
     Map<String, String>? shortcuts,
+    Set<String>? hiddenPanels,
     Map<String, String>? gpuCpuModels,
     this.testMode = false,
     this.autoBugReport = true,
@@ -51,6 +52,7 @@ class AppSettings {
     Set<String>? approvedNetworkPlugins,
     Map<String, Object?>? extra,
   }) : shortcuts = shortcuts ?? {},
+       hiddenPanels = hiddenPanels ?? {},
        gpuCpuModels = gpuCpuModels ?? {},
        recentProjects = recentProjects ?? [],
        plugins = plugins ?? {},
@@ -136,6 +138,9 @@ class AppSettings {
   /// default keys.
   Map<String, String> shortcuts;
 
+  /// Editor panels folded away by the user (`pages`, `tools`, `text`).
+  Set<String> hiddenPanels;
+
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
@@ -185,7 +190,12 @@ class AppSettings {
     'upscale': upscale.toJson(),
     'export': export.toJson(),
     'models': {'dir': modelsDir},
-    'ui': {'theme': theme, 'language': uiLanguage, if (shortcuts.isNotEmpty) 'shortcuts': shortcuts},
+    'ui': {
+      'theme': theme,
+      'language': uiLanguage,
+      if (shortcuts.isNotEmpty) 'shortcuts': shortcuts,
+      if (hiddenPanels.isNotEmpty) 'hidden_panels': [...hiddenPanels],
+    },
     'test_mode': testMode,
     'auto_bug_report': autoBugReport,
     'projects': {'autosave': projectAutosave, 'recent': recentProjects},
@@ -263,6 +273,7 @@ class AppSettings {
         for (final e in ((ui['shortcuts'] as Map?) ?? const {}).entries)
           if (e.key is String && e.value is String) e.key as String: e.value as String,
       },
+      hiddenPanels: {...?(ui['hidden_panels'] as List?)?.whereType<String>()},
       testMode: pick(json, 'test_mode', defaults.testMode),
       autoBugReport: pick(json, 'auto_bug_report', defaults.autoBugReport),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),

@@ -1126,6 +1126,46 @@
   "splitWordsMissing": "The word list is missing from the program folder (data\\flutter_assets\\assets\\dict).",
   "splitGluedWords": "Split glued English words after recognition",
   "splitGluedWordsInfo": "On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.",
+  "panelHide": "Hide: {name}",
+  "@panelHide": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "panelShow": "Show: {name}",
+  "@panelShow": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "panelPages": "Pages",
+  "panelTools": "Tools",
+  "pageGridOpen": "All pages over the whole window",
+  "pageGridTitle": "All pages ({count})",
+  "@pageGridTitle": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pageGridPicked": "Ticked: {count}",
+  "@pageGridPicked": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pageGridPickAll": "Tick all",
+  "pageGridPickNone": "Untick",
+  "pageGridClose": "Close",
+  "pageGridHint": "A click ticks a page for the steps (Detect, Recognize, Translate…), dragging moves it, a double click opens it. Esc closes.",
+  "pageGridLocked": "While pages are being translated they cannot be moved.",
   "contentKind": "What you translate",
   "contentKindInfo": "Comics: the program looks for speech bubbles and captions. Sites and games: it looks for lines of ordinary text (screenshots, games, visual novels, phone screens).",
   "contentComics": "Comics",

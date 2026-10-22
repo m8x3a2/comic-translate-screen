@@ -1919,6 +1919,52 @@ class AppLocalizationsEn extends AppLocalizations {
       'On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.';
 
   @override
+  String panelHide(String name) {
+    return 'Hide: $name';
+  }
+
+  @override
+  String panelShow(String name) {
+    return 'Show: $name';
+  }
+
+  @override
+  String get panelPages => 'Pages';
+
+  @override
+  String get panelTools => 'Tools';
+
+  @override
+  String get pageGridOpen => 'All pages over the whole window';
+
+  @override
+  String pageGridTitle(String count) {
+    return 'All pages ($count)';
+  }
+
+  @override
+  String pageGridPicked(String count) {
+    return 'Ticked: $count';
+  }
+
+  @override
+  String get pageGridPickAll => 'Tick all';
+
+  @override
+  String get pageGridPickNone => 'Untick';
+
+  @override
+  String get pageGridClose => 'Close';
+
+  @override
+  String get pageGridHint =>
+      'A click ticks a page for the steps (Detect, Recognize, Translate…), dragging moves it, a double click opens it. Esc closes.';
+
+  @override
+  String get pageGridLocked =>
+      'While pages are being translated they cannot be moved.';
+
+  @override
   String get contentKind => 'What you translate';
 
   @override

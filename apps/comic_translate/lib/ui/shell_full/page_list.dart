@@ -11,6 +11,8 @@ import '../../state/batch.dart';
 import '../../state/steps.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
+import '../common/panels.dart';
+import 'page_grid.dart';
 
 class PageList extends ConsumerWidget {
   const PageList({super.key, this.onAdd});
@@ -21,8 +23,24 @@ class PageList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ws = ref.watch(workspaceProvider);
     final running = ref.watch(batchProvider) is BatchRunning;
+    final l = context.l10n;
     return Column(
       children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+          child: Row(
+            children: [
+              PanelToggle(Panels.pages, label: l.panelPages),
+              Expanded(child: Text(l.panelPages, style: Theme.of(context).textTheme.titleSmall)),
+              IconButton(
+                tooltip: l.pageGridOpen,
+                visualDensity: VisualDensity.compact,
+                onPressed: () => ref.read(pageGridOpenProvider.notifier).set(true),
+                icon: const Icon(Icons.grid_view),
+              ),
+            ],
+          ),
+        ),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 6),

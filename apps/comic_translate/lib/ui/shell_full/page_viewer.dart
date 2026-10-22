@@ -9,6 +9,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../state/app_state.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
 import '../../state/steps.dart';
@@ -16,6 +17,7 @@ import '../../state/page_layout.dart';
 import '../../state/workspace.dart';
 import '../common/content_kind_switch.dart';
 import '../common/labels.dart';
+import '../common/panels.dart';
 import 'batch_dialogs.dart';
 import 'page_canvas.dart';
 import 'shortcuts_dialog.dart';
@@ -65,6 +67,7 @@ class _PageViewerState extends ConsumerState<PageViewer> {
   }
 
   void _fit() {
+    if (!mounted) return;
     if (ref.read(workspaceProvider).webtoon) return _strip.currentState?.fit();
     final size = _imageSize;
     if (size == null || _viewport.isEmpty || !mounted) return;
@@ -109,6 +112,12 @@ class _PageViewerState extends ConsumerState<PageViewer> {
       _shownPath = null;
       _imageSize = null;
     });
+    // A panel folded or opened: the page fitted into the new room (after
+    // the next layout, which measures it).
+    ref.listen(settingsProvider.select((s) => (List.of(s.hiddenPanels)..sort()).join(',')), (_, _) {
+      if (ref.read(workspaceProvider).webtoon) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) => WidgetsBinding.instance.addPostFrameCallback((_) => _fit()));
+    });
     if (!ws.webtoon) _watchImage(page.path);
     final editor = ref.watch(editorProvider);
     final steps = ref.watch(stepsProvider);
@@ -120,8 +129,12 @@ class _PageViewerState extends ConsumerState<PageViewer> {
     final theme = Theme.of(context);
     return Column(
       children: [
-        const _ToolBar(),
-        _StepStrip(page: page),
+        if (panelHidden(ref, Panels.tools))
+          FoldedToolBar(label: l.panelTools)
+        else ...[
+          const _ToolBar(),
+          _StepStrip(page: page),
+        ],
         const Divider(height: 1),
         Expanded(
           child: ClipRect(
@@ -481,6 +494,7 @@ class _StepStrip extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
           child: Row(
             children: [
+              PanelToggle(Panels.tools, label: l.panelTools),
               Flexible(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,

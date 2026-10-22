@@ -27,11 +27,13 @@ import '../../state/window_mode.dart';
 import '../../state/workspace.dart';
 import '../common/key_bindings.dart';
 import '../common/labels.dart';
+import '../common/panels.dart';
 import '../common/plugin_strings.dart';
 import '../settings/settings_screen.dart';
 import 'batch_dialogs.dart';
 import 'export_dialog.dart';
 import 'home_view.dart';
+import 'page_grid.dart';
 import 'page_list.dart';
 import 'page_viewer.dart';
 import 'shortcuts_dialog.dart';
@@ -501,6 +503,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final ws = ref.watch(workspaceProvider);
     final running = ref.watch(batchProvider) is BatchRunning;
     final project = ref.watch(projectProvider);
@@ -545,17 +548,25 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             onOpenProject: _openProject,
                             busy: ws.importing,
                           )
+                        : ref.watch(pageGridOpenProvider)
+                        ? const PageGrid()
                         : LayoutBuilder(
                             builder: (context, c) => Row(
                               children: [
-                                SizedBox(
-                                  width: c.maxWidth < 1200 ? 200 : 230,
-                                  child: PageList(onAdd: running ? null : _pickFiles),
-                                ),
+                                if (panelHidden(ref, Panels.pages))
+                                  FoldedSidePanel(Panels.pages, label: l.panelPages)
+                                else
+                                  SizedBox(
+                                    width: c.maxWidth < 1200 ? 200 : 230,
+                                    child: PageList(onAdd: running ? null : _pickFiles),
+                                  ),
                                 const VerticalDivider(width: 1),
                                 const Expanded(child: PageViewer()),
                                 const VerticalDivider(width: 1),
-                                SizedBox(width: (c.maxWidth * 0.22).clamp(240.0, 340.0), child: const TextPanel()),
+                                if (panelHidden(ref, Panels.text))
+                                  FoldedSidePanel(Panels.text, label: l.textPanel)
+                                else
+                                  SizedBox(width: (c.maxWidth * 0.22).clamp(240.0, 340.0), child: const TextPanel()),
                               ],
                             ),
                           ),

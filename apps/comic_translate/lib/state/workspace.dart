@@ -283,6 +283,10 @@ class WorkspaceState {
   }
 
   PageEntry? get currentPage => pages.isEmpty ? null : pages[current.clamp(0, pages.length - 1)];
+
+  /// The pages the steps work on, by id (the current one when none are
+  /// selected).
+  Set<String> get pickedPageIds => selectedPages.length < 2 ? {?currentPage?.id} : selectedPages;
   int get doneCount => pages.where((p) => p.isDone).length;
 
   /// Translated pages that would be lost on closing (not exported yet).
@@ -503,6 +507,55 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   }
 
   void clearPageSelection() => state = state.copyWith(selectedPages: const {});
+
+  /// Ticks page [index] for the steps or takes it out, without Ctrl (the
+  /// grid of pages). The last page taken out leaves the current one.
+  void togglePick(int index) {
+    if (index < 0 || index >= state.pages.length) return;
+    final id = state.pages[index].id;
+    final picked = {...state.pickedPageIds};
+    final added = picked.add(id);
+    if (!added) picked.remove(id);
+    if (picked.isEmpty) return;
+    final go = added ? index : state.pages.indexWhere((p) => picked.contains(p.id));
+    state = state.copyWith(current: go, clearBlock: true, selectedPages: picked.length < 2 ? const {} : picked);
+  }
+
+  /// Ticks every page for the steps.
+  void pickAllPages() {
+    if (state.pages.length < 2) return;
+    state = state.copyWith(selectedPages: {for (final p in state.pages) p.id});
+  }
+
+  /// Moves page [from] to place [to] (the grid of pages). The current page
+  /// stays current. In the webtoon mode a bubble cut by the edge no longer
+  /// continues on the page that now follows: its part below is dropped and
+  /// both pages are drawn again.
+  void movePage(int from, int to) {
+    final n = state.pages.length;
+    if (from < 0 || from >= n || to < 0 || to >= n || from == to) return;
+    final current = state.currentPage?.id;
+    final pages = [...state.pages];
+    final page = pages.removeAt(from);
+    pages.insert(to, page);
+    final oldNext = {for (var i = 0; i + 1 < n; i++) state.pages[i].id: state.pages[i + 1].id};
+    final redraw = <String>{};
+    final moved = <PageEntry>[];
+    for (var i = 0; i < n; i++) {
+      final p = pages[i];
+      final next = i + 1 < n ? pages[i + 1].id : null;
+      if (p.overflowPath != null && oldNext[p.id] != next) {
+        redraw.addAll([p.id, ?oldNext[p.id], ?next]);
+        moved.add(p.copyWith(overflowPath: null));
+      } else {
+        moved.add(p);
+      }
+    }
+    state = state.copyWith(
+      pages: [for (final p in moved) redraw.contains(p.id) ? p.copyWith(translatedPath: null) : p],
+      current: moved.indexWhere((p) => p.id == current).clamp(0, n - 1),
+    );
+  }
 
   void selectBlock(int? index) =>
       state = index == null ? state.copyWith(clearBlock: true) : state.copyWith(selectedBlock: index);

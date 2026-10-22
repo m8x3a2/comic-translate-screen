@@ -1922,6 +1922,52 @@ class AppLocalizationsRu extends AppLocalizations {
       'На очень мелком тексте распознавание часто читает два слова как одно: «REALLIFE», «MYINSTINCTS». Слова, которых нет в словаре, делятся на слова из словаря; буквы не меняются. То же делает кнопка в панели «Текст» — для страницы или одного пузыря.';
 
   @override
+  String panelHide(String name) {
+    return 'Скрыть: $name';
+  }
+
+  @override
+  String panelShow(String name) {
+    return 'Показать: $name';
+  }
+
+  @override
+  String get panelPages => 'Страницы';
+
+  @override
+  String get panelTools => 'Инструменты';
+
+  @override
+  String get pageGridOpen => 'Все страницы на всё окно';
+
+  @override
+  String pageGridTitle(String count) {
+    return 'Все страницы ($count)';
+  }
+
+  @override
+  String pageGridPicked(String count) {
+    return 'Отмечено: $count';
+  }
+
+  @override
+  String get pageGridPickAll => 'Отметить все';
+
+  @override
+  String get pageGridPickNone => 'Снять отметки';
+
+  @override
+  String get pageGridClose => 'Закрыть';
+
+  @override
+  String get pageGridHint =>
+      'Щелчок отмечает страницу для шагов (Найти текст, Распознать, Перевести…), перетаскивание переставляет её, двойной щелчок открывает. Esc — закрыть.';
+
+  @override
+  String get pageGridLocked =>
+      'Пока идёт перевод, переставлять страницы нельзя.';
+
+  @override
   String get contentKind => 'Что переводим';
 
   @override

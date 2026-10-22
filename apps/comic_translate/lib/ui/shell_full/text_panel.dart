@@ -13,6 +13,7 @@ import '../../state/glued_words.dart';
 import '../../state/steps.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
+import '../common/panels.dart';
 import 'batch_dialogs.dart';
 import 'block_style_editor.dart';
 import 'find_replace.dart';
@@ -71,9 +72,10 @@ class _TextPanelState extends ConsumerState<TextPanel> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 4, 0),
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
           child: Row(
             children: [
+              PanelToggle(Panels.text, label: l.textPanel),
               Expanded(child: Text(l.textPanel, style: theme.textTheme.titleSmall)),
               IconButton(
                 tooltip: l.splitWords,

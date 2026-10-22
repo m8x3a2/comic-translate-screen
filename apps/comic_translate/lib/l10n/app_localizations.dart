@@ -3374,6 +3374,78 @@ abstract class AppLocalizations {
   /// **'On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.'**
   String get splitGluedWordsInfo;
 
+  /// No description provided for @panelHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide: {name}'**
+  String panelHide(String name);
+
+  /// No description provided for @panelShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show: {name}'**
+  String panelShow(String name);
+
+  /// No description provided for @panelPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages'**
+  String get panelPages;
+
+  /// No description provided for @panelTools.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools'**
+  String get panelTools;
+
+  /// No description provided for @pageGridOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'All pages over the whole window'**
+  String get pageGridOpen;
+
+  /// No description provided for @pageGridTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All pages ({count})'**
+  String pageGridTitle(String count);
+
+  /// No description provided for @pageGridPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticked: {count}'**
+  String pageGridPicked(String count);
+
+  /// No description provided for @pageGridPickAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Tick all'**
+  String get pageGridPickAll;
+
+  /// No description provided for @pageGridPickNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Untick'**
+  String get pageGridPickNone;
+
+  /// No description provided for @pageGridClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get pageGridClose;
+
+  /// No description provided for @pageGridHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A click ticks a page for the steps (Detect, Recognize, Translate…), dragging moves it, a double click opens it. Esc closes.'**
+  String get pageGridHint;
+
+  /// No description provided for @pageGridLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'While pages are being translated they cannot be moved.'**
+  String get pageGridLocked;
+
   /// No description provided for @contentKind.
   ///
   /// In en, this message translates to:
