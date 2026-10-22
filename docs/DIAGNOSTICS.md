@@ -68,8 +68,9 @@ Options:
 - `--with-images` to include page images and stage artifacts;
 - `--note "what happened"` to attach a description.
 
-In the app, an unexpected error builds `reports/bugreport-auto-<timestamp>.zip` by itself (at most one a
-minute; the newest 20 are kept) and a 30-second notice shows where it is. Settings → General → "Build a bug
+In the app, an unexpected error builds `reports/bugreport-auto-<timestamp>.zip` by itself, 5 seconds after
+the first error so that one report holds the whole burst (the newest 20 are kept), and a 30-second notice shows
+where it is. Settings → General → "Build a bug
 report automatically" turns this off (after a warning); then the notice offers a button instead.
 
 The GUI will get the same action as a button (M7).

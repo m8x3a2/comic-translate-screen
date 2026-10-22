@@ -64,7 +64,11 @@ void main() {
   late AppServices services;
   setUp(() async {
     dir = Directory.systemTemp.createTempSync('cts_reset_test_');
-    services = AppServices.create(dataDirOverride: dir.path, secretStore: MemorySecretStore(), registry: fakeRegistry());
+    services = AppServices.create(
+      dataDirOverride: dir.path,
+      secretStore: MemorySecretStore(),
+      registry: fakeRegistry(),
+    );
     // The log file is opened here, outside the test's fake clock.
     services.appLog.info('test_start');
     await services.appLog.flush();
@@ -124,10 +128,14 @@ void main() {
   testWidgets('an unexpected error builds a bug report by itself and says where', (tester) async {
     await openApp(tester);
     expect(autoBugReportEnabled, isTrue, reason: 'on by default');
+    bugReportGatherTime = const Duration(milliseconds: 200);
     // The report asks Windows for the graphics adapters: a few seconds.
     bool built() => services.paths.reports.existsSync() && services.paths.reports.listSync().isNotEmpty;
     await tester.runAsync(() async {
-      notifyUnexpectedError(services);
+      // A burst of errors (the same one at once, as in a real report): one report holds them all.
+      for (var i = 0; i < 3; i++) {
+        notifyUnexpectedError(services);
+      }
       for (var i = 0; i < 300 && !built(); i++) {
         await Future<void>.delayed(const Duration(milliseconds: 100));
       }

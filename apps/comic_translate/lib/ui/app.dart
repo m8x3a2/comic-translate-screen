@@ -20,27 +20,41 @@ import 'shell_full/main_screen.dart' show MainScreen, showInExplorer;
 final appMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 DateTime? _lastErrorNotice;
-DateTime? _lastAutoReport;
+Timer? _gathering;
 
 /// Settings → General: an unexpected error builds a bug report by itself.
 /// Kept here because errors are reported from outside the widget tree.
 bool autoBugReportEnabled = true;
 
+/// How long errors that come together are gathered into one report.
+Duration bugReportGatherTime = const Duration(seconds: 5);
+
 const _errorNoticeTime = Duration(seconds: 30);
 
 /// Tells the user that something failed unexpectedly; details are in the
-/// log. With [autoBugReportEnabled] a bug report is built right away (at
-/// most one a minute) and the message says where it is; otherwise the
-/// message offers to build one. At most one message every 10 s.
+/// log. With [autoBugReportEnabled] a bug report is built
+/// [bugReportGatherTime] after the first error, so one report holds every
+/// error of the burst (each later burst gets its own), and the message says
+/// where it is. Otherwise the message offers to build one, at most one
+/// message every 10 s.
 void notifyUnexpectedError(AppServices services) {
+  if (autoBugReportEnabled) {
+    if (_gathering != null) return;
+    _gathering = Timer(bugReportGatherTime, () {
+      _gathering = null;
+      _showErrorNotice(services, services.buildBugReport(auto: true).then<File?>((f) => f, onError: (_) => null));
+    });
+    return;
+  }
   final now = DateTime.now();
   if (_lastErrorNotice != null && now.difference(_lastErrorNotice!) < const Duration(seconds: 10)) return;
   _lastErrorNotice = now;
-  final auto =
-      autoBugReportEnabled &&
-      (_lastAutoReport == null || now.difference(_lastAutoReport!) >= const Duration(minutes: 1));
-  if (auto) _lastAutoReport = now;
-  final report = auto ? services.buildBugReport(auto: true).then<File?>((f) => f, onError: (_) => null) : null;
+  _showErrorNotice(services, null);
+}
+
+/// The message about an unexpected error: with the [report] being built, where it is; without, a button to build
+/// one.
+void _showErrorNotice(AppServices services, Future<File?>? report) {
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     final messenger = appMessengerKey.currentState;
     final context = appMessengerKey.currentContext;
