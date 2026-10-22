@@ -1,4 +1,5 @@
 import '../export/export_pages.dart';
+import '../exchange/exchange_settings.dart';
 import '../export/strip_export.dart';
 import '../plugins/engines.dart';
 import '../render/layout.dart';
@@ -38,6 +39,7 @@ class AppSettings {
     this.render = const RenderSettings(),
     this.upscale = const UpscaleSettings(),
     this.export = const ExportSettings(),
+    this.exchange = const ExchangeSettings(),
     this.modelsDir = '',
     this.theme = 'dark',
     this.uiLanguage = 'ru',
@@ -126,6 +128,9 @@ class AppSettings {
   /// Saving results (GUI export and the automatic export after a batch run).
   ExportSettings export;
 
+  /// The exchange with a chat AI by hand (new in this project).
+  ExchangeSettings exchange;
+
   /// Folder with downloaded models; empty = `models` in the data folder.
   String modelsDir;
 
@@ -189,6 +194,7 @@ class AppSettings {
     'render': render.toJson(),
     'upscale': upscale.toJson(),
     'export': export.toJson(),
+    'exchange': exchange.toJson(),
     'models': {'dir': modelsDir},
     'ui': {
       'theme': theme,
@@ -219,6 +225,7 @@ class AppSettings {
     final render = group('render');
     final upscale = group('upscale');
     final export = group('export');
+    final exchange = group('exchange');
     final models = group('models');
     final projects = group('projects');
     const known = {
@@ -230,6 +237,7 @@ class AppSettings {
       'render',
       'upscale',
       'export',
+      'exchange',
       'models',
       'ui',
       'test_mode',
@@ -266,6 +274,7 @@ class AppSettings {
       render: RenderSettings.fromJson(render),
       upscale: UpscaleSettings.fromJson(upscale),
       export: ExportSettings.fromJson(export),
+      exchange: ExchangeSettings.fromJson(exchange),
       modelsDir: pick(models, 'dir', defaults.modelsDir),
       theme: pick(ui, 'theme', defaults.theme),
       uiLanguage: pick(ui, 'language', defaults.uiLanguage),

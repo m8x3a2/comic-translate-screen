@@ -2,6 +2,7 @@ import 'package:ct_core/ct_core.dart';
 
 import 'src/detection/ppocr_lines.dart';
 import 'src/detection/rtdetr_v2.dart';
+import 'src/exchange/chat_exchange.dart';
 import 'src/inpainting/aot.dart';
 import 'src/inpainting/lama.dart';
 import 'src/ocr/default_ocr.dart';
@@ -20,9 +21,11 @@ void registerBuiltInPlugins(PluginRegistry registry) {
   registry.register(ppocrFactory);
   registry.register(mangaOcrFactory);
   registry.register(windowsOcrFactory);
+  registry.register(chatOcrFactory);
   registry.register(openAiCompatibleFactory);
   registry.register(mockTranslatorFactory);
   registry.register(opusMtFactory);
+  registry.register(chatTranslatorFactory);
   registry.register(aotFactory);
   registry.register(lamaFactory);
 }

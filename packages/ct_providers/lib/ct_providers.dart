@@ -4,6 +4,7 @@ library;
 export 'registry.dart';
 export 'src/detection/ppocr_lines.dart';
 export 'src/detection/rtdetr_v2.dart';
+export 'src/exchange/chat_exchange.dart';
 export 'src/inpainting/aot.dart';
 export 'src/inpainting/lama.dart';
 export 'src/ocr/default_ocr.dart';
