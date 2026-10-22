@@ -68,15 +68,45 @@ RgbImage contextPicture(RgbImage page, List<(ExchangeLabel, BBox)> boxes, int ma
   final f = math.min(1.0, maxPx / math.max(page.width, page.height));
   final out = f < 1.0 ? resizeRgb(page, (page.width * f).round(), (page.height * f).round()) : page.clone();
   final scale = math.max(2, (math.max(out.width, out.height) / 500).round());
-  for (final (label, box) in boxes) {
-    final x = (box.x1 * f).round(), y = (box.y1 * f).round();
-    final w = math.max(4, (box.width * f).round()), h = math.max(4, (box.height * f).round());
-    strokeRect(out, x, y, w, h, math.max(2, scale ~/ 2 + 1), _boxColor);
-    final text = label.code;
-    final (tw, th) = pixelTextSize(text, scale);
-    final ty = y - th - 2 * scale >= 0 ? y - th - 2 * scale : y;
-    fillRect(out, x, ty, tw + 2 * scale, th + 2 * scale, _labelBg);
-    drawPixelText(out, text, x + scale, ty + scale, scale, _ink);
+  final rects = [
+    for (final (_, box) in boxes)
+      BBox(
+        (box.x1 * f).round(),
+        (box.y1 * f).round(),
+        (box.x1 * f).round() + math.max(4, (box.width * f).round()),
+        (box.y1 * f).round() + math.max(4, (box.height * f).round()),
+      ),
+  ];
+  for (final r in rects) {
+    strokeRect(out, r.x1, r.y1, r.width, r.height, math.max(2, scale ~/ 2 + 1), _boxColor);
+  }
+  final placed = <BBox>[];
+  for (final (i, (label, _)) in boxes.indexed) {
+    final r = rects[i];
+    final (tw, th) = pixelTextSize(label.code, scale);
+    final lw = tw + 2 * scale, lh = th + 2 * scale;
+    BBox at(int x, int y) => BBox(x, y, x + lw, y + lh);
+    // Outside the box first (its text stays visible), inside only when
+    // there is no room around it.
+    final outside = [
+      at(r.x1, r.y1 - lh),
+      at(r.x1, r.y2),
+      at(r.x2 - lw, r.y1 - lh),
+      at(r.x2 - lw, r.y2),
+      at(r.x1 - lw, r.y1),
+      at(r.x2, r.y1),
+    ].where((c) => c.x1 >= 0 && c.y1 >= 0 && c.x2 <= out.width && c.y2 <= out.height).toList();
+    bool free(BBox c) => placed.every((o) => c.intersection(o) == null);
+    bool clear(BBox c) =>
+        free(c) &&
+        [
+          for (final (k, o) in rects.indexed)
+            if (k != i) o,
+        ].every((o) => c.intersection(o) == null);
+    final spot = outside.where(clear).firstOrNull ?? outside.where(free).firstOrNull ?? at(r.x1, r.y1);
+    placed.add(spot);
+    fillRect(out, spot.x1, spot.y1, lw, lh, _labelBg);
+    drawPixelText(out, label.code, spot.x1 + scale, spot.y1 + scale, scale, _ink);
   }
   return out;
 }
