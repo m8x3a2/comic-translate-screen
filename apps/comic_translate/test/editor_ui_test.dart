@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:comic_translate/bootstrap.dart';
 import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/state/batch.dart';
+import 'package:comic_translate/state/exchange.dart';
 import 'package:comic_translate/state/editor.dart';
 import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
@@ -24,6 +25,9 @@ import 'package:path/path.dart' as p;
 import 'support/fake_plugins.dart';
 
 class _YesUi implements BatchUi {
+  @override
+  Future<bool> exchange(ExchangeRequest request) async => false;
+
   final errors = <Object>[];
 
   @override

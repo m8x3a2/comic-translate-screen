@@ -3529,6 +3529,510 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Very small text (lines of about {px} px): words may be glued together and letters misread. A larger screenshot reads better. The translator is told about it.'**
   String smallTextWarning(String px);
+
+  /// No description provided for @chatTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange with a chat AI'**
+  String get chatTitle;
+
+  /// No description provided for @chatSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ChatGPT, Gemini, Claude or any other. The program sends nothing itself: you carry the pictures and the instructions over, then paste the answer here.'**
+  String get chatSubtitle;
+
+  /// No description provided for @chatModeBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and translate'**
+  String get chatModeBoth;
+
+  /// No description provided for @chatModeRecognize.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get chatModeRecognize;
+
+  /// No description provided for @chatModeTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get chatModeTranslate;
+
+  /// No description provided for @chatPieces.
+  ///
+  /// In en, this message translates to:
+  /// **'Pieces of text: {count}, pages: {pages}'**
+  String chatPieces(int count, int pages);
+
+  /// No description provided for @chatNoPieces.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to send: find the text first (and read it, to translate it).'**
+  String get chatNoPieces;
+
+  /// No description provided for @chatSheets.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheets'**
+  String get chatSheets;
+
+  /// No description provided for @chatGroupingSize.
+  ///
+  /// In en, this message translates to:
+  /// **'as many as fit'**
+  String get chatGroupingSize;
+
+  /// No description provided for @chatGroupingCount.
+  ///
+  /// In en, this message translates to:
+  /// **'a set number'**
+  String get chatGroupingCount;
+
+  /// No description provided for @chatPerSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Pieces on a sheet'**
+  String get chatPerSheet;
+
+  /// No description provided for @chatSheetSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet size'**
+  String get chatSheetSize;
+
+  /// No description provided for @chatSheetPerPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Each page on new sheets'**
+  String get chatSheetPerPage;
+
+  /// No description provided for @chatContextImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Picture of the page'**
+  String get chatContextImage;
+
+  /// No description provided for @chatContextOff.
+  ///
+  /// In en, this message translates to:
+  /// **'do not send'**
+  String get chatContextOff;
+
+  /// No description provided for @chatContextSeparate.
+  ///
+  /// In en, this message translates to:
+  /// **'as its own picture'**
+  String get chatContextSeparate;
+
+  /// No description provided for @chatContextOnSheet.
+  ///
+  /// In en, this message translates to:
+  /// **'on the sheet'**
+  String get chatContextOnSheet;
+
+  /// No description provided for @chatGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Own sheets'**
+  String get chatGroups;
+
+  /// No description provided for @chatGroupsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 1-4, 5-6'**
+  String get chatGroupsHint;
+
+  /// No description provided for @chatGroupsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Not understood: \"{part}\". Number the pieces from 1 to {count}, e.g. 1-4, 5-6.'**
+  String chatGroupsError(String part, int count);
+
+  /// No description provided for @chatStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Send to the chat'**
+  String get chatStep1;
+
+  /// No description provided for @chatStep1Help.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the pictures and paste them into the chat (Ctrl+V), then copy the instructions, paste them too and send.'**
+  String get chatStep1Help;
+
+  /// No description provided for @chatStep1TextHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the instructions with the text, paste them into the chat (Ctrl+V) and send.'**
+  String get chatStep1TextHelp;
+
+  /// No description provided for @chatPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the pictures…'**
+  String get chatPreparing;
+
+  /// No description provided for @chatExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not prepare the files: {error}'**
+  String chatExportFailed(String error);
+
+  /// No description provided for @chatCopyPictures.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the pictures ({count})'**
+  String chatCopyPictures(int count);
+
+  /// No description provided for @chatCopyPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the instructions'**
+  String get chatCopyPrompt;
+
+  /// No description provided for @chatCopyOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to copy only this picture'**
+  String get chatCopyOne;
+
+  /// No description provided for @chatShowPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions for the chat'**
+  String get chatShowPrompt;
+
+  /// No description provided for @chatOpenFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the folder'**
+  String get chatOpenFolder;
+
+  /// No description provided for @chatCopiedPictures.
+  ///
+  /// In en, this message translates to:
+  /// **'Pictures copied: {count}. Paste them into the chat: Ctrl+V.'**
+  String chatCopiedPictures(int count);
+
+  /// No description provided for @chatCopiedOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied: {name}. Paste it into the chat: Ctrl+V.'**
+  String chatCopiedOne(String name);
+
+  /// No description provided for @chatCopiedPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions copied. Paste them into the chat: Ctrl+V.'**
+  String get chatCopiedPrompt;
+
+  /// No description provided for @chatCopyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not copy: another program holds the clipboard. Try again, or open the folder and drag the files into the chat.'**
+  String get chatCopyFailed;
+
+  /// No description provided for @chatStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Paste the chat\'s answer'**
+  String get chatStep2;
+
+  /// No description provided for @chatAnswerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'[01-003] text'**
+  String get chatAnswerHint;
+
+  /// No description provided for @chatAnswerHintBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'[01-003] I\'M LATE! --> Я ОПОЗДАЛ!'**
+  String get chatAnswerHintBoth;
+
+  /// No description provided for @chatPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get chatPaste;
+
+  /// No description provided for @chatFromFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Take from the txt files'**
+  String get chatFromFiles;
+
+  /// No description provided for @chatFromFilesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The answer can be written into ALL.txt or page_NN.txt in the exchange folder (Open the folder).'**
+  String get chatFromFilesHelp;
+
+  /// No description provided for @chatOpenTxt.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a txt file…'**
+  String get chatOpenTxt;
+
+  /// No description provided for @chatFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Answers found: {found} of {total}'**
+  String chatFound(int found, int total);
+
+  /// No description provided for @chatFromFilesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'From the files: {files}'**
+  String chatFromFilesNote(String files);
+
+  /// No description provided for @chatMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'No answer: {labels}'**
+  String chatMissing(String labels);
+
+  /// No description provided for @chatUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent (left out): {labels}'**
+  String chatUnknown(String labels);
+
+  /// No description provided for @chatNoArrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Without \"-->\" (all taken as the translation): {labels}'**
+  String chatNoArrow(String labels);
+
+  /// No description provided for @chatRepeated.
+  ///
+  /// In en, this message translates to:
+  /// **'Answered twice (the first one counts): {labels}'**
+  String chatRepeated(String labels);
+
+  /// No description provided for @chatApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get chatApply;
+
+  /// No description provided for @chatApplyContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply and go on'**
+  String get chatApplyContinue;
+
+  /// No description provided for @chatApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Pieces filled in: {count}'**
+  String chatApplied(int count);
+
+  /// No description provided for @chatLost.
+  ///
+  /// In en, this message translates to:
+  /// **'Not found on the page any more (boxes removed?): {labels}'**
+  String chatLost(String labels);
+
+  /// No description provided for @chatButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get chatButton;
+
+  /// No description provided for @chatButtonHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and translate with ChatGPT, Gemini, Claude… by hand, for the selected pages'**
+  String get chatButtonHelp;
+
+  /// No description provided for @chatMenuBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and translate through a chat…'**
+  String get chatMenuBoth;
+
+  /// No description provided for @chatMenuRecognize.
+  ///
+  /// In en, this message translates to:
+  /// **'Read through a chat…'**
+  String get chatMenuRecognize;
+
+  /// No description provided for @chatMenuTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate through a chat…'**
+  String get chatMenuTranslate;
+
+  /// No description provided for @chatMenuFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer for an earlier exchange…'**
+  String get chatMenuFolder;
+
+  /// No description provided for @chatNotExchangeFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder has no exchange.json: it is not an exchange folder.'**
+  String get chatNotExchangeFolder;
+
+  /// No description provided for @stageExchange.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the chat\'s answer'**
+  String get stageExchange;
+
+  /// No description provided for @chatSettingsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Tools → Reading.'**
+  String get chatSettingsHelp;
+
+  /// No description provided for @chatTogether.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and translate in one message'**
+  String get chatTogether;
+
+  /// No description provided for @chatTogetherHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'When both go through the chat. Off: first the reading, then a second round with the text to translate.'**
+  String get chatTogetherHelp;
+
+  /// No description provided for @chatPicturesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pictures'**
+  String get chatPicturesTitle;
+
+  /// No description provided for @chatImages.
+  ///
+  /// In en, this message translates to:
+  /// **'What to make'**
+  String get chatImages;
+
+  /// No description provided for @chatImagesSheets.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheets (several pieces on a picture)'**
+  String get chatImagesSheets;
+
+  /// No description provided for @chatImagesCrops.
+  ///
+  /// In en, this message translates to:
+  /// **'A picture for each piece'**
+  String get chatImagesCrops;
+
+  /// No description provided for @chatImagesBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get chatImagesBoth;
+
+  /// No description provided for @chatImagesInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheets are easier to send: one picture holds many pieces, each with its label above it. Single pictures are named like the labels (01-003.png) and go in folders of a set number.'**
+  String get chatImagesInfo;
+
+  /// No description provided for @chatGroupingInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'As many as fit: a sheet is filled up to its size. A set number: the same number of pieces on each sheet. In the exchange window you can also make your own sheets, e.g. 1-4, 5-6.'**
+  String get chatGroupingInfo;
+
+  /// No description provided for @chatSheetSizePx.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet size (pixels)'**
+  String get chatSheetSizePx;
+
+  /// No description provided for @chatSheetSizeInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The longest side of a sheet. Chats shrink large pictures, and small letters stop being readable; 1600 works well for most chats.'**
+  String get chatSheetSizeInfo;
+
+  /// No description provided for @chatContextInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'A smaller picture of the whole page with the labelled boxes on it: helps the chat see who speaks and what happens. Also works when only translating.'**
+  String get chatContextInfo;
+
+  /// No description provided for @chatCropsPerFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Pictures in a folder'**
+  String get chatCropsPerFolder;
+
+  /// No description provided for @chatAnswerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer'**
+  String get chatAnswerTitle;
+
+  /// No description provided for @chatTextFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Text files'**
+  String get chatTextFiles;
+
+  /// No description provided for @chatTextFilesAll.
+  ///
+  /// In en, this message translates to:
+  /// **'ALL.txt for all pages'**
+  String get chatTextFilesAll;
+
+  /// No description provided for @chatTextFilesPages.
+  ///
+  /// In en, this message translates to:
+  /// **'A file for each page'**
+  String get chatTextFilesPages;
+
+  /// No description provided for @chatTextFilesBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get chatTextFilesBoth;
+
+  /// No description provided for @chatTextFilesInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Files with one line per label in the exchange folder. Paste the chat\'s answer into them and press \"Take from the txt files\": ALL.txt first, then the page files for what is still missing.'**
+  String get chatTextFilesInfo;
+
+  /// No description provided for @chatPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Text for pieces without an answer'**
+  String get chatPlaceholder;
+
+  /// No description provided for @chatPlaceholderHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty: such pieces stay as they are. Something like ⟦empty⟧ makes them easy to find.'**
+  String get chatPlaceholderHelp;
+
+  /// No description provided for @chatPromptsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions for the chat'**
+  String get chatPromptsTitle;
+
+  /// No description provided for @chatPromptsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'In English: chats follow it best. The program puts the languages, the labels, the text with labels and what you wrote about the comic in place of these words: {names}.'**
+  String chatPromptsHelp(String names);
+
+  /// No description provided for @chatPromptDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the built-in one'**
+  String get chatPromptDefault;
 }
 
 class _AppLocalizationsDelegate

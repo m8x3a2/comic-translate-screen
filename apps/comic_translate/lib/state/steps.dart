@@ -12,6 +12,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:ct_core/ct_core.dart';
+import 'package:ct_providers/ct_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
@@ -20,6 +21,7 @@ import '../render/mask_raster.dart';
 import 'app_state.dart';
 import 'batch.dart';
 import 'editor.dart';
+import 'exchange.dart';
 import 'page_render.dart';
 import 'worker_pool.dart';
 import 'workspace.dart';
@@ -115,18 +117,38 @@ class StepsNotifier extends Notifier<StepState> {
   /// the selected pages of the list); [block] limits recognizing and
   /// translating to one block of the current page. Each page is one undo
   /// step. Errors are shown with [ui] and stop the run.
-  Future<void> run(ManualStep step, BatchUi ui, {int? block}) async {
+  ///
+  /// Reading or translating through a chat (the chosen engines, or [chat]
+  /// for the chat buttons whatever the engines): the steps before it run
+  /// first, then the exchange window, then the steps after it.
+  Future<void> run(ManualStep step, BatchUi ui, {int? block, ExchangeMode? chat}) async {
     if (state.running || ref.read(batchProvider) is BatchRunning) return;
     final ws = ref.read(workspaceProvider);
     final targets = block == null ? ws.stepPages : [?ws.currentPage];
     if (targets.isEmpty) return;
     final start = targets.first;
     final plans = {for (final page in targets) page.id: plan(step, page, block: block)};
-    final parts = {for (final steps in plans.values) ...steps.map(_part).nonNulls};
+    final settings0 = ref.read(settingsProvider);
+    bool viaChat(ManualStep s) => switch (chat) {
+      null =>
+        (s == ManualStep.recognize && readsThroughChat(settings0)) ||
+            (s == ManualStep.translate && translatesThroughChat(settings0)),
+      ExchangeMode.recognize => s == ManualStep.recognize,
+      ExchangeMode.translate => s == ManualStep.translate,
+      ExchangeMode.both => s == ManualStep.recognize || s == ManualStep.translate,
+    };
+    final rounds = chat != null
+        ? [chat]
+        : chatRounds(
+            settings0,
+            read: plans.values.any((s) => s.contains(ManualStep.recognize)),
+            translate: plans.values.any((s) => s.contains(ManualStep.translate)),
+          );
+    final parts = {for (final steps in plans.values) ...steps.where((s) => !viaChat(s)).map(_part).nonNulls};
     final services = ref.read(servicesProvider);
     final workspace = ref.read(workspaceProvider.notifier);
     final log = services.appLog.child(stage: 'edit');
-    if (plans.values.any((s) => s.contains(ManualStep.translate)) &&
+    if (plans.values.any((s) => s.any((x) => x == ManualStep.translate && !viaChat(x))) &&
         (!await checkTranslatorKey(ref, ui) || !await approveTranslatorNetwork(ref, ui))) {
       return;
     }
@@ -150,120 +172,160 @@ class StepsNotifier extends Notifier<StepState> {
       await worker.load(parts);
       final settings = ref.read(settingsProvider);
       log.info('step_start', {'step': step.name, 'pages': targets.length});
-      for (final (n, target) in targets.indexed) {
-        final id = target.id;
-        final steps = plans[id]!;
-        final merge = 'step:${_runs++}';
-        state = state.copyWith(pageId: id, page: n + 1);
-        log.info('step_page', {
-          'steps': [for (final s in steps) s.name],
-          'page': target.name,
-        });
-        for (final s in steps) {
-          cancel.throwIfCancelled();
-          state = state.copyWith(stage: _stage(s));
-          final page = ref.read(workspaceProvider).byId(id);
-          // Removed meanwhile: on to the next page.
-          if (page == null) break;
-          void commit(PageEntry Function(PageEntry p) change) =>
-              workspace.edit(id, change, mergeKey: merge, mergeWindow: _stepMergeWindow, byHand: false);
-          final seams = await webtoonSeams(ref.read(workspaceProvider), page);
-          switch (s) {
-            case ManualStep.detect:
-              final found = await worker.detect(
-                page.name,
-                path: page.path,
-                sourceLanguage: page.sourceOf(settings),
-                below: seams.below,
-                covered: seams.covered,
-                cancel: cancel,
-              );
-              commit((p) => p.copyWith(blocks: found));
-              workspace.selectBlock(null);
-            case ManualStep.recognize:
-              final which = block != null
-                  ? [block]
-                  : step == ManualStep.translate
-                  ? _unread(page, null)
-                  : [for (var i = 0; i < page.blocks.length; i++) i];
-              if (which.isEmpty) continue;
-              final read = await worker.recognize(
-                page.name,
-                path: page.path,
-                blocks: [for (final i in which) page.blocks[i].copy()],
-                sourceLanguage: page.sourceOf(settings),
-                below: seams.below,
-                cancel: cancel,
-              );
-              commit(
-                (p) => p.copyWith(
-                  blocks: _replace(
-                    p.blocks,
-                    which,
-                    read,
-                    (old, b) => old.copy()
-                      ..text = b.text
-                      ..linePx = b.linePx,
+      final active = worker;
+      Future<void> runSteps(Map<String, List<ManualStep>> plans) async {
+        final worker = active;
+        for (final (n, target) in targets.indexed) {
+          final id = target.id;
+          final steps = plans[id]!;
+          if (steps.isEmpty) continue;
+          final merge = 'step:${_runs++}';
+          state = state.copyWith(pageId: id, page: n + 1);
+          log.info('step_page', {
+            'steps': [for (final s in steps) s.name],
+            'page': target.name,
+          });
+          for (final s in steps) {
+            cancel.throwIfCancelled();
+            state = state.copyWith(stage: _stage(s));
+            final page = ref.read(workspaceProvider).byId(id);
+            // Removed meanwhile: on to the next page.
+            if (page == null) break;
+            void commit(PageEntry Function(PageEntry p) change) =>
+                workspace.edit(id, change, mergeKey: merge, mergeWindow: _stepMergeWindow, byHand: false);
+            final seams = await webtoonSeams(ref.read(workspaceProvider), page);
+            switch (s) {
+              case ManualStep.detect:
+                final found = await worker.detect(
+                  page.name,
+                  path: page.path,
+                  sourceLanguage: page.sourceOf(settings),
+                  below: seams.below,
+                  covered: seams.covered,
+                  cancel: cancel,
+                );
+                commit((p) => p.copyWith(blocks: found));
+                workspace.selectBlock(null);
+              case ManualStep.recognize:
+                final which = block != null
+                    ? [block]
+                    : step == ManualStep.translate
+                    ? _unread(page, null)
+                    : [for (var i = 0; i < page.blocks.length; i++) i];
+                if (which.isEmpty) continue;
+                final read = await worker.recognize(
+                  page.name,
+                  path: page.path,
+                  blocks: [for (final i in which) page.blocks[i].copy()],
+                  sourceLanguage: page.sourceOf(settings),
+                  below: seams.below,
+                  cancel: cancel,
+                );
+                commit(
+                  (p) => p.copyWith(
+                    blocks: _replace(
+                      p.blocks,
+                      which,
+                      read,
+                      (old, b) => old.copy()
+                        ..text = b.text
+                        ..linePx = b.linePx,
+                    ),
                   ),
-                ),
-              );
-            case ManualStep.translate:
-              final which = [
-                for (final (i, b) in page.blocks.indexed)
-                  if ((block == null || block == i) && b.text.trim().isNotEmpty) i,
-              ];
-              if (which.isEmpty) continue;
-              final done = await worker.translate(
-                page.name,
-                path: page.path,
-                blocks: [for (final i in which) page.blocks[i].copy()],
-                sourceLanguage: page.sourceOf(settings),
-                targetLanguage: page.targetOf(settings),
-                cancel: cancel,
-              );
-              commit(
-                (p) => p.copyWith(
-                  blocks: _replace(p.blocks, which, done, (old, b) => old.copy()..translation = b.translation),
-                ),
-              );
-            case ManualStep.mask:
-              final mask = await worker.makeMask(page.name, path: page.path, blocks: page.blocks, below: seams.below);
-              final file = p.join(workspace.pageDir(id).path, 'mask_${_stamp()}.png');
-              await worker.save([MaskOutput(file, mask)]);
-              commit((p) => p.copyWith(maskPath: file));
-              if (step == ManualStep.mask) ref.read(editorProvider.notifier).setTool(EditorTool.brush);
-            case ManualStep.clean:
-              final mask = await _currentMask(page);
-              final cleaned = await worker.inpaint(
-                page.name,
-                path: page.basePath,
-                mask: mask,
-                blocks: page.blocks,
-                below: seams.below,
-                cancel: cancel,
-              );
-              final dir = workspace.pageDir(id).path;
-              final file = p.join(dir, 'clean_${_stamp()}.png');
-              final overflow = cleaned.overflow;
-              final patch = overflow == null ? null : p.join(dir, 'overflow_${_stamp()}.png');
-              await worker.save([ImageOutput(file, cleaned.clean), if (patch != null) PatchOutput(patch, overflow!)]);
-              // A mask within the page leaves what was cleaned below it.
-              final reached = mask.height > cleaned.clean.height;
-              commit(
-                (p) => p.copyWith(
-                  cleanPath: file,
-                  maskPath: null,
-                  strokes: const [],
-                  overflowPath: reached ? patch : p.overflowPath,
-                ),
-              );
-              ref.read(editorProvider.notifier).setView(ViewMode.result);
+                );
+              case ManualStep.translate:
+                final which = [
+                  for (final (i, b) in page.blocks.indexed)
+                    if ((block == null || block == i) && b.text.trim().isNotEmpty) i,
+                ];
+                if (which.isEmpty) continue;
+                final done = await worker.translate(
+                  page.name,
+                  path: page.path,
+                  blocks: [for (final i in which) page.blocks[i].copy()],
+                  sourceLanguage: page.sourceOf(settings),
+                  targetLanguage: page.targetOf(settings),
+                  cancel: cancel,
+                );
+                commit(
+                  (p) => p.copyWith(
+                    blocks: _replace(p.blocks, which, done, (old, b) => old.copy()..translation = b.translation),
+                  ),
+                );
+              case ManualStep.mask:
+                final mask = await worker.makeMask(page.name, path: page.path, blocks: page.blocks, below: seams.below);
+                final file = p.join(workspace.pageDir(id).path, 'mask_${_stamp()}.png');
+                await worker.save([MaskOutput(file, mask)]);
+                commit((p) => p.copyWith(maskPath: file));
+                if (step == ManualStep.mask) ref.read(editorProvider.notifier).setTool(EditorTool.brush);
+              case ManualStep.clean:
+                final mask = await _currentMask(page);
+                final cleaned = await worker.inpaint(
+                  page.name,
+                  path: page.basePath,
+                  mask: mask,
+                  blocks: page.blocks,
+                  below: seams.below,
+                  cancel: cancel,
+                );
+                final dir = workspace.pageDir(id).path;
+                final file = p.join(dir, 'clean_${_stamp()}.png');
+                final overflow = cleaned.overflow;
+                final patch = overflow == null ? null : p.join(dir, 'overflow_${_stamp()}.png');
+                await worker.save([ImageOutput(file, cleaned.clean), if (patch != null) PatchOutput(patch, overflow!)]);
+                // A mask within the page leaves what was cleaned below it.
+                final reached = mask.height > cleaned.clean.height;
+                commit(
+                  (p) => p.copyWith(
+                    cleanPath: file,
+                    maskPath: null,
+                    strokes: const [],
+                    overflowPath: reached ? patch : p.overflowPath,
+                  ),
+                );
+                ref.read(editorProvider.notifier).setView(ViewMode.result);
+            }
           }
+          workspace.updatePage(
+            id,
+            (p) => p.status == PageStatus.skipped ? p.copyWith(status: PageStatus.pending, reason: null) : p,
+          );
         }
-        workspace.updatePage(
-          id,
-          (p) => p.status == PageStatus.skipped ? p.copyWith(status: PageStatus.pending, reason: null) : p,
-        );
+      }
+
+      if (rounds.isEmpty) {
+        await runSteps(plans);
+      } else {
+        await runSteps({for (final e in plans.entries) e.key: e.value.takeWhile((s) => !viaChat(s)).toList()});
+        for (final mode in rounds) {
+          cancel.throwIfCancelled();
+          state = state.copyWith(stage: 'exchange');
+          final ws = ref.read(workspaceProvider);
+          final only = <String, List<int>>{
+            for (final target in targets)
+              if (ws.byId(target.id) case final page?)
+                target.id: block != null
+                    ? [block]
+                    : mode == ExchangeMode.recognize && step == ManualStep.translate
+                    ? _unread(page, null)
+                    : [for (var i = 0; i < page.blocks.length; i++) i],
+          };
+          final request = ExchangeRequest(
+            pageIds: [
+              for (final t in targets)
+                if (only[t.id]?.isNotEmpty ?? false) t.id,
+            ],
+            mode: mode,
+            only: only,
+            fromRun: true,
+          );
+          if (request.pageIds.isEmpty) continue;
+          if (!await ui.exchange(request)) throw const CancelledException();
+        }
+        await runSteps({
+          for (final e in plans.entries)
+            e.key: e.value.skipWhile((s) => !viaChat(s)).where((s) => !viaChat(s)).toList(),
+        });
       }
       log.info('step_done', {'step': step.name, 'pages': targets.length});
     } on CancelledException {

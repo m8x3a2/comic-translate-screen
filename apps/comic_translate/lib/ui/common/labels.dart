@@ -20,6 +20,7 @@ String stageLabel(AppLocalizations l, String? stage) => switch (stage) {
   '03_translate' => l.stageTranslate,
   '04_mask' || '05_inpaint' => l.stageClean,
   '06_render' => l.stageRender,
+  'exchange' => l.stageExchange,
   _ => '',
 };
 

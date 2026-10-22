@@ -2015,4 +2015,303 @@ class AppLocalizationsRu extends AppLocalizations {
   String smallTextWarning(String px) {
     return 'Очень мелкий текст (строки около $px точек): слова могут слипаться, буквы — путаться. Снимок покрупнее распознается лучше. Переводчику об этом сказано.';
   }
+
+  @override
+  String get chatTitle => 'Обмен с чатом';
+
+  @override
+  String get chatSubtitle =>
+      'ChatGPT, Gemini, Claude или любой другой. Программа сама ничего не отправляет: вы переносите картинки и инструкцию в чат, а потом вставляете сюда его ответ.';
+
+  @override
+  String get chatModeBoth => 'Распознать и перевести';
+
+  @override
+  String get chatModeRecognize => 'Распознать';
+
+  @override
+  String get chatModeTranslate => 'Перевести';
+
+  @override
+  String chatPieces(int count, int pages) {
+    return 'Пузырей с текстом: $count, страниц: $pages';
+  }
+
+  @override
+  String get chatNoPieces =>
+      'Нечего отправлять: сначала найдите текст (а чтобы переводить — и распознайте его).';
+
+  @override
+  String get chatSheets => 'Листы';
+
+  @override
+  String get chatGroupingSize => 'сколько поместится';
+
+  @override
+  String get chatGroupingCount => 'по количеству';
+
+  @override
+  String get chatPerSheet => 'Пузырей на листе';
+
+  @override
+  String get chatSheetSize => 'Размер листа';
+
+  @override
+  String get chatSheetPerPage => 'Каждая страница с нового листа';
+
+  @override
+  String get chatContextImage => 'Картинка страницы';
+
+  @override
+  String get chatContextOff => 'не отправлять';
+
+  @override
+  String get chatContextSeparate => 'отдельной картинкой';
+
+  @override
+  String get chatContextOnSheet => 'на листе';
+
+  @override
+  String get chatGroups => 'Свои листы';
+
+  @override
+  String get chatGroupsHint => 'например 1-4, 5-6';
+
+  @override
+  String chatGroupsError(String part, int count) {
+    return 'Непонятно: «$part». Номера пузырей от 1 до $count, например 1-4, 5-6.';
+  }
+
+  @override
+  String get chatStep1 => '1. Отправьте в чат';
+
+  @override
+  String get chatStep1Help =>
+      'Скопируйте картинки и вставьте их в чат (Ctrl+V), затем скопируйте инструкцию, тоже вставьте и отправьте.';
+
+  @override
+  String get chatStep1TextHelp =>
+      'Скопируйте инструкцию вместе с текстом, вставьте в чат (Ctrl+V) и отправьте.';
+
+  @override
+  String get chatPreparing => 'Готовлю картинки…';
+
+  @override
+  String chatExportFailed(String error) {
+    return 'Не удалось подготовить файлы: $error';
+  }
+
+  @override
+  String chatCopyPictures(int count) {
+    return 'Копировать картинки ($count)';
+  }
+
+  @override
+  String get chatCopyPrompt => 'Копировать инструкцию';
+
+  @override
+  String get chatCopyOne => 'Щелчок — скопировать только эту картинку';
+
+  @override
+  String get chatShowPrompt => 'Инструкция для чата';
+
+  @override
+  String get chatOpenFolder => 'Открыть папку';
+
+  @override
+  String chatCopiedPictures(int count) {
+    return 'Скопировано картинок: $count. Вставьте их в чат: Ctrl+V.';
+  }
+
+  @override
+  String chatCopiedOne(String name) {
+    return 'Скопировано: $name. Вставьте в чат: Ctrl+V.';
+  }
+
+  @override
+  String get chatCopiedPrompt =>
+      'Инструкция скопирована. Вставьте её в чат: Ctrl+V.';
+
+  @override
+  String get chatCopyFailed =>
+      'Не удалось скопировать: буфер обмена занят другой программой. Попробуйте ещё раз или откройте папку и перетащите файлы в чат.';
+
+  @override
+  String get chatStep2 => '2. Вставьте ответ чата';
+
+  @override
+  String get chatAnswerHint => '[01-003] текст';
+
+  @override
+  String get chatAnswerHintBoth => '[01-003] I\'M LATE! --> Я ОПОЗДАЛ!';
+
+  @override
+  String get chatPaste => 'Вставить из буфера';
+
+  @override
+  String get chatFromFiles => 'Взять из txt-файлов';
+
+  @override
+  String get chatFromFilesHelp =>
+      'Ответ можно вписать в ALL.txt или page_NN.txt в папке обмена (кнопка «Открыть папку»).';
+
+  @override
+  String get chatOpenTxt => 'Открыть txt-файл…';
+
+  @override
+  String chatFound(int found, int total) {
+    return 'Найдено ответов: $found из $total';
+  }
+
+  @override
+  String chatFromFilesNote(String files) {
+    return 'Взято из файлов: $files';
+  }
+
+  @override
+  String chatMissing(String labels) {
+    return 'Нет ответа: $labels';
+  }
+
+  @override
+  String chatUnknown(String labels) {
+    return 'Таких не отправляли (пропущены): $labels';
+  }
+
+  @override
+  String chatNoArrow(String labels) {
+    return 'Без «-->» (всё взято как перевод): $labels';
+  }
+
+  @override
+  String chatRepeated(String labels) {
+    return 'Ответ дан дважды (взят первый): $labels';
+  }
+
+  @override
+  String get chatApply => 'Применить';
+
+  @override
+  String get chatApplyContinue => 'Применить и продолжить';
+
+  @override
+  String chatApplied(int count) {
+    return 'Записано пузырей: $count';
+  }
+
+  @override
+  String chatLost(String labels) {
+    return 'Больше нет на странице (рамки удалены?): $labels';
+  }
+
+  @override
+  String get chatButton => 'Чат';
+
+  @override
+  String get chatButtonHelp =>
+      'Распознать и перевести с ChatGPT, Gemini, Claude… вручную, для выбранных страниц';
+
+  @override
+  String get chatMenuBoth => 'Распознать и перевести через чат…';
+
+  @override
+  String get chatMenuRecognize => 'Распознать через чат…';
+
+  @override
+  String get chatMenuTranslate => 'Перевести через чат…';
+
+  @override
+  String get chatMenuFolder => 'Ответ для прошлой выгрузки…';
+
+  @override
+  String get chatNotExchangeFolder =>
+      'В этой папке нет exchange.json — это не папка обмена.';
+
+  @override
+  String get stageExchange => 'Ждёт ответа чата';
+
+  @override
+  String get chatSettingsHelp =>
+      'Кнопка «Чат» на главном экране работает при любых настройках. Чтобы «Перевести всё» само открывало обмен, выберите «Вручную через чат» в разделе «Переводчик» и/или в «Инструменты → Распознавание».';
+
+  @override
+  String get chatTogether => 'Распознавать и переводить одним сообщением';
+
+  @override
+  String get chatTogetherHelp =>
+      'Когда и то, и другое идёт через чат. Выключено: сначала распознавание, потом второй заход с текстом для перевода.';
+
+  @override
+  String get chatPicturesTitle => 'Картинки';
+
+  @override
+  String get chatImages => 'Что делать';
+
+  @override
+  String get chatImagesSheets => 'Листы (несколько пузырей на картинке)';
+
+  @override
+  String get chatImagesCrops => 'По картинке на каждый пузырь';
+
+  @override
+  String get chatImagesBoth => 'И то, и другое';
+
+  @override
+  String get chatImagesInfo =>
+      'Листы удобнее отправлять: на одной картинке много пузырей, над каждым его метка. Отдельные картинки называются как метки (01-003.png) и лежат по папкам по заданному числу.';
+
+  @override
+  String get chatGroupingInfo =>
+      'Сколько поместится: лист заполняется до своего размера. По количеству: на каждом листе одинаковое число пузырей. В окне обмена можно задать и свои листы, например 1-4, 5-6.';
+
+  @override
+  String get chatSheetSizePx => 'Размер листа (точек)';
+
+  @override
+  String get chatSheetSizeInfo =>
+      'Самая длинная сторона листа. Чаты уменьшают большие картинки, и мелкие буквы перестают читаться; 1600 подходит большинству чатов.';
+
+  @override
+  String get chatContextInfo =>
+      'Уменьшенная картинка всей страницы с подписанными рамками: помогает чату понять, кто говорит и что происходит. Работает и когда только переводим.';
+
+  @override
+  String get chatCropsPerFolder => 'Картинок в папке';
+
+  @override
+  String get chatAnswerTitle => 'Ответ';
+
+  @override
+  String get chatTextFiles => 'Текстовые файлы';
+
+  @override
+  String get chatTextFilesAll => 'ALL.txt на все страницы';
+
+  @override
+  String get chatTextFilesPages => 'Файл на каждую страницу';
+
+  @override
+  String get chatTextFilesBoth => 'И то, и другое';
+
+  @override
+  String get chatTextFilesInfo =>
+      'Файлы с одной строкой на метку в папке обмена. Вставьте в них ответ чата и нажмите «Взять из txt-файлов»: сначала берётся ALL.txt, потом файлы страниц для того, чего не хватило.';
+
+  @override
+  String get chatPlaceholder => 'Текст для пузырей без ответа';
+
+  @override
+  String get chatPlaceholderHelp =>
+      'Пусто — такие пузыри не меняются. Что-нибудь вроде ⟦пусто⟧ поможет их быстро найти.';
+
+  @override
+  String get chatPromptsTitle => 'Инструкции для чата';
+
+  @override
+  String chatPromptsHelp(String names) {
+    return 'На английском: так чаты выполняют точнее. Вместо этих слов программа подставит языки, метки, текст с метками и то, что вы написали о комиксе: $names.';
+  }
+
+  @override
+  String get chatPromptDefault => 'Вернуть стандартную';
 }

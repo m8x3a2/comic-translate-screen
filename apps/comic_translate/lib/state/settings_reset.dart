@@ -5,7 +5,7 @@ library;
 
 import 'package:ct_core/ct_core.dart';
 
-enum SettingsPart { general, translator, tools, text, upscale, export, keys, models }
+enum SettingsPart { general, translator, exchange, tools, text, upscale, export, keys, models }
 
 void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part}) {
   final d = AppSettings();
@@ -46,6 +46,8 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
         s.render = d.render;
       case SettingsPart.upscale:
         s.upscale = d.upscale;
+      case SettingsPart.exchange:
+        s.exchange = d.exchange;
       case SettingsPart.export:
         s.export = d.export;
       case SettingsPart.keys:

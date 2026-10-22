@@ -327,6 +327,7 @@ class PipelineSpec {
       ..remove('render')
       ..remove('upscale')
       ..remove('export')
+      ..remove('exchange')
       ..remove('ui')
       ..remove('approved_network_plugins');
     final configs = {
@@ -446,12 +447,17 @@ class PagePipeline {
   /// edge between them is found, read and cleaned whole (see `seams.dart`);
   /// [covered] are the parts of this page that blocks of the page above
   /// reach into (not detected again here).
+  ///
+  /// [blocks]: found already (the exchange with a chat), so not detected
+  /// again; with [read] false their text is kept as it is too.
   Future<CleanPage> prepare(
     RgbImage image,
     PluginContext context, {
     void Function(String stage)? onStage,
     RgbImage? next,
     List<BBox> covered = const [],
+    List<TextBlock>? blocks,
+    bool read = true,
   }) async {
     final recorder = context.recorder;
     final page = context.page;
@@ -469,20 +475,23 @@ class PagePipeline {
     }
 
     start('01_detect');
-    var blocks = await detectOnStrip(detector, image, context, next: next, covered: covered);
+    var found = blocks ?? await detectOnStrip(detector, image, context, next: next, covered: covered);
     lap('01_detect');
-    await recorder?.writeJsonArtifact('01_detect', 'blocks.json', [for (final b in blocks) b.toJson()], page: page);
+    await recorder?.writeJsonArtifact('01_detect', 'blocks.json', [for (final b in found) b.toJson()], page: page);
 
     // The page with the rows of the next one that its blocks reach into.
-    final rows = next == null ? 0 : seamRows(blocks, image.height, next.height);
+    final rows = next == null ? 0 : seamRows(found, image.height, next.height);
     final work = rows > 0 ? extendBelow(image, next!, rows) : image;
 
-    start('02_ocr');
-    await recognizeBlocks(ocr, work, blocks, settings, context, sourceLanguage: sourceLanguage);
-    // "Auto": read right to left when the page turned out to be Japanese.
-    blocks = sortBlocks(blocks, rightToLeft: resolveAutoSourceLanguage(blocks, sourceLanguage) == 'Japanese');
-    lap('02_ocr');
-    await recorder?.writeJsonArtifact('02_ocr', 'blocks.json', [for (final b in blocks) b.toJson()], page: page);
+    if (read) {
+      start('02_ocr');
+      await recognizeBlocks(ocr, work, found, settings, context, sourceLanguage: sourceLanguage);
+      // "Auto": read right to left when the page turned out to be Japanese.
+      found = sortBlocks(found, rightToLeft: resolveAutoSourceLanguage(found, sourceLanguage) == 'Japanese');
+      lap('02_ocr');
+      await recorder?.writeJsonArtifact('02_ocr', 'blocks.json', [for (final b in found) b.toJson()], page: page);
+    }
+    blocks = found;
 
     start('03_translate');
     await translatePageBlocks(

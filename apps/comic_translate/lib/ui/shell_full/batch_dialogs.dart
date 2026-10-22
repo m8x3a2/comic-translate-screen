@@ -7,16 +7,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/batch.dart';
+import '../../state/exchange.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
 import '../common/plugin_strings.dart';
 import '../settings/settings_screen.dart';
+import 'exchange_dialog.dart';
 import 'main_screen.dart' show showInExplorer;
 
 class DialogBatchUi implements BatchUi {
   DialogBatchUi(this.context);
 
   final BuildContext context;
+
+  @override
+  Future<bool> exchange(ExchangeRequest request) async {
+    if (!context.mounted) return false;
+    return showExchangeDialog(context, request);
+  }
 
   @override
   Future<bool> confirmDownload(List<ModelSpec> models) async {

@@ -20,6 +20,7 @@ import '../../pipeline/pipeline_worker.dart' show GpuFallback, gpuFallbacks;
 import '../../state/app_state.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
+import '../../state/exchange.dart';
 import '../../state/export.dart';
 import '../../state/project.dart';
 import '../../state/steps.dart';
@@ -31,6 +32,7 @@ import '../common/panels.dart';
 import '../common/plugin_strings.dart';
 import '../settings/settings_screen.dart';
 import 'batch_dialogs.dart';
+import 'exchange_dialog.dart';
 import 'export_dialog.dart';
 import 'home_view.dart';
 import 'page_grid.dart';
@@ -357,6 +359,37 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     if (dir != null) await _open([dir]);
   }
 
+  /// The chat buttons: [mode] through a chat for the selected pages.
+  Future<void> _chat(ExchangeMode mode) => ref
+      .read(stepsProvider.notifier)
+      .run(
+        mode == ExchangeMode.recognize ? ManualStep.recognize : ManualStep.translate,
+        DialogBatchUi(context),
+        chat: mode,
+      );
+
+  /// Opens the folder of an earlier exchange to paste the chat's answer.
+  Future<void> _chatFolder() async {
+    final l = context.l10n;
+    final dir = await getDirectoryPath(
+      initialDirectory: p.join(ref.read(servicesProvider).paths.root.path, 'exchange'),
+    );
+    if (dir == null || !mounted) return;
+    final ExchangeManifest manifest;
+    try {
+      manifest = await ExchangeManifest.read(Directory(dir));
+    } on Object {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.chatNotExchangeFolder)));
+      return;
+    }
+    if (!mounted) return;
+    await showExchangeDialog(
+      context,
+      ExchangeRequest(pageIds: manifest.pages.keys.toList(), mode: manifest.mode),
+      existing: manifest,
+    );
+  }
+
   Future<void> _translate() async {
     final l = context.l10n;
     BatchReport? lastReport() => switch (ref.read(batchProvider)) {
@@ -535,6 +568,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                     onSaveProject: () => _saveProject(),
                     onSaveProjectAs: () => _saveProject(asNew: true),
                     onTranslate: _translate,
+                    onChat: _chat,
+                    onChatFolder: _chatFolder,
                     onExport: _export,
                     onCloseAll: _closeAll,
                     onSettings: _openSettings,
@@ -675,6 +710,8 @@ class _TopBar extends ConsumerWidget {
     required this.onSaveProject,
     required this.onSaveProjectAs,
     required this.onTranslate,
+    required this.onChat,
+    required this.onChatFolder,
     required this.onExport,
     required this.onCloseAll,
     required this.onSettings,
@@ -686,6 +723,8 @@ class _TopBar extends ConsumerWidget {
   final VoidCallback onSaveProject;
   final VoidCallback onSaveProjectAs;
   final VoidCallback onTranslate;
+  final void Function(ExchangeMode mode) onChat;
+  final VoidCallback onChatFolder;
   final VoidCallback onExport;
   final VoidCallback onCloseAll;
   final void Function([SettingsSection section]) onSettings;
@@ -701,7 +740,33 @@ class _TopBar extends ConsumerWidget {
     final recent = ref.watch(settingsProvider.select((s) => s.recentProjects));
     return LayoutBuilder(
       builder: (context, c) {
-        final compact = c.maxWidth < 1200;
+        final compact = c.maxWidth < 1400;
+        // Too narrow for the chat button: its items go into the first menu.
+        final tiny = c.maxWidth < 900;
+        final chatEnabled = hasPages && !running && !ref.watch(stepsProvider).running;
+        final chatItems = [
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.translate),
+            onPressed: chatEnabled ? () => onChat(ExchangeMode.both) : null,
+            child: Text(l.chatMenuBoth),
+          ),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.text_fields),
+            onPressed: chatEnabled ? () => onChat(ExchangeMode.recognize) : null,
+            child: Text(l.chatMenuRecognize),
+          ),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.g_translate_outlined),
+            onPressed: chatEnabled ? () => onChat(ExchangeMode.translate) : null,
+            child: Text(l.chatMenuTranslate),
+          ),
+          const Divider(),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.folder_open_outlined),
+            onPressed: chatEnabled ? onChatFolder : null,
+            child: Text(l.chatMenuFolder),
+          ),
+        ];
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
@@ -754,6 +819,7 @@ class _TopBar extends ConsumerWidget {
                       child: Text(l.closeAll),
                     ),
                   ],
+                  if (tiny && hasPages) ...[const Divider(), ...chatItems],
                 ],
                 builder: (context, controller, _) {
                   void toggle() => controller.isOpen ? controller.close() : controller.open();
@@ -779,6 +845,28 @@ class _TopBar extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
+              if (!tiny) ...[
+                MenuAnchor(
+                  menuChildren: chatItems,
+                  builder: (context, controller, _) {
+                    void toggle() => controller.isOpen ? controller.close() : controller.open();
+                    return Tooltip(
+                      message: l.chatButtonHelp,
+                      child: compact
+                          ? IconButton.outlined(
+                              onPressed: chatEnabled ? toggle : null,
+                              icon: const Icon(Icons.forum_outlined),
+                            )
+                          : OutlinedButton.icon(
+                              onPressed: chatEnabled ? toggle : null,
+                              icon: const Icon(Icons.forum_outlined),
+                              label: Text(l.chatButton),
+                            ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
               if (running)
                 OutlinedButton.icon(
                   onPressed: (batch).stopping ? null : () => ref.read(batchProvider.notifier).stop(),

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:comic_translate/bootstrap.dart';
 import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/state/batch.dart';
+import 'package:comic_translate/state/exchange.dart';
 import 'package:comic_translate/state/project.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:ct_core/ct_core.dart';
@@ -15,6 +16,9 @@ import 'package:path/path.dart' as p;
 import 'support/fake_plugins.dart';
 
 class _YesUi implements BatchUi {
+  @override
+  Future<bool> exchange(ExchangeRequest request) async => false;
+
   @override
   Future<void> explainMissingKey(PluginInfo translator, String host) async {}
 

@@ -4,12 +4,14 @@
 library;
 
 import 'package:ct_core/ct_core.dart';
+import 'package:ct_providers/ct_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import '../pipeline/page_pipeline.dart';
 import '../pipeline/pipeline_worker.dart';
 import 'app_state.dart';
+import 'exchange.dart';
 import 'page_render.dart';
 import 'worker_pool.dart';
 import 'workspace.dart';
@@ -33,6 +35,10 @@ abstract interface class BatchUi {
   /// [count] of the pages to translate were changed by hand: translate them
   /// again (losing those changes), skip them, or stop?
   Future<HandEditedChoice> confirmHandEdited(int count);
+
+  /// Opens the exchange with a chat AI for [request]; true when the
+  /// chat's answer was applied.
+  Future<bool> exchange(ExchangeRequest request);
 }
 
 enum HandEditedChoice { translate, skip, cancel }
@@ -238,10 +244,35 @@ class BatchNotifier extends Notifier<BatchState> {
       worker = await pool.acquire(setup, key, log);
       await worker.load({...PipelinePart.values});
       log.info('batch_start', {'pages': todo.length, 'translator': settings.translator});
+      // Reading or translating through a chat: the text of every page is
+      // found first, then the exchange window, then cleaning and drawing.
+      final rounds = chatRounds(settings);
+      final viaChat = rounds.isNotEmpty;
+      final withText = viaChat ? await _findText(worker, todo, settings, cancel, skipped, log) : todo;
+      if (viaChat) {
+        for (final mode in rounds) {
+          if (withText.isEmpty || cancel.isCancelled) break;
+          _update((b) => b.copyWith(stage: 'exchange', pageName: ''));
+          final applied = await ui.exchange(
+            ExchangeRequest(pageIds: [for (final p in withText) p.id], mode: mode, fromRun: true),
+          );
+          if (!applied) {
+            log.info('batch_exchange_cancelled', {'mode': mode.name});
+            cancel.cancel();
+          }
+        }
+        for (final page in withText) {
+          workspace.updatePage(
+            page.id,
+            (p) => p.copyWith(status: p.isDone ? PageStatus.done : PageStatus.pending, stage: null),
+          );
+        }
+      }
       final stamp = _stamp(started);
       final pageMs = <int>[];
       for (final (i, page) in todo.indexed) {
         if (cancel.isCancelled) break;
+        if (viaChat && !withText.contains(page)) continue;
         final sw = Stopwatch()..start();
         void stage(String s) {
           workspace.updatePage(page.id, (p) => p.copyWith(stage: s));
@@ -254,6 +285,7 @@ class BatchNotifier extends Notifier<BatchState> {
           // Webtoon mode: bubbles cut by the edge to the next page are this
           // page's; those of the page above (done just before) are its.
           final seams = await webtoonSeams(ref.read(workspaceProvider), page);
+          final found = viaChat ? ref.read(workspaceProvider).byId(page.id)?.blocks : null;
           final cleaned = await worker.prepare(
             page.name,
             path: page.path,
@@ -261,6 +293,8 @@ class BatchNotifier extends Notifier<BatchState> {
             targetLanguage: page.targetOf(settings),
             below: seams.below,
             covered: seams.covered,
+            blocks: found == null ? null : [for (final b in found) b.copy()],
+            read: !viaChat,
             cancel: cancel,
             onStage: stage,
           );
@@ -375,6 +409,64 @@ class BatchNotifier extends Notifier<BatchState> {
         state = BatchIdle(report);
       }
     }
+  }
+
+  /// Before the exchange with a chat: finds the text blocks of [pages] (and
+  /// reads them when reading does not go through the chat). Returns the
+  /// pages that worked; the others are added to [skipped].
+  Future<List<PageEntry>> _findText(
+    PipelineWorker worker,
+    List<PageEntry> pages,
+    AppSettings settings,
+    CancelToken cancel,
+    List<SkippedPage> skipped,
+    EventLog log,
+  ) async {
+    final workspace = ref.read(workspaceProvider.notifier);
+    final read = !readsThroughChat(settings);
+    final ready = <PageEntry>[];
+    for (final page in pages) {
+      cancel.throwIfCancelled();
+      workspace.updatePage(page.id, (p) => p.copyWith(status: PageStatus.running, stage: '01_detect', reason: null));
+      _update((b) => b.copyWith(pageName: page.name, stage: '01_detect'));
+      try {
+        final seams = await webtoonSeams(ref.read(workspaceProvider), page);
+        var blocks = await worker.detect(
+          page.name,
+          path: page.path,
+          sourceLanguage: page.sourceOf(settings),
+          below: seams.below,
+          covered: seams.covered,
+          cancel: cancel,
+        );
+        if (read && blocks.isNotEmpty) {
+          workspace.updatePage(page.id, (p) => p.copyWith(stage: '02_ocr'));
+          _update((b) => b.copyWith(stage: '02_ocr'));
+          blocks = await worker.recognize(
+            page.name,
+            path: page.path,
+            blocks: blocks,
+            sourceLanguage: page.sourceOf(settings),
+            below: seams.below,
+            cancel: cancel,
+          );
+        }
+        workspace.edit(page.id, (p) => p.copyWith(blocks: blocks, stage: 'exchange'), byHand: false);
+        ready.add(page);
+      } on CancelledException {
+        workspace.updatePage(
+          page.id,
+          (p) => p.copyWith(status: p.isDone ? PageStatus.done : PageStatus.pending, stage: null),
+        );
+        rethrow;
+      } catch (e, st) {
+        log.error('page_failed', e, st, {'page': page.name});
+        final reason = skipReasonFor(e);
+        skipped.add(SkippedPage(page.id, page.name, reason));
+        workspace.updatePage(page.id, (p) => p.copyWith(status: PageStatus.skipped, reason: reason, stage: null));
+      }
+    }
+    return ready;
   }
 
   /// Writes the original's automatic exports for [page]; returns the folder.

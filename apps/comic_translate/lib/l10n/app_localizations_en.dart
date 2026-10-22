@@ -2012,4 +2012,303 @@ class AppLocalizationsEn extends AppLocalizations {
   String smallTextWarning(String px) {
     return 'Very small text (lines of about $px px): words may be glued together and letters misread. A larger screenshot reads better. The translator is told about it.';
   }
+
+  @override
+  String get chatTitle => 'Exchange with a chat AI';
+
+  @override
+  String get chatSubtitle =>
+      'ChatGPT, Gemini, Claude or any other. The program sends nothing itself: you carry the pictures and the instructions over, then paste the answer here.';
+
+  @override
+  String get chatModeBoth => 'Read and translate';
+
+  @override
+  String get chatModeRecognize => 'Read';
+
+  @override
+  String get chatModeTranslate => 'Translate';
+
+  @override
+  String chatPieces(int count, int pages) {
+    return 'Pieces of text: $count, pages: $pages';
+  }
+
+  @override
+  String get chatNoPieces =>
+      'Nothing to send: find the text first (and read it, to translate it).';
+
+  @override
+  String get chatSheets => 'Sheets';
+
+  @override
+  String get chatGroupingSize => 'as many as fit';
+
+  @override
+  String get chatGroupingCount => 'a set number';
+
+  @override
+  String get chatPerSheet => 'Pieces on a sheet';
+
+  @override
+  String get chatSheetSize => 'Sheet size';
+
+  @override
+  String get chatSheetPerPage => 'Each page on new sheets';
+
+  @override
+  String get chatContextImage => 'Picture of the page';
+
+  @override
+  String get chatContextOff => 'do not send';
+
+  @override
+  String get chatContextSeparate => 'as its own picture';
+
+  @override
+  String get chatContextOnSheet => 'on the sheet';
+
+  @override
+  String get chatGroups => 'Own sheets';
+
+  @override
+  String get chatGroupsHint => 'e.g. 1-4, 5-6';
+
+  @override
+  String chatGroupsError(String part, int count) {
+    return 'Not understood: \"$part\". Number the pieces from 1 to $count, e.g. 1-4, 5-6.';
+  }
+
+  @override
+  String get chatStep1 => '1. Send to the chat';
+
+  @override
+  String get chatStep1Help =>
+      'Copy the pictures and paste them into the chat (Ctrl+V), then copy the instructions, paste them too and send.';
+
+  @override
+  String get chatStep1TextHelp =>
+      'Copy the instructions with the text, paste them into the chat (Ctrl+V) and send.';
+
+  @override
+  String get chatPreparing => 'Preparing the pictures…';
+
+  @override
+  String chatExportFailed(String error) {
+    return 'Could not prepare the files: $error';
+  }
+
+  @override
+  String chatCopyPictures(int count) {
+    return 'Copy the pictures ($count)';
+  }
+
+  @override
+  String get chatCopyPrompt => 'Copy the instructions';
+
+  @override
+  String get chatCopyOne => 'Click to copy only this picture';
+
+  @override
+  String get chatShowPrompt => 'Instructions for the chat';
+
+  @override
+  String get chatOpenFolder => 'Open the folder';
+
+  @override
+  String chatCopiedPictures(int count) {
+    return 'Pictures copied: $count. Paste them into the chat: Ctrl+V.';
+  }
+
+  @override
+  String chatCopiedOne(String name) {
+    return 'Copied: $name. Paste it into the chat: Ctrl+V.';
+  }
+
+  @override
+  String get chatCopiedPrompt =>
+      'Instructions copied. Paste them into the chat: Ctrl+V.';
+
+  @override
+  String get chatCopyFailed =>
+      'Could not copy: another program holds the clipboard. Try again, or open the folder and drag the files into the chat.';
+
+  @override
+  String get chatStep2 => '2. Paste the chat\'s answer';
+
+  @override
+  String get chatAnswerHint => '[01-003] text';
+
+  @override
+  String get chatAnswerHintBoth => '[01-003] I\'M LATE! --> Я ОПОЗДАЛ!';
+
+  @override
+  String get chatPaste => 'Paste';
+
+  @override
+  String get chatFromFiles => 'Take from the txt files';
+
+  @override
+  String get chatFromFilesHelp =>
+      'The answer can be written into ALL.txt or page_NN.txt in the exchange folder (Open the folder).';
+
+  @override
+  String get chatOpenTxt => 'Open a txt file…';
+
+  @override
+  String chatFound(int found, int total) {
+    return 'Answers found: $found of $total';
+  }
+
+  @override
+  String chatFromFilesNote(String files) {
+    return 'From the files: $files';
+  }
+
+  @override
+  String chatMissing(String labels) {
+    return 'No answer: $labels';
+  }
+
+  @override
+  String chatUnknown(String labels) {
+    return 'Not sent (left out): $labels';
+  }
+
+  @override
+  String chatNoArrow(String labels) {
+    return 'Without \"-->\" (all taken as the translation): $labels';
+  }
+
+  @override
+  String chatRepeated(String labels) {
+    return 'Answered twice (the first one counts): $labels';
+  }
+
+  @override
+  String get chatApply => 'Apply';
+
+  @override
+  String get chatApplyContinue => 'Apply and go on';
+
+  @override
+  String chatApplied(int count) {
+    return 'Pieces filled in: $count';
+  }
+
+  @override
+  String chatLost(String labels) {
+    return 'Not found on the page any more (boxes removed?): $labels';
+  }
+
+  @override
+  String get chatButton => 'Chat';
+
+  @override
+  String get chatButtonHelp =>
+      'Read and translate with ChatGPT, Gemini, Claude… by hand, for the selected pages';
+
+  @override
+  String get chatMenuBoth => 'Read and translate through a chat…';
+
+  @override
+  String get chatMenuRecognize => 'Read through a chat…';
+
+  @override
+  String get chatMenuTranslate => 'Translate through a chat…';
+
+  @override
+  String get chatMenuFolder => 'Answer for an earlier exchange…';
+
+  @override
+  String get chatNotExchangeFolder =>
+      'This folder has no exchange.json: it is not an exchange folder.';
+
+  @override
+  String get stageExchange => 'Waiting for the chat\'s answer';
+
+  @override
+  String get chatSettingsHelp =>
+      'The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Tools → Reading.';
+
+  @override
+  String get chatTogether => 'Read and translate in one message';
+
+  @override
+  String get chatTogetherHelp =>
+      'When both go through the chat. Off: first the reading, then a second round with the text to translate.';
+
+  @override
+  String get chatPicturesTitle => 'Pictures';
+
+  @override
+  String get chatImages => 'What to make';
+
+  @override
+  String get chatImagesSheets => 'Sheets (several pieces on a picture)';
+
+  @override
+  String get chatImagesCrops => 'A picture for each piece';
+
+  @override
+  String get chatImagesBoth => 'Both';
+
+  @override
+  String get chatImagesInfo =>
+      'Sheets are easier to send: one picture holds many pieces, each with its label above it. Single pictures are named like the labels (01-003.png) and go in folders of a set number.';
+
+  @override
+  String get chatGroupingInfo =>
+      'As many as fit: a sheet is filled up to its size. A set number: the same number of pieces on each sheet. In the exchange window you can also make your own sheets, e.g. 1-4, 5-6.';
+
+  @override
+  String get chatSheetSizePx => 'Sheet size (pixels)';
+
+  @override
+  String get chatSheetSizeInfo =>
+      'The longest side of a sheet. Chats shrink large pictures, and small letters stop being readable; 1600 works well for most chats.';
+
+  @override
+  String get chatContextInfo =>
+      'A smaller picture of the whole page with the labelled boxes on it: helps the chat see who speaks and what happens. Also works when only translating.';
+
+  @override
+  String get chatCropsPerFolder => 'Pictures in a folder';
+
+  @override
+  String get chatAnswerTitle => 'Answer';
+
+  @override
+  String get chatTextFiles => 'Text files';
+
+  @override
+  String get chatTextFilesAll => 'ALL.txt for all pages';
+
+  @override
+  String get chatTextFilesPages => 'A file for each page';
+
+  @override
+  String get chatTextFilesBoth => 'Both';
+
+  @override
+  String get chatTextFilesInfo =>
+      'Files with one line per label in the exchange folder. Paste the chat\'s answer into them and press \"Take from the txt files\": ALL.txt first, then the page files for what is still missing.';
+
+  @override
+  String get chatPlaceholder => 'Text for pieces without an answer';
+
+  @override
+  String get chatPlaceholderHelp =>
+      'Empty: such pieces stay as they are. Something like ⟦empty⟧ makes them easy to find.';
+
+  @override
+  String get chatPromptsTitle => 'Instructions for the chat';
+
+  @override
+  String chatPromptsHelp(String names) {
+    return 'In English: chats follow it best. The program puts the languages, the labels, the text with labels and what you wrote about the comic in place of these words: $names.';
+  }
+
+  @override
+  String get chatPromptDefault => 'Back to the built-in one';
 }

@@ -175,7 +175,13 @@
   "handEditedSkip": "Skip them",
   "missingAddressTitle": "Server address needed",
   "missingAddressBody": "\"{name}\" has no server address. Enter it in Settings → Translator (for example https://openrouter.ai/api/v1, or http://localhost:1234/v1 for LM Studio), or choose another translator.",
-  "@missingAddressBody": {"placeholders": {"name": {"type": "String"}}},
+  "@missingAddressBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "missingKeyTitle": "API key needed",
   "missingKeyBody": "\"{name}\" sends text to {host}, which needs an API key. Enter it in Settings → Translator (it is stored in Windows secure storage), or choose a local translator.",
   "@missingKeyBody": {
@@ -991,33 +997,96 @@
   "speedTestButton": "Test the speed",
   "speedTestTitle": "Graphics card or processor",
   "speedTestNeedsModels": "The test needs these models: {models}. Download them in Settings → Models.",
-  "@speedTestNeedsModels": {"placeholders": {"models": {"type": "String"}}},
+  "@speedTestNeedsModels": {
+    "placeholders": {
+      "models": {
+        "type": "String"
+      }
+    }
+  },
   "speedTestRunning": "Timing a test page on the {what}… (about a minute)",
-  "@speedTestRunning": {"placeholders": {"what": {"type": "String"}}},
+  "@speedTestRunning": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
   "speedTestOnCpu": "processor",
   "speedTestOnGpu": "graphics card",
   "speedSeconds": "{n} s",
-  "@speedSeconds": {"placeholders": {"n": {"type": "String"}}},
+  "@speedSeconds": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
   "speedTestCpu": "Processor: {time} per page",
-  "@speedTestCpu": {"placeholders": {"time": {"type": "String"}}},
+  "@speedTestCpu": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "speedTestGpu": "Graphics card: {time} per page",
-  "@speedTestGpu": {"placeholders": {"time": {"type": "String"}}},
+  "@speedTestGpu": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "speedTestCpuFailed": "Processor: error ({reason})",
-  "@speedTestCpuFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@speedTestCpuFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "speedTestGpuFailed": "Graphics card: failed ({reason})",
-  "@speedTestGpuFailed": {"placeholders": {"reason": {"type": "String"}}},
+  "@speedTestGpuFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
   "speedTestGpuFaster": "The graphics card is faster: it is better to use it.",
   "speedTestCpuBetter": "The processor is as fast or faster: there is no need to switch the graphics card on.",
   "speedTestSmallGain": "The graphics card is faster by only {percent} %: too little to be worth it, the processor is enough.",
-  "@speedTestSmallGain": {"placeholders": {"percent": {"type": "String"}}},
+  "@speedTestSmallGain": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
   "speedTestGpuFailedVerdict": "These models do not run properly on this graphics card: the program will use the processor.",
   "speedTestReport": "A report for the developer is saved: {path}",
-  "@speedTestReport": {"placeholders": {"path": {"type": "String"}}},
+  "@speedTestReport": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "speedTestUseGpu": "Use the graphics card",
   "speedTestKeepCpu": "Keep the processor",
   "speedTestUseGpuAnyway": "Switch it on anyway",
   "speedTestLast": "Last test: processor {cpu}, graphics card {gpu} per page.",
-  "@speedTestLast": {"placeholders": {"cpu": {"type": "String"}, "gpu": {"type": "String"}}},
+  "@speedTestLast": {
+    "placeholders": {
+      "cpu": {
+        "type": "String"
+      },
+      "gpu": {
+        "type": "String"
+      }
+    }
+  },
   "speedTestLastFailed": "Last test: the graphics card failed; the processor is used.",
   "gpuFallback": "The graphics card could not run: {models}. These steps go on on the processor; the translation continues. This is remembered: next time they start on the processor (Settings → General).",
   "@gpuFallback": {
@@ -1029,12 +1098,30 @@
   },
   "gpuFallbackHint": "If this happens again, switch the graphics card off. To help fix it, build a bug report and send it to the developer.",
   "speedTestPartial": "These steps do not run on this graphics card and stay on the processor (already counted in its time): {models}.",
-  "@speedTestPartial": {"placeholders": {"models": {"type": "String"}}},
+  "@speedTestPartial": {
+    "placeholders": {
+      "models": {
+        "type": "String"
+      }
+    }
+  },
   "gpuCpuModelsNote": "Do not run on this graphics card, so they run on the processor: {models}.",
-  "@gpuCpuModelsNote": {"placeholders": {"models": {"type": "String"}}},
+  "@gpuCpuModelsNote": {
+    "placeholders": {
+      "models": {
+        "type": "String"
+      }
+    }
+  },
   "gpuCpuModelsRetry": "Try again",
   "gpuFallbackOcr": "text recognition ({language})",
-  "@gpuFallbackOcr": {"placeholders": {"language": {"type": "String"}}},
+  "@gpuFallbackOcr": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
   "gpuTurnOff": "Switch the graphics card off",
   "gpuFound": "Works: {cards}. The most powerful one is used.",
   "@gpuFound": {
@@ -1103,9 +1190,24 @@
   "exportPsdHelp": "Each page becomes a Photoshop file: the page as it was, the cleaned places, and the translation as editable text layers. Cleaned pages are saved as PNG.",
   "exportPsdPagesOnly": "PSD files are saved page by page.",
   "psdImportForeign": "{name}: this PSD was not made by Comic Translate. Its visible picture layers were joined into the page, its text layers became editable text.",
-  "@psdImportForeign": {"placeholders": {"name": {"type": "String"}}},
+  "@psdImportForeign": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "psdImportUnsupported": "{name}: some Photoshop features are not carried over ({features}); the page may look a little different.",
-  "@psdImportUnsupported": {"placeholders": {"name": {"type": "String"}, "features": {"type": "String"}}},
+  "@psdImportUnsupported": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "features": {
+        "type": "String"
+      }
+    }
+  },
   "psdFeatureSmartObjects": "smart objects",
   "psdFeatureMasks": "masks",
   "psdFeatureClipping": "clipping masks",
@@ -1186,5 +1288,203 @@
         "type": "String"
       }
     }
-  }
+  },
+  "chatTitle": "Exchange with a chat AI",
+  "chatSubtitle": "ChatGPT, Gemini, Claude or any other. The program sends nothing itself: you carry the pictures and the instructions over, then paste the answer here.",
+  "chatModeBoth": "Read and translate",
+  "chatModeRecognize": "Read",
+  "chatModeTranslate": "Translate",
+  "chatPieces": "Pieces of text: {count}, pages: {pages}",
+  "@chatPieces": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "int"
+      }
+    }
+  },
+  "chatNoPieces": "Nothing to send: find the text first (and read it, to translate it).",
+  "chatSheets": "Sheets",
+  "chatGroupingSize": "as many as fit",
+  "chatGroupingCount": "a set number",
+  "chatPerSheet": "Pieces on a sheet",
+  "chatSheetSize": "Sheet size",
+  "chatSheetPerPage": "Each page on new sheets",
+  "chatContextImage": "Picture of the page",
+  "chatContextOff": "do not send",
+  "chatContextSeparate": "as its own picture",
+  "chatContextOnSheet": "on the sheet",
+  "chatGroups": "Own sheets",
+  "chatGroupsHint": "e.g. 1-4, 5-6",
+  "chatGroupsError": "Not understood: \"{part}\". Number the pieces from 1 to {count}, e.g. 1-4, 5-6.",
+  "@chatGroupsError": {
+    "placeholders": {
+      "part": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatStep1": "1. Send to the chat",
+  "chatStep1Help": "Copy the pictures and paste them into the chat (Ctrl+V), then copy the instructions, paste them too and send.",
+  "chatStep1TextHelp": "Copy the instructions with the text, paste them into the chat (Ctrl+V) and send.",
+  "chatPreparing": "Preparing the pictures…",
+  "chatExportFailed": "Could not prepare the files: {error}",
+  "@chatExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCopyPictures": "Copy the pictures ({count})",
+  "@chatCopyPictures": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatCopyPrompt": "Copy the instructions",
+  "chatCopyOne": "Click to copy only this picture",
+  "chatShowPrompt": "Instructions for the chat",
+  "chatOpenFolder": "Open the folder",
+  "chatCopiedPictures": "Pictures copied: {count}. Paste them into the chat: Ctrl+V.",
+  "@chatCopiedPictures": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatCopiedOne": "Copied: {name}. Paste it into the chat: Ctrl+V.",
+  "@chatCopiedOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCopiedPrompt": "Instructions copied. Paste them into the chat: Ctrl+V.",
+  "chatCopyFailed": "Could not copy: another program holds the clipboard. Try again, or open the folder and drag the files into the chat.",
+  "chatStep2": "2. Paste the chat's answer",
+  "chatAnswerHint": "[01-003] text",
+  "chatAnswerHintBoth": "[01-003] I'M LATE! --> Я ОПОЗДАЛ!",
+  "chatPaste": "Paste",
+  "chatFromFiles": "Take from the txt files",
+  "chatFromFilesHelp": "The answer can be written into ALL.txt or page_NN.txt in the exchange folder (Open the folder).",
+  "chatOpenTxt": "Open a txt file…",
+  "chatFound": "Answers found: {found} of {total}",
+  "@chatFound": {
+    "placeholders": {
+      "found": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "chatFromFilesNote": "From the files: {files}",
+  "@chatFromFilesNote": {
+    "placeholders": {
+      "files": {
+        "type": "String"
+      }
+    }
+  },
+  "chatMissing": "No answer: {labels}",
+  "@chatMissing": {
+    "placeholders": {
+      "labels": {
+        "type": "String"
+      }
+    }
+  },
+  "chatUnknown": "Not sent (left out): {labels}",
+  "@chatUnknown": {
+    "placeholders": {
+      "labels": {
+        "type": "String"
+      }
+    }
+  },
+  "chatNoArrow": "Without \"-->\" (all taken as the translation): {labels}",
+  "@chatNoArrow": {
+    "placeholders": {
+      "labels": {
+        "type": "String"
+      }
+    }
+  },
+  "chatRepeated": "Answered twice (the first one counts): {labels}",
+  "@chatRepeated": {
+    "placeholders": {
+      "labels": {
+        "type": "String"
+      }
+    }
+  },
+  "chatApply": "Apply",
+  "chatApplyContinue": "Apply and go on",
+  "chatApplied": "Pieces filled in: {count}",
+  "@chatApplied": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatLost": "Not found on the page any more (boxes removed?): {labels}",
+  "@chatLost": {
+    "placeholders": {
+      "labels": {
+        "type": "String"
+      }
+    }
+  },
+  "chatButton": "Chat",
+  "chatButtonHelp": "Read and translate with ChatGPT, Gemini, Claude… by hand, for the selected pages",
+  "chatMenuBoth": "Read and translate through a chat…",
+  "chatMenuRecognize": "Read through a chat…",
+  "chatMenuTranslate": "Translate through a chat…",
+  "chatMenuFolder": "Answer for an earlier exchange…",
+  "chatNotExchangeFolder": "This folder has no exchange.json: it is not an exchange folder.",
+  "stageExchange": "Waiting for the chat's answer",
+  "chatSettingsHelp": "The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Tools → Reading.",
+  "chatTogether": "Read and translate in one message",
+  "chatTogetherHelp": "When both go through the chat. Off: first the reading, then a second round with the text to translate.",
+  "chatPicturesTitle": "Pictures",
+  "chatImages": "What to make",
+  "chatImagesSheets": "Sheets (several pieces on a picture)",
+  "chatImagesCrops": "A picture for each piece",
+  "chatImagesBoth": "Both",
+  "chatImagesInfo": "Sheets are easier to send: one picture holds many pieces, each with its label above it. Single pictures are named like the labels (01-003.png) and go in folders of a set number.",
+  "chatGroupingInfo": "As many as fit: a sheet is filled up to its size. A set number: the same number of pieces on each sheet. In the exchange window you can also make your own sheets, e.g. 1-4, 5-6.",
+  "chatSheetSizePx": "Sheet size (pixels)",
+  "chatSheetSizeInfo": "The longest side of a sheet. Chats shrink large pictures, and small letters stop being readable; 1600 works well for most chats.",
+  "chatContextInfo": "A smaller picture of the whole page with the labelled boxes on it: helps the chat see who speaks and what happens. Also works when only translating.",
+  "chatCropsPerFolder": "Pictures in a folder",
+  "chatAnswerTitle": "Answer",
+  "chatTextFiles": "Text files",
+  "chatTextFilesAll": "ALL.txt for all pages",
+  "chatTextFilesPages": "A file for each page",
+  "chatTextFilesBoth": "Both",
+  "chatTextFilesInfo": "Files with one line per label in the exchange folder. Paste the chat's answer into them and press \"Take from the txt files\": ALL.txt first, then the page files for what is still missing.",
+  "chatPlaceholder": "Text for pieces without an answer",
+  "chatPlaceholderHelp": "Empty: such pieces stay as they are. Something like ⟦empty⟧ makes them easy to find.",
+  "chatPromptsTitle": "Instructions for the chat",
+  "chatPromptsHelp": "In English: chats follow it best. The program puts the languages, the labels, the text with labels and what you wrote about the comic in place of these words: {names}.",
+  "@chatPromptsHelp": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPromptDefault": "Back to the built-in one"
 }

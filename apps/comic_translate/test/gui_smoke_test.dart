@@ -7,6 +7,7 @@ import 'package:comic_translate/l10n/app_localizations.dart';
 import 'package:comic_translate/pipeline/pipeline_worker.dart' show GpuFallback, gpuFallbacks;
 import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/state/batch.dart';
+import 'package:comic_translate/state/exchange.dart';
 import 'package:comic_translate/state/export.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:comic_translate/ui/app.dart';
@@ -21,6 +22,9 @@ import 'support/fake_plugins.dart';
 
 /// Answers every question of a run with yes.
 class _YesUi implements BatchUi {
+  @override
+  Future<bool> exchange(ExchangeRequest request) async => false;
+
   final errors = <Object>[];
   final missingKeys = <String>[];
 
@@ -255,11 +259,9 @@ void main() {
     gpuFallbacks.add(const GpuFallback('en_PP-OCRv5_rec_mobile_infer.onnx', 'Softmax failed'));
     await tester.pump();
     await tester.pump();
-    expect(
-      container.read(settingsProvider).gpuCpuModels,
-      {'en_PP-OCRv5_rec_mobile_infer.onnx': 'Softmax failed'},
-      reason: 'remembered: next time it opens on the processor',
-    );
+    expect(container.read(settingsProvider).gpuCpuModels, {
+      'en_PP-OCRv5_rec_mobile_infer.onnx': 'Softmax failed',
+    }, reason: 'remembered: next time it opens on the processor');
     expect(find.textContaining('Видеокарта не справилась'), findsOneWidget);
     expect(find.textContaining('распознавание текста (английский)'), findsOneWidget, reason: 'the model by name');
     gpuFallbacks.add(const GpuFallback('x.onnx', 'test', speedTest: true));
@@ -281,7 +283,8 @@ void main() {
     expect(reason.message, contains('HTTP 402'));
     expect(container.read(workspaceProvider).pages.where((p) => p.status == PageStatus.pending), hasLength(3));
     // The report says it in plain words, with the details.
-    await tester.tap(find.text('Отчёт'));
+    // Narrower than 1400 px: the toolbar shows icons with tooltips.
+    await tester.tap(find.byTooltip('Отчёт'));
     await tester.pumpAndSettle();
     expect(find.textContaining('закончились деньги'), findsWidgets);
     expect(find.textContaining('HTTP 402'), findsWidgets);

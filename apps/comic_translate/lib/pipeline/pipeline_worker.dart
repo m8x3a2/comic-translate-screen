@@ -202,6 +202,8 @@ class PipelineWorker {
     required String targetLanguage,
     String? below,
     List<BBox> covered = const [],
+    List<TextBlock>? blocks,
+    bool read = true,
     CancelToken? cancel,
     void Function(String stage)? onStage,
   }) async => await _job(
@@ -209,6 +211,8 @@ class PipelineWorker {
     page,
     path: path,
     image: image,
+    blocks: blocks,
+    read: read,
     source: sourceLanguage,
     target: targetLanguage,
     below: below,
@@ -321,13 +325,14 @@ class PipelineWorker {
     Set<PipelinePart> parts = const {},
     String? below,
     List<BBox> covered = const [],
+    bool read = true,
     CancelToken? cancel,
     void Function(String stage)? onStage,
   }) {
     assert(op == _Op.load || (path == null) != (image == null), 'pass either path or image');
     final id = _nextId++;
     final pending = _Pending<Object?>(onStage);
-    _send(id, pending, _Job(id, op, page, path, image, blocks, mask, source, target, parts, below, covered));
+    _send(id, pending, _Job(id, op, page, path, image, blocks, mask, source, target, parts, below, covered, read));
     cancel?.onCancel(() {
       if (_pending.containsKey(id)) _toWorker.send(_Cancel(id));
     });
@@ -425,8 +430,9 @@ class _Job {
     this.target,
     this.parts,
     this.below,
-    this.covered,
-  );
+    this.covered, [
+    this.read = true,
+  ]);
 
   final int id;
   final _Op op;
@@ -443,6 +449,10 @@ class _Job {
   /// above reach into.
   final String? below;
   final List<BBox> covered;
+
+  /// Whole pages with [blocks] already found: read them too (false: the
+  /// exchange with a chat already did).
+  final bool read;
 }
 
 class _Cancel {
@@ -635,6 +645,8 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
           onStage: (stage) => toMain.send(_Stage(m.id, stage)),
           next: next,
           covered: m.covered,
+          blocks: m.blocks,
+          read: m.read,
         );
       case _Op.detect:
         final found = await detectOnStrip(await plugins.detector, image, context, next: next, covered: m.covered);

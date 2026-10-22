@@ -25,7 +25,7 @@ import 'keys_section.dart';
 import 'models_section.dart';
 import 'usage_section.dart';
 
-enum SettingsSection { general, translator, tools, text, upscale, export, keys, models, about }
+enum SettingsSection { general, translator, exchange, tools, text, upscale, export, keys, models, about }
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, this.initial = SettingsSection.general});
@@ -45,6 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   static SettingsPart? _partOf(SettingsSection s) => switch (s) {
     SettingsSection.general => SettingsPart.general,
     SettingsSection.translator => SettingsPart.translator,
+    SettingsSection.exchange => SettingsPart.exchange,
     SettingsSection.tools => SettingsPart.tools,
     SettingsSection.text => SettingsPart.text,
     SettingsSection.upscale => SettingsPart.upscale,
@@ -60,6 +61,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final titles = {
       SettingsSection.general: (Icons.tune, l.settingsGeneral),
       SettingsSection.translator: (Icons.translate, l.settingsTranslator),
+      SettingsSection.exchange: (Icons.forum_outlined, l.chatTitle),
       SettingsSection.tools: (Icons.document_scanner_outlined, l.settingsTools),
       SettingsSection.text: (Icons.text_fields, l.settingsText),
       SettingsSection.upscale: (Icons.zoom_out_map, l.settingsUpscale),
@@ -106,6 +108,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: switch (_section) {
                           SettingsSection.general => const _GeneralSection(),
                           SettingsSection.translator => const _TranslatorSection(),
+                          SettingsSection.exchange => const _ExchangeSection(),
                           SettingsSection.tools => const _ToolsSection(),
                           SettingsSection.text => const _TextSection(),
                           SettingsSection.upscale => const _UpscaleSection(),
@@ -917,6 +920,157 @@ class _ExportSection extends ConsumerWidget {
               value: e.cleanedImage,
               onChanged: (v) => set((e) => e.copyWith(cleanedImage: v)),
             ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// The exchange with a chat AI by hand.
+class _ExchangeSection extends ConsumerStatefulWidget {
+  const _ExchangeSection();
+
+  @override
+  ConsumerState<_ExchangeSection> createState() => _ExchangeSectionState();
+}
+
+class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
+  /// Changes when an instruction goes back to the built-in one.
+  var _promptResets = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final e = ref.watch(settingsProvider.select((s) => s.exchange));
+    void set(ExchangeSettings Function(ExchangeSettings e) f) => _change(ref, (s) => s.exchange = f(s.exchange));
+    final modes = {
+      ExchangeMode.both: l.chatModeBoth,
+      ExchangeMode.recognize: l.chatModeRecognize,
+      ExchangeMode.translate: l.chatModeTranslate,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SettingsGroup(
+          children: [
+            Text(l.chatSettingsHelp, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 8),
+            _switch(l.chatTogether, e.together, (v) => set((e) => e.copyWith(together: v)), help: l.chatTogetherHelp),
+          ],
+        ),
+        SettingsGroup(
+          title: l.chatPicturesTitle,
+          children: [
+            _Dropdown(
+              label: l.chatImages,
+              value: e.images,
+              options: {
+                ExchangeImages.sheets: l.chatImagesSheets,
+                ExchangeImages.crops: l.chatImagesCrops,
+                ExchangeImages.both: l.chatImagesBoth,
+              },
+              info: l.chatImagesInfo,
+              onChanged: (v) => set((e) => e.copyWith(images: v)),
+            ),
+            _Dropdown(
+              label: l.chatSheets,
+              value: e.grouping,
+              options: {SheetGrouping.size: l.chatGroupingSize, SheetGrouping.count: l.chatGroupingCount},
+              info: l.chatGroupingInfo,
+              onChanged: (v) => set((e) => e.copyWith(grouping: v)),
+            ),
+            if (e.grouping == SheetGrouping.count)
+              _number(
+                'exchange.per_sheet',
+                l.chatPerSheet,
+                e.perSheet,
+                (v) => set((e) => e.copyWith(perSheet: v.toInt().clamp(1, 200))),
+              ),
+            _number(
+              'exchange.sheet_max_px',
+              l.chatSheetSizePx,
+              e.sheetMaxPx,
+              (v) => set(
+                (e) =>
+                    e.copyWith(sheetMaxPx: v.toInt().clamp(ExchangeSettings.minSheetPx, ExchangeSettings.maxSheetPx)),
+              ),
+              info: l.chatSheetSizeInfo,
+            ),
+            _switch(l.chatSheetPerPage, e.sheetPerPage, (v) => set((e) => e.copyWith(sheetPerPage: v))),
+            _Dropdown(
+              label: l.chatContextImage,
+              value: e.contextImage,
+              options: {
+                ContextImage.off: l.chatContextOff,
+                ContextImage.separate: l.chatContextSeparate,
+                ContextImage.onSheet: l.chatContextOnSheet,
+              },
+              info: l.chatContextInfo,
+              onChanged: (v) => set((e) => e.copyWith(contextImage: v)),
+            ),
+            if (e.images.hasCrops)
+              _number(
+                'exchange.crops_per_folder',
+                l.chatCropsPerFolder,
+                e.cropsPerFolder,
+                (v) => set((e) => e.copyWith(cropsPerFolder: v.toInt().clamp(1, 1000))),
+              ),
+          ],
+        ),
+        SettingsGroup(
+          title: l.chatAnswerTitle,
+          children: [
+            _Dropdown(
+              label: l.chatTextFiles,
+              value: e.textFiles,
+              options: {
+                ExchangeTextFiles.all: l.chatTextFilesAll,
+                ExchangeTextFiles.pages: l.chatTextFilesPages,
+                ExchangeTextFiles.both: l.chatTextFilesBoth,
+              },
+              info: l.chatTextFilesInfo,
+              onChanged: (v) => set((e) => e.copyWith(textFiles: v)),
+            ),
+            DebouncedTextField(
+              key: const ValueKey('exchange.placeholder'),
+              value: e.placeholder,
+              label: l.chatPlaceholder,
+              help: l.chatPlaceholderHelp,
+              onChanged: (v) => set((e) => e.copyWith(placeholder: v)),
+            ),
+          ],
+        ),
+        SettingsGroup(
+          title: l.chatPromptsTitle,
+          children: [
+            Text(
+              l.chatPromptsHelp('{source}, {target}, {labels}, {lines}, {context}, {pictures}, {kind}'),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            for (final m in modes.entries) ...[
+              DebouncedTextField(
+                key: ValueKey('exchange.prompt.${m.key.name}.$_promptResets'),
+                value: e.promptFor(m.key).isEmpty ? defaultExchangePrompts[m.key]! : e.promptFor(m.key),
+                label: m.value,
+                multiline: true,
+                onChanged: (v) =>
+                    set((e) => e.withPrompt(m.key, v.trim() == defaultExchangePrompts[m.key]!.trim() ? '' : v)),
+              ),
+              if (e.promptFor(m.key).isNotEmpty)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      set((e) => e.withPrompt(m.key, ''));
+                      setState(() => _promptResets++);
+                    },
+                    child: Text(l.chatPromptDefault),
+                  ),
+                ),
+              const SizedBox(height: 12),
+            ],
           ],
         ),
       ],
