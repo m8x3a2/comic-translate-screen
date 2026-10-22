@@ -86,6 +86,26 @@ Let me know if you need anything else.''';
       expect(a.replies[l13]!.original, 'Call me at 555-1234 tomorrow');
     });
 
+    test('an own separator, besides the usual arrows', () {
+      final a = parseExchangeAnswer('[01-003] Hi | Привет\n[01-004] Bye --> Пока', ExchangeMode.both, separator: '|');
+      expect((a.replies[l13]!.original, a.replies[l13]!.translation), ('Hi', 'Привет'));
+      expect(a.replies[l14]!.translation, 'Пока');
+      final dots = parseExchangeAnswer('[01-003] Hi ::: Привет', ExchangeMode.both, separator: ':::');
+      expect(dots.replies[l13]!.translation, 'Привет');
+    });
+
+    test('two lists: split at ===, then put together', () {
+      const answer = 'Sure!\n[01-003] Hi\n[01-004] Bye\n===\n[01-003] Привет\n[01-004]\n';
+      final (originals, translations) = splitExchangeLists(answer)!;
+      final a = mergeExchangeAnswers(
+        parseExchangeAnswer(originals, ExchangeMode.recognize),
+        parseExchangeAnswer(translations, ExchangeMode.translate),
+      );
+      expect((a.replies[l13]!.original, a.replies[l13]!.translation), ('Hi', 'Привет'));
+      expect((a.replies[l14]!.original, a.replies[l14]!.translation), ('Bye', null), reason: 'empty: not answered');
+      expect(splitExchangeLists('[01-003] Hi --> Привет'), isNull);
+    });
+
     test('ellipsis at the start of a line stays', () {
       final a = parseExchangeAnswer('[01-003] ...and then --> ...а потом', ExchangeMode.both);
       expect(a.replies[l13]!.original, '...and then');
@@ -175,7 +195,7 @@ Let me know if you need anything else.''';
 
     test('translate: languages, context and the lines with labels', () {
       final s = exchangePrompt(
-        ExchangeMode.translate,
+        ExchangePrompt.translate,
         items,
         sourceLanguage: 'English',
         targetLanguage: 'Russian',
@@ -189,7 +209,7 @@ Let me know if you need anything else.''';
 
     test('both: the labels to answer and the --> form; own instructions replace the built-in ones', () {
       final s = exchangePrompt(
-        ExchangeMode.both,
+        ExchangePrompt.both,
         items,
         sourceLanguage: 'English',
         targetLanguage: 'Russian',
@@ -199,13 +219,33 @@ Let me know if you need anything else.''';
       expect(s, contains('original text --> translation'));
       expect(s, contains('screenshots of a site or a game'));
       final own = exchangePrompt(
-        ExchangeMode.both,
+        ExchangePrompt.both,
         items,
         sourceLanguage: 'English',
         targetLanguage: 'Russian',
         template: 'Do {source} to {target}: {labels} {unknown}',
       );
       expect(own, 'Do English to Russian: [01-003] [01-004] {unknown}\n');
+    });
+
+    test('an own separator goes into the instructions; two lists have their own', () {
+      final s = exchangePrompt(
+        ExchangePrompt.both,
+        items,
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+        separator: '|',
+      );
+      expect(s, contains('original text | translation'));
+      final apart = exchangePrompt(
+        ExchangePrompt.bothApart,
+        items,
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      expect(apart, contains('Then a line with only ==='));
+      expect(const ExchangeSettings(apart: true).promptKind(ExchangeMode.both), ExchangePrompt.bothApart);
+      expect(const ExchangeSettings(apart: true).promptKind(ExchangeMode.translate), ExchangePrompt.translate);
     });
   });
 }

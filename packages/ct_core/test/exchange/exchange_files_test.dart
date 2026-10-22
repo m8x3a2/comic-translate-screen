@@ -209,6 +209,82 @@ void main() {
       expect([for (final i in back.items) i.label], [for (final i in out.items) i.label]);
     });
 
+    test('small pictures of the pieces for the app, apart from what goes to the chat', () async {
+      final out = await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.both,
+        const ExchangeSettings(),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+        previews: true,
+      );
+      expect(out.previews.keys, ['01-001', '01-002', '02-001']);
+      expect(out.previews['01-002'], p.join('_pieces', '01-002.jpg'));
+      expect(File(p.join(dir.path, out.previews['01-002']!)).existsSync(), isTrue);
+      expect(out.pictures, ['sheet_01.png']);
+    });
+
+    test('the original and the translation in two files, written and read back', () async {
+      await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.both,
+        const ExchangeSettings(splitFiles: true),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      expect(filesIn(dir.path).where((f) => f.endsWith('.txt')), [
+        'ALL_original.txt',
+        'ALL_translation.txt',
+        'prompt.txt',
+      ]);
+      File(p.join(dir.path, 'ALL_original.txt')).writeAsStringSync('[01-001] Hello\n[01-002] \n[02-001] Bye\n');
+      File(p.join(dir.path, 'ALL_translation.txt')).writeAsStringSync('[01-001] Привет\n[01-002] \n[02-001] Пока\n');
+      final m = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
+      expect(m.replies.keys, [const ExchangeLabel(1, 1), const ExchangeLabel(2, 1)]);
+      expect(m.replies[const ExchangeLabel(2, 1)]!.original, 'Bye');
+      expect(m.replies[const ExchangeLabel(2, 1)]!.translation, 'Пока');
+      expect(m.missing, [const ExchangeLabel(1, 2)]);
+      expect(m.sources[const ExchangeLabel(1, 1)], 'ALL_original.txt + ALL_translation.txt');
+    });
+
+    test('pictures made again keep what the user wrote into the text files', () async {
+      const settings = ExchangeSettings();
+      await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.both,
+        settings,
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      File(p.join(dir.path, 'ALL.txt')).writeAsStringSync('[01-001] Hello --> Привет\n');
+      await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.both,
+        settings.copyWith(grouping: SheetGrouping.count, perSheet: 1),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+        keepTexts: true,
+        promptText: 'my own words',
+      );
+      expect(filesIn(dir.path).where((f) => f.startsWith('sheet_')), hasLength(3));
+      expect(File(p.join(dir.path, 'prompt.txt')).readAsStringSync(), 'my own words');
+      await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.both,
+        settings,
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+        keepTexts: true,
+      );
+      expect(File(p.join(dir.path, 'ALL.txt')).readAsStringSync(), '[01-001] Hello --> Привет\n');
+      expect(filesIn(dir.path).where((f) => f.startsWith('sheet_')), ['sheet_01.png'], reason: 'the old sheets went');
+    });
+
     test('answers written into the files come back: ALL.txt first, then the page files', () async {
       await writeExchange(
         dir,
@@ -241,7 +317,10 @@ void main() {
       images: ExchangeImages.both,
       textFiles: ExchangeTextFiles.pages,
       placeholder: '⟦пусто⟧',
-      promptBoth: 'mine',
+      apart: true,
+      splitFiles: true,
+      separator: '|',
+      prompts: {ExchangePrompt.both: 'mine'},
     );
     final back = ExchangeSettings.fromJson(jsonDecode(jsonEncode(s.toJson())) as Map<String, Object?>);
     expect(back.toJson(), s.toJson());

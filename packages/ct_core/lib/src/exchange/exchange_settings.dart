@@ -4,6 +4,10 @@
 library;
 
 /// What the chat is asked to do.
+/// Between the original and the translation in the chat's answer, unless
+/// the user chose another one.
+const defaultExchangeSeparator = '-->';
+
 enum ExchangeMode {
   /// Write down the text of each piece.
   recognize,
@@ -75,6 +79,7 @@ enum ExchangeTextFiles {
 class ExchangeSettings {
   const ExchangeSettings({
     this.together = true,
+    this.apart = false,
     this.grouping = SheetGrouping.size,
     this.perSheet = 8,
     this.sheetMaxPx = 1600,
@@ -83,10 +88,10 @@ class ExchangeSettings {
     this.images = ExchangeImages.sheets,
     this.cropsPerFolder = 10,
     this.textFiles = ExchangeTextFiles.all,
+    this.splitFiles = false,
+    this.separator = defaultExchangeSeparator,
     this.placeholder = '',
-    this.promptRecognize = '',
-    this.promptTranslate = '',
-    this.promptBoth = '',
+    this.prompts = const {},
   });
 
   static const minSheetPx = 600;
@@ -95,6 +100,11 @@ class ExchangeSettings {
   /// When both reading and translating go through the chat: one message
   /// for both (else reading first, then translating).
   final bool together;
+
+  /// Reading and translating in one message: the chat writes the originals
+  /// and the translations as two lists (two answer fields) instead of
+  /// `original --> translation` on each line.
+  final bool apart;
   final SheetGrouping grouping;
   final int perSheet;
 
@@ -109,23 +119,30 @@ class ExchangeSettings {
   final int cropsPerFolder;
   final ExchangeTextFiles textFiles;
 
+  /// The original and the translation in two files (`ALL_original.txt`,
+  /// `ALL_translation.txt`) instead of one.
+  final bool splitFiles;
+
+  /// Between the original and the translation in the chat's answer.
+  final String separator;
+
   /// Put into pieces the answer has nothing for; empty leaves them as they
   /// are.
   final String placeholder;
 
-  /// The user's own instructions for the chat; empty = the built-in ones.
-  final String promptRecognize;
-  final String promptTranslate;
-  final String promptBoth;
+  /// The user's own instructions for the chat; missing or empty = the
+  /// built-in ones.
+  final Map<ExchangePrompt, String> prompts;
 
-  String promptFor(ExchangeMode mode) => switch (mode) {
-    ExchangeMode.recognize => promptRecognize,
-    ExchangeMode.translate => promptTranslate,
-    ExchangeMode.both => promptBoth,
-  };
+  /// The instructions [mode] uses with these settings.
+  ExchangePrompt promptKind(ExchangeMode mode) => ExchangePrompt.of(mode, apart: apart);
+
+  /// The user's own instructions for [kind] ('' = the built-in ones).
+  String promptFor(ExchangePrompt kind) => prompts[kind] ?? '';
 
   ExchangeSettings copyWith({
     bool? together,
+    bool? apart,
     SheetGrouping? grouping,
     int? perSheet,
     int? sheetMaxPx,
@@ -134,12 +151,13 @@ class ExchangeSettings {
     ExchangeImages? images,
     int? cropsPerFolder,
     ExchangeTextFiles? textFiles,
+    bool? splitFiles,
+    String? separator,
     String? placeholder,
-    String? promptRecognize,
-    String? promptTranslate,
-    String? promptBoth,
+    Map<ExchangePrompt, String>? prompts,
   }) => ExchangeSettings(
     together: together ?? this.together,
+    apart: apart ?? this.apart,
     grouping: grouping ?? this.grouping,
     perSheet: perSheet ?? this.perSheet,
     sheetMaxPx: sheetMaxPx ?? this.sheetMaxPx,
@@ -148,21 +166,25 @@ class ExchangeSettings {
     images: images ?? this.images,
     cropsPerFolder: cropsPerFolder ?? this.cropsPerFolder,
     textFiles: textFiles ?? this.textFiles,
+    splitFiles: splitFiles ?? this.splitFiles,
+    separator: separator ?? this.separator,
     placeholder: placeholder ?? this.placeholder,
-    promptRecognize: promptRecognize ?? this.promptRecognize,
-    promptTranslate: promptTranslate ?? this.promptTranslate,
-    promptBoth: promptBoth ?? this.promptBoth,
+    prompts: prompts ?? this.prompts,
   );
 
-  /// [copyWith] for the prompt of [mode].
-  ExchangeSettings withPrompt(ExchangeMode mode, String prompt) => switch (mode) {
-    ExchangeMode.recognize => copyWith(promptRecognize: prompt),
-    ExchangeMode.translate => copyWith(promptTranslate: prompt),
-    ExchangeMode.both => copyWith(promptBoth: prompt),
-  };
+  /// [copyWith] for the user's own instructions of [kind] ('' = back to the
+  /// built-in ones).
+  ExchangeSettings withPrompt(ExchangePrompt kind, String prompt) => copyWith(
+    prompts: {
+      for (final e in prompts.entries)
+        if (e.key != kind) e.key: e.value,
+      if (prompt.trim().isNotEmpty) kind: prompt,
+    },
+  );
 
   Map<String, Object?> toJson() => {
     'together': together,
+    'apart': apart,
     'grouping': grouping.name,
     'per_sheet': perSheet,
     'sheet_max_px': sheetMaxPx,
@@ -171,10 +193,10 @@ class ExchangeSettings {
     'images': images.name,
     'crops_per_folder': cropsPerFolder,
     'text_files': textFiles.name,
+    'split_files': splitFiles,
+    'separator': separator,
     'placeholder': placeholder,
-    'prompt_recognize': promptRecognize,
-    'prompt_translate': promptTranslate,
-    'prompt_both': promptBoth,
+    for (final kind in ExchangePrompt.values) kind.key: promptFor(kind),
   };
 
   factory ExchangeSettings.fromJson(Map<String, Object?> json) {
@@ -184,21 +206,46 @@ class ExchangeSettings {
       return v is num ? v.toInt().clamp(min, max) : fallback;
     }
 
+    bool flag(String key, bool fallback) => json[key] is bool ? json[key] as bool : fallback;
     String text(String key) => json[key] is String ? json[key] as String : '';
     return ExchangeSettings(
-      together: json['together'] is bool ? json['together'] as bool : d.together,
+      together: flag('together', d.together),
+      apart: flag('apart', d.apart),
       grouping: SheetGrouping.parse(json['grouping'] as String?),
       perSheet: number('per_sheet', d.perSheet, 1, 200),
       sheetMaxPx: number('sheet_max_px', d.sheetMaxPx, minSheetPx, maxSheetPx),
-      sheetPerPage: json['sheet_per_page'] is bool ? json['sheet_per_page'] as bool : d.sheetPerPage,
+      sheetPerPage: flag('sheet_per_page', d.sheetPerPage),
       contextImage: ContextImage.parse(json['context_image'] as String?),
       images: ExchangeImages.parse(json['images'] as String?),
       cropsPerFolder: number('crops_per_folder', d.cropsPerFolder, 1, 1000),
       textFiles: ExchangeTextFiles.parse(json['text_files'] as String?),
+      splitFiles: flag('split_files', d.splitFiles),
+      separator: text('separator').trim().isEmpty ? d.separator : text('separator').trim(),
       placeholder: text('placeholder'),
-      promptRecognize: text('prompt_recognize'),
-      promptTranslate: text('prompt_translate'),
-      promptBoth: text('prompt_both'),
+      prompts: {
+        for (final kind in ExchangePrompt.values)
+          if (text(kind.key).trim().isNotEmpty) kind: text(kind.key),
+      },
     );
   }
+}
+
+/// The instructions for the chat: one per mode, and reading with
+/// translating as two lists.
+enum ExchangePrompt {
+  recognize('prompt_recognize'),
+  translate('prompt_translate'),
+  both('prompt_both'),
+  bothApart('prompt_both_apart');
+
+  const ExchangePrompt(this.key);
+
+  /// Its key in the settings.
+  final String key;
+
+  static ExchangePrompt of(ExchangeMode mode, {bool apart = false}) => switch (mode) {
+    ExchangeMode.recognize => recognize,
+    ExchangeMode.translate => translate,
+    ExchangeMode.both => apart ? bothApart : both,
+  };
 }

@@ -13,6 +13,7 @@ library;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:path/path.dart' as p;
 
@@ -29,7 +30,16 @@ const exchangeManifestName = 'exchange.json';
 const exchangeAllName = 'ALL.txt';
 const exchangePromptName = 'prompt.txt';
 
-String exchangePageTextName(int page) => 'page_${'$page'.padLeft(2, '0')}.txt';
+/// Small pictures of the pieces for the app (see [ExchangeExport.previews]).
+const exchangePreviewsDir = '_pieces';
+const exchangePreviewPx = 360;
+
+/// Name of a page's text file without `.txt` (`page_01`); with the
+/// original and the translation apart: `page_01_original.txt` and
+/// `page_01_translation.txt`, and `ALL_original.txt`, `ALL_translation.txt`.
+String exchangePageBase(int page) => 'page_${'$page'.padLeft(2, '0')}';
+String exchangePageTextName(int page) => '${exchangePageBase(page)}.txt';
+const _allBase = 'ALL';
 
 /// A page to send.
 class ExchangePage {
@@ -83,6 +93,7 @@ class ExchangeExport {
     this.sheets = const [],
     this.contexts = const [],
     this.crops = const [],
+    this.previews = const {},
   });
 
   final String dir;
@@ -95,6 +106,10 @@ class ExchangeExport {
   final List<String> contexts;
   final List<String> crops;
 
+  /// Small pictures of the pieces for the app's own view (label code → file
+  /// in [dir]); not for the chat.
+  final Map<String, String> previews;
+
   /// Everything to attach in the chat: the pages first, then the sheets (or
   /// the single cut-outs when there are no sheets).
   List<String> get pictures => [...contexts, ...(sheets.isNotEmpty ? sheets : crops)];
@@ -102,6 +117,8 @@ class ExchangeExport {
 
 /// Writes the exchange folder [dir] for [pages]. [groups]: the user's own
 /// grouping of the pieces into sheets (see [parseSheetGroups]).
+/// [keepTexts]: text files already there stay (the user may have written
+/// into them). [promptText]: instructions changed by the user for this time.
 Future<ExchangeExport> writeExchange(
   Directory dir,
   List<ExchangePage> pages,
@@ -112,14 +129,25 @@ Future<ExchangeExport> writeExchange(
   String extraContext = '',
   bool screens = false,
   List<List<int>> groups = const [],
+  bool keepTexts = false,
+  String? promptText,
+  bool previews = false,
 }) async {
   await dir.create(recursive: true);
+  // Pictures of an earlier writing of this folder go: fewer sheets must not
+  // leave old ones behind.
+  await for (final f in dir.list()) {
+    final name = p.basename(f.path);
+    if (f is File && RegExp(r'^(sheet_\d+\.png|page_\d+_context\.jpg)$').hasMatch(name)) await f.delete();
+    if (f is Directory && (name == 'crops' || name == exchangePreviewsDir)) await f.delete(recursive: true);
+  }
   final items = exchangeItems(pages, mode);
   // Sheets of cut-outs when the chat reads; pictures of whole pages when
   // asked for (they help when only translating too).
   final pictures = mode.sendsImages;
   final contextWanted = settings.contextImage != ContextImage.off;
   final sheets = <String>[], contexts = <String>[], crops = <String>[];
+  final previewFiles = <String, String>{};
   final sheetLabels = <List<String>>[];
   if ((pictures || contextWanted) && items.isNotEmpty) {
     final byId = {for (final pg in pages) pg.id: pg};
@@ -176,6 +204,20 @@ Future<ExchangeExport> writeExchange(
         sheetLabels.add([for (final l in s.labels) l.code]);
       }
     }
+    if (pictures && previews) {
+      for (final piece in pieces.where((s) => !s.context)) {
+        final img = piece.image;
+        final f = math.min(1.0, exchangePreviewPx / math.max(img.width, img.height));
+        final small = f < 1.0
+            ? resizeRgb(img, math.max(1, (img.width * f).round()), math.max(1, (img.height * f).round()))
+            : img;
+        final name = p.join(exchangePreviewsDir, '${piece.label!.code}.jpg');
+        final file = File(p.join(dir.path, name));
+        await file.parent.create(recursive: true);
+        await file.writeAsBytes(ImageCodec.encodeJpeg(small, quality: 85));
+        previewFiles[piece.label!.code] = name;
+      }
+    }
     if (pictures && settings.images.hasCrops) {
       final cuts = pieces.where((s) => !s.context).toList();
       final batch = settings.cropsPerFolder;
@@ -191,29 +233,46 @@ Future<ExchangeExport> writeExchange(
     }
   }
 
-  final prompt = exchangePrompt(
-    mode,
-    items,
-    sourceLanguage: sourceLanguage,
-    targetLanguage: targetLanguage,
-    template: settings.promptFor(mode),
-    extraContext: extraContext,
-    screens: screens,
-    contextPictures: contextWanted,
-  );
+  final kind = settings.promptKind(mode);
+  final prompt =
+      promptText ??
+      exchangePrompt(
+        kind,
+        items,
+        sourceLanguage: sourceLanguage,
+        targetLanguage: targetLanguage,
+        template: settings.promptFor(kind),
+        extraContext: extraContext,
+        screens: screens,
+        contextPictures: contextWanted,
+        separator: settings.separator,
+      );
   await File(p.join(dir.path, exchangePromptName)).writeAsString(prompt);
 
-  // Templates to fill: the text to translate, or empty lines.
-  String template(Iterable<ExchangeItem> list) =>
-      '${[for (final it in list) mode == ExchangeMode.translate ? '${it.label} ${it.text.replaceAll('\n', ' ')}' : '${it.label} '].join('\n')}\n';
-  if (settings.textFiles.hasAll) {
-    await File(p.join(dir.path, exchangeAllName)).writeAsString(template(items));
+  // Templates to fill: the text to translate, or empty lines. Apart, the
+  // original goes in `_original.txt` and the translation in
+  // `_translation.txt` (reading alone needs no translation file).
+  final split = settings.splitFiles && mode != ExchangeMode.recognize;
+  Future<void> writeTexts(String base, Iterable<ExchangeItem> list) async {
+    String lines(String Function(ExchangeItem it) text) =>
+        '${[for (final it in list) '${it.label} ${text(it)}'].join('\n')}\n';
+    String source(ExchangeItem it) => mode == ExchangeMode.translate ? it.text.replaceAll('\n', ' ') : '';
+    final files = split
+        ? {'${base}_original.txt': lines(source), '${base}_translation.txt': lines((_) => '')}
+        : {'$base.txt': lines(source)};
+    for (final MapEntry(key: name, value: text) in files.entries) {
+      final file = File(p.join(dir.path, name));
+      // Filled in by the user already: kept when only the pictures change.
+      if (keepTexts && await file.exists()) continue;
+      await file.writeAsString(text);
+    }
   }
+
+  if (settings.textFiles.hasAll) await writeTexts(_allBase, items);
   if (settings.textFiles.hasPages) {
     for (final page in pages) {
       final own = items.where((it) => it.pageId == page.id);
-      if (own.isEmpty) continue;
-      await File(p.join(dir.path, exchangePageTextName(page.number))).writeAsString(template(own));
+      if (own.isNotEmpty) await writeTexts(exchangePageBase(page.number), own);
     }
   }
 
@@ -221,6 +280,7 @@ Future<ExchangeExport> writeExchange(
     const JsonEncoder.withIndent('  ').convert({
       'version': 1,
       'mode': mode.name,
+      'separator': settings.separator,
       'created': DateTime.now().toIso8601String(),
       'source_language': sourceLanguage,
       'target_language': targetLanguage,
@@ -243,6 +303,7 @@ Future<ExchangeExport> writeExchange(
     sheets: sheets,
     contexts: contexts,
     crops: crops,
+    previews: previewFiles,
   );
 }
 
@@ -254,11 +315,15 @@ class ExchangeManifest {
     required this.pages,
     this.sourceLanguage = '',
     this.targetLanguage = '',
+    this.separator = defaultExchangeSeparator,
     this.export,
   });
 
   final ExchangeMode mode;
   final List<ExchangeItem> items;
+
+  /// Between the original and the translation in the answers.
+  final String separator;
 
   /// The folder as [writeExchange] made it (pictures and instructions).
   final ExchangeExport? export;
@@ -284,6 +349,7 @@ class ExchangeManifest {
       },
       sourceLanguage: json['source_language'] as String? ?? '',
       targetLanguage: json['target_language'] as String? ?? '',
+      separator: json['separator'] as String? ?? defaultExchangeSeparator,
       export: ExchangeExport(
         dir: dir.path,
         mode: mode,
@@ -371,12 +437,34 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
   final merged = <ExchangeLabel, ExchangeReply>{};
   final sources = <ExchangeLabel, String>{};
   final repeated = <ExchangeLabel>[];
-  Future<void> take(String name) async {
+  final mode = manifest.mode;
+  Future<ExchangeAnswer?> parse(String name, ExchangeMode as) async {
     final file = File(p.join(dir.path, name));
-    if (!await file.exists()) return;
-    final answer = parseExchangeAnswer(await file.readAsString(), manifest.mode);
+    if (!await file.exists()) return null;
+    return parseExchangeAnswer(await file.readAsString(), as, separator: manifest.separator);
+  }
+
+  Future<void> take(String base) async {
+    // The original and the translation apart, or one file.
+    final translations = await parse('${base}_translation.txt', ExchangeMode.translate);
+    final originals = mode == ExchangeMode.translate
+        ? null
+        : await parse('${base}_original.txt', ExchangeMode.recognize);
+    final ExchangeAnswer? answer;
+    final String name;
+    if (translations != null || originals != null) {
+      answer = mergeExchangeAnswers(originals ?? const ExchangeAnswer({}), translations ?? const ExchangeAnswer({}));
+      name = [
+        if (originals != null) '${base}_original.txt',
+        if (translations != null) '${base}_translation.txt',
+      ].join(' + ');
+    } else {
+      answer = await parse('$base.txt', mode);
+      name = '$base.txt';
+    }
+    if (answer == null) return;
     repeated.addAll(answer.repeated);
-    final match = matchExchangeAnswer(manifest.items, answer, manifest.mode, ignoreUnchanged: true);
+    final match = matchExchangeAnswer(manifest.items, answer, mode, ignoreUnchanged: true);
     for (final e in match.replies.entries) {
       if (merged.containsKey(e.key)) continue;
       merged[e.key] = e.value;
@@ -384,9 +472,9 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
     }
   }
 
-  await take(exchangeAllName);
+  await take(_allBase);
   for (final number in {...manifest.pages.values}.toList()..sort()) {
-    await take(exchangePageTextName(number));
+    await take(exchangePageBase(number));
   }
   return matchExchangeAnswer(
     manifest.items,
@@ -431,8 +519,10 @@ bool applyExchangeReply(TextBlock block, ExchangeReply? reply, ExchangeMode mode
       case ExchangeMode.translate:
         block.translation = reply.translation ?? '';
       case ExchangeMode.both:
+        // Nothing after the label: no text. Otherwise what was given (the
+        // original may be missing: no arrow, or a translation file only).
         if (reply.original != null || reply.isEmpty) block.text = reply.original ?? '';
-        block.translation = reply.translation ?? '';
+        if (reply.translation != null || reply.isEmpty) block.translation = reply.translation ?? '';
     }
   }
   return block.text != oldText || block.translation != oldTranslation;

@@ -117,6 +117,39 @@ class ExchangeAnswer {
   bool get isEmpty => replies.isEmpty;
 }
 
+final _listsDivider = RegExp(r'^[ \t]*={3,}[ \t]*$', multiLine: true);
+
+/// An answer written as two lists (originals, a line of `===`, then the
+/// translations): the two parts, or null without such a line.
+(String originals, String translations)? splitExchangeLists(String answer) {
+  final m = _listsDivider.firstMatch(answer.replaceAll('\r\n', '\n'));
+  if (m == null) return null;
+  final text = answer.replaceAll('\r\n', '\n');
+  return (text.substring(0, m.start).trim(), text.substring(m.end).trim());
+}
+
+/// One answer from the originals and the translations given apart (two
+/// fields, or two text files): `[01-003] I'M LATE!` in one, `[01-003] Я
+/// ОПОЗДАЛ!` in the other. Empty lines count as not answered.
+ExchangeAnswer mergeExchangeAnswers(ExchangeAnswer originals, ExchangeAnswer translations) {
+  String? given(String? s) => s == null || s.trim().isEmpty ? null : s;
+  final labels = [
+    ...originals.replies.keys,
+    for (final l in translations.replies.keys)
+      if (!originals.replies.containsKey(l)) l,
+  ];
+  return ExchangeAnswer(
+    {
+      for (final l in labels)
+        l: ExchangeReply(
+          original: given(originals.replies[l]?.original),
+          translation: given(translations.replies[l]?.translation),
+        ),
+    },
+    repeated: [...originals.repeated, ...translations.repeated],
+  );
+}
+
 // A label in brackets anywhere: [01-003], 【01-003】; without brackets only
 // at the start of a line and followed by ':' / ')' / '.' / '-' or a space:
 // "01-003: text", "**01-003** text".
@@ -124,13 +157,21 @@ final _bracketed = RegExp(r'[\[【]\s*(\d{1,4})\s*[-–—]\s*(\d{1,4})\s*[\]】
 final _bare = RegExp(r'^[ \t>•*_#-]*(?:\d+[.)]\s+)?[*_]*(\d{1,4})[-–—](\d{1,4})[*_]*(?=[\s:.)]|$)', multiLine: true);
 
 /// `-->`, `->`, `→`, `=>`, `⟶`, `—>` between the original and the translation.
-final _arrow = RegExp(r'\s*(?:-{1,3}>|=>|→|⟶|—>|–>)\s*');
+const _arrows = r'-{1,3}>|=>|→|⟶|—>|–>';
+
+/// The user's [separator] or one of the usual arrows.
+RegExp _arrow(String separator) {
+  final own = separator.trim().isEmpty ? '' : '${RegExp.escape(separator.trim())}|';
+  return RegExp(r'\s*(?:' + own + _arrows + r')\s*');
+}
+
 final _fence = RegExp(r'^[ \t]*```.*$', multiLine: true);
 
 /// Reads the chat's [answer]. Text before the first label and after a blank
 /// line that ends a piece (the chat's own remarks) is left out; lines of one
 /// piece are joined with spaces.
-ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode) {
+ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String separator = defaultExchangeSeparator}) {
+  final arrow = _arrow(separator);
   final text = answer.replaceAll('\r\n', '\n').replaceAll(_fence, '');
   final marks = <(int start, int end, ExchangeLabel label)>[];
   for (final m in _bracketed.allMatches(text)) {
@@ -150,13 +191,13 @@ ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode) {
       repeated.add(label);
       continue;
     }
-    replies[label] = _reply(body, mode);
+    replies[label] = _reply(body, mode, arrow);
   }
   return ExchangeAnswer(replies, repeated: repeated);
 }
 
-ExchangeReply _reply(String body, ExchangeMode mode) {
-  final arrow = _arrow.firstMatch(body);
+ExchangeReply _reply(String body, ExchangeMode mode, RegExp arrows) {
+  final arrow = arrows.firstMatch(body);
   switch (mode) {
     case ExchangeMode.recognize:
       return ExchangeReply(original: body);

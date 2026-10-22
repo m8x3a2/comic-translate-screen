@@ -7,9 +7,10 @@ import 'exchange_answer.dart';
 import 'exchange_settings.dart';
 
 /// Built-in instructions. `{kind}`, `{source}`, `{target}`, `{labels}`,
-/// `{lines}`, `{context}` and `{pictures}` are filled in by [exchangePrompt].
+/// `{lines}`, `{context}`, `{pictures}` and `{separator}` are filled in by
+/// [exchangePrompt].
 const defaultExchangePrompts = {
-  ExchangeMode.recognize: '''
+  ExchangePrompt.recognize: '''
 The attached pictures show pieces of text cut out of {kind}. Each piece has a label like [01-003] above it.
 {pictures}Write down the {source} text of every labelled piece exactly as it is written (keep the letters, the case and the punctuation).
 Answer with one line per label and nothing else:
@@ -17,19 +18,31 @@ Answer with one line per label and nothing else:
 Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
 Labels: {labels}
 {context}''',
-  ExchangeMode.translate: '''
+  ExchangePrompt.translate: '''
 Translate these lines of {kind} from {source} into {target}.
 {pictures}Keep the tone and the way each character speaks; the translation should read naturally.
 Answer with one line per label and nothing else:
 [01-003] translation
 {context}
 {lines}''',
-  ExchangeMode.both: '''
+  ExchangePrompt.both: '''
 The attached pictures show pieces of text cut out of {kind}. Each piece has a label like [01-003] above it.
-{pictures}For every labelled piece write the {source} text exactly as it is written, then " --> ", then its translation into {target}.
+{pictures}For every labelled piece write the {source} text exactly as it is written, then " {separator} ", then its translation into {target}.
 Keep the tone and the way each character speaks; the translation should read naturally.
 Answer with one line per label and nothing else:
-[01-003] original text --> translation
+[01-003] original text {separator} translation
+Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
+Labels: {labels}
+{context}''',
+  ExchangePrompt.bothApart: '''
+The attached pictures show pieces of text cut out of {kind}. Each piece has a label like [01-003] above it.
+{pictures}Answer with two lists and nothing else.
+First the {source} text of every labelled piece exactly as it is written, one line per label:
+[01-003] original text
+Then a line with only ===
+Then the translation of every piece into {target}, one line per label:
+[01-003] translation
+Keep the tone and the way each character speaks; the translation should read naturally.
 Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
 Labels: {labels}
 {context}''',
@@ -39,7 +52,7 @@ Labels: {labels}
 /// built-in one. [screens]: screenshots of sites and games rather than a
 /// comic. [contextPictures]: pictures of the whole pages go along.
 String exchangePrompt(
-  ExchangeMode mode,
+  ExchangePrompt kind,
   List<ExchangeItem> items, {
   required String sourceLanguage,
   required String targetLanguage,
@@ -47,10 +60,12 @@ String exchangePrompt(
   String extraContext = '',
   bool screens = false,
   bool contextPictures = false,
+  String separator = defaultExchangeSeparator,
 }) {
-  final base = template.trim().isEmpty ? defaultExchangePrompts[mode]! : template;
+  final base = template.trim().isEmpty ? defaultExchangePrompts[kind]! : template;
   final lines = [for (final i in items) '${i.label} ${_oneLine(i.text)}'].join('\n');
   final values = {
+    'separator': separator,
     'kind': screens ? 'screenshots of a site or a game' : 'a comic',
     'source': sourceLanguage == 'Auto' ? 'original' : sourceLanguage,
     'target': targetLanguage,
