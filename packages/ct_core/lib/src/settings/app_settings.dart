@@ -32,6 +32,7 @@ class AppSettings {
     Map<String, String>? shortcuts,
     Map<String, String>? gpuCpuModels,
     this.testMode = false,
+    this.autoBugReport = true,
     this.projectAutosave = true,
     List<String>? recentProjects,
     Map<String, Map<String, Object?>>? plugins,
@@ -112,6 +113,10 @@ class AppSettings {
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
+  /// An unexpected error builds a bug report by itself (kept on this
+  /// computer only; on by default).
+  bool autoBugReport;
+
   /// A project that has a file saves itself shortly after every change (on
   /// by default; the original's project auto-save is off by default).
   bool projectAutosave;
@@ -153,6 +158,7 @@ class AppSettings {
     'models': {'dir': modelsDir},
     'ui': {'theme': theme, 'language': uiLanguage, if (shortcuts.isNotEmpty) 'shortcuts': shortcuts},
     'test_mode': testMode,
+    'auto_bug_report': autoBugReport,
     'projects': {'autosave': projectAutosave, 'recent': recentProjects},
     'plugins': plugins,
     'approved_network_plugins': approvedNetworkPlugins.toList()..sort(),
@@ -188,6 +194,7 @@ class AppSettings {
       'models',
       'ui',
       'test_mode',
+      'auto_bug_report',
       'plugins', //
       'approved_network_plugins', 'projects',
     };
@@ -225,6 +232,7 @@ class AppSettings {
           if (e.key is String && e.value is String) e.key as String: e.value as String,
       },
       testMode: pick(json, 'test_mode', defaults.testMode),
+      autoBugReport: pick(json, 'auto_bug_report', defaults.autoBugReport),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),
       recentProjects: [...?(projects['recent'] as List?)?.whereType<String>()],
       plugins: {

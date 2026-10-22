@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,34 +14,67 @@ import '../state/app_state.dart';
 import '../state/gpu_check.dart' show shortGpuReason;
 import '../state/window_mode.dart';
 import 'common/key_bindings.dart';
-import 'shell_full/main_screen.dart';
+import 'shell_full/main_screen.dart' show MainScreen, showInExplorer;
 
 /// Shows messages from outside the widget tree (unexpected errors).
 final appMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 DateTime? _lastErrorNotice;
+DateTime? _lastAutoReport;
+
+/// Settings → General: an unexpected error builds a bug report by itself.
+/// Kept here because errors are reported from outside the widget tree.
+bool autoBugReportEnabled = true;
+
+const _errorNoticeTime = Duration(seconds: 30);
 
 /// Tells the user that something failed unexpectedly; details are in the
-/// log, and the message offers a bug report. At most one every 10 s.
+/// log. With [autoBugReportEnabled] a bug report is built right away (at
+/// most one a minute) and the message says where it is; otherwise the
+/// message offers to build one. At most one message every 10 s.
 void notifyUnexpectedError(AppServices services) {
   final now = DateTime.now();
   if (_lastErrorNotice != null && now.difference(_lastErrorNotice!) < const Duration(seconds: 10)) return;
   _lastErrorNotice = now;
-  WidgetsBinding.instance.addPostFrameCallback((_) {
+  final auto =
+      autoBugReportEnabled &&
+      (_lastAutoReport == null || now.difference(_lastAutoReport!) >= const Duration(minutes: 1));
+  if (auto) _lastAutoReport = now;
+  final report = auto ? services.buildBugReport(auto: true).then<File?>((f) => f, onError: (_) => null) : null;
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
     final messenger = appMessengerKey.currentState;
     final context = appMessengerKey.currentContext;
     if (messenger == null || context == null) return;
     final l = AppLocalizations.of(context);
+    final zip = await report;
+    if (zip != null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l.unexpectedErrorReported(zip.path)),
+          duration: _errorNoticeTime,
+          showCloseIcon: true,
+          action: SnackBarAction(label: l.showInFolder, onPressed: () => showInExplorer(zip.path)),
+        ),
+      );
+      return;
+    }
     messenger.showSnackBar(
       SnackBar(
         content: Text(l.unexpectedError),
-        duration: const Duration(seconds: 12),
+        duration: _errorNoticeTime,
         showCloseIcon: true,
         action: SnackBarAction(
           label: l.bugReport,
           onPressed: () async {
             final zip = await services.buildBugReport();
-            messenger.showSnackBar(SnackBar(content: Text(l.bugReportDone(zip.path)), showCloseIcon: true));
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(l.bugReportDone(zip.path)),
+                duration: _errorNoticeTime,
+                showCloseIcon: true,
+                action: SnackBarAction(label: l.showInFolder, onPressed: () => showInExplorer(zip.path)),
+              ),
+            );
           },
         ),
       ),
@@ -69,6 +103,8 @@ class _ComicTranslateAppState extends ConsumerState<ComicTranslateApp> {
     _gpuFallbackSub = gpuFallbacks.stream.listen(
       (f) => ref.read(settingsProvider.notifier).change((s) => s.gpuCpuModels[f.model] = shortGpuReason(f.reason)),
     );
+    autoBugReportEnabled = ref.read(settingsProvider).autoBugReport;
+    ref.listenManual(settingsProvider.select((s) => s.autoBugReport), (_, on) => autoBugReportEnabled = on);
   }
 
   @override

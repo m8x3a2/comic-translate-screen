@@ -473,6 +473,31 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String unexpectedErrorReported(String path) {
+    return 'Что-то пошло не так. Отчёт об ошибке собран: $path';
+  }
+
+  @override
+  String get autoBugReport => 'Собирать отчёт об ошибке автоматически';
+
+  @override
+  String get autoBugReportHelp =>
+      'При неожиданной ошибке программа сама сохранит отчёт и покажет, где он лежит. Отчёт остаётся на этом компьютере.';
+
+  @override
+  String get autoBugReportOffTitle => 'Выключить автоматические отчёты?';
+
+  @override
+  String get autoBugReportOffText =>
+      'Это важная функция: отчёт сохраняет, что происходило в самый момент ошибки, — по нему ошибку можно найти и исправить. Он хранится только на вашем компьютере и никуда не отправляется, в нём нет ключей API и картинок страниц.\n\nБез неё отчёт придётся собирать вручную после ошибки, и часть подробностей может уже потеряться.';
+
+  @override
+  String get autoBugReportKeepOn => 'Оставить включённым';
+
+  @override
+  String get autoBugReportTurnOff => 'Выключить';
+
+  @override
   String get translator => 'Переводчик';
 
   @override

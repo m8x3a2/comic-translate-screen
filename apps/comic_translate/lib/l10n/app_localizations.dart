@@ -884,6 +884,48 @@ abstract class AppLocalizations {
   /// **'Report saved: {path}'**
   String bugReportDone(String path);
 
+  /// No description provided for @unexpectedErrorReported.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. A bug report was saved: {path}'**
+  String unexpectedErrorReported(String path);
+
+  /// No description provided for @autoBugReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Build a bug report automatically'**
+  String get autoBugReport;
+
+  /// No description provided for @autoBugReportHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'After an unexpected error the program saves a report by itself and shows where it is. It stays on this computer.'**
+  String get autoBugReportHelp;
+
+  /// No description provided for @autoBugReportOffTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off automatic bug reports?'**
+  String get autoBugReportOffTitle;
+
+  /// No description provided for @autoBugReportOffText.
+  ///
+  /// In en, this message translates to:
+  /// **'This is an important feature: the report keeps what happened right at the moment of the error, so the problem can be found and fixed. It stays only on your computer and is never sent anywhere; it has no API keys and no page images.\n\nWithout it, a report has to be built by hand after an error, and details may already be lost.'**
+  String get autoBugReportOffText;
+
+  /// No description provided for @autoBugReportKeepOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep it on'**
+  String get autoBugReportKeepOn;
+
+  /// No description provided for @autoBugReportTurnOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get autoBugReportTurnOff;
+
   /// No description provided for @translator.
   ///
   /// In en, this message translates to:

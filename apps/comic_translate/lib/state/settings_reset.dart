@@ -20,7 +20,8 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..theme = d.theme
           ..useGpu = d.useGpu
           ..projectAutosave = d.projectAutosave
-          ..testMode = d.testMode;
+          ..testMode = d.testMode
+          ..autoBugReport = d.autoBugReport;
       case SettingsPart.translator:
         s
           ..translator = d.translator

@@ -255,6 +255,22 @@ class _Dropdown<T> extends StatelessWidget {
   );
 }
 
+Future<bool> _confirmAutoBugReportOff(BuildContext context) async {
+  final l = context.l10n;
+  final off = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l.autoBugReportOffTitle),
+      content: Text(l.autoBugReportOffText),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, true), child: Text(l.autoBugReportTurnOff)),
+        FilledButton(onPressed: () => Navigator.pop(context, false), child: Text(l.autoBugReportKeepOn)),
+      ],
+    ),
+  );
+  return off ?? false;
+}
+
 Widget _switch(String title, bool value, ValueChanged<bool> onChanged, {String? help, String? info}) => SwitchListTile(
   contentPadding: EdgeInsets.zero,
   title: titleWithInfo(title, info),
@@ -403,6 +419,11 @@ class _GeneralSection extends ConsumerWidget {
               help: l.testModeHelp,
               info: l.testModeInfo,
             ),
+            _switch(l.autoBugReport, s.autoBugReport, (v) async {
+              // An important safety net: switching it off asks first.
+              if (!v && !await _confirmAutoBugReportOff(context)) return;
+              _change(ref, (s) => s.autoBugReport = v);
+            }, help: l.autoBugReportHelp),
             Wrap(
               spacing: 8,
               runSpacing: 8,

@@ -138,14 +138,45 @@ class AppServices {
 
   /// A bug report zip (logs, environment with the graphics adapters,
   /// settings without secrets), as the GUI buttons build it.
-  Future<File> buildBugReport({String? note}) async {
+  ///
+  /// An [auto] report (built by itself after an unexpected error) is named
+  /// `bugreport-auto-…`; only the newest [keepAutoReports] of those stay.
+  Future<File> buildBugReport({String? note, bool auto = false}) async {
     await appLog.flush();
+    final now = DateTime.now();
+    String two(int v) => '$v'.padLeft(2, '0');
+    final output = auto
+        ? File(
+            p.join(
+              paths.reports.path,
+              'bugreport-auto-${now.year}${two(now.month)}${two(now.day)}-'
+              '${two(now.hour)}${two(now.minute)}${two(now.second)}.zip',
+            ),
+          )
+        : null;
     final zip = await BugReportBuilder(
       paths: paths,
       redactor: redactor,
-    ).build(environment: await environmentWithGpu(), userNote: note);
-    appLog.info('bug_report', {'file': zip.path, 'with_images': false});
+    ).build(environment: await environmentWithGpu(), userNote: note, output: output);
+    appLog.info('bug_report', {'file': zip.path, 'with_images': false, 'auto': auto});
+    if (auto) _pruneAutoReports();
     return zip;
+  }
+
+  static const keepAutoReports = 20;
+
+  void _pruneAutoReports() {
+    final old = [
+      for (final f in paths.reports.listSync().whereType<File>())
+        if (p.basename(f.path).startsWith('bugreport-auto-')) f,
+    ]..sort((a, b) => p.basename(b.path).compareTo(p.basename(a.path)));
+    for (final f in old.skip(keepAutoReports)) {
+      try {
+        f.deleteSync();
+      } on FileSystemException {
+        // Open elsewhere: next time.
+      }
+    }
   }
 
   /// [environment] with the graphics adapters (slower: asks Windows).

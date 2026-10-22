@@ -340,6 +340,20 @@
       }
     }
   },
+  "unexpectedErrorReported": "Something went wrong. A bug report was saved: {path}",
+  "@unexpectedErrorReported": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "autoBugReport": "Build a bug report automatically",
+  "autoBugReportHelp": "After an unexpected error the program saves a report by itself and shows where it is. It stays on this computer.",
+  "autoBugReportOffTitle": "Turn off automatic bug reports?",
+  "autoBugReportOffText": "This is an important feature: the report keeps what happened right at the moment of the error, so the problem can be found and fixed. It stays only on your computer and is never sent anywhere; it has no API keys and no page images.\n\nWithout it, a report has to be built by hand after an error, and details may already be lost.",
+  "autoBugReportKeepOn": "Keep it on",
+  "autoBugReportTurnOff": "Turn off",
   "translator": "Translator",
   "privacyLocalBadge": "On this computer",
   "privacyLanBadge": "Local network",

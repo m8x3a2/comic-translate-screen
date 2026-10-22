@@ -472,6 +472,31 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String unexpectedErrorReported(String path) {
+    return 'Something went wrong. A bug report was saved: $path';
+  }
+
+  @override
+  String get autoBugReport => 'Build a bug report automatically';
+
+  @override
+  String get autoBugReportHelp =>
+      'After an unexpected error the program saves a report by itself and shows where it is. It stays on this computer.';
+
+  @override
+  String get autoBugReportOffTitle => 'Turn off automatic bug reports?';
+
+  @override
+  String get autoBugReportOffText =>
+      'This is an important feature: the report keeps what happened right at the moment of the error, so the problem can be found and fixed. It stays only on your computer and is never sent anywhere; it has no API keys and no page images.\n\nWithout it, a report has to be built by hand after an error, and details may already be lost.';
+
+  @override
+  String get autoBugReportKeepOn => 'Keep it on';
+
+  @override
+  String get autoBugReportTurnOff => 'Turn off';
+
+  @override
   String get translator => 'Translator';
 
   @override
