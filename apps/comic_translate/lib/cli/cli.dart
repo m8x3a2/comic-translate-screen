@@ -11,6 +11,7 @@ import '../bootstrap.dart';
 import 'cli_context.dart';
 import 'commands/detect_command.dart';
 import 'commands/doctor_command.dart';
+import 'commands/exchange_command.dart';
 import 'commands/inpaint_command.dart';
 import 'commands/models_command.dart';
 import 'commands/ocr_command.dart';
@@ -77,6 +78,7 @@ CommandRunner<int> buildRunner(CliContextHolder holder) {
     ..addCommand(UsageCommand(holder))
     ..addCommand(ProjectCommand(holder))
     ..addCommand(ExportCommand(holder))
+    ..addCommand(ExchangeCommand(holder))
     ..addCommand(PsdCommand(holder))
     ..addCommand(ReportCommand(holder));
   return runner;

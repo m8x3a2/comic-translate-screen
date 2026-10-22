@@ -180,6 +180,51 @@ void main() {
     expect(Directory(chapters).listSync().map((f) => p.basename(f.path)).toList()..sort(), ['vol1.pdf', 'vol2.pdf']);
   });
 
+  test('exchange: a project out to the chat, the answer back in', () async {
+    final page = p.join(dataDir.path, 'src', '001.png');
+    Directory(p.dirname(page)).createSync();
+    await ImageCodec.writeFile(page, RgbImage.filled(300, 200, 255, 255, 255));
+    final project = p.join(dataDir.path, 'Book.ctsproj');
+    ProjectFile.save(
+      project,
+      ProjectData(
+        pages: [
+          for (var i = 0; i < 2; i++)
+            ProjectPage(
+              id: 'p$i',
+              name: '00${i + 1}.png',
+              image: page,
+              blocks: [
+                TextBlock(xyxy: const BBox(10, 10, 110, 70), text: 'Hi'),
+                TextBlock(xyxy: const BBox(150, 100, 280, 180), text: 'Bye'),
+              ],
+            ),
+        ],
+      ),
+    );
+    final dir = p.join(dataDir.path, 'chat');
+    final out = await cts(['--json', 'exchange', 'export', project, '-o', dir, '--groups', '1-3'], dataDir);
+    expect(out.code, ExitCodes.ok, reason: out.err);
+    final json = jsonDecode(out.out) as Map;
+    expect(json['mode'], 'both');
+    expect(json['pieces'], ['01-001', '01-002', '02-001', '02-002']);
+    expect(json['pictures'], ['sheet_01.png', 'sheet_02.png']);
+
+    final answer = File(p.join(dataDir.path, 'answer.txt'))
+      ..writeAsStringSync('Here you go:\n[01-001] Hi --> Привет\n[01-002] Bye -> Пока\n[02-001] Hi\n[09-001] ?\n');
+    final back = await cts(['--json', 'exchange', 'import', dir, '--answer', answer.path], dataDir);
+    expect(back.code, ExitCodes.ok, reason: back.err);
+    final m = jsonDecode(back.out) as Map;
+    expect((m['replies'] as Map)['01-002'], {'original': 'Bye', 'translation': 'Пока'});
+    expect(m['missing'], ['02-002']);
+    expect(m['unknown'], ['09-001']);
+    expect(m['missing_arrow'], ['02-001']);
+
+    final notFolder = await cts(['exchange', 'import', dataDir.path], dataDir);
+    expect(notFolder.code, ExitCodes.failure);
+    expect(notFolder.err, contains('not an exchange folder'));
+  });
+
   group('translate', () {
     late String ocrJson;
     setUp(() {
