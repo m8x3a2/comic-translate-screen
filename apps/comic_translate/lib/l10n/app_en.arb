@@ -1126,6 +1126,13 @@
   "splitWordsMissing": "The word list is missing from the program folder (data\\flutter_assets\\assets\\dict).",
   "splitGluedWords": "Split glued English words after recognition",
   "splitGluedWordsInfo": "On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.",
+  "contentKind": "What you translate",
+  "contentKindInfo": "Comics: the program looks for speech bubbles and captions. Sites and games: it looks for lines of ordinary text (screenshots, games, visual novels, phone screens).",
+  "contentComics": "Comics",
+  "contentComicsHelp": "speech bubbles and captions",
+  "contentScreens": "Sites and games",
+  "contentScreensHelp": "lines of ordinary text: screenshots, games, visual novels",
+  "detectorScreens": "Text detection (sites and games)",
   "smallTextWarning": "Very small text (lines of about {px} px): words may be glued together and letters misread. A larger screenshot reads better. The translator is told about it.",
   "@smallTextWarning": {
     "placeholders": {

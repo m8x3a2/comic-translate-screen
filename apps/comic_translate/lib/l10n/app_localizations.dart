@@ -3374,6 +3374,48 @@ abstract class AppLocalizations {
   /// **'On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.'**
   String get splitGluedWordsInfo;
 
+  /// No description provided for @contentKind.
+  ///
+  /// In en, this message translates to:
+  /// **'What you translate'**
+  String get contentKind;
+
+  /// No description provided for @contentKindInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Comics: the program looks for speech bubbles and captions. Sites and games: it looks for lines of ordinary text (screenshots, games, visual novels, phone screens).'**
+  String get contentKindInfo;
+
+  /// No description provided for @contentComics.
+  ///
+  /// In en, this message translates to:
+  /// **'Comics'**
+  String get contentComics;
+
+  /// No description provided for @contentComicsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'speech bubbles and captions'**
+  String get contentComicsHelp;
+
+  /// No description provided for @contentScreens.
+  ///
+  /// In en, this message translates to:
+  /// **'Sites and games'**
+  String get contentScreens;
+
+  /// No description provided for @contentScreensHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'lines of ordinary text: screenshots, games, visual novels'**
+  String get contentScreensHelp;
+
+  /// No description provided for @detectorScreens.
+  ///
+  /// In en, this message translates to:
+  /// **'Text detection (sites and games)'**
+  String get detectorScreens;
+
   /// No description provided for @smallTextWarning.
   ///
   /// In en, this message translates to:

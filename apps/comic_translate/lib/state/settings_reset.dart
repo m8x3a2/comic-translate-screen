@@ -32,6 +32,8 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
       case SettingsPart.tools:
         s
           ..detector = d.detector
+          ..contentKind = d.contentKind
+          ..screenDetector = d.screenDetector
           ..ocr = d.ocr
           ..inpainter = d.inpainter
           ..upscaleSmallText = d.upscaleSmallText

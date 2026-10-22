@@ -20,6 +20,7 @@ with small tolerances.
 | `mask` | mahotas morphology, imkit contours, Pillow blur and "L" resize; generate_mask on every page | `packages/ct_core/test/parity/mask_test.dart` |
 | `inpaint` | fast bubble fill, patch/full routing, AOT and LaMa results with each high-resolution strategy | `packages/ct_providers/test/inpaint_parity_test.dart` (needs the models) |
 | `heuristics` | line splitting and text direction on ~500 crops (blocks, bubbles, rotated, inverted, random regions) | `packages/ct_core/test/parity/heuristics_test.dart` |
+| `ppocr_lines` | PP-OCRv5 line detection (`PPOCRLineDetector.detect_lines`) on every page: detector input, pieces, merged lines | `packages/ct_providers/test/ppocr_lines_parity_test.dart` (needs the model) |
 
 `gen_manga_ocr_tables.py` generates the jaconv tables used by the Dart port.
 

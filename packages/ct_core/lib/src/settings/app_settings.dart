@@ -4,6 +4,15 @@ import '../plugins/engines.dart';
 import '../render/layout.dart';
 import '../render/upscale.dart';
 
+/// What the pages are: each kind finds text its own way.
+enum ContentKind {
+  /// Comics, manga, webtoons: speech bubbles and captions.
+  comics,
+
+  /// Screenshots of sites, games and visual novels: lines of ordinary text.
+  screens,
+}
+
 /// User settings stored in `settings.json` (never secrets).
 ///
 /// Defaults follow the original application (`app/ui/settings/settings_page.py`).
@@ -12,6 +21,8 @@ import '../render/upscale.dart';
 class AppSettings {
   AppSettings({
     this.detector = 'rtdetr_v2',
+    this.contentKind = ContentKind.comics,
+    this.screenDetector = 'ppocr_lines',
     this.ocr = 'default',
     this.translator = 'openai_compatible',
     this.inpainter = 'aot',
@@ -50,6 +61,15 @@ class AppSettings {
 
   /// Selected plugin ids.
   String detector;
+
+  /// What is being translated: comics (speech bubbles, [detector]) or
+  /// screens — sites, games, visual novels (lines of ordinary text,
+  /// [screenDetector]). New in this project.
+  ContentKind contentKind;
+  String screenDetector;
+
+  /// The detector of the current [contentKind].
+  String get activeDetector => contentKind == ContentKind.screens ? screenDetector : detector;
   String ocr;
   String translator;
   String inpainter;
@@ -147,6 +167,8 @@ class AppSettings {
     'schema_version': schemaVersion,
     'tools': {
       'detector': detector,
+      'content': contentKind.name,
+      'screen_detector': screenDetector,
       'ocr': ocr,
       'translator': translator,
       'inpainter': inpainter,
@@ -208,6 +230,8 @@ class AppSettings {
     final strategyName = pick<String>(inpaint, 'strategy', defaults.inpaint.strategy.name);
     return AppSettings(
       detector: pick(tools, 'detector', defaults.detector),
+      contentKind: ContentKind.values.asNameMap()[tools['content']] ?? defaults.contentKind,
+      screenDetector: pick(tools, 'screen_detector', defaults.screenDetector),
       ocr: pick(tools, 'ocr', defaults.ocr),
       translator: pick(tools, 'translator', defaults.translator),
       inpainter: pick(tools, 'inpainter', defaults.inpainter),

@@ -77,7 +77,7 @@ class OcrCommand extends CtsCommand {
       ocr = await services.plugin<OcrEngine>(args.option('ocr') ?? settings.ocr, settings, useGpu: useGpu, log: log);
       if (blocksPath == null) {
         detector = await services.plugin<TextDetector>(
-          args.option('detector') ?? settings.detector,
+          args.option('detector') ?? settings.activeDetector,
           settings,
           useGpu: useGpu,
           log: log,

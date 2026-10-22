@@ -357,7 +357,7 @@ class PipelineSpec {
       translatorId: translator,
       useGpu: useGpu ?? settings.useGpu,
       configs: {
-        for (final id in {settings.detector, settings.ocr, translator, settings.inpainter})
+        for (final id in {settings.activeDetector, settings.ocr, translator, settings.inpainter})
           id: await services.pluginConfig(id, settings),
       },
     );
@@ -420,7 +420,7 @@ class PagePipeline {
       settings: s,
       sourceLanguage: spec.sourceLanguage,
       targetLanguage: spec.targetLanguage,
-      detector: await make<TextDetector>(s.detector),
+      detector: await make<TextDetector>(s.activeDetector),
       ocr: await make<OcrEngine>(s.ocr),
       translator: await make<Translator>(spec.translatorId),
       inpainter: await make<Inpainter>(s.inpainter),
@@ -643,7 +643,7 @@ class LazyPlugins {
     );
   }
 
-  Future<TextDetector> get detector => _make(spec.settings.detector);
+  Future<TextDetector> get detector => _make(spec.settings.activeDetector);
   Future<OcrEngine> get ocr => _make(spec.settings.ocr);
   Future<Translator> get translator => _make(spec.translatorId);
   Future<Inpainter> get inpainter => _make(spec.settings.inpainter);

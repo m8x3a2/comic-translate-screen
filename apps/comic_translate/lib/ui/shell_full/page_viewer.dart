@@ -14,6 +14,7 @@ import '../../state/editor.dart';
 import '../../state/steps.dart';
 import '../../state/page_layout.dart';
 import '../../state/workspace.dart';
+import '../common/content_kind_switch.dart';
 import '../common/labels.dart';
 import 'batch_dialogs.dart';
 import 'page_canvas.dart';
@@ -397,6 +398,8 @@ class _ToolBar extends ConsumerWidget {
               ],
             ),
           ),
+          const ContentKindSwitch(compact: true),
+          const SizedBox(width: 4),
           Tooltip(
             message: l.webtoonModeHelp,
             child: FilterChip(

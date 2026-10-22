@@ -27,11 +27,23 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 
 ### Deliberate differences from the original
 
-- The PP-OCR line *detector* is not ported. The original runs it only when no
-  block has text lines, and reads a hand-drawn box among detected ones as one
-  line. Here every block without lines (drawn by hand, or resized) is split by
-  the heuristic line splitter just before reading, so it also counts towards
+- The original runs the PP-OCR line detector only when no block has text
+  lines, and reads a hand-drawn box among detected ones as one line. Here
+  every block without lines (drawn by hand, or resized) is split by the
+  heuristic line splitter just before reading, so it also counts towards
   enlarging small text; only if the heuristics give up is it read as a whole.
+- "Comics / Sites and games" (new, `tools.content`): sites, games and visual
+  novels have lines of ordinary text, which the comic detector mostly misses
+  (a phone screenshot: 1 word of 136). For them the PP-OCRv5 line detector
+  (`ppocr_lines`, `ppocr_det.dart`) is a detector of its own: the
+  preprocessing, DB post-processing and line merging are the original's
+  (`test_data/reference/ppocr_lines.json`, same pieces within 2 px on every
+  test page; the polygon fill matches mahotas), the lines are then gathered
+  into paragraph blocks (`groupLinesIntoBlocks`, new). Boxes are grown by 1.4
+  instead of 2.0: the original's tall boxes make the recognizer misread long
+  lines (English game screenshots: 93 % of words right against 71 %; the
+  comic detector: 65 %). These lines are kept (`fixed_lines`) when the page
+  is enlarged for reading.
 - A moved box takes its lines, bubble and outline along (the original keeps
   them in place); a resized one loses its lines and keeps its bubble only while
   it is still inside it.

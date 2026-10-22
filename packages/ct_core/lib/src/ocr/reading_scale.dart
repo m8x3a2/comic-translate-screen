@@ -27,13 +27,13 @@ const readingMaxPixels = 60000000;
 
 /// Thickness of every heuristic line of [blocks].
 List<int> lineThicknesses(List<TextBlock> blocks) => [
-      for (final b in blocks)
-        for (final l in b.lines)
-          () {
-            final a = l.axisBox;
-            return b.direction == TextDirection.vertical ? a.x2 - a.x1 + 1 : a.y2 - a.y1 + 1;
-          }(),
-    ];
+  for (final b in blocks)
+    for (final l in b.lines)
+      () {
+        final a = l.axisBox;
+        return b.direction == TextDirection.vertical ? a.x2 - a.x1 + 1 : a.y2 - a.y1 + 1;
+      }(),
+];
 
 /// How much to enlarge a page for reading, from its smaller lines (25th
 /// percentile of line thickness). 1 when the text is large enough.
@@ -79,8 +79,16 @@ class ReadingPage {
 /// Blocks without lines (boxes drawn by hand, or resized) are split first,
 /// on the page as it is: otherwise their text would not count towards the
 /// enlargement and they would be read as one line.
-ReadingPage prepareReading(RgbImage image, List<TextBlock> blocks, {String sourceLanguageCode = '', bool enabled = true}) {
-  final bare = [for (final b in blocks) if (b.lines.isEmpty) b];
+ReadingPage prepareReading(
+  RgbImage image,
+  List<TextBlock> blocks, {
+  String sourceLanguageCode = '',
+  bool enabled = true,
+}) {
+  final bare = [
+    for (final b in blocks)
+      if (b.lines.isEmpty) b,
+  ];
   if (bare.isNotEmpty) {
     try {
       annotateBlocksWithHeuristicLines(image, bare, sourceLanguage: sourceLanguageCode);
@@ -104,9 +112,14 @@ ReadingPage prepareReading(RgbImage image, List<TextBlock> blocks, {String sourc
     b.xyxy = scaleBox(b.xyxy, sx, sy);
     final bubble = b.bubbleXyxy;
     if (bubble != null) b.bubbleXyxy = scaleBox(bubble, sx, sy);
-    b.lines = [];
+    // Lines of a line detector are exact: they are only scaled.
+    b.lines = b.fixedLines ? [for (final l in b.lines) scaleLine(l, sx, sy)] : [];
   }
-  annotateBlocksWithHeuristicLines(scaledImage, blocks, sourceLanguage: sourceLanguageCode);
+  final split = [
+    for (final b in blocks)
+      if (!b.fixedLines) b,
+  ];
+  if (split.isNotEmpty) annotateBlocksWithHeuristicLines(scaledImage, split, sourceLanguage: sourceLanguageCode);
   return ReadingPage._(scaledImage, blocks, sx, sy, boxes, bubbles);
 }
 

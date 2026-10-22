@@ -63,6 +63,7 @@ class TextBlock {
     this.direction = TextDirection.unknown,
     this.style,
     this.linePx,
+    this.fixedLines = false,
   })  : lines = lines ?? [],
         texts = texts ?? [],
         skippedSmallTexts = skippedSmallTexts ?? [],
@@ -116,6 +117,11 @@ class TextBlock {
   /// the block is read; null before. Not in the original.
   double? linePx;
 
+  /// The lines come from a line detector and are kept when the page is
+  /// enlarged for reading (instead of being found again). Not in the
+  /// original.
+  bool fixedLines;
+
   BBox get bbox => xyxy;
   Point2 get center => xyxy.center;
 
@@ -141,6 +147,7 @@ class TextBlock {
       segmentationPoints = segmentationPoints?.map(shift).toList();
     } else {
       lines = [];
+      fixedLines = false;
       segmentationPoints = null;
       if (bubbleXyxy case final bubble? when !bubble.containsBox(box)) bubbleXyxy = null;
     }
@@ -169,6 +176,7 @@ class TextBlock {
         direction: direction,
         style: style,
         linePx: linePx,
+        fixedLines: fixedLines,
       )..text = text;
 
   /// JSON with the original attribute names, so artifacts can be compared
@@ -197,6 +205,7 @@ class TextBlock {
         'direction': direction.id,
         if (style != null && !style!.isEmpty) 'style': style!.toJson(),
         if (linePx != null) 'line_px': linePx,
+        if (fixedLines) 'fixed_lines': true,
       };
 
   factory TextBlock.fromJson(Map<String, Object?> json) {
@@ -226,6 +235,7 @@ class TextBlock {
       direction: TextDirection.parse(json['direction'] as String?),
       style: json['style'] is Map ? BlockStyle.fromJson((json['style'] as Map).cast<String, Object?>()) : null,
       linePx: (json['line_px'] as num?)?.toDouble(),
+      fixedLines: json['fixed_lines'] == true,
     );
     // `text` is stored explicitly; it may differ from texts.join(' ').
     block.text = json['text'] as String? ?? block.text;

@@ -257,8 +257,25 @@ abstract final class ModelCatalog {
     ],
   );
 
+  static const ppocrDet = ModelSpec(
+    id: 'ppocr-v5-det-mobile',
+    displayName: 'PP-OCRv5 text line detector (mobile)',
+    purpose: 'Text line detection for screenshots, sites and games',
+    license: 'Apache-2.0',
+    homepage: 'https://huggingface.co/ogkalu/ppocr-v5-onnx',
+    files: [
+      ModelFile(
+        name: 'ch_PP-OCRv5_mobile_det.onnx',
+        url: 'https://huggingface.co/ogkalu/ppocr-v5-onnx/resolve/main/ch_PP-OCRv5_mobile_det.onnx',
+        sha256: '4d97c44a20d30a81aad087d6a396b08f786c4635742afc391f6621f5c6ae78ae',
+        size: 4819576,
+      ),
+    ],
+  );
+
   static const all = [
     rtdetrV2,
+    ppocrDet,
     ppocrRecEn,
     ppocrRecLatin,
     ppocrRecEslav,

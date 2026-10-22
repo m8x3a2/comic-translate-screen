@@ -57,10 +57,17 @@ class MaskCommand extends CtsCommand {
 class InpaintCommand extends CtsCommand {
   InpaintCommand(super.holder) {
     argParser
-      ..addOption('blocks', help: 'Blocks JSON from cts detect / ocr / translate. Without it (and --mask) text is detected first.')
+      ..addOption(
+        'blocks',
+        help: 'Blocks JSON from cts detect / ocr / translate. Without it (and --mask) text is detected first.',
+      )
       ..addOption('mask', help: 'Use this mask PNG instead of building one (no fast bubble fill).')
       ..addOption('inpainter', help: 'Inpainter plugin id: aot (default from settings) or lama.')
-      ..addOption('strategy', allowed: ['resize', 'crop', 'original'], help: 'High-resolution strategy (default from settings: resize).')
+      ..addOption(
+        'strategy',
+        allowed: ['resize', 'crop', 'original'],
+        help: 'High-resolution strategy (default from settings: resize).',
+      )
       ..addFlag('gpu', help: 'Use the GPU (DirectML). Default from settings.', defaultsTo: null)
       ..addOption('output', abbr: 'o', help: 'Output directory.', defaultsTo: 'cts_out')
       ..addFlag('debug', negatable: false, help: 'Test mode: save the mask and intermediate images in a run folder.');
@@ -111,10 +118,14 @@ class InpaintCommand extends CtsCommand {
     final Inpainter inpainter;
     TextDetector? detector;
     try {
-      inpainter = await services.plugin<Inpainter>(args.option('inpainter') ?? settings.inpainter, settings,
-          useGpu: useGpu, log: log);
+      inpainter = await services.plugin<Inpainter>(
+        args.option('inpainter') ?? settings.inpainter,
+        settings,
+        useGpu: useGpu,
+        log: log,
+      );
       if (args.option('blocks') == null && args.option('mask') == null) {
-        detector = await services.plugin<TextDetector>(settings.detector, settings, useGpu: useGpu, log: log);
+        detector = await services.plugin<TextDetector>(settings.activeDetector, settings, useGpu: useGpu, log: log);
       }
     } on ModelNotInstalledException catch (e) {
       ctx.err.writeln(e);
@@ -164,12 +175,17 @@ class InpaintCommand extends CtsCommand {
         final png = ImageCodec.encodePng(clean);
         await recorder?.writeArtifact('05_inpaint', 'clean.png', png, page: page);
         final file = File(p.join(outDir.path, '${p.basenameWithoutExtension(input)}.clean.png'))..writeAsBytesSync(png);
-        pageLog.log(LogLevel.info, 'inpaint_done', durMs: totalMs, data: {
-          'mode': report.mode,
-          'patches': report.patches,
-          'fast_filled': report.fastFilledBlocks,
-          'notes': report.notes,
-        });
+        pageLog.log(
+          LogLevel.info,
+          'inpaint_done',
+          durMs: totalMs,
+          data: {
+            'mode': report.mode,
+            'patches': report.patches,
+            'fast_filled': report.fastFilledBlocks,
+            'notes': report.notes,
+          },
+        );
         results.add({
           'image': input,
           'clean': file.path,
@@ -179,8 +195,10 @@ class InpaintCommand extends CtsCommand {
           'mask_ms': maskMs,
           'inpaint_ms': totalMs - maskMs,
         });
-        ctx.say('$page: ${report.fastFilledBlocks} bubble(s) flat-filled, network: ${report.mode}'
-            '${report.patches > 0 ? ' (${report.patches} patches)' : ''}, ${totalMs - maskMs} ms → ${file.path}');
+        ctx.say(
+          '$page: ${report.fastFilledBlocks} bubble(s) flat-filled, network: ${report.mode}'
+          '${report.patches > 0 ? ' (${report.patches} patches)' : ''}, ${totalMs - maskMs} ms → ${file.path}',
+        );
       } catch (e, st) {
         ok = false;
         pageLog.error('inpaint_failed', e, st);

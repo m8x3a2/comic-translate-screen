@@ -13,6 +13,7 @@ import '../../app_info.dart';
 import '../../state/app_state.dart';
 import '../../state/settings_reset.dart';
 import '../../render/text_renderer.dart' show defaultFontFamily;
+import '../common/content_kind_switch.dart';
 import '../common/fonts.dart';
 import '../common/info_hint.dart';
 import '../common/labels.dart';
@@ -560,7 +561,18 @@ class _ToolsSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        pluginWithForm(l.detector, PluginKind.detector, s.detector, (s, v) => s.detector = v),
+        SettingsGroup(
+          title: l.contentKind,
+          children: [
+            const Align(alignment: Alignment.centerLeft, child: ContentKindSwitch()),
+            const SizedBox(height: 4),
+            Text(l.contentKindInfo, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+        if (s.contentKind == ContentKind.screens)
+          pluginWithForm(l.detectorScreens, PluginKind.detector, s.screenDetector, (s, v) => s.screenDetector = v)
+        else
+          pluginWithForm(l.detector, PluginKind.detector, s.detector, (s, v) => s.detector = v),
         pluginWithForm(l.ocr, PluginKind.ocr, s.ocr, (s, v) => s.ocr = v),
         SettingsGroup(
           children: [

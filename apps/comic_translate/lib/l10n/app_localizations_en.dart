@@ -1919,6 +1919,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.';
 
   @override
+  String get contentKind => 'What you translate';
+
+  @override
+  String get contentKindInfo =>
+      'Comics: the program looks for speech bubbles and captions. Sites and games: it looks for lines of ordinary text (screenshots, games, visual novels, phone screens).';
+
+  @override
+  String get contentComics => 'Comics';
+
+  @override
+  String get contentComicsHelp => 'speech bubbles and captions';
+
+  @override
+  String get contentScreens => 'Sites and games';
+
+  @override
+  String get contentScreensHelp =>
+      'lines of ordinary text: screenshots, games, visual novels';
+
+  @override
+  String get detectorScreens => 'Text detection (sites and games)';
+
+  @override
   String smallTextWarning(String px) {
     return 'Very small text (lines of about $px px): words may be glued together and letters misread. A larger screenshot reads better. The translator is told about it.';
   }

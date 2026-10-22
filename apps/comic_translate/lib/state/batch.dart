@@ -497,7 +497,7 @@ Future<List<ModelSpec>> missingModels(
   Set<String>? sourceLanguages,
 }) async {
   final chosen = [
-    if (parts.contains(PipelinePart.detector)) settings.detector,
+    if (parts.contains(PipelinePart.detector)) settings.activeDetector,
     if (parts.contains(PipelinePart.ocr)) settings.ocr,
     if (parts.contains(PipelinePart.translator)) settings.translator,
     if (parts.contains(PipelinePart.inpainter)) settings.inpainter,

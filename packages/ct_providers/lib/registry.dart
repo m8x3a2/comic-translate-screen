@@ -1,5 +1,6 @@
 import 'package:ct_core/ct_core.dart';
 
+import 'src/detection/ppocr_lines.dart';
 import 'src/detection/rtdetr_v2.dart';
 import 'src/inpainting/aot.dart';
 import 'src/inpainting/lama.dart';
@@ -13,6 +14,7 @@ import 'src/translation/openai_compatible.dart';
 /// Registers every built-in plugin. Adding a provider = one line here.
 void registerBuiltInPlugins(PluginRegistry registry) {
   registry.register(rtdetrV2Factory);
+  registry.register(ppocrLinesFactory);
   registry.register(defaultOcrFactory);
   registry.register(ppocrFactory);
   registry.register(mangaOcrFactory);

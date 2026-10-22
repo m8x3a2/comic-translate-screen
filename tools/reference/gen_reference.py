@@ -934,6 +934,41 @@ def gen_render(out: Path) -> None:
     write_json(out / "render.json", {"wrap": cases})
 
 
+# ------------------------------------------------------------ ppocr lines ---
+
+def gen_ppocr_lines(out: Path, pages_dir: Path, models_dir: Path) -> None:
+    """PP-OCRv5 line detection of `PPOCRLineDetector.detect_lines` on every page."""
+    from modules.detection.ppocr_lines import _axis_box, _merge_line_boxes
+    from modules.ocr.ppocr.postprocessing import DBPostProcessor
+    from modules.ocr.ppocr.preprocessing import det_preprocess
+    import onnxruntime as ort
+
+    model_path = models_dir / "ppocr-v5-det-mobile" / "ch_PP-OCRv5_mobile_det.onnx"
+    if not model_path.exists():
+        sys.exit(f"Model not found: {model_path}. Run: cts models download ppocr-v5-det-mobile")
+    session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
+    post = DBPostProcessor(thresh=0.3, box_thresh=0.5, unclip_ratio=2.0, use_dilation=False)
+
+    records = []
+    for path in sorted(pages_dir.glob("*.jpg")):
+        image = decode_rgb(path)
+        h, w = image.shape[:2]
+        inp = det_preprocess(image, limit_side_len=960, limit_type="min")
+        pred = session.run([session.get_outputs()[0].name], {session.get_inputs()[0].name: inp})[0]
+        quads, scores = post(pred, (h, w))
+        boxes = [_axis_box(q) for q in quads]
+        records.append({
+            "page": path.stem,
+            "input_shape": list(inp.shape),
+            "input_sha256": sha256(inp),
+            "prob_mean": float(pred.mean()),
+            "quads": [q.tolist() for q in quads],
+            "scores": scores,
+            "lines": _merge_line_boxes(boxes, w, h),
+        })
+    write_json(out / "ppocr_lines.json", records)
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> None:
@@ -942,7 +977,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "search", "translation", "mask", "inpaint", "render"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "search", "translation", "mask", "inpaint", "render", "ppocr_lines"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -968,7 +1003,7 @@ def main() -> None:
         "decoder": "cv2.imdecode(IMREAD_COLOR) + BGR2RGB",
     })
 
-    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "search", "translation", "mask", "inpaint", "render"])
+    only = set(args.only or ["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "search", "translation", "mask", "inpaint", "render", "ppocr_lines"])
     if "primitives" in only:
         gen_primitives(args.out)
     if "geometry" in only:
@@ -993,6 +1028,8 @@ def main() -> None:
         gen_inpaint(args.out, args.pages, args.models, args.out / "detection")
     if "render" in only:
         gen_render(args.out)
+    if "ppocr_lines" in only:
+        gen_ppocr_lines(args.out, args.pages, args.models)
 
 
 if __name__ == "__main__":

@@ -1922,6 +1922,29 @@ class AppLocalizationsRu extends AppLocalizations {
       'На очень мелком тексте распознавание часто читает два слова как одно: «REALLIFE», «MYINSTINCTS». Слова, которых нет в словаре, делятся на слова из словаря; буквы не меняются. То же делает кнопка в панели «Текст» — для страницы или одного пузыря.';
 
   @override
+  String get contentKind => 'Что переводим';
+
+  @override
+  String get contentKindInfo =>
+      'Комиксы: программа ищет пузыри и подписи. Сайты и игры: ищет строки обычного текста (скриншоты, игры, визуальные новеллы, экран телефона).';
+
+  @override
+  String get contentComics => 'Комиксы';
+
+  @override
+  String get contentComicsHelp => 'пузыри и подписи';
+
+  @override
+  String get contentScreens => 'Сайты и игры';
+
+  @override
+  String get contentScreensHelp =>
+      'строки обычного текста: скриншоты, игры, визуальные новеллы';
+
+  @override
+  String get detectorScreens => 'Поиск текста (сайты и игры)';
+
+  @override
   String smallTextWarning(String px) {
     return 'Очень мелкий текст (строки около $px точек): слова могут слипаться, буквы — путаться. Снимок покрупнее распознается лучше. Переводчику об этом сказано.';
   }
