@@ -19,7 +19,7 @@ Labels: {labels}
 {context}''',
   ExchangeMode.translate: '''
 Translate these lines of {kind} from {source} into {target}.
-Keep the tone and the way each character speaks; the translation should read naturally.
+{pictures}Keep the tone and the way each character speaks; the translation should read naturally.
 Answer with one line per label and nothing else:
 [01-003] translation
 {context}

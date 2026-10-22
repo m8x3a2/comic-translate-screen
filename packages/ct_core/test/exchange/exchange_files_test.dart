@@ -192,6 +192,23 @@ void main() {
       expect(crops.last, 'crops/batch_02/03-012.png');
     });
 
+    test('translate with pictures of the pages; the folder read back keeps them', () async {
+      final out = await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.translate,
+        const ExchangeSettings(contextImage: ContextImage.onSheet),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      expect(out.pictures, ['page_01_context.jpg', 'page_02_context.jpg']);
+      expect(out.prompt, contains('Pictures of the whole pages'));
+      final back = (await ExchangeManifest.read(dir)).export!;
+      expect(back.pictures, out.pictures);
+      expect(back.prompt, out.prompt);
+      expect([for (final i in back.items) i.label], [for (final i in out.items) i.label]);
+    });
+
     test('answers written into the files come back: ALL.txt first, then the page files', () async {
       await writeExchange(
         dir,

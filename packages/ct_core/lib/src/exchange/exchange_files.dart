@@ -115,13 +115,16 @@ Future<ExchangeExport> writeExchange(
 }) async {
   await dir.create(recursive: true);
   final items = exchangeItems(pages, mode);
+  // Sheets of cut-outs when the chat reads; pictures of whole pages when
+  // asked for (they help when only translating too).
   final pictures = mode.sendsImages;
+  final contextWanted = settings.contextImage != ContextImage.off;
   final sheets = <String>[], contexts = <String>[], crops = <String>[];
   final sheetLabels = <List<String>>[];
-  if (pictures && items.isNotEmpty) {
+  if ((pictures || contextWanted) && items.isNotEmpty) {
     final byId = {for (final pg in pages) pg.id: pg};
     final pieces = <SheetPiece>[];
-    final onSheet = settings.contextImage == ContextImage.onSheet && settings.images.hasSheets;
+    final onSheet = settings.contextImage == ContextImage.onSheet && pictures && settings.images.hasSheets;
     for (final page in pages) {
       final image = page.image;
       final own = [
@@ -129,7 +132,7 @@ Future<ExchangeExport> writeExchange(
           if (it.pageId == page.id) it,
       ];
       if (image == null || own.isEmpty) continue;
-      if (settings.contextImage != ContextImage.off) {
+      if (contextWanted) {
         final boxes = [for (final it in own) (it.label, it.box)];
         if (onSheet) {
           pieces.add(
@@ -146,6 +149,7 @@ Future<ExchangeExport> writeExchange(
           contexts.add(name);
         }
       }
+      if (!pictures) continue;
       for (final it in own) {
         pieces.add(
           SheetPiece(
@@ -156,7 +160,7 @@ Future<ExchangeExport> writeExchange(
         );
       }
     }
-    if (settings.images.hasSheets) {
+    if (pictures && settings.images.hasSheets) {
       final built = buildSheets(
         pieces,
         grouping: settings.grouping,
@@ -172,7 +176,7 @@ Future<ExchangeExport> writeExchange(
         sheetLabels.add([for (final l in s.labels) l.code]);
       }
     }
-    if (settings.images.hasCrops) {
+    if (pictures && settings.images.hasCrops) {
       final cuts = pieces.where((s) => !s.context).toList();
       final batch = settings.cropsPerFolder;
       final folders = cuts.length > batch;
@@ -195,7 +199,7 @@ Future<ExchangeExport> writeExchange(
     template: settings.promptFor(mode),
     extraContext: extraContext,
     screens: screens,
-    contextPictures: pictures && settings.contextImage != ContextImage.off,
+    contextPictures: contextWanted,
   );
   await File(p.join(dir.path, exchangePromptName)).writeAsString(prompt);
 
@@ -250,10 +254,14 @@ class ExchangeManifest {
     required this.pages,
     this.sourceLanguage = '',
     this.targetLanguage = '',
+    this.export,
   });
 
   final ExchangeMode mode;
   final List<ExchangeItem> items;
+
+  /// The folder as [writeExchange] made it (pictures and instructions).
+  final ExchangeExport? export;
 
   /// Page id → its number in the labels.
   final Map<String, int> pages;
@@ -262,18 +270,29 @@ class ExchangeManifest {
 
   static Future<ExchangeManifest> read(Directory dir) async {
     final json = jsonDecode(await File(p.join(dir.path, exchangeManifestName)).readAsString()) as Map<String, Object?>;
+    final mode = ExchangeMode.parse(json['mode'] as String?);
+    final items = [
+      for (final it in (json['items'] as List? ?? const [])) ExchangeItem.fromJson((it as Map).cast<String, Object?>()),
+    ];
+    final promptFile = File(p.join(dir.path, exchangePromptName));
     return ExchangeManifest(
-      mode: ExchangeMode.parse(json['mode'] as String?),
-      items: [
-        for (final it in (json['items'] as List? ?? const []))
-          ExchangeItem.fromJson((it as Map).cast<String, Object?>()),
-      ],
+      mode: mode,
+      items: items,
       pages: {
         for (final pg in (json['pages'] as List? ?? const []))
           (pg as Map)['id'] as String: (pg['number'] as num).toInt(),
       },
       sourceLanguage: json['source_language'] as String? ?? '',
       targetLanguage: json['target_language'] as String? ?? '',
+      export: ExchangeExport(
+        dir: dir.path,
+        mode: mode,
+        items: items,
+        prompt: await promptFile.exists() ? await promptFile.readAsString() : '',
+        sheets: [for (final s in (json['sheets'] as List? ?? const [])) (s as Map)['file'] as String],
+        contexts: [...?(json['contexts'] as List?)?.whereType<String>()],
+        crops: [...?(json['crops'] as List?)?.whereType<String>()],
+      ),
     );
   }
 }
