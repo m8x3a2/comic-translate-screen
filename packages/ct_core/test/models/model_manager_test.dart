@@ -231,4 +231,40 @@ void main() {
     expect(ModelCatalog.byId('aot-inpainting'), same(ModelCatalog.aot));
     expect(formatBytes(206291843), '197 MB');
   });
+
+  test('the log tells why a model is not installed, and a file in place is not downloaded again', () async {
+    final mem = MemorySink(Redactor());
+    final manager = ModelManager(Directory(p.join(tmp.path, 'models')), log: EventLog([mem]));
+    final spec = specFor(server.url, payload);
+    final file = manager.fileOf(spec, 'model.bin');
+
+    expect(await manager.status(spec), ModelStatus.missing);
+    expect(await manager.status(spec), ModelStatus.missing);
+    var notes = [
+      for (final e in mem.events)
+        if (e.event == 'model_not_installed') e.data,
+    ];
+    expect(notes, hasLength(1), reason: 'once per reason, not on every check');
+    expect(notes.single, containsPair('reason', 'missing'));
+    expect(notes.single['path'], contains('model.bin'));
+
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(payload.sublist(10));
+    expect(await manager.status(spec), ModelStatus.corrupt);
+    final wrong = Uint8List.fromList(payload)..[5] ^= 1;
+    await file.writeAsBytes(wrong);
+    expect(await manager.status(spec), ModelStatus.corrupt);
+    notes = [
+      for (final e in mem.events)
+        if (e.event == 'model_not_installed') e.data,
+    ];
+    expect([for (final n in notes) n['reason']], ['missing', 'size', 'checksum']);
+    expect(notes[1]['detail'], '${payload.length - 10} bytes, expected ${payload.length}');
+
+    await file.writeAsBytes(payload);
+    await manager.download(spec);
+    expect(server.requests, 0, reason: 'the file was in place');
+    expect(mem.events.map((e) => e.event), contains('model_file_present'));
+    expect(await manager.status(spec), ModelStatus.installed);
+  });
 }

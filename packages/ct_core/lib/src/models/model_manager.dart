@@ -117,22 +117,58 @@ class ModelManager {
   }
 
   /// Quick status: existence, size and a cached checksum marker. Use
-  /// [verify] for a full re-hash.
+  /// [verify] for a full re-hash. Why a model is not installed goes to the
+  /// log (once per model, file, reason and place): which file, where it was
+  /// looked for, and what was wrong.
   Future<ModelStatus> status(ModelSpec spec) async {
     var anyMissing = false;
     for (final f in spec.files) {
-      final file = fileOf(spec, f.name);
-      if (!file.existsSync()) {
-        anyMissing = true;
-        continue;
-      }
-      if (await file.length() != f.size) return ModelStatus.corrupt;
-      if (!await _markerMatches(file, f)) {
-        if (await _sha256(file) != f.sha256) return ModelStatus.corrupt;
-        await _writeMarker(file, f);
-      }
+      final problem = await fileProblem(spec, f);
+      if (problem == null) continue;
+      _noteProblem(spec, f, problem);
+      if (problem.kind != ModelFileProblemKind.missing) return ModelStatus.corrupt;
+      anyMissing = true;
     }
     return anyMissing ? ModelStatus.missing : ModelStatus.installed;
+  }
+
+  /// What is wrong with file [f] of [spec], or null when it is in place
+  /// (size and checksum right; the checksum is cached in a marker file).
+  Future<ModelFileProblem?> fileProblem(ModelSpec spec, ModelFile f) async {
+    final file = fileOf(spec, f.name);
+    if (!file.existsSync()) {
+      final part = File('${file.path}.part');
+      return ModelFileProblem(
+        ModelFileProblemKind.missing,
+        file.path,
+        part.existsSync() ? 'partly downloaded: ${part.lengthSync()} of ${f.size} bytes' : null,
+      );
+    }
+    final size = await file.length();
+    if (size != f.size) {
+      return ModelFileProblem(ModelFileProblemKind.size, file.path, '$size bytes, expected ${f.size}');
+    }
+    if (!await _markerMatches(file, f)) {
+      final actual = await _sha256(file);
+      if (actual != f.sha256) {
+        return ModelFileProblem(ModelFileProblemKind.checksum, file.path, 'sha256 $actual, expected ${f.sha256}');
+      }
+      await _writeMarker(file, f);
+    }
+    return null;
+  }
+
+  final _noted = <String>{};
+
+  void _noteProblem(ModelSpec spec, ModelFile f, ModelFileProblem problem) {
+    if (!_noted.add('${spec.id}|${f.name}|${problem.kind.name}|${problem.path}')) return;
+    _log.info('model_not_installed', {
+      'model': spec.id,
+      'file': f.name,
+      'reason': problem.kind.name,
+      'path': problem.path,
+      if (problem.detail != null) 'detail': problem.detail,
+    });
   }
 
   /// Re-hashes every file. Returns the files that failed.
@@ -241,15 +277,30 @@ class ModelManager {
     final total = spec.totalSize;
     var doneBefore = 0;
     final log = _log.child(stage: 'model_download');
-    log.info('model_download_start', {'model': spec.id, 'bytes': total, 'hosts': spec.hosts.toList()});
+    log.info('model_download_start', {
+      'model': spec.id,
+      'bytes': total,
+      'hosts': spec.hosts.toList(),
+      'folder': dirOf(spec).path,
+    });
     final sw = Stopwatch()..start();
     try {
       for (final f in spec.files) {
         token.throwIfCancelled();
         final target = fileOf(spec, f.name);
-        if (target.existsSync() && await target.length() == f.size && await _sha256(target) == f.sha256) {
-          await _writeMarker(target, f);
+        // Checked again right before downloading: a file that is in place
+        // is never downloaded again.
+        final problem = await fileProblem(spec, f);
+        if (problem == null) {
+          log.info('model_file_present', {'model': spec.id, 'file': f.name});
         } else {
+          log.info('model_file_download', {
+            'model': spec.id,
+            'file': f.name,
+            'reason': problem.kind.name,
+            'path': problem.path,
+            if (problem.detail != null) 'detail': problem.detail,
+          });
           for (var attempt = 1; ; attempt++) {
             try {
               await _downloadFile(f, target, token, (received) {
@@ -365,6 +416,33 @@ class ModelManager {
   }
 
   static Future<String> _sha256(File file) async => (await sha256.bind(file.openRead()).first).toString();
+}
+
+/// Why a model file does not count as installed.
+enum ModelFileProblemKind {
+  /// No file (perhaps a partial download).
+  missing,
+
+  /// The file has another size.
+  size,
+
+  /// The file has the right size but other contents.
+  checksum,
+}
+
+class ModelFileProblem {
+  const ModelFileProblem(this.kind, this.path, [this.detail]);
+
+  final ModelFileProblemKind kind;
+
+  /// Where the file was looked for.
+  final String path;
+
+  /// Sizes or checksums, a partial download.
+  final String? detail;
+
+  @override
+  String toString() => '${kind.name} ($path${detail == null ? '' : ': $detail'})';
 }
 
 String formatBytes(int bytes) {

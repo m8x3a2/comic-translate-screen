@@ -24,6 +24,10 @@ void main() {
       secretStore: MemorySecretStore(),
       registry: fakeRegistry(),
     );
+    // The log file starts writing here, outside the test clock: the models
+    // screen logs why models are missing, and a file opened under the test
+    // clock would never finish closing.
+    services.appLog.info('test_start');
   });
   tearDown(() async {
     await services.dispose();
@@ -84,10 +88,19 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'Модели'));
     await tester.pumpAndSettle();
     // The status of each model is read from the disk.
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+    final summary = find.text('Скачано 0 из ${ModelCatalog.all.length} · 0 B на диске');
+    for (var i = 0; i < 50 && summary.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+    }
     await tester.pumpAndSettle();
 
-    for (final group in ['Основные (нужны всегда)', 'Распознавание текста по языкам', 'Дополнительно']) {
+    for (final group in [
+      'Основные (нужны всегда)',
+      'Распознавание текста по языкам',
+      'Подготовка текста',
+      'Дополнительно',
+    ]) {
       expect(find.text(group), findsOneWidget);
     }
     expect(find.text('Японский (manga-ocr)'), findsOneWidget);
