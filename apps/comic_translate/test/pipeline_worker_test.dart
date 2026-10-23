@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -16,8 +17,15 @@ WorkerSetup _setup(
   PluginRegistry Function() registry = fakeRegistry,
   bool testMode = false,
   Set<PipelinePart> preload = const {...PipelinePart.values},
+  String textPrep = textPrepOffId,
 }) {
-  final settings = AppSettings(detector: detector, ocr: 'fake_ocr', translator: 'mock', inpainter: 'fake_inpaint');
+  final settings = AppSettings(
+    detector: detector,
+    ocr: 'fake_ocr',
+    translator: 'mock',
+    inpainter: 'fake_inpaint',
+    textPrep: textPrep,
+  );
   return WorkerSetup(
     spec: PipelineSpec(
       settings: settings,
@@ -38,6 +46,36 @@ WorkerSetup _setup(
     preload: preload,
   );
 }
+
+/// Text preparation that takes its time on every piece, all of it without
+/// a break (like a neural network on the CPU).
+class _SlowPrep implements TextUpscaler {
+  static const prepInfo = PluginInfo(
+    id: 'slow_prep',
+    displayName: 'slow',
+    kind: PluginKind.textPrep,
+    privacy: Privacy.local,
+  );
+
+  @override
+  PluginInfo get info => prepInfo;
+
+  @override
+  double get factor => 2;
+
+  @override
+  Future<RgbImage> enlarge(RgbImage piece, int width, int height, PluginContext context) async {
+    final sw = Stopwatch()..start();
+    while (sw.elapsedMilliseconds < 150) {}
+    return RgbImage.filled(width, height, 255, 255, 255);
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
+PluginRegistry _slowPrepRegistry() =>
+    fakeRegistry()..register(PluginFactory<TextUpscaler>(_SlowPrep.prepInfo, (c, e) async => _SlowPrep()));
 
 void main() {
   late Directory dir;
@@ -84,6 +122,34 @@ void main() {
     // Worker log events reach the main isolate's log.
     expect(sink.events.map((e) => e.event), containsAll(['run_start', 'fake_ocr_ran']));
     expect(sink.events.firstWhere((e) => e.event == 'fake_ocr_ran').page, 'p1.png');
+  });
+
+  test('a cancel stops the preparation of small text half way', () async {
+    final worker = await PipelineWorker.start(
+      _setup(dir, registry: _slowPrepRegistry, textPrep: 'slow_prep'),
+      log: EventLog.silent(),
+    );
+    // Twenty blocks of small text far apart: twenty pieces of 150 ms.
+    final blocks = [
+      for (var y = 0; y < 4000; y += 200)
+        TextBlock(
+          xyxy: BBox(10, y + 10, 190, y + 40),
+          lines: [TextLine.box(BBox(10, y + 10, 190, y + 20)), TextLine.box(BBox(10, y + 24, 190, y + 34))],
+        ),
+    ];
+    final cancel = CancelToken();
+    final sw = Stopwatch()..start();
+    final future = worker.recognize(
+      'p1.png',
+      image: RgbImage.filled(200, 4000, 255, 255, 255),
+      blocks: blocks,
+      sourceLanguage: 'English',
+      cancel: cancel,
+    );
+    Timer(const Duration(milliseconds: 600), cancel.cancel);
+    await expectLater(future, throwsA(isA<CancelledException>()));
+    expect(sw.elapsedMilliseconds, lessThan(1800), reason: 'not after all twenty pieces (3 s)');
+    await worker.dispose();
   });
 
   test('pages can be cancelled between steps', () async {

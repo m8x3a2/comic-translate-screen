@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ct_core/ct_core.dart';
 import 'package:test/test.dart';
 
@@ -33,6 +35,20 @@ TextBlock _withLines(BBox box, int lineHeight) => TextBlock(
       TextLine.box(BBox(box.x1, y, box.x2, y + lineHeight - 1)),
   ],
 );
+
+/// Plain ×2 that counts its pieces and tells each one to [onCall].
+class _Counting extends PlainTextUpscaler {
+  _Counting({required this.onCall}) : super(plainX2Info, 2);
+
+  final void Function(int n) onCall;
+  var calls = 0;
+
+  @override
+  Future<RgbImage> enlarge(RgbImage piece, int width, int height, PluginContext context) {
+    onCall(++calls);
+    return super.enlarge(piece, width, height, context);
+  }
+}
 
 final _x2 = PlainTextUpscaler.x2();
 final _context = PluginContext(log: EventLog.silent());
@@ -139,6 +155,30 @@ void main() {
     for (final l in hand.lines) {
       expect(hand.xyxy.inflate(4, 4).containsBox(l.axisBox), isTrue, reason: 'lines back on the page');
     }
+  });
+
+  test('a cancel coming in from elsewhere stops between pieces; the blocks stay in place', () async {
+    final page = RgbImage.filled(1000, 20000, 255, 255, 255);
+    final blocks = [for (var y = 0; y < 20000; y += 1000) _withLines(BBox(100, y + 100, 900, y + 300), 12)];
+    final boxes = [for (final b in blocks) b.xyxy];
+    final cancel = CancelToken();
+    final upscaler = _Counting(
+      onCall: (n) {
+        // As a cancel message from the main isolate would: after this piece.
+        if (n == 7) Timer.run(cancel.cancel);
+      },
+    );
+    await expectLater(
+      prepareReading(
+        page,
+        blocks,
+        upscaler: upscaler,
+        context: PluginContext(log: EventLog.silent(), cancel: cancel),
+      ),
+      throwsA(isA<CancelledException>()),
+    );
+    expect(upscaler.calls, lessThan(9), reason: 'stopped right after the cancel');
+    expect([for (final b in blocks) b.xyxy], boxes);
   });
 
   test('plain enlargement is PIL Lanczos to the size asked for', () async {

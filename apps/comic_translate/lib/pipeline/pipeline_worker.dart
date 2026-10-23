@@ -721,6 +721,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
         final token = cancels[m.id] = CancelToken();
         enqueue(m.id, () async => toMain.send(_Done(m.id, await run(m, token))));
       case _Cancel m:
+        log.info('job_cancel', {'job': m.id, 'running': cancels.containsKey(m.id)});
         cancels[m.id]?.cancel();
       case _Save m:
         enqueue(m.id, () async {

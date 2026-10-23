@@ -93,7 +93,11 @@ class StepsNotifier extends Notifier<StepState> {
   @override
   StepState build() => const StepState();
 
-  void cancel() => _cancel?.cancel();
+  void cancel() {
+    if (_cancel == null) return;
+    ref.read(servicesProvider).appLog.info('step_cancel_asked', {'step': state.step?.name});
+    _cancel!.cancel();
+  }
 
   /// Forgets the line of the last run ("Translate all" started).
   void clearLast() {

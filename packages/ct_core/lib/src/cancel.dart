@@ -30,6 +30,15 @@ class CancelToken {
     if (_cancelled) throw const CancelledException();
   }
 
+  /// Lets other events in — among them a cancel message from another
+  /// isolate, which long synchronous work would keep waiting — and throws
+  /// [CancelledException] when cancelled meanwhile. Long work calls it
+  /// between its parts.
+  Future<void> checkpoint() async {
+    await Future<void>.delayed(Duration.zero);
+    throwIfCancelled();
+  }
+
   /// Waits [duration], or less when cancelled meanwhile (then throws
   /// [CancelledException]).
   Future<void> wait(Duration duration) async {

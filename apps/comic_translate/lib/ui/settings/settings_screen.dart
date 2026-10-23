@@ -456,6 +456,15 @@ class _GeneralSection extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             titleWithInfo(l.bugReportHelp, l.bugReportInfo, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.lock_outline, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                const SizedBox(width: 8),
+                Expanded(child: Text(l.reportsPrivacyNote, style: Theme.of(context).textTheme.bodySmall)),
+              ],
+            ),
           ],
         ),
       ],

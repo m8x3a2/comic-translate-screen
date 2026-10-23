@@ -106,60 +106,83 @@ class NeuralTextUpscaler implements TextUpscaler {
 
   @override
   Future<RgbImage> enlarge(RgbImage piece, int width, int height, PluginContext context) async {
-    final out = run(piece, context);
-    return out.width == width && out.height == height ? out : pilResize(out, width, height, filter: PilFilter.lanczos);
+    final h = piece.height, w = piece.width;
+    final out = Uint8List(h * scale * w * scale * 3);
+    for (final (y0, x0) in _tiles(w, h)) {
+      // Between tiles a cancel can come in (a minute of work on "High").
+      await context.cancel.checkpoint();
+      _tile(piece, out, y0, x0);
+    }
+    return _resized(RgbImage(w * scale, h * scale, out), width, height);
   }
 
-  /// [img] enlarged ×[scale] (`upscale` of `sr_run.py`).
-  RgbImage run(RgbImage img, [PluginContext? context]) {
+  RgbImage _resized(RgbImage out, int width, int height) =>
+      out.width == width && out.height == height ? out : pilResize(out, width, height, filter: PilFilter.lanczos);
+
+  /// [img] enlarged ×[scale] (`upscale` of `sr_run.py`), in one go.
+  RgbImage run(RgbImage img) {
+    final out = Uint8List(img.height * scale * img.width * scale * 3);
+    for (final (y0, x0) in _tiles(img.width, img.height)) {
+      _tile(img, out, y0, x0);
+    }
+    return RgbImage(img.width * scale, img.height * scale, out);
+  }
+
+  static const _step = tile - 2 * overlap;
+
+  /// Top left corners of the tiles of a [w]×[h] image, row by row.
+  static Iterable<(int, int)> _tiles(int w, int h) sync* {
+    for (var y0 = 0; y0 < h; y0 += _step) {
+      for (var x0 = 0; x0 < w; x0 += _step) {
+        yield (y0, x0);
+      }
+    }
+  }
+
+  /// Runs the network on the tile at [y0], [x0] of [img] and writes its
+  /// inner part into [out] (×[scale]).
+  void _tile(RgbImage img, Uint8List out, int y0, int x0) {
     final h = img.height, w = img.width, s = scale;
-    final out = Uint8List(h * s * w * s * 3);
-    const step = tile - 2 * overlap;
-    for (var y0 = 0; y0 < h; y0 += step) {
-      for (var x0 = 0; x0 < w; x0 += step) {
-        context?.cancel.throwIfCancelled();
-        final ya = math.max(0, y0 - overlap), xa = math.max(0, x0 - overlap);
-        final yb = math.min(h, y0 + step + overlap), xb = math.min(w, x0 + step + overlap);
-        final ch = yb - ya, cw = xb - xa;
-        final eh = (multiple - ch % multiple) % multiple, ew = (multiple - cw % multiple) % multiple;
-        final inH = ch + eh + 2 * pad, inW = cw + ew + 2 * pad;
-        // Rows and columns of the input in the source: mirrored past the
-        // edges (`np.pad` "reflect"), then the last one repeated to the
-        // multiple ("edge").
-        final rows = [for (var i = 0; i < inH; i++) _reflect(ya + math.min<int>(i, ch + 2 * pad - 1) - pad, h)];
-        final cols = [for (var i = 0; i < inW; i++) _reflect(xa + math.min<int>(i, cw + 2 * pad - 1) - pad, w)];
-        final plane = inH * inW;
-        final x = Float32List(3 * plane);
-        for (var iy = 0; iy < inH; iy++) {
-          final row = rows[iy] * w;
-          for (var ix = 0; ix < inW; ix++) {
-            final o = (row + cols[ix]) * 3, i = iy * inW + ix;
-            x[i] = img.data[o] / 255;
-            x[plane + i] = img.data[o + 1] / 255;
-            x[2 * plane + i] = img.data[o + 2] / 255;
-          }
-        }
-        final result = _session.run({
-          _session.inputs.first.name: OrtTensor.float32(x, [1, 3, inH, inW]),
-        });
-        final y = result[_session.outputs.first.name]!;
-        final oh = y.shape[2], ow = y.shape[3], oPlane = oh * ow;
-        final data = y.asFloat32;
-        // The inner part of the tile.
-        final iy0 = (y0 - ya) * s, ix0 = (x0 - xa) * s;
-        final hh = (math.min(h, y0 + step) - y0) * s, ww = (math.min(w, x0 + step) - x0) * s;
-        for (var yy = 0; yy < hh; yy++) {
-          final src = (iy0 + yy) * ow + ix0;
-          var dst = ((y0 * s + yy) * w * s + x0 * s) * 3;
-          for (var xx = 0; xx < ww; xx++) {
-            for (var c = 0; c < 3; c++) {
-              out[dst++] = _byte(data[c * oPlane + src + xx]);
-            }
-          }
+    const step = _step;
+    final ya = math.max(0, y0 - overlap), xa = math.max(0, x0 - overlap);
+    final yb = math.min(h, y0 + step + overlap), xb = math.min(w, x0 + step + overlap);
+    final ch = yb - ya, cw = xb - xa;
+    final eh = (multiple - ch % multiple) % multiple, ew = (multiple - cw % multiple) % multiple;
+    final inH = ch + eh + 2 * pad, inW = cw + ew + 2 * pad;
+    // Rows and columns of the input in the source: mirrored past the
+    // edges (`np.pad` "reflect"), then the last one repeated to the
+    // multiple ("edge").
+    final rows = [for (var i = 0; i < inH; i++) _reflect(ya + math.min<int>(i, ch + 2 * pad - 1) - pad, h)];
+    final cols = [for (var i = 0; i < inW; i++) _reflect(xa + math.min<int>(i, cw + 2 * pad - 1) - pad, w)];
+    final plane = inH * inW;
+    final x = Float32List(3 * plane);
+    for (var iy = 0; iy < inH; iy++) {
+      final row = rows[iy] * w;
+      for (var ix = 0; ix < inW; ix++) {
+        final o = (row + cols[ix]) * 3, i = iy * inW + ix;
+        x[i] = img.data[o] / 255;
+        x[plane + i] = img.data[o + 1] / 255;
+        x[2 * plane + i] = img.data[o + 2] / 255;
+      }
+    }
+    final result = _session.run({
+      _session.inputs.first.name: OrtTensor.float32(x, [1, 3, inH, inW]),
+    });
+    final y = result[_session.outputs.first.name]!;
+    final oh = y.shape[2], ow = y.shape[3], oPlane = oh * ow;
+    final data = y.asFloat32;
+    // The inner part of the tile.
+    final iy0 = (y0 - ya) * s, ix0 = (x0 - xa) * s;
+    final hh = (math.min(h, y0 + step) - y0) * s, ww = (math.min(w, x0 + step) - x0) * s;
+    for (var yy = 0; yy < hh; yy++) {
+      final src = (iy0 + yy) * ow + ix0;
+      var dst = ((y0 * s + yy) * w * s + x0 * s) * 3;
+      for (var xx = 0; xx < ww; xx++) {
+        for (var c = 0; c < 3; c++) {
+          out[dst++] = _byte(data[c * oPlane + src + xx]);
         }
       }
     }
-    return RgbImage(w * s, h * s, out);
   }
 
   @override

@@ -191,46 +191,53 @@ Future<ReadingPage> prepareReading(
   final saved = <TextBlock, _Saved>{};
   final canvases = <ReadingCanvas>[];
   final placed = <TextBlock>{};
-  for (final group in groups) {
-    context?.cancel.throwIfCancelled();
-    final region = group.reduce((a, b) => a.union(b));
-    final g = math.min(f, math.max(1.0, math.sqrt(readingMaxPixels / math.max(1, region.area))));
-    final w = math.max(1, (region.width * g).round()), h = math.max(1, (region.height * g).round());
-    final canvas = RgbImage.filled(w, h, 255, 255, 255);
-    final sx = w / region.width, sy = h / region.height;
-    for (final r in group) {
-      final x1 = ((r.x1 - region.x1) * sx).round(), x2 = ((r.x2 - region.x1) * sx).round();
-      final y1 = ((r.y1 - region.y1) * sy).round(), y2 = ((r.y2 - region.y1) * sy).round();
-      if (x2 <= x1 || y2 <= y1) continue;
-      final piece = await upscaler!.enlarge(image.crop(r), x2 - x1, y2 - y1, context ?? _noContext);
-      paste(canvas, piece, x1, y1);
+  try {
+    for (final group in groups) {
+      final region = group.reduce((a, b) => a.union(b));
+      final g = math.min(f, math.max(1.0, math.sqrt(readingMaxPixels / math.max(1, region.area))));
+      final w = math.max(1, (region.width * g).round()), h = math.max(1, (region.height * g).round());
+      final canvas = RgbImage.filled(w, h, 255, 255, 255);
+      final sx = w / region.width, sy = h / region.height;
+      for (final r in group) {
+        final x1 = ((r.x1 - region.x1) * sx).round(), x2 = ((r.x2 - region.x1) * sx).round();
+        final y1 = ((r.y1 - region.y1) * sy).round(), y2 = ((r.y2 - region.y1) * sy).round();
+        if (x2 <= x1 || y2 <= y1) continue;
+        // The work runs in the background isolate: a cancel gets in here.
+        await context?.cancel.checkpoint();
+        final piece = await upscaler!.enlarge(image.crop(r), x2 - x1, y2 - y1, context ?? _noContext);
+        paste(canvas, piece, x1, y1);
+      }
+      final inside = [
+        for (final b in small)
+          if (!placed.contains(b) &&
+              group.any(
+                (r) => r.containsBox(
+                  b.xyxy.inflate(readingPieceMargin, readingPieceMargin).clampTo(image.width, image.height),
+                ),
+              ))
+            b,
+      ];
+      placed.addAll(inside);
+      final c = ReadingCanvas._(canvas, inside, region, sx, sy, group.length);
+      for (final b in inside) {
+        saved[b] = _Saved(b.xyxy, b.bubbleXyxy, b.lines);
+        b.xyxy = c.toCanvas(b.xyxy);
+        final bubble = b.bubbleXyxy;
+        if (bubble != null) b.bubbleXyxy = c.toCanvas(bubble);
+        // Lines of a line detector are exact: they are only moved.
+        b.lines = b.fixedLines ? [for (final l in b.lines) c.lineToCanvas(l)] : [];
+      }
+      final split = [
+        for (final b in inside)
+          if (!b.fixedLines) b,
+      ];
+      if (split.isNotEmpty) annotateBlocksWithHeuristicLines(canvas, split, sourceLanguage: sourceLanguageCode);
+      canvases.add(c);
     }
-    final inside = [
-      for (final b in small)
-        if (!placed.contains(b) &&
-            group.any(
-              (r) => r.containsBox(
-                b.xyxy.inflate(readingPieceMargin, readingPieceMargin).clampTo(image.width, image.height),
-              ),
-            ))
-          b,
-    ];
-    placed.addAll(inside);
-    final c = ReadingCanvas._(canvas, inside, region, sx, sy, group.length);
-    for (final b in inside) {
-      saved[b] = _Saved(b.xyxy, b.bubbleXyxy, b.lines);
-      b.xyxy = c.toCanvas(b.xyxy);
-      final bubble = b.bubbleXyxy;
-      if (bubble != null) b.bubbleXyxy = c.toCanvas(bubble);
-      // Lines of a line detector are exact: they are only moved.
-      b.lines = b.fixedLines ? [for (final l in b.lines) c.lineToCanvas(l)] : [];
-    }
-    final split = [
-      for (final b in inside)
-        if (!b.fixedLines) b,
-    ];
-    if (split.isNotEmpty) annotateBlocksWithHeuristicLines(canvas, split, sourceLanguage: sourceLanguageCode);
-    canvases.add(c);
+  } on Object {
+    // Stopped half way (cancelled): the blocks moved so far go back.
+    ReadingPage._(const [], canvases, f, saved).restore();
+    rethrow;
   }
   final asIs = [
     for (final b in blocks)
@@ -273,6 +280,7 @@ Future<ReadingPage> readBlocks(
     }
     for (final c in reading.canvases) {
       if (c.blocks.isEmpty) continue;
+      await context.cancel.checkpoint();
       await ocr.recognize(c.image, c.blocks, sourceLanguage: sourceLanguage, context: context);
     }
   } finally {

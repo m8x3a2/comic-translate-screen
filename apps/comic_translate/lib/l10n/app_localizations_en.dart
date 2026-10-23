@@ -210,6 +210,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportCancelled => 'Stopped before the end';
 
   @override
+  String get reportsPrivacyNote =>
+      'What goes into a bug report: the log (which steps ran, how long they took, the file names of the pages, errors) and the settings. API keys are masked; there are no page pictures. Recognized and translated text is in it only while the test mode is on, plus up to 300 characters of an online translator\'s reply when that reply was broken. Reports stay on this computer and are never sent anywhere by themselves.';
+
+  @override
   String reportTotalPerPage(String time) {
     return 'total $time';
   }
