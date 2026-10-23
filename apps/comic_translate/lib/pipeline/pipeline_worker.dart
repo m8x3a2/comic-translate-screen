@@ -222,7 +222,7 @@ class PipelineWorker {
   ) as CleanPage;
 
   /// Loads [parts] now (errors such as a missing model come from here).
-  Future<void> load(Set<PipelinePart> parts) => _job(_Op.load, '', parts: parts);
+  Future<void> load(Set<PipelinePart> parts, {CancelToken? cancel}) => _job(_Op.load, '', parts: parts, cancel: cancel);
 
   /// Text blocks found on the page, in reading order (webtoon pages: see
   /// [detectOnStrip]; [below] is the image of the next page).
@@ -295,7 +295,9 @@ class PipelineWorker {
     RgbImage? image,
     required List<TextBlock> blocks,
     String? below,
-  }) async => await _job(_Op.mask, page, path: path, image: image, blocks: blocks, below: below) as GrayImage;
+    CancelToken? cancel,
+  }) async =>
+      await _job(_Op.mask, page, path: path, image: image, blocks: blocks, below: below, cancel: cancel) as GrayImage;
 
   /// The image with the [mask]ed parts cleaned; uniform bubbles of [blocks]
   /// are filled without the network. A mask taller than the page cleans the
@@ -333,8 +335,14 @@ class PipelineWorker {
     final id = _nextId++;
     final pending = _Pending<Object?>(onStage);
     _send(id, pending, _Job(id, op, page, path, image, blocks, mask, source, target, parts, below, covered, read));
+    // A cancel answers at once: the worker stops at its next checkpoint, and
+    // what it sends back for this job is dropped (a step must not apply the
+    // result of work the user stopped).
     cancel?.onCancel(() {
-      if (_pending.containsKey(id)) _toWorker.send(_Cancel(id));
+      final stopped = _pending.remove(id);
+      if (stopped == null) return;
+      _toWorker.send(_Cancel(id));
+      stopped.completer.completeError(const CancelledException());
     });
     return pending.completer.future;
   }
@@ -675,7 +683,9 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
         );
         return blocks;
       case _Op.mask:
-        return generateMask(strip(blocks), blocks);
+        final work = strip(blocks);
+        await token.checkpoint();
+        return generateMask(work, blocks);
       case _Op.inpaint:
         final inpainter = await plugins.inpainter;
         var mask = m.mask!;

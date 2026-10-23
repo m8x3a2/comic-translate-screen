@@ -252,7 +252,7 @@ class BatchNotifier extends Notifier<BatchState> {
       _update((s) => s.copyWith(stage: 'loading'));
       final (setup, key) = await currentWorkerSetup(ref);
       worker = await pool.acquire(setup, key, log);
-      await worker.load({...PipelinePart.values});
+      await worker.load({...PipelinePart.values}, cancel: cancel);
       log.info('batch_start', {'pages': todo.length, 'translator': settings.translator});
       // Reading or translating through a chat: the text of every page is
       // found first, then the exchange window, then cleaning and drawing.

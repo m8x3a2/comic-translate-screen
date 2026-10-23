@@ -95,7 +95,7 @@ class OpusMtTranslator implements Translator {
     for (final b in request.blocks) {
       final parts = <String>[];
       for (final s in splitSentences(prepareComicText(b.text))) {
-        context.cancel.throwIfCancelled();
+        await context.cancel.checkpoint();
         parts.add(done[s] ??= e.translate(s, beams: beams));
         sentences++;
       }

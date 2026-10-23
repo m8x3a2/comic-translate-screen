@@ -124,7 +124,7 @@ class PpocrEngine implements OcrEngine {
     }
     applySourceLanguage(blocks, sourceLanguage);
     final rec = await recognizer(ppocrLanguageFor(sourceLanguage));
-    context.cancel.throwIfCancelled();
+    await context.cancel.checkpoint();
     rec.recognizeBlocks(image, blocks);
   }
 

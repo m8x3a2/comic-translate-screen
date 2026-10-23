@@ -93,9 +93,9 @@ class PpocrLineDetector implements LineDetector {
 
   @override
   Future<List<BBox>> findLines(RgbImage image, PluginContext context) async {
-    context.cancel.throwIfCancelled();
+    await context.cancel.checkpoint();
     final found = await slicer.processSlicesForDetection(image, (slice) async {
-      context.cancel.throwIfCancelled();
+      await context.cancel.checkpoint();
       return (bubbles: const <BBox>[], texts: detectLines(slice));
     });
     return mergeLineBoxes(found.texts, image.width, image.height, maxGap: lineGap);

@@ -92,11 +92,12 @@ class RtDetrV2Detector implements TextDetector {
 
   @override
   Future<List<TextBlock>> detect(RgbImage image, PluginContext context) async {
-    context.cancel.throwIfCancelled();
+    await context.cancel.checkpoint();
     final boxes = await slicer.processSlicesForDetection(image, (slice) async {
-      context.cancel.throwIfCancelled();
+      await context.cancel.checkpoint();
       return detectSingle(slice);
     });
+    await context.cancel.checkpoint();
     return createTextBlocks(
       image,
       boxes.texts,

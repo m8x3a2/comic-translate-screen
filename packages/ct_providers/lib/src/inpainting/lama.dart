@@ -10,7 +10,8 @@ import 'package:ct_onnx/ct_onnx.dart';
 const lamaInfo = PluginInfo(
   id: 'lama',
   displayName: 'LaMa (manga)',
-  description: 'Removes text with a larger model: better on detailed backgrounds, slower, 197 MB download. Runs locally.',
+  description:
+      'Removes text with a larger model: better on detailed backgrounds, slower, 197 MB download. Runs locally.',
   kind: PluginKind.inpainter,
   privacy: Privacy.local,
   platforms: {PlatformId.windows, PlatformId.android, PlatformId.linux, PlatformId.macos},
@@ -55,7 +56,7 @@ class LamaInpainter implements Inpainter {
 
   @override
   Future<RgbImage> inpaint(RgbImage image, GrayImage mask, InpaintConfig config, PluginContext context) async {
-    context.cancel.throwIfCancelled();
+    await context.cancel.checkpoint();
     return model.call(image, mask, config);
   }
 

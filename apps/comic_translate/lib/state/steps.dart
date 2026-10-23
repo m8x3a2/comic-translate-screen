@@ -207,7 +207,7 @@ class StepsNotifier extends Notifier<StepState> {
       state = state.copyWith(stage: 'loading');
       final (setup, key) = await currentWorkerSetup(ref);
       worker = await pool.acquire(setup, key, log);
-      await worker.load(parts);
+      await worker.load(parts, cancel: cancel);
       final settings = ref.read(settingsProvider);
       log.info('step_start', {'step': step.name, 'pages': targets.length});
       final active = worker;
@@ -301,7 +301,13 @@ class StepsNotifier extends Notifier<StepState> {
                   ),
                 );
               case ManualStep.mask:
-                final mask = await worker.makeMask(page.name, path: page.path, blocks: page.blocks, below: seams.below);
+                final mask = await worker.makeMask(
+                  page.name,
+                  path: page.path,
+                  blocks: page.blocks,
+                  below: seams.below,
+                  cancel: cancel,
+                );
                 final file = p.join(workspace.pageDir(id).path, 'mask_${_stamp()}.png');
                 await worker.save([MaskOutput(file, mask)]);
                 timed();

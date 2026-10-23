@@ -77,6 +77,33 @@ class _SlowPrep implements TextUpscaler {
   Future<void> dispose() async {}
 }
 
+/// A detector busy for a second and a half without a break (like one model
+/// run): a cancel message cannot reach the worker meanwhile.
+class _BusyDetector implements TextDetector {
+  static const detInfo = PluginInfo(
+    id: 'busy_det',
+    displayName: 'busy',
+    kind: PluginKind.detector,
+    privacy: Privacy.local,
+  );
+
+  @override
+  PluginInfo get info => detInfo;
+
+  @override
+  Future<List<TextBlock>> detect(RgbImage image, PluginContext context) async {
+    final sw = Stopwatch()..start();
+    while (sw.elapsedMilliseconds < 1500) {}
+    return [TextBlock(xyxy: const BBox(10, 10, 90, 40))];
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
+PluginRegistry _busyRegistry() =>
+    fakeRegistry()..register(PluginFactory<TextDetector>(_BusyDetector.detInfo, (c, e) async => _BusyDetector()));
+
 PluginRegistry _slowPrepRegistry() =>
     fakeRegistry()..register(PluginFactory<TextUpscaler>(_SlowPrep.prepInfo, (c, e) async => _SlowPrep()));
 
@@ -152,6 +179,23 @@ void main() {
     Timer(const Duration(milliseconds: 600), cancel.cancel);
     await expectLater(future, throwsA(isA<CancelledException>()));
     expect(sw.elapsedMilliseconds, lessThan(1800), reason: 'not after all twenty pieces (3 s)');
+    await worker.dispose();
+  });
+
+  test('a cancel answers at once even while the worker is busy; its late result is dropped', () async {
+    final worker = await PipelineWorker.start(
+      _setup(dir, detector: 'busy_det', registry: _busyRegistry),
+      log: EventLog.silent(),
+    );
+    final image = RgbImage.filled(100, 60, 255, 255, 255);
+    final cancel = CancelToken();
+    final sw = Stopwatch()..start();
+    final future = worker.detect('p1.png', image: image, sourceLanguage: 'English', cancel: cancel);
+    Timer(const Duration(milliseconds: 200), cancel.cancel);
+    await expectLater(future, throwsA(isA<CancelledException>()));
+    expect(sw.elapsedMilliseconds, lessThan(1000), reason: 'not after the busy detector (1.5 s)');
+    // The next job waits for the busy one, then runs as usual.
+    expect(await worker.detect('p2.png', image: image, sourceLanguage: 'English'), hasLength(1));
     await worker.dispose();
   });
 

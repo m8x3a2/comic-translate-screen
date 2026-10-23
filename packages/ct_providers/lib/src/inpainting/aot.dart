@@ -41,11 +41,13 @@ final Float32List _normLut = Float32List.fromList([for (var v = 0; v < 256; v++)
 class AotInpainter implements Inpainter {
   AotInpainter._(this._session);
 
-  factory AotInpainter.open(String modelPath, {OrtDevice device = OrtDevice.cpu}) => AotInpainter._(OrtSession.open(
-        modelPath,
-        device: device,
-        config: const OrtSessionConfig(intraOpThreads: 4, interOpThreads: 1, sequential: true, optimizationLevel: 99),
-      ));
+  factory AotInpainter.open(String modelPath, {OrtDevice device = OrtDevice.cpu}) => AotInpainter._(
+    OrtSession.open(
+      modelPath,
+      device: device,
+      config: const OrtSessionConfig(intraOpThreads: 4, interOpThreads: 1, sequential: true, optimizationLevel: 99),
+    ),
+  );
 
   static const maxSize = 1024;
 
@@ -63,7 +65,7 @@ class AotInpainter implements Inpainter {
 
   @override
   Future<RgbImage> inpaint(RgbImage image, GrayImage mask, InpaintConfig config, PluginContext context) async {
-    context.cancel.throwIfCancelled();
+    await context.cancel.checkpoint();
     return model.call(image, mask, config);
   }
 
