@@ -263,6 +263,24 @@ GrayImage _where(int w, int h, bool Function(int i) f) =>
         }
       }
     }
+    // Unlike the original, the letters of blocks left to the network stay:
+    // a touching bubble's box often covers part of them.
+    for (final b in blocks) {
+      if (cleanedBubbles.contains(b)) continue;
+      BlockMask? own;
+      try {
+        own = buildBlockMaskData(image, b, requireTextOrTranslation: false, clipToBubble: true);
+      } catch (_) {
+        own = null;
+      }
+      if (own == null) continue;
+      final ob = own.bounds;
+      for (var y = ob.y1; y < ob.y2; y++) {
+        for (var x = ob.x1; x < ob.x2; x++) {
+          if (own.mask.data[(y - ob.y1) * own.mask.width + (x - ob.x1)] != 0) allowed[y * w + x] = 1;
+        }
+      }
+    }
     for (var i = 0; i < w * h; i++) {
       if (residual.data[i] != 0 && scope[i] != 0 && allowed[i] == 0) residual.data[i] = 0;
     }

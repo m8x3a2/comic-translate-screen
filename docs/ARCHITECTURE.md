@@ -47,6 +47,12 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   of a phone screenshot stay apart; blocks are read row by row, each row from
   the left. These lines are kept (`fixed_lines`) when the page
   is enlarged for reading.
+- After the fast fill of plain bubbles, the original drops whatever mask is
+  left inside a filled bubble's box but outside its interior. In touching
+  bubbles that box often holds the end of the neighbour's text; when the
+  neighbour goes to the network, those letters were never removed (pieces of
+  "happen" and "?" stayed on the test page). Here the letters of blocks left
+  to the network are kept in the mask.
 - A moved box takes its lines, bubble and outline along (the original keeps
   them in place); a resized one loses its lines and keeps its bubble only while
   it is still inside it.
