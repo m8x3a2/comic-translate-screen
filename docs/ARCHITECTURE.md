@@ -65,16 +65,30 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   (any Latin-script one for Latin, English first). On the Korean test page the
   original takes the text for Latin (its line splitter cuts the block as
   vertical text, so the model reads a rotated line); here the page's small
-  text is read enlarged and is found Korean (with `tools.upscale_small_text`
-  off the result is the original's). Latin pages are read by the Latin
+  text is read enlarged and is found Korean (with the text preparation off
+  the result is the original's). Latin pages are read by the Latin
   recognizer, which sometimes adds accents to English (HÁPPENS); English is
   still the default source language and reads English more accurately.
 - `windows_ocr` is new (system OCR, no download).
-- Small text (screenshots, low-resolution scans) is read on an enlarged copy
-  of the page: when the smaller text lines are thinner than about 30 px, the
-  page is enlarged (Lanczos, up to 4×) and re-split into lines before OCR
-  (setting `tools.upscale_small_text`, on by default). On 400×570 screenshots
-  this turns unreadable OCR into usable text; on normal pages it changes little.
+- Small text (screenshots, low-resolution scans) is prepared for reading
+  (new, step 2 of the plan; `reading_scale.dart`, `TextUpscaler` plugins of
+  kind `textPrep`): blocks whose lines are thinner than 20 px are cut out
+  with an 8 px margin, enlarged and put together on canvases (at most 16 Mpx
+  each), re-split into lines and read there; on such a page blocks with lines
+  up to 64 px (or with none found) are enlarged too, since on tiny text the
+  splitter takes several lines for one. Other blocks, and pages without small
+  text, are read as they are. Choices (`tools.text_prep` for comics,
+  `tools.screen_text_prep` for sites and games): off, plain Lanczos ×1.5 or
+  ×2, and neural networks ×2 — waifu2x CUNet (Simple), waifu2x Swin-UNet
+  (Medium, the default for comics), Fatality Comix ×4 brought to ×2 (High,
+  CC-BY-NC-SA, converted to ONNX here and published in this project's
+  releases); sites and games default to plain ×1.5. A network whose model is
+  missing gives way to plain ×2. Until 0.1.2 the whole page was enlarged to
+  36 px lines (≈×3), which merged the gaps between words. The experiment of
+  step 2 (30 networks and factors on manga screenshots, reduced comic pages
+  and Russian webtoon strips) chose the levels; the program reproduces its
+  numbers, and the networks its output pixels
+  (`test_data/reference/text_prep.json`).
 - For Cyrillic source languages, Latin look-alike letters that OCR returns in
   Cyrillic words ("HET" for "НЕТ") are replaced with Cyrillic ones (setting
   `tools.fix_cyrillic_lookalikes`, off by default; never applied to other
@@ -88,8 +102,10 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   by default). On the OCR output of the step 2 experiment: 8 % more right
   words, fewer wrong ones.
 - Very small text (new): each block remembers its line thickness on the page
-  (`line_px`, measured before reading). Below 14 px the text panel warns, and
-  the translator is told that words may be glued and letters misread.
+  (`line_px`, measured before reading). Below 14 px the translator is told
+  that words may be glued and letters misread; below 12 px, where even the
+  networks get about one word in five wrong, the text panel advises the High
+  level or a larger screenshot.
 - Offline translation (new, `opus_mt`): OPUS-MT English ↔ Russian (Helsinki-NLP,
   CC-BY 4.0; int8 ONNX exports of Xenova, 110 MB per direction) on the
   processor (int8 models do not run on DirectML). The SentencePiece tokenizer

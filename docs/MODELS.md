@@ -23,6 +23,22 @@ URLs and checksums are taken from the original `modules/utils/download.py`.
 | `ppocr-v6-rec-small` | OCR, Chinese (and Japanese titles) | `PP-OCRv6_small_rec.onnx` + dictionary | 20.3 MB | Apache-2.0 | huggingface.co/ogkalu/ppocr-v6-onnx |
 | `manga-ocr-mobile` | OCR, Japanese (manga-ocr) | encoder, two decoder parts, vocabulary | 61.8 MB | Apache-2.0 | huggingface.co/ogkalu/manga-ocr-mobile |
 
+Preparing small text for reading (new in this project; only the level chosen
+in the settings is needed):
+
+| Id | Level | File | Size | License | Source |
+|---|---|---|---|---|---|
+| `waifu2x-cunet-art-2x` | Simple | `waifu2x_cunet_art_scale2x.onnx` | 4.9 MB | MIT (nagadomi, waifu2x/nunif) | huggingface.co/deepghs/waifu2x_onnx |
+| `waifu2x-swin-art-2x` | Medium (default for comics) | `waifu2x_swin_unet_art_scale2x.onnx` | 16.0 MB | MIT (nagadomi, waifu2x/nunif) | huggingface.co/deepghs/waifu2x_onnx |
+| `fatality-comix-4x` | High | `fatality_comix_4x.onnx` | 64.0 MB | CC-BY-NC-SA-4.0 (Twittman) | github.com/m8x3a2/comic-translate-screen releases |
+
+Fatality Comix (4x_Fatality_Comix_260000_G, by Twittman, https://openmodeldb.info/models/4x-Fatality-Comix)
+is published by its author only as PyTorch weights; this project converted it to
+ONNX (opset 17, dynamic sizes, weights unchanged) and publishes that file in its
+GitHub releases under the model's own licence, CC BY-NC-SA 4.0: non-commercial
+use, credit the author, share changes under the same licence. Comic Translate
+Screen is free and non-commercial.
+
 Only the recognizer of the chosen source language is needed. The PP-OCR line
 detector of the original is not used (see docs/ARCHITECTURE.md).
 

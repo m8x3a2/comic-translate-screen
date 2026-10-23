@@ -238,6 +238,10 @@ void main() {
     ws.changeBlock(0, (b) => b.linePx = 11);
     await tester.pump();
     expect(find.textContaining('строки около 11 точек'), findsOneWidget);
+    expect(find.textContaining('Включите уровень «Высокий»'), findsOneWidget, reason: 'advice, not only a warning');
+    container.read(settingsProvider.notifier).change((s) => s.textPrep = 'fatality_comix');
+    await tester.pump();
+    expect(find.textContaining('Сделайте снимок крупнее'), findsOneWidget, reason: 'the highest level is on already');
 
     final split = find.byWidgetPredicate(
       (w) => w is IconButton && (w.tooltip ?? '').startsWith('Разделить слипшиеся слова на этой странице'),

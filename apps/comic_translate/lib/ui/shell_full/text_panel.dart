@@ -7,6 +7,8 @@ import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
+import '../../state/app_state.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
 import '../../state/glued_words.dart';
@@ -92,7 +94,7 @@ class _TextPanelState extends ConsumerState<TextPanel> {
           ),
         ),
         if (findOpen) const FindReplacePanel(),
-        if (smallTextLinePxOf(blocks) case final px?)
+        if (tinyTextLinePxOf(blocks) case final px?)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
             child: Row(
@@ -100,7 +102,9 @@ class _TextPanelState extends ConsumerState<TextPanel> {
               children: [
                 Icon(Icons.warning_amber, size: 18, color: theme.colorScheme.tertiary),
                 const SizedBox(width: 8),
-                Expanded(child: Text(l.smallTextWarning('${px.round()}'), style: theme.textTheme.bodySmall)),
+                Expanded(
+                  child: Text(tinyTextAdvice(l, ref.watch(settingsProvider), px), style: theme.textTheme.bodySmall),
+                ),
               ],
             ),
           ),
@@ -326,3 +330,10 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
     );
   }
 }
+
+/// What to do about tiny text: the High level when a lighter one is chosen
+/// for comics, else a larger screenshot.
+String tinyTextAdvice(AppLocalizations l, AppSettings settings, double px) =>
+    settings.contentKind == ContentKind.comics && settings.activeTextPrep != 'fatality_comix'
+    ? l.tinyTextTryHigh('${px.round()}')
+    : l.tinyTextLarger('${px.round()}');

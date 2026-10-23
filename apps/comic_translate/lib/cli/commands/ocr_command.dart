@@ -23,9 +23,15 @@ class OcrCommand extends CtsCommand {
       ..addOption('ocr', help: 'OCR plugin id (default from settings: ppocr).')
       ..addOption('detector', help: 'Detector plugin id (default from settings).')
       ..addFlag('gpu', help: 'Use the GPU (DirectML). Default from settings.', defaultsTo: null)
+      ..addOption(
+        'prep',
+        help:
+            'How small text is prepared for reading: text_prep_off, plain_x1_5, plain_x2, waifu2x_cunet, '
+            'waifu2x_swin, fatality_comix (default from settings).',
+      )
       ..addFlag(
         'upscale',
-        help: 'Enlarge pages with small text before reading (default from settings: on).',
+        help: '--no-upscale: read small text as it is (same as --prep text_prep_off).',
         defaultsTo: null,
       )
       ..addFlag(
@@ -73,8 +79,19 @@ class OcrCommand extends CtsCommand {
 
     final OcrEngine ocr;
     TextDetector? detector;
+    final prepId = args.wasParsed('upscale') && !args.flag('upscale')
+        ? textPrepOffId
+        : args.option('prep') ?? settings.activeTextPrep;
+    if (!services.registry.contains(prepId) || services.registry.info(prepId).kind != PluginKind.textPrep) {
+      usageException('Unknown text preparation "$prepId".');
+    }
+    final TextUpscaler textPrep;
     try {
       ocr = await services.plugin<OcrEngine>(args.option('ocr') ?? settings.ocr, settings, useGpu: useGpu, log: log);
+      textPrep = await services.textPrep(settings, id: prepId, useGpu: useGpu, log: log);
+      if (textPrep.info.id != prepId) {
+        ctx.err.writeln('"$prepId" is not downloaded: plain ×2 instead (cts models download).');
+      }
       if (blocksPath == null) {
         detector = await services.plugin<TextDetector>(
           args.option('detector') ?? settings.activeDetector,
@@ -106,17 +123,14 @@ class OcrCommand extends CtsCommand {
           blocks = await detector!.detect(image, context);
         }
         final detectMs = sw.elapsedMilliseconds;
-        final reading = prepareReading(
+        final reading = await readBlocks(
+          ocr,
           image,
           blocks,
-          sourceLanguageCode: Languages.byName(language)?.code ?? '',
-          enabled: args.wasParsed('upscale') ? args.flag('upscale') : settings.upscaleSmallText,
+          sourceLanguage: language,
+          context: context,
+          upscaler: textPrep,
         );
-        try {
-          await ocr.recognize(reading.image, blocks, sourceLanguage: language, context: context);
-        } finally {
-          reading.restore();
-        }
         if (settings.fixCyrillicLookalikes) {
           final code = Languages.byName(language)?.code ?? '';
           for (final b in blocks) {
@@ -128,7 +142,6 @@ class OcrCommand extends CtsCommand {
           if (split > 0) pageLog.info('glued_words_split', {'words': split});
         }
         final ocrMs = sw.elapsedMilliseconds - detectMs;
-        if (reading.scaled) pageLog.info('reading_upscaled', {'factor': reading.scaleX});
         recorder?.recordTiming('02_ocr', Duration(milliseconds: ocrMs), page: page);
 
         final detected = resolveAutoSourceLanguage(blocks, language);
@@ -140,7 +153,9 @@ class OcrCommand extends CtsCommand {
           'source_language': language,
           if (language == Languages.auto) 'detected_language': detected,
           'ocr': ocr.info.id,
-          'reading_scale': reading.scaleX,
+          'text_prep': textPrep.info.id,
+          'reading_factor': reading.factor,
+          'enlarged_pieces': reading.pieces,
           'blocks': [for (final b in blocks) b.toJson()],
           'reading_order': [for (final b in order) blocks.indexOf(b)],
         };
@@ -157,7 +172,9 @@ class OcrCommand extends CtsCommand {
           'json': jsonFile.path,
           'texts': [for (final b in order) b.text],
         });
-        final scaleNote = reading.scaled ? ' (small text, read at ×${reading.scaleX.toStringAsFixed(1)})' : '';
+        final scaleNote = reading.scaled
+            ? ' (small text: ${reading.pieces} piece(s) at ×${reading.factor} with ${textPrep.info.id})'
+            : '';
         final langNote = language == Languages.auto ? ', language: $detected' : '';
         ctx.say('$page: ${blocks.length} block(s), OCR $ocrMs ms$scaleNote$langNote → ${jsonFile.path}');
         for (final b in order) {

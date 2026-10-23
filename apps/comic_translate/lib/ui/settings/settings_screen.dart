@@ -579,11 +579,15 @@ class _ToolsSection extends ConsumerWidget {
         pluginWithForm(l.ocr, PluginKind.ocr, s.ocr, (s, v) => s.ocr = v),
         SettingsGroup(
           children: [
-            _switch(
-              l.upscaleSmallText,
-              s.upscaleSmallText,
-              (v) => _change(ref, (s) => s.upscaleSmallText = v),
-              info: l.upscaleSmallTextInfo,
+            withInfo(
+              _PluginPicker(
+                label: s.contentKind == ContentKind.screens ? l.textPrepScreens : l.textPrep,
+                kind: PluginKind.textPrep,
+                value: s.activeTextPrep,
+                onChanged: (v) =>
+                    _change(ref, (s) => s.contentKind == ContentKind.screens ? s.screenTextPrep = v : s.textPrep = v),
+              ),
+              l.textPrepInfo,
             ),
             _switch(
               l.fixCyrillic,

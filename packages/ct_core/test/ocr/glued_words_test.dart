@@ -70,5 +70,8 @@ void main() {
     expect(isSmallText(b..linePx = 20), isFalse);
     expect(TextBlock.fromJson((b..linePx = 12).toJson()).linePx, 12);
     expect(b.copy().linePx, 12);
+    expect(isTinyText(b..linePx = 11), isTrue, reason: 'even a neural network misreads it');
+    expect(isTinyText(b..linePx = 12), isFalse, reason: 'small, but the translator note is enough');
+    expect(isSmallText(b), isTrue);
   });
 }

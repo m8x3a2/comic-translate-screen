@@ -256,6 +256,7 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
         for (final (group, title, help) in [
           (ModelGroup.core, l.modelsCore, null),
           (ModelGroup.language, l.modelsLanguages, l.modelsLanguagesHelp),
+          (ModelGroup.textPrep, l.modelsTextPrep, l.modelsTextPrepHelp),
           (ModelGroup.extra, l.modelsExtra, null),
         ])
           SettingsGroup(

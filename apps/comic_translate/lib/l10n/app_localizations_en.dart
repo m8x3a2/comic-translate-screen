@@ -580,7 +580,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cropTrigger => 'Use pieces from (px)';
 
   @override
-  String get upscaleSmallText => 'Enlarge small text before reading';
+  String get textPrep => 'Preparing small text for reading';
+
+  @override
+  String get textPrepScreens =>
+      'Preparing small text for reading (sites and games)';
 
   @override
   String get fixCyrillic => 'Fix Latin look-alikes in Cyrillic text';
@@ -1572,6 +1576,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelsExtra => 'Extra';
 
   @override
+  String get modelsTextPrep => 'Text preparation';
+
+  @override
+  String get modelsTextPrepHelp =>
+      'Neural networks that enlarge small text before recognition. Only the one chosen in \"Recognition and cleaning → Preparing small text\" is needed.';
+
+  @override
   String modelsNeeded(String language) {
     return 'Download what “$language” needs';
   }
@@ -1770,8 +1781,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'The model sees the drawing and better understands who speaks and what happens. The picture of the whole page goes to the translator\'s server; requests cost more, and the model must understand images.';
 
   @override
-  String get upscaleSmallTextInfo =>
-      'When text lines are thinner than about 30 pixels (screenshots, small scans), the page is enlarged up to 4 times before recognition. There are far fewer mistakes; normal pages hardly change.';
+  String get textPrepInfo =>
+      'Pieces of the page with small text (lines thinner than 24 px) are enlarged before recognition; ordinary text is left alone. Without a neural network it is instant. Neural networks restore the shape of the letters but take longer (times on a slow laptop, for a screenshot page of small text): Simple about 1 s, Medium about 2 s (best on manga screenshots), High about 15 s (best on reduced comic pages); faster with the graphics card. For sites and games Plain ×1.5 is best. The program offers to download the model it needs.';
 
   @override
   String get hdStrategyField => 'How to clean large pages';
@@ -1936,6 +1947,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'Translates on this computer without internet or keys (translator \"Offline (OPUS-MT)\"). About 0.4–0.7 s per bubble. Licence CC-BY 4.0, Helsinki-NLP.';
 
   @override
+  String get modelW2xCunet => 'waifu2x CUNet (level Simple)';
+
+  @override
+  String get modelW2xCunetInfo =>
+      'A fast neural network that enlarges small text twice before recognition. About 1 s per screenshot page. Licence MIT (nagadomi, waifu2x).';
+
+  @override
+  String get modelW2xSwin => 'waifu2x Swin-UNet (level Medium)';
+
+  @override
+  String get modelW2xSwinInfo =>
+      'Enlarges small text twice before recognition; the best in the experiment on manga screenshots. About 2 s per screenshot page. Licence MIT (nagadomi, waifu2x).';
+
+  @override
+  String get modelFatality => 'Fatality Comix (level High)';
+
+  @override
+  String get modelFatalityInfo =>
+      'Removes print screening and enlarges small text; the best on reduced comic pages but slow (about 15 s per screenshot page). By Twittman, licence CC-BY-NC-SA 4.0: non-commercial use only. Converted to ONNX by this project.';
+
+  @override
   String get downloadNetworkFailed =>
       'Could not download a model: the connection to the model site keeps breaking (4 tries). Check the internet and try again — the download continues where it stopped. If the site cannot be reached, download the files on another computer and add them with \"Import from disk…\" in \"Models\".';
 
@@ -2009,8 +2041,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detectorScreens => 'Text detection (sites and games)';
 
   @override
-  String smallTextWarning(String px) {
-    return 'Very small text (lines of about $px px): words may be glued together and letters misread. A larger screenshot reads better. The translator is told about it.';
+  String tinyTextTryHigh(String px) {
+    return 'Very small text (lines of about $px px): mistakes are likely. Turn on the High level in \"Settings → Recognition and cleaning → Preparing small text\" and recognize again, or take a larger screenshot.';
+  }
+
+  @override
+  String tinyTextLarger(String px) {
+    return 'Very small text (lines of about $px px): mistakes are likely even after the neural network. Take a larger screenshot: zoom the page or window in first.';
   }
 
   @override

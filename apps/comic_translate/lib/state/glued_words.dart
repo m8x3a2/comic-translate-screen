@@ -31,12 +31,12 @@ Future<int?> splitGluedWordsOnPages(WidgetRef ref, {int? block}) async {
   return total;
 }
 
-/// The typical line thickness of the very small text on [blocks] (pixels),
-/// or null when none of it is very small.
-double? smallTextLinePxOf(List<TextBlock> blocks) {
+/// The typical line thickness of the tiny text on [blocks] (pixels), or null
+/// when none of it is tiny (see `isTinyText`).
+double? tinyTextLinePxOf(List<TextBlock> blocks) {
   final small = [
     for (final b in blocks)
-      if (isSmallText(b) && b.text.trim().isNotEmpty) b.linePx!,
+      if (isTinyText(b) && b.text.trim().isNotEmpty) b.linePx!,
   ];
   if (small.isEmpty) return null;
   return npPercentile(small, 50);

@@ -969,6 +969,65 @@ def gen_ppocr_lines(out: Path, pages_dir: Path, models_dir: Path) -> None:
     write_json(out / "ppocr_lines.json", records)
 
 
+# -------------------------------------------------------------- text prep ---
+# Not in the original: the neural text preparation of this project (step 2),
+# with the tiling of the experiment that chose the models
+# (`ocr-experiment/sr_run.py`).
+
+TEXT_PREP_MODELS = [
+    # (model id, file, scale, pad, crop w×h)
+    ("waifu2x-cunet-art-2x", "waifu2x_cunet_art_scale2x.onnx", 2, 18, (200, 150)),
+    ("waifu2x-swin-art-2x", "waifu2x_swin_unet_art_scale2x.onnx", 2, 8, (200, 150)),
+    ("fatality-comix-4x", "fatality_comix_4x.onnx", 4, 0, (100, 75)),
+]
+
+
+def sr_upscale(session, img: np.ndarray, scale: int, pad: int, tile: int = 192, overlap: int = 16) -> np.ndarray:
+    """img HxWx3 uint8 -> upscaled uint8, tiled with overlap (`upscale` of sr_run.py)."""
+    img = img.astype(np.float32) / 255
+    h, w, _ = img.shape
+    src = np.pad(img, ((pad, pad), (pad, pad), (0, 0)), mode="reflect") if pad else img
+    out = np.zeros((h * scale, w * scale, 3), np.float32)
+    step = tile - 2 * overlap
+    for y0 in range(0, h, step):
+        for x0 in range(0, w, step):
+            ya, xa = max(0, y0 - overlap), max(0, x0 - overlap)
+            yb, xb = min(h, y0 + step + overlap), min(w, x0 + step + overlap)
+            crop = src[ya:yb + 2 * pad, xa:xb + 2 * pad]
+            ch, cw = crop.shape[0] - 2 * pad, crop.shape[1] - 2 * pad
+            eh, ew = -ch % 16, -cw % 16
+            if eh or ew:
+                crop = np.pad(crop, ((0, eh), (0, ew), (0, 0)), mode="edge")
+            x = crop.transpose(2, 0, 1)[None].copy()
+            y = session.run(None, {session.get_inputs()[0].name: x})[0][0].transpose(1, 2, 0)[: ch * scale, : cw * scale]
+            iy, ix = (y0 - ya) * scale, (x0 - xa) * scale
+            hh, ww = (min(h, y0 + step) - y0) * scale, (min(w, x0 + step) - x0) * scale
+            out[y0 * scale:y0 * scale + hh, x0 * scale:x0 * scale + ww] = y[iy:iy + hh, ix:ix + ww]
+    return (np.clip(out, 0, 1) * 255 + 0.5).astype(np.uint8)
+
+
+def gen_text_prep(out: Path, pages_dir: Path, models_dir: Path, detection_dir: Path) -> None:
+    """Each text preparation network on a crop around the first text block of en_E01P01."""
+    import onnxruntime as ort
+
+    image = decode_rgb(pages_dir / "en_E01P01.jpg")
+    det = json.loads((detection_dir / "en_E01P01.json").read_text(encoding="utf-8"))
+    x1, y1 = det["blocks"][0]["xyxy"][:2]
+    records = []
+    for model_id, file, scale, pad, (cw, ch) in TEXT_PREP_MODELS:
+        path = models_dir / model_id / file
+        if not path.exists():
+            sys.exit(f"Model not found: {path}. Run: cts models download {model_id}")
+        session = ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
+        crop = np.ascontiguousarray(image[y1:y1 + ch, x1:x1 + cw])
+        y = sr_upscale(session, crop, scale, pad)
+        records.append({
+            "model": model_id, "scale": scale, "pad": pad, "crop": [int(x1), int(y1), int(x1) + cw, int(y1) + ch],
+            "out_shape": list(y.shape), "out_sha256": sha256(y), "out_mean": float(y.mean()),
+        })
+    write_json(out / "text_prep.json", records)
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> None:
@@ -977,7 +1036,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "search", "translation", "mask", "inpaint", "render", "ppocr_lines"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "search", "translation", "mask", "inpaint", "render", "ppocr_lines", "text_prep"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -1030,6 +1089,8 @@ def main() -> None:
         gen_render(args.out)
     if "ppocr_lines" in only:
         gen_ppocr_lines(args.out, args.pages, args.models)
+    if "text_prep" in only:
+        gen_text_prep(args.out, args.pages, args.models, args.out / "detection")
 
 
 if __name__ == "__main__":

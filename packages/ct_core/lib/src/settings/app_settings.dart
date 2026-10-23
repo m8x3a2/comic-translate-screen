@@ -1,5 +1,6 @@
 import '../export/export_pages.dart';
 import '../exchange/exchange_settings.dart';
+import '../ocr/text_prep.dart';
 import '../export/strip_export.dart';
 import '../plugins/engines.dart';
 import '../render/layout.dart';
@@ -28,7 +29,8 @@ class AppSettings {
     this.translator = 'openai_compatible',
     this.inpainter = 'aot',
     this.useGpu = false,
-    this.upscaleSmallText = true,
+    this.textPrep = 'waifu2x_swin',
+    this.screenTextPrep = 'plain_x1_5',
     this.fixCyrillicLookalikes = false,
     this.splitGluedWords = false,
     this.inpaint = const InpaintConfig(),
@@ -85,9 +87,14 @@ class AppSettings {
   /// by "Try again" in the settings.
   Map<String, String> gpuCpuModels;
 
-  /// Enlarge pages with small text (screenshots, low-resolution scans)
-  /// before line splitting and OCR. New in this project.
-  bool upscaleSmallText;
+  /// How small text is prepared for reading (`TextUpscaler` plugin ids):
+  /// for comics and for screens. New in this project (step 2 of the plan:
+  /// a neural network for comics, plain ×1.5 for sharp screen fonts).
+  String textPrep;
+  String screenTextPrep;
+
+  /// The text preparation of the current [contentKind].
+  String get activeTextPrep => contentKind == ContentKind.screens ? screenTextPrep : textPrep;
 
   /// For Cyrillic source languages, replace Latin look-alike letters that OCR
   /// returns in Cyrillic text ("HET" → "НЕТ"). Off by default: Latin words in
@@ -184,7 +191,8 @@ class AppSettings {
       'inpainter': inpainter,
       'use_gpu': useGpu,
       if (gpuCpuModels.isNotEmpty) 'gpu_cpu_models': gpuCpuModels,
-      'upscale_small_text': upscaleSmallText,
+      'text_prep': textPrep,
+      'screen_text_prep': screenTextPrep,
       'fix_cyrillic_lookalikes': fixCyrillicLookalikes,
       'split_glued_words': splitGluedWords,
     },
@@ -245,6 +253,8 @@ class AppSettings {
       'plugins', //
       'approved_network_plugins', 'projects',
     };
+    // Before step 2.1 a switch turned the enlarging of small text off.
+    final oldOff = tools['upscale_small_text'] == false;
     final strategyName = pick<String>(inpaint, 'strategy', defaults.inpaint.strategy.name);
     return AppSettings(
       detector: pick(tools, 'detector', defaults.detector),
@@ -258,7 +268,8 @@ class AppSettings {
         for (final e in ((tools['gpu_cpu_models'] as Map?) ?? const {}).entries)
           if (e.key is String && e.value is String) e.key as String: e.value as String,
       },
-      upscaleSmallText: pick(tools, 'upscale_small_text', defaults.upscaleSmallText),
+      textPrep: pick(tools, 'text_prep', oldOff ? textPrepOffId : defaults.textPrep),
+      screenTextPrep: pick(tools, 'screen_text_prep', oldOff ? textPrepOffId : defaults.screenTextPrep),
       fixCyrillicLookalikes: pick(tools, 'fix_cyrillic_lookalikes', defaults.fixCyrillicLookalikes),
       splitGluedWords: pick(tools, 'split_glued_words', defaults.splitGluedWords),
       inpaint: InpaintConfig(

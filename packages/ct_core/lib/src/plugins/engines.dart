@@ -19,6 +19,16 @@ abstract interface class OcrEngine implements Plugin {
   });
 }
 
+/// Prepares small text for reading: enlarges the pieces of a page where the
+/// lines are thin (see `reading_scale.dart`). New in this project.
+abstract interface class TextUpscaler implements Plugin {
+  /// How much larger the pieces become; 1: small text is read as it is.
+  double get factor;
+
+  /// [piece] enlarged to [width]×[height] (about [factor] times its size).
+  Future<RgbImage> enlarge(RgbImage piece, int width, int height, PluginContext context);
+}
+
 class TranslationRequest {
   TranslationRequest({
     required this.blocks,

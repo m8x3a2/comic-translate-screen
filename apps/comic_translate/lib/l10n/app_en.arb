@@ -393,7 +393,8 @@
   "resizeLimit": "Shrink to (px, long side)",
   "cropMargin": "Piece margin (px)",
   "cropTrigger": "Use pieces from (px)",
-  "upscaleSmallText": "Enlarge small text before reading",
+  "textPrep": "Preparing small text for reading",
+  "textPrepScreens": "Preparing small text for reading (sites and games)",
   "fixCyrillic": "Fix Latin look-alikes in Cyrillic text",
   "fixCyrillicHelp": "\"HET\" becomes \"НЕТ\"; may also change Latin words.",
   "font": "Font",
@@ -958,6 +959,8 @@
   "modelsLanguages": "Text recognition by language",
   "modelsLanguagesHelp": "Download only the languages you translate from. When a model is missing, the program offers to download it before translating.",
   "modelsExtra": "Extra",
+  "modelsTextPrep": "Text preparation",
+  "modelsTextPrepHelp": "Neural networks that enlarge small text before recognition. Only the one chosen in \"Recognition and cleaning → Preparing small text\" is needed.",
   "modelsNeeded": "Download what “{language}” needs",
   "@modelsNeeded": {
     "placeholders": {
@@ -1162,7 +1165,7 @@
   "bugReportInfo": "A report can be made without test mode too: it holds the log and the settings (without API keys). If test mode was on, it also holds the steps of the last run as text (recognized text and translation included), without pictures.",
   "extraContextInfo": "Written once and sent to the translator with every page. For example: “Characters: Maya (a girl), Timothy the cat. A comedy. Friends speak informally.” Helps with names, gender and forms of address.",
   "sendPageImageInfo": "The model sees the drawing and better understands who speaks and what happens. The picture of the whole page goes to the translator's server; requests cost more, and the model must understand images.",
-  "upscaleSmallTextInfo": "When text lines are thinner than about 30 pixels (screenshots, small scans), the page is enlarged up to 4 times before recognition. There are far fewer mistakes; normal pages hardly change.",
+  "textPrepInfo": "Pieces of the page with small text (lines thinner than 24 px) are enlarged before recognition; ordinary text is left alone. Without a neural network it is instant. Neural networks restore the shape of the letters but take longer (times on a slow laptop, for a screenshot page of small text): Simple about 1 s, Medium about 2 s (best on manga screenshots), High about 15 s (best on reduced comic pages); faster with the graphics card. For sites and games Plain ×1.5 is best. The program offers to download the model it needs.",
   "hdStrategyField": "How to clean large pages",
   "hdStrategyInfo": "The cleaning network is trained on small pictures.\n• Shrink (default): a copy of the page is shrunk to the limit and cleaned; only the cleaned places are put back on the full-size page. Fast.\n• In pieces: the parts around the text are cleaned at full size. More precise on large pages, but slower.\n• Full size: the whole page at once. The slowest, needs much memory.",
   "resizeLimitInfo": "The long side of the shrunk copy, in pixels. Larger is neater but slower. 960 is the original's value.",
@@ -1233,6 +1236,12 @@
   "modelOpusEnRu": "Offline translation English → Russian (OPUS-MT)",
   "modelOpusRuEn": "Offline translation Russian → English (OPUS-MT)",
   "modelOpusInfo": "Translates on this computer without internet or keys (translator \"Offline (OPUS-MT)\"). About 0.4–0.7 s per bubble. Licence CC-BY 4.0, Helsinki-NLP.",
+  "modelW2xCunet": "waifu2x CUNet (level Simple)",
+  "modelW2xCunetInfo": "A fast neural network that enlarges small text twice before recognition. About 1 s per screenshot page. Licence MIT (nagadomi, waifu2x).",
+  "modelW2xSwin": "waifu2x Swin-UNet (level Medium)",
+  "modelW2xSwinInfo": "Enlarges small text twice before recognition; the best in the experiment on manga screenshots. About 2 s per screenshot page. Licence MIT (nagadomi, waifu2x).",
+  "modelFatality": "Fatality Comix (level High)",
+  "modelFatalityInfo": "Removes print screening and enlarges small text; the best on reduced comic pages but slow (about 15 s per screenshot page). By Twittman, licence CC-BY-NC-SA 4.0: non-commercial use only. Converted to ONNX by this project.",
   "downloadNetworkFailed": "Could not download a model: the connection to the model site keeps breaking (4 tries). Check the internet and try again — the download continues where it stopped. If the site cannot be reached, download the files on another computer and add them with \"Import from disk…\" in \"Models\".",
   "panelHide": "Hide: {name}",
   "@panelHide": {
@@ -1281,8 +1290,16 @@
   "contentScreens": "Sites and games",
   "contentScreensHelp": "lines of ordinary text: screenshots, games, visual novels",
   "detectorScreens": "Text detection (sites and games)",
-  "smallTextWarning": "Very small text (lines of about {px} px): words may be glued together and letters misread. A larger screenshot reads better. The translator is told about it.",
-  "@smallTextWarning": {
+  "tinyTextTryHigh": "Very small text (lines of about {px} px): mistakes are likely. Turn on the High level in \"Settings → Recognition and cleaning → Preparing small text\" and recognize again, or take a larger screenshot.",
+  "@tinyTextTryHigh": {
+    "placeholders": {
+      "px": {
+        "type": "String"
+      }
+    }
+  },
+  "tinyTextLarger": "Very small text (lines of about {px} px): mistakes are likely even after the neural network. Take a larger screenshot: zoom the page or window in first.",
+  "@tinyTextLarger": {
     "placeholders": {
       "px": {
         "type": "String"

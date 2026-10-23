@@ -72,6 +72,15 @@ class AppServices {
     return registry.instance<T>(id, config, env);
   }
 
+  /// The text preparation [id] (default: the one of the settings' content
+  /// kind), see `loadTextPrep`.
+  Future<TextUpscaler> textPrep(AppSettings settings, {String? id, bool? useGpu, EventLog? log}) async {
+    final prep = id ?? settings.activeTextPrep;
+    final config = registry.contains(prep) ? await pluginConfig(prep, settings) : null;
+    final env = PluginEnvironment(models: models, log: log ?? appLog, useGpu: useGpu ?? settings.useGpu);
+    return loadTextPrep(registry, prep, config, env);
+  }
+
   /// [secretStore] defaults to the OS secure storage; tests pass a
   /// [MemorySecretStore]. Extra log sinks are built with the shared
   /// [Redactor] so they mask every registered secret too.

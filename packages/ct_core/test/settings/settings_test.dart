@@ -20,7 +20,8 @@ void main() {
     expect(s.sendPageImage, isFalse);
     expect(s.theme, 'dark');
     expect(s.upperCase, isFalse);
-    expect(s.upscaleSmallText, isTrue);
+    expect(s.textPrep, 'waifu2x_swin');
+    expect(s.screenTextPrep, plainX15Id);
     expect(s.fixCyrillicLookalikes, isFalse);
   });
 
@@ -29,7 +30,7 @@ void main() {
     final s = AppSettings(
       translator: 'mock',
       useGpu: true,
-      upscaleSmallText: false,
+      textPrep: plainX2Id,
       fixCyrillicLookalikes: true,
       render: const RenderSettings(upperCase: true, maxFontSize: 30, alignment: TextAlignment.left, color: 0xFF112233),
       inpaint: const InpaintConfig(strategy: HdStrategy.crop, cropMargin: 256),
@@ -48,7 +49,14 @@ void main() {
     expect(loaded.extra['future_feature'], 42);
     expect(loaded.inpaint.strategy, HdStrategy.crop);
     expect(loaded.fixCyrillicLookalikes, isTrue);
-    expect(loaded.upscaleSmallText, isFalse);
+    expect(loaded.textPrep, plainX2Id);
+    expect(
+      AppSettings.fromJson({
+        'tools': {'upscale_small_text': false},
+      }).activeTextPrep,
+      textPrepOffId,
+      reason: 'the old switch, turned off',
+    );
     expect(loaded.upperCase, isTrue);
     expect(loaded.shortcuts, {'undo': 'Ctrl+U', 'help': ''});
     expect(loaded.gpuCpuModels, {'rec.onnx': 'Softmax failed'});

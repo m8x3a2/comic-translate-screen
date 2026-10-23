@@ -5,8 +5,13 @@ import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
 
 /// Settings that select the fake plugins and the offline mock translator.
-AppSettings fakeSettings() =>
-    AppSettings(detector: 'fake_det', ocr: 'fake_ocr', translator: 'mock', inpainter: 'fake_inpaint');
+AppSettings fakeSettings() => AppSettings(
+  detector: 'fake_det',
+  ocr: 'fake_ocr',
+  translator: 'mock',
+  inpainter: 'fake_inpaint',
+  textPrep: textPrepOffId,
+);
 
 PluginInfo fakeInfo(String id, PluginKind kind) =>
     PluginInfo(id: id, displayName: id, kind: kind, privacy: Privacy.local);
@@ -72,6 +77,9 @@ PluginRegistry fakeRegistryWith({Duration detectDelay = Duration.zero}) => Plugi
   ..register(PluginFactory<OcrEngine>(fakeInfo('fake_ocr', PluginKind.ocr), (c, e) async => _FakeOcr()))
   ..register(PluginFactory<Inpainter>(fakeInfo('fake_inpaint', PluginKind.inpainter), (c, e) async => _FakeInpainter()))
   ..register(chatOcrFactory)
+  ..register(textPrepOffFactory)
+  ..register(plainX15Factory)
+  ..register(plainX2Factory)
   ..register(chatTranslatorFactory)
   ..register(mockTranslatorFactory)
   ..register(

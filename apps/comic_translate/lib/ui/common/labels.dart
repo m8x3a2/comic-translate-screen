@@ -140,7 +140,7 @@ class PrivacyBadge extends StatelessWidget {
 }
 
 /// Groups of the models screen.
-enum ModelGroup { core, language, extra }
+enum ModelGroup { core, language, textPrep, extra }
 
 ModelGroup modelGroupOf(String id) => switch (id) {
   'rtdetr-v2-int8' || 'aot-inpainting' || 'ppocr-v5-det-mobile' => ModelGroup.core,
@@ -151,6 +151,7 @@ ModelGroup modelGroupOf(String id) => switch (id) {
   'ppocr-v6-rec-small' ||
   'manga-ocr-mobile' ||
   'osd-script-id' => ModelGroup.language,
+  'waifu2x-cunet-art-2x' || 'waifu2x-swin-art-2x' || 'fatality-comix-4x' => ModelGroup.textPrep,
   _ => ModelGroup.extra,
 };
 
@@ -169,6 +170,9 @@ ModelGroup modelGroupOf(String id) => switch (id) {
   'ppocr-v5-det-mobile' => (l.modelLines, l.modelLinesInfo),
   'opus-mt-en-ru' => (l.modelOpusEnRu, l.modelOpusInfo),
   'opus-mt-ru-en' => (l.modelOpusRuEn, l.modelOpusInfo),
+  'waifu2x-cunet-art-2x' => (l.modelW2xCunet, l.modelW2xCunetInfo),
+  'waifu2x-swin-art-2x' => (l.modelW2xSwin, l.modelW2xSwinInfo),
+  'fatality-comix-4x' => (l.modelFatality, l.modelFatalityInfo),
   _ => (m.displayName, m.purpose),
 };
 

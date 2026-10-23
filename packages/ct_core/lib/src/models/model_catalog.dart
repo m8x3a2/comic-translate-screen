@@ -341,9 +341,63 @@ abstract final class ModelCatalog {
     ],
   );
 
+  static const waifu2xCunet = ModelSpec(
+    id: 'waifu2x-cunet-art-2x',
+    displayName: 'waifu2x CUNet art ×2',
+    purpose: 'Preparing small text for reading (fast)',
+    license: 'MIT',
+    homepage: 'https://github.com/nagadomi/nunif',
+    files: [
+      ModelFile(
+        name: 'waifu2x_cunet_art_scale2x.onnx',
+        url: 'https://huggingface.co/deepghs/waifu2x_onnx/resolve/main/20230131/onnx_models/cunet/art/scale2x.onnx',
+        sha256: '7a46ddc1e69aae260d73e8261493350d7a9c8f403666eb671dc929341df50830',
+        size: 5178789,
+      ),
+    ],
+  );
+
+  static const waifu2xSwin = ModelSpec(
+    id: 'waifu2x-swin-art-2x',
+    displayName: 'waifu2x Swin-UNet art ×2',
+    purpose: 'Preparing small text for reading (balanced)',
+    license: 'MIT',
+    homepage: 'https://github.com/nagadomi/nunif',
+    files: [
+      ModelFile(
+        name: 'waifu2x_swin_unet_art_scale2x.onnx',
+        url: 'https://huggingface.co/deepghs/waifu2x_onnx/resolve/main/20230131/onnx_models/swin_unet/art/scale2x.onnx',
+        sha256: 'dd38a3363a3d241a1e5d5fae9dcdb78de45f06c63508e26d460f9e4b66800ec7',
+        size: 16827545,
+      ),
+    ],
+  );
+
+  /// Converted to ONNX by this project from the author's `.pth` (published
+  /// only as PyTorch weights); the file is in this project's GitHub
+  /// releases under the model's own licence.
+  static const fatalityComix = ModelSpec(
+    id: 'fatality-comix-4x',
+    displayName: 'Fatality Comix ×4 (by Twittman)',
+    purpose: 'Preparing small text for reading (best, slow)',
+    license: 'CC-BY-NC-SA-4.0',
+    homepage: 'https://openmodeldb.info/models/4x-Fatality-Comix',
+    files: [
+      ModelFile(
+        name: 'fatality_comix_4x.onnx',
+        url: 'https://github.com/m8x3a2/comic-translate-screen/releases/download/models-v1/fatality_comix_4x.onnx',
+        sha256: '5d35447a04a6d1694a75c3951afa050c754ea3d721b298d0be32937187c9799f',
+        size: 67132606,
+      ),
+    ],
+  );
+
   static const all = [
     rtdetrV2,
     ppocrDet,
+    waifu2xCunet,
+    waifu2xSwin,
+    fatalityComix,
     opusMtEnRu,
     opusMtRuEn,
     ppocrRecEn,

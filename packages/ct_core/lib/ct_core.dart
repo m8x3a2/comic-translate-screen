@@ -48,6 +48,7 @@ export 'src/ocr/glued_words.dart';
 export 'src/ocr/manga_ocr.dart';
 export 'src/ocr/ppocr.dart';
 export 'src/ocr/reading_scale.dart';
+export 'src/ocr/text_prep.dart';
 export 'src/ocr/script_detection.dart';
 export 'src/ocr/script_fix.dart';
 export 'src/models/model_manager.dart';

@@ -63,16 +63,15 @@ void main() {
     expect(mask, [0, 0, 0, 0, 1, 1, 1, 0, 0]);
   });
 
-  test('lines of a line detector are kept when the page is enlarged for reading', () {
+  test('lines of a line detector are kept when the page is enlarged for reading', () async {
     final image = RgbImage.filled(200, 100, 255, 255, 255);
     final block = TextBlock(xyxy: const BBox(10, 10, 190, 20), lines: [TextLine.box(const BBox(10, 10, 190, 20))])
       ..fixedLines = true;
-    final reading = prepareReading(image, [block]);
+    final reading = await prepareReading(image, [block], upscaler: PlainTextUpscaler(plainX15Info, 1.5));
     expect(reading.scaled, isTrue);
-    expect(
-      block.lines.single.box,
-      scaleLine(TextLine.box(const BBox(10, 10, 190, 20)), reading.scaleX, reading.scaleY).box,
-    );
+    final canvas = reading.canvases.single;
+    expect(block.lines.single.box, canvas.lineToCanvas(TextLine.box(const BBox(10, 10, 190, 20))).box);
+    expect(block.lines.single.box, const BBox(12, 12, 282, 27), reason: 'the piece starts 8 px before the block');
     reading.restore();
     expect(block.lines.single.box, const BBox(10, 10, 190, 20));
     expect(block.linePx, 11);

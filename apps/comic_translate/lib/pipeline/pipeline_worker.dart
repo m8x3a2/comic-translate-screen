@@ -652,7 +652,15 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
         final found = await detectOnStrip(await plugins.detector, image, context, next: next, covered: m.covered);
         return sortBlocks(found, rightToLeft: m.source == 'Japanese');
       case _Op.recognize:
-        await recognizeBlocks(await plugins.ocr, strip(blocks), blocks, settings, context, sourceLanguage: m.source);
+        await recognizeBlocks(
+          await plugins.ocr,
+          strip(blocks),
+          blocks,
+          settings,
+          context,
+          sourceLanguage: m.source,
+          textPrep: await plugins.textPrep,
+        );
         return blocks;
       case _Op.translate:
         await translatePageBlocks(

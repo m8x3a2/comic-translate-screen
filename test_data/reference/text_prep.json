@@ -1,0 +1,56 @@
+[
+ {
+  "model": "waifu2x-cunet-art-2x",
+  "scale": 2,
+  "pad": 18,
+  "crop": [
+   568,
+   618,
+   768,
+   768
+  ],
+  "out_shape": [
+   300,
+   400,
+   3
+  ],
+  "out_sha256": "d8bd3a0522e787cae9c4406c149faac1c0a57b95ceda4a8fe35299dfe9adc220",
+  "out_mean": 164.75274166666668
+ },
+ {
+  "model": "waifu2x-swin-art-2x",
+  "scale": 2,
+  "pad": 8,
+  "crop": [
+   568,
+   618,
+   768,
+   768
+  ],
+  "out_shape": [
+   300,
+   400,
+   3
+  ],
+  "out_sha256": "dc652c09fd883830ab0ae4e0df0a89cbe132ee9d16127e396aa6dcee1e65b274",
+  "out_mean": 164.8705138888889
+ },
+ {
+  "model": "fatality-comix-4x",
+  "scale": 4,
+  "pad": 0,
+  "crop": [
+   568,
+   618,
+   668,
+   693
+  ],
+  "out_shape": [
+   300,
+   400,
+   3
+  ],
+  "out_sha256": "96379e6161ab026e039b277b9a9f6932bb3ca9a8079cc311f731fce6753d0ab6",
+  "out_mean": 193.07606944444444
+ }
+]

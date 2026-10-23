@@ -6,7 +6,7 @@ import '../usage/usage_log.dart';
 import 'settings_schema.dart';
 
 /// What a plugin does in the pipeline.
-enum PluginKind { detector, ocr, translator, inpainter }
+enum PluginKind { detector, ocr, translator, inpainter, textPrep }
 
 /// Where a plugin sends data. Anything other than [local] is marked in the UI
 /// and requires the user's confirmation before first use.

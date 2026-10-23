@@ -360,6 +360,9 @@ class PipelineSpec {
       configs: {
         for (final id in {settings.activeDetector, settings.ocr, translator, settings.inpainter})
           id: await services.pluginConfig(id, settings),
+        // An unknown text preparation (a newer settings file) gives way to plain ×2.
+        if (services.registry.contains(settings.activeTextPrep))
+          settings.activeTextPrep: await services.pluginConfig(settings.activeTextPrep, settings),
       },
     );
   }
@@ -375,6 +378,7 @@ class PagePipeline {
     required this.ocr,
     required this.translator,
     required this.inpainter,
+    this.textPrep,
   });
 
   final AppSettings settings;
@@ -384,6 +388,9 @@ class PagePipeline {
   final OcrEngine ocr;
   final Translator translator;
   final Inpainter inpainter;
+
+  /// Prepares small text for reading; null: it is read as it is.
+  final TextUpscaler? textPrep;
 
   /// Creates the plugins chosen in [settings] ([translatorId] overrides the
   /// translator). Throws [ModelNotInstalledException] for missing models.
@@ -425,6 +432,7 @@ class PagePipeline {
       ocr: await make<OcrEngine>(s.ocr),
       translator: await make<Translator>(spec.translatorId),
       inpainter: await make<Inpainter>(s.inpainter),
+      textPrep: await loadTextPrep(registry, s.activeTextPrep, spec.configs[s.activeTextPrep], env),
     );
   }
 
@@ -437,6 +445,7 @@ class PagePipeline {
     ocr: ocr,
     translator: translator,
     inpainter: inpainter,
+    textPrep: textPrep,
   );
 
   /// Detection, OCR, translation and cleaning of [image]. [onStage] is called
@@ -485,7 +494,7 @@ class PagePipeline {
 
     if (read) {
       start('02_ocr');
-      await recognizeBlocks(ocr, work, found, settings, context, sourceLanguage: sourceLanguage);
+      await recognizeBlocks(ocr, work, found, settings, context, sourceLanguage: sourceLanguage, textPrep: textPrep);
       // "Auto": read right to left when the page turned out to be Japanese.
       found = sortBlocks(found, rightToLeft: resolveAutoSourceLanguage(found, sourceLanguage) == 'Japanese');
       lap('02_ocr');
@@ -568,8 +577,8 @@ Future<List<TextBlock>> detectOnStrip(
   return covered.isEmpty ? found : withoutCovered(found, covered);
 }
 
-/// OCR of [blocks] on [image] (small text enlarged first when the setting
-/// asks for it).
+/// OCR of [blocks] on [image]; small text is enlarged first by [textPrep]
+/// (read as it is without one).
 Future<void> recognizeBlocks(
   OcrEngine ocr,
   RgbImage image,
@@ -577,14 +586,10 @@ Future<void> recognizeBlocks(
   AppSettings settings,
   PluginContext context, {
   required String sourceLanguage,
+  TextUpscaler? textPrep,
 }) async {
   final code = Languages.byName(sourceLanguage)?.code ?? '';
-  final reading = prepareReading(image, blocks, sourceLanguageCode: code, enabled: settings.upscaleSmallText);
-  try {
-    await ocr.recognize(reading.image, blocks, sourceLanguage: sourceLanguage, context: context);
-  } finally {
-    reading.restore();
-  }
+  await readBlocks(ocr, image, blocks, sourceLanguage: sourceLanguage, context: context, upscaler: textPrep);
   if (settings.fixCyrillicLookalikes) {
     // "Auto": each block has the language of its script.
     for (final b in blocks) {
@@ -656,6 +661,12 @@ class LazyPlugins {
   Future<OcrEngine> get ocr => _make(spec.settings.ocr);
   Future<Translator> get translator => _make(spec.translatorId);
   Future<Inpainter> get inpainter => _make(spec.settings.inpainter);
+  Future<TextUpscaler> get textPrep => loadTextPrep(
+    registry,
+    spec.settings.activeTextPrep,
+    spec.configs[spec.settings.activeTextPrep],
+    PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
+  );
 
   /// Every plugin, for whole-page runs.
   Future<PagePipeline> pipeline(String source, String target) async => PagePipeline(
@@ -666,5 +677,6 @@ class LazyPlugins {
     ocr: await ocr,
     translator: await translator,
     inpainter: await inpainter,
+    textPrep: await textPrep,
   );
 }

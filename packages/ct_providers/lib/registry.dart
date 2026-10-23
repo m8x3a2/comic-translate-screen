@@ -9,6 +9,7 @@ import 'src/ocr/default_ocr.dart';
 import 'src/ocr/manga_ocr.dart';
 import 'src/ocr/ppocr.dart';
 import 'src/ocr/windows_ocr.dart';
+import 'src/text_prep/neural_upscalers.dart';
 import 'src/translation/mock.dart';
 import 'src/translation/openai_compatible.dart';
 import 'src/translation/opus_mt.dart';
@@ -28,6 +29,12 @@ void registerBuiltInPlugins(PluginRegistry registry) {
   registry.register(chatTranslatorFactory);
   registry.register(aotFactory);
   registry.register(lamaFactory);
+  registry.register(textPrepOffFactory);
+  registry.register(plainX15Factory);
+  registry.register(plainX2Factory);
+  registry.register(waifu2xCunetFactory);
+  registry.register(waifu2xSwinFactory);
+  registry.register(fatalityComixFactory);
 }
 
 /// A registry with all built-in plugins.

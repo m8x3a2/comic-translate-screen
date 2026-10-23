@@ -156,12 +156,14 @@ class _ExchangeExport extends CtsCommand {
     final services = ctx.services;
     final TextDetector detector;
     OcrEngine? ocr;
+    TextUpscaler? textPrep;
     try {
       detector = await services.plugin<TextDetector>(settings.activeDetector, settings, log: log);
       if (mode == ExchangeMode.translate) {
         // Reading through the chat makes no sense here: the usual engine reads.
         final id = settings.ocr == chatOcrId ? AppSettings().ocr : settings.ocr;
         ocr = await services.plugin<OcrEngine>(id, settings, log: log);
+        textPrep = await services.textPrep(settings, log: log);
       }
     } on ModelNotInstalledException catch (e) {
       ctx.err.writeln(e);
@@ -176,7 +178,9 @@ class _ExchangeExport extends CtsCommand {
             page: p.basename(path),
           );
           final blocks = sortBlocks(await detector.detect(image, context), rightToLeft: source == 'Japanese');
-          if (ocr != null) await recognizeBlocks(ocr, image, blocks, settings, context, sourceLanguage: source);
+          if (ocr != null) {
+            await recognizeBlocks(ocr, image, blocks, settings, context, sourceLanguage: source, textPrep: textPrep);
+          }
           return ExchangePage(id: path, number: i + 1, name: p.basename(path), blocks: blocks, image: image);
         }(),
     ];

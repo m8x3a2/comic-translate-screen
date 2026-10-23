@@ -181,8 +181,18 @@ bool isEnglishBlock(TextBlock b, String sourceLanguage) =>
     sourceLanguage == 'English' || (sourceLanguage == Languages.auto && b.sourceLang == 'en');
 
 /// Lines thinner than this (pixels on the page, as the detector found them)
-/// are text too small to read well: about 5–7 px letters.
+/// are text too small to read well: about 5–7 px letters. The translator is
+/// told that such text may have glued words and misread letters.
 const smallTextLinePx = 14.0;
 
 /// The text of [b] is very small (see [smallTextLinePx]).
 bool isSmallText(TextBlock b) => (b.linePx ?? double.infinity) < smallTextLinePx;
+
+/// Lines thinner than this are read with mistakes even after a neural
+/// network: in the check of step 2.1 about 78 % of the words of 11 px lines
+/// were right on every level, 88–97 % from 12 px. The user is advised what
+/// to do.
+const tinyTextLinePx = 12.0;
+
+/// The text of [b] is tiny (see [tinyTextLinePx]).
+bool isTinyText(TextBlock b) => (b.linePx ?? double.infinity) < tinyTextLinePx;

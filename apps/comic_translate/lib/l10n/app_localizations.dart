@@ -1082,11 +1082,17 @@ abstract class AppLocalizations {
   /// **'Use pieces from (px)'**
   String get cropTrigger;
 
-  /// No description provided for @upscaleSmallText.
+  /// No description provided for @textPrep.
   ///
   /// In en, this message translates to:
-  /// **'Enlarge small text before reading'**
-  String get upscaleSmallText;
+  /// **'Preparing small text for reading'**
+  String get textPrep;
+
+  /// No description provided for @textPrepScreens.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing small text for reading (sites and games)'**
+  String get textPrepScreens;
 
   /// No description provided for @fixCyrillic.
   ///
@@ -2834,6 +2840,18 @@ abstract class AppLocalizations {
   /// **'Extra'**
   String get modelsExtra;
 
+  /// No description provided for @modelsTextPrep.
+  ///
+  /// In en, this message translates to:
+  /// **'Text preparation'**
+  String get modelsTextPrep;
+
+  /// No description provided for @modelsTextPrepHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Neural networks that enlarge small text before recognition. Only the one chosen in \"Recognition and cleaning → Preparing small text\" is needed.'**
+  String get modelsTextPrepHelp;
+
   /// No description provided for @modelsNeeded.
   ///
   /// In en, this message translates to:
@@ -3122,11 +3140,11 @@ abstract class AppLocalizations {
   /// **'The model sees the drawing and better understands who speaks and what happens. The picture of the whole page goes to the translator\'s server; requests cost more, and the model must understand images.'**
   String get sendPageImageInfo;
 
-  /// No description provided for @upscaleSmallTextInfo.
+  /// No description provided for @textPrepInfo.
   ///
   /// In en, this message translates to:
-  /// **'When text lines are thinner than about 30 pixels (screenshots, small scans), the page is enlarged up to 4 times before recognition. There are far fewer mistakes; normal pages hardly change.'**
-  String get upscaleSmallTextInfo;
+  /// **'Pieces of the page with small text (lines thinner than 24 px) are enlarged before recognition; ordinary text is left alone. Without a neural network it is instant. Neural networks restore the shape of the letters but take longer (times on a slow laptop, for a screenshot page of small text): Simple about 1 s, Medium about 2 s (best on manga screenshots), High about 15 s (best on reduced comic pages); faster with the graphics card. For sites and games Plain ×1.5 is best. The program offers to download the model it needs.'**
+  String get textPrepInfo;
 
   /// No description provided for @hdStrategyField.
   ///
@@ -3404,6 +3422,42 @@ abstract class AppLocalizations {
   /// **'Translates on this computer without internet or keys (translator \"Offline (OPUS-MT)\"). About 0.4–0.7 s per bubble. Licence CC-BY 4.0, Helsinki-NLP.'**
   String get modelOpusInfo;
 
+  /// No description provided for @modelW2xCunet.
+  ///
+  /// In en, this message translates to:
+  /// **'waifu2x CUNet (level Simple)'**
+  String get modelW2xCunet;
+
+  /// No description provided for @modelW2xCunetInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'A fast neural network that enlarges small text twice before recognition. About 1 s per screenshot page. Licence MIT (nagadomi, waifu2x).'**
+  String get modelW2xCunetInfo;
+
+  /// No description provided for @modelW2xSwin.
+  ///
+  /// In en, this message translates to:
+  /// **'waifu2x Swin-UNet (level Medium)'**
+  String get modelW2xSwin;
+
+  /// No description provided for @modelW2xSwinInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Enlarges small text twice before recognition; the best in the experiment on manga screenshots. About 2 s per screenshot page. Licence MIT (nagadomi, waifu2x).'**
+  String get modelW2xSwinInfo;
+
+  /// No description provided for @modelFatality.
+  ///
+  /// In en, this message translates to:
+  /// **'Fatality Comix (level High)'**
+  String get modelFatality;
+
+  /// No description provided for @modelFatalityInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Removes print screening and enlarges small text; the best on reduced comic pages but slow (about 15 s per screenshot page). By Twittman, licence CC-BY-NC-SA 4.0: non-commercial use only. Converted to ONNX by this project.'**
+  String get modelFatalityInfo;
+
   /// No description provided for @downloadNetworkFailed.
   ///
   /// In en, this message translates to:
@@ -3524,11 +3578,17 @@ abstract class AppLocalizations {
   /// **'Text detection (sites and games)'**
   String get detectorScreens;
 
-  /// No description provided for @smallTextWarning.
+  /// No description provided for @tinyTextTryHigh.
   ///
   /// In en, this message translates to:
-  /// **'Very small text (lines of about {px} px): words may be glued together and letters misread. A larger screenshot reads better. The translator is told about it.'**
-  String smallTextWarning(String px);
+  /// **'Very small text (lines of about {px} px): mistakes are likely. Turn on the High level in \"Settings → Recognition and cleaning → Preparing small text\" and recognize again, or take a larger screenshot.'**
+  String tinyTextTryHigh(String px);
+
+  /// No description provided for @tinyTextLarger.
+  ///
+  /// In en, this message translates to:
+  /// **'Very small text (lines of about {px} px): mistakes are likely even after the neural network. Take a larger screenshot: zoom the page or window in first.'**
+  String tinyTextLarger(String px);
 
   /// No description provided for @chatTitle.
   ///
