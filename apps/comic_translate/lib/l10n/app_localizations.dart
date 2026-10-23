@@ -3473,7 +3473,7 @@ abstract class AppLocalizations {
   /// No description provided for @checkLinesInfo.
   ///
   /// In en, this message translates to:
-  /// **'Comics only. On dense text (a wall of text, text over a drawing, a screenshot of prose) the program sometimes takes several lines for one and reads only a word or two. A quick check finds such blocks, and the \"Text line finder (PP-OCR)\" network finds their lines again: about 1–7 s on a page where it is needed. Ordinary bubbles are not changed.'**
+  /// **'Comics only. On dense text (a wall of text, text over a drawing, a screenshot of prose) the program sometimes takes several lines for one and reads only a word or two. A quick check finds such blocks, and the \"Text line finder (PP-OCR)\" network finds their lines again: about 1–7 s on a page where it is needed. Ordinary bubbles are not changed, nor are Japanese vertical columns. Usually keep it on. Turn it off if some page reads worse with the check than without it (compare \"Recognize\" with and without it, and tell the author), or if the pages are ordinary comics without dense text and every second counts.'**
   String get checkLinesInfo;
 
   /// No description provided for @contentSwitchedHint.

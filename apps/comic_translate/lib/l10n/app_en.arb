@@ -1309,7 +1309,7 @@
   "splitGluedWords": "Split glued English words after recognition",
   "splitGluedWordsInfo": "On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.",
   "checkLines": "Check the lines of text before recognition",
-  "checkLinesInfo": "Comics only. On dense text (a wall of text, text over a drawing, a screenshot of prose) the program sometimes takes several lines for one and reads only a word or two. A quick check finds such blocks, and the \"Text line finder (PP-OCR)\" network finds their lines again: about 1–7 s on a page where it is needed. Ordinary bubbles are not changed.",
+  "checkLinesInfo": "Comics only. On dense text (a wall of text, text over a drawing, a screenshot of prose) the program sometimes takes several lines for one and reads only a word or two. A quick check finds such blocks, and the \"Text line finder (PP-OCR)\" network finds their lines again: about 1–7 s on a page where it is needed. Ordinary bubbles are not changed, nor are Japanese vertical columns. Usually keep it on. Turn it off if some page reads worse with the check than without it (compare \"Recognize\" with and without it, and tell the author), or if the pages are ordinary comics without dense text and every second counts.",
   "contentSwitchedHint": "The boxes on this page were found in the previous mode. The new mode applies when the text is found again.",
   "findTextAgain": "Find text again",
   "modelLines": "Text line finder (PP-OCR)",
