@@ -86,6 +86,16 @@ String formatFactor(BuildContext context, double f) {
   return pointLanguages.contains(Localizations.localeOf(context).languageCode) ? text : text.replaceAll('.', ',');
 }
 
+/// How long a step took: `0,4 с`, `12 с`, `1 мин 05 с`.
+String formatStepTime(BuildContext context, int ms) {
+  final l = context.l10n;
+  // Under a tenth of a second still shows as 0,1 s, not 0.
+  if (ms < 9950) return l.secondsShort(formatFactor(context, (ms < 100 ? 100 : ms) / 1000));
+  final s = (ms / 1000).round();
+  if (s < 60) return l.secondsShort('$s');
+  return l.minutesSeconds('${s ~/ 60}', '${s % 60}'.padLeft(2, '0'));
+}
+
 IconData privacyIcon(Privacy p) => switch (p) {
   Privacy.local => Icons.computer,
   Privacy.lan => Icons.lan_outlined,

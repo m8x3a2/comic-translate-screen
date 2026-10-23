@@ -65,6 +65,7 @@ class BatchReport {
     required this.duration,
     this.exportDirs = const [],
     this.stoppedBy,
+    this.stageMs = const {},
   });
 
   final int total;
@@ -78,6 +79,10 @@ class BatchReport {
 
   /// Why the run stopped before the end on its own (translator errors).
   final SkipReason? stoppedBy;
+
+  /// Time of each stage (`01_detect` … `06_render`), all translated pages
+  /// together, in milliseconds.
+  final Map<String, int> stageMs;
 }
 
 sealed class BatchState {
@@ -216,6 +221,8 @@ class BatchNotifier extends Notifier<BatchState> {
     state = BatchRunning(total: todo.length, done: 0, started: started, stage: 'loading');
 
     var done = 0;
+    // Time of each stage, all finished pages together (for the report).
+    final stageMs = <String, int>{};
     var failuresInARow = 0;
     SkipReason? stoppedBy;
     final skipped = <SkippedPage>[];
@@ -349,6 +356,9 @@ class BatchNotifier extends Notifier<BatchState> {
             ),
             byHand: false,
           );
+          for (final e in {...cleaned.timingsMs, '06_render': renderMs}.entries) {
+            stageMs[e.key] = (stageMs[e.key] ?? 0) + e.value;
+          }
           done++;
           failuresInARow = 0;
           if (settings.export.anyAutomatic) {
@@ -404,6 +414,7 @@ class BatchNotifier extends Notifier<BatchState> {
           duration: DateTime.now().difference(started),
           exportDirs: exportDirs.toList(),
           stoppedBy: stoppedBy,
+          stageMs: stageMs,
         );
         log.info('batch_end', {'done': done, 'skipped': skipped.length, 'cancelled': cancelled});
         state = BatchIdle(report);

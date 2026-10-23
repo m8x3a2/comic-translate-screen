@@ -172,6 +172,26 @@ class DialogBatchUi implements BatchUi {
   }
 }
 
+/// The average time of each stage on [pages] pages, by the names of the step
+/// buttons: «Найти текст 1,2 с · Распознать 15 с · … · всего 22 с».
+String stageTimesLine(BuildContext context, Map<String, int> stageMs, int pages) {
+  final l = context.l10n;
+  final names = {
+    '01_detect': l.stepDetect,
+    '02_ocr': l.stepRecognize,
+    '03_translate': l.stepTranslate,
+    '04_mask': l.stepMask,
+    '05_inpaint': l.stepClean,
+    '06_render': l.stageRender,
+  };
+  final each = [
+    for (final e in names.entries)
+      if (stageMs[e.key] case final ms?) '${e.value} ${formatStepTime(context, ms ~/ pages)}',
+  ];
+  final total = stageMs.values.fold(0, (a, b) => a + b) ~/ pages;
+  return '${each.join(' · ')} · ${l.reportTotalPerPage(formatStepTime(context, total))}';
+}
+
 Future<void> showBatchReport(BuildContext context, BatchReport report) =>
     showDialog<void>(context: context, builder: (c) => _ReportDialog(report));
 
@@ -193,6 +213,12 @@ class _ReportDialog extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(l.reportSummary('${report.done}', '${report.total}', formatDuration(report.duration))),
+            if (report.done > 0 && report.stageMs.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(l.reportStepTimes, style: theme.textTheme.titleSmall),
+              const SizedBox(height: 2),
+              Text(stageTimesLine(context, report.stageMs, report.done)),
+            ],
             if (report.stoppedBy case final reason?)
               Padding(
                 padding: const EdgeInsets.only(top: 8),

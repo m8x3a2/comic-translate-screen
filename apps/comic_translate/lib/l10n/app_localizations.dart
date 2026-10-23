@@ -452,6 +452,72 @@ abstract class AppLocalizations {
   /// **'Stopped before the end'**
   String get reportCancelled;
 
+  /// No description provided for @reportTotalPerPage.
+  ///
+  /// In en, this message translates to:
+  /// **'total {time}'**
+  String reportTotalPerPage(String time);
+
+  /// No description provided for @secondsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} s'**
+  String secondsShort(String value);
+
+  /// No description provided for @minutesSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min {seconds} s'**
+  String minutesSeconds(String minutes, String seconds);
+
+  /// No description provided for @stepDoneDetect.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles found: {count}'**
+  String stepDoneDetect(String count);
+
+  /// No description provided for @stepDoneRecognize.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles read: {count}'**
+  String stepDoneRecognize(String count);
+
+  /// No description provided for @stepDoneTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles translated: {count}'**
+  String stepDoneTranslate(String count);
+
+  /// No description provided for @stepDoneMask.
+  ///
+  /// In en, this message translates to:
+  /// **'Mask ready'**
+  String get stepDoneMask;
+
+  /// No description provided for @stepDoneClean.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning done'**
+  String get stepDoneClean;
+
+  /// No description provided for @stepDoneTime.
+  ///
+  /// In en, this message translates to:
+  /// **'{what} in {time}'**
+  String stepDoneTime(String what, String time);
+
+  /// No description provided for @stepDonePages.
+  ///
+  /// In en, this message translates to:
+  /// **'{pages} pages, {time} per page on average'**
+  String stepDonePages(String pages, String time);
+
+  /// No description provided for @reportStepTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Time of the steps, per page on average:'**
+  String get reportStepTimes;
+
   /// No description provided for @reportSkipped.
   ///
   /// In en, this message translates to:

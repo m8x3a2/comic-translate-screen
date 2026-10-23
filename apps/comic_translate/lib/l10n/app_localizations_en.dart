@@ -210,6 +210,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportCancelled => 'Stopped before the end';
 
   @override
+  String reportTotalPerPage(String time) {
+    return 'total $time';
+  }
+
+  @override
+  String secondsShort(String value) {
+    return '$value s';
+  }
+
+  @override
+  String minutesSeconds(String minutes, String seconds) {
+    return '$minutes min $seconds s';
+  }
+
+  @override
+  String stepDoneDetect(String count) {
+    return 'Bubbles found: $count';
+  }
+
+  @override
+  String stepDoneRecognize(String count) {
+    return 'Bubbles read: $count';
+  }
+
+  @override
+  String stepDoneTranslate(String count) {
+    return 'Bubbles translated: $count';
+  }
+
+  @override
+  String get stepDoneMask => 'Mask ready';
+
+  @override
+  String get stepDoneClean => 'Cleaning done';
+
+  @override
+  String stepDoneTime(String what, String time) {
+    return '$what in $time';
+  }
+
+  @override
+  String stepDonePages(String pages, String time) {
+    return '$pages pages, $time per page on average';
+  }
+
+  @override
+  String get reportStepTimes => 'Time of the steps, per page on average:';
+
+  @override
   String get reportSkipped => 'Skipped pages';
 
   @override

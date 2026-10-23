@@ -144,6 +144,82 @@
     }
   },
   "reportCancelled": "Stopped before the end",
+  "reportTotalPerPage": "total {time}",
+  "@reportTotalPerPage": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "secondsShort": "{value} s",
+  "@secondsShort": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "minutesSeconds": "{minutes} min {seconds} s",
+  "@minutesSeconds": {
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "stepDoneDetect": "Bubbles found: {count}",
+  "@stepDoneDetect": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "stepDoneRecognize": "Bubbles read: {count}",
+  "@stepDoneRecognize": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "stepDoneTranslate": "Bubbles translated: {count}",
+  "@stepDoneTranslate": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "stepDoneMask": "Mask ready",
+  "stepDoneClean": "Cleaning done",
+  "stepDoneTime": "{what} in {time}",
+  "@stepDoneTime": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "stepDonePages": "{pages} pages, {time} per page on average",
+  "@stepDonePages": {
+    "placeholders": {
+      "pages": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "reportStepTimes": "Time of the steps, per page on average:",
   "reportSkipped": "Skipped pages",
   "reportExported": "Text and cleaned pages were saved to {path}",
   "@reportExported": {

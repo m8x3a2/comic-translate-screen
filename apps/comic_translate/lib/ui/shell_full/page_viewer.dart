@@ -9,6 +9,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../state/app_state.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
@@ -490,7 +491,8 @@ class _StepStrip extends ConsumerWidget {
             ),
           );
         }
-        return Padding(
+        final last = steps.running ? null : steps.last;
+        final strip = Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
           child: Row(
             children: [
@@ -518,7 +520,68 @@ class _StepStrip extends ConsumerWidget {
             ],
           ),
         );
+        if (last == null) return strip;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            strip,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Row(
+                children: [
+                  Icon(Icons.timer_outlined, size: 16, color: Theme.of(context).hintColor),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      stepResultLine(context, last),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
       },
     );
   }
+}
+
+/// The name of a step on its button.
+String stepLabel(AppLocalizations l, ManualStep s) => switch (s) {
+  ManualStep.detect => l.stepDetect,
+  ManualStep.recognize => l.stepRecognize,
+  ManualStep.translate => l.stepTranslate,
+  ManualStep.mask => l.stepMask,
+  ManualStep.clean => l.stepClean,
+};
+
+/// What a finished step did and how long it took: «Распознано пузырей: 12 —
+/// за 3,2 с»; on several pages the average per page, and the steps it had
+/// to do first each with its time.
+String stepResultLine(BuildContext context, StepResult r) {
+  final l = context.l10n;
+  final what = switch (r.step) {
+    ManualStep.detect => l.stepDoneDetect('${r.count}'),
+    ManualStep.recognize => l.stepDoneRecognize('${r.count}'),
+    ManualStep.translate => l.stepDoneTranslate('${r.count}'),
+    ManualStep.mask => l.stepDoneMask,
+    ManualStep.clean => l.stepDoneClean,
+  };
+  final parts = [
+    l.stepDoneTime(what, formatStepTime(context, r.totalMs)),
+    if (r.pages > 1) l.stepDonePages('${r.pages}', formatStepTime(context, r.totalMs ~/ r.pages)),
+  ];
+  var line = parts.join(', ');
+  if (r.ms.length > 1) {
+    final each = [
+      for (final s in ManualStep.values)
+        if (r.ms[s] case final ms?) '${stepLabel(l, s)} ${formatStepTime(context, ms)}',
+    ];
+    line = '$line (${each.join(' · ')})';
+  }
+  return line;
 }

@@ -178,6 +178,10 @@ void main() {
     for (final x in [pages.first, pages.last]) {
       expect(container.read(workspaceProvider).history[x.id]!.undo, hasLength(1));
     }
+    // The time of the run, for the line under the step buttons.
+    final last = container.read(stepsProvider).last!;
+    expect((last.step, last.pages, last.count), (ManualStep.translate, 2, 2));
+    expect(last.ms.keys, containsAll([ManualStep.detect, ManualStep.recognize, ManualStep.translate]));
 
     ws().select(0);
     expect(container.read(workspaceProvider).selectedPages, isEmpty, reason: 'a plain click clears the selection');
@@ -224,6 +228,8 @@ void main() {
     expect(page().cleanPath, isNotNull);
     expect(page().maskPath, isNull);
     expect(page().strokes, isEmpty);
+    expect(container.read(stepsProvider).last?.step, ManualStep.clean);
+    expect(container.read(stepsProvider).last?.ms.keys, [ManualStep.clean], reason: 'the mask was there');
 
     final drawn = await drawMissingPages(container.read, [page().id]);
     expect(File(drawn.single.translatedPath!).existsSync(), isTrue);
@@ -236,6 +242,8 @@ void main() {
     await batch.run(ui);
     expect(page().isDone, isTrue);
     expect(page().handEdited, isFalse, reason: 'translated by the program');
+    final report = (container.read(batchProvider) as BatchIdle).last!;
+    expect(report.stageMs.keys, ['01_detect', '02_ocr', '03_translate', '04_mask', '05_inpaint', '06_render']);
     expect(ui.handEditedAsked, 0);
 
     ws().editBlock(page().id, 0, (b) => b.translation = 'Моё');

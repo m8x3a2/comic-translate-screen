@@ -211,6 +211,55 @@ class AppLocalizationsRu extends AppLocalizations {
   String get reportCancelled => 'Остановлено до конца';
 
   @override
+  String reportTotalPerPage(String time) {
+    return 'всего $time';
+  }
+
+  @override
+  String secondsShort(String value) {
+    return '$value с';
+  }
+
+  @override
+  String minutesSeconds(String minutes, String seconds) {
+    return '$minutes мин $seconds с';
+  }
+
+  @override
+  String stepDoneDetect(String count) {
+    return 'Найдено пузырей: $count';
+  }
+
+  @override
+  String stepDoneRecognize(String count) {
+    return 'Распознано пузырей: $count';
+  }
+
+  @override
+  String stepDoneTranslate(String count) {
+    return 'Переведено пузырей: $count';
+  }
+
+  @override
+  String get stepDoneMask => 'Маска готова';
+
+  @override
+  String get stepDoneClean => 'Очистка готова';
+
+  @override
+  String stepDoneTime(String what, String time) {
+    return '$what — за $time';
+  }
+
+  @override
+  String stepDonePages(String pages, String time) {
+    return '$pages стр., в среднем $time на страницу';
+  }
+
+  @override
+  String get reportStepTimes => 'Время шагов, в среднем на страницу:';
+
+  @override
   String get reportSkipped => 'Пропущенные страницы';
 
   @override

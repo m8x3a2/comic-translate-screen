@@ -28,8 +28,27 @@ import 'workspace.dart';
 
 enum ManualStep { detect, recognize, translate, mask, clean }
 
+/// How long a finished run of a step took, for the line under the step buttons.
+class StepResult {
+  const StepResult({required this.step, required this.pages, required this.count, required this.ms});
+
+  /// The step asked for (the steps before it it had to do are in [ms] too).
+  final ManualStep step;
+
+  /// Pages it ran on.
+  final int pages;
+
+  /// Blocks found, read or translated by [step] (all pages together).
+  final int count;
+
+  /// Time of each step that ran, all pages together (milliseconds).
+  final Map<ManualStep, int> ms;
+
+  int get totalMs => ms.values.fold(0, (a, b) => a + b);
+}
+
 class StepState {
-  const StepState({this.pageId, this.step, this.stage, this.download, this.page = 1, this.pages = 1});
+  const StepState({this.pageId, this.step, this.stage, this.download, this.page = 1, this.pages = 1, this.last});
 
   /// The page the step works on.
   final String? pageId;
@@ -44,6 +63,10 @@ class StepState {
 
   /// Model download progress 0…1.
   final double? download;
+
+  /// The run that finished last (null while a step runs, after a failure or
+  /// when stopped).
+  final StepResult? last;
 
   bool get running => step != null;
 
@@ -155,6 +178,12 @@ class StepsNotifier extends Notifier<StepState> {
     final cancel = _cancel = CancelToken();
     state = StepState(pageId: start.id, step: step, stage: 'loading', pages: targets.length);
     final pool = ref.read(workerPoolProvider);
+    // What the run took, for the line under the step buttons (the wait for a
+    // chat's answer is not counted).
+    final times = <ManualStep, int>{};
+    var count = 0;
+    final timedPages = <String>{};
+    StepResult? result;
     PipelineWorker? worker;
     try {
       final ready = await ensureModels(
@@ -194,6 +223,13 @@ class StepsNotifier extends Notifier<StepState> {
             void commit(PageEntry Function(PageEntry p) change) =>
                 workspace.edit(id, change, mergeKey: merge, mergeWindow: _stepMergeWindow, byHand: false);
             final seams = await webtoonSeams(ref.read(workspaceProvider), page);
+            final sw = Stopwatch()..start();
+            void timed([int done = 0]) {
+              times[s] = (times[s] ?? 0) + sw.elapsedMilliseconds;
+              if (s == step) count += done;
+              timedPages.add(id);
+            }
+
             switch (s) {
               case ManualStep.detect:
                 final found = await worker.detect(
@@ -204,6 +240,7 @@ class StepsNotifier extends Notifier<StepState> {
                   covered: seams.covered,
                   cancel: cancel,
                 );
+                timed(found.length);
                 commit((p) => p.copyWith(blocks: found));
                 workspace.selectBlock(null);
               case ManualStep.recognize:
@@ -221,6 +258,7 @@ class StepsNotifier extends Notifier<StepState> {
                   below: seams.below,
                   cancel: cancel,
                 );
+                timed(which.length);
                 commit(
                   (p) => p.copyWith(
                     blocks: _replace(
@@ -247,6 +285,7 @@ class StepsNotifier extends Notifier<StepState> {
                   targetLanguage: page.targetOf(settings),
                   cancel: cancel,
                 );
+                timed(which.length);
                 commit(
                   (p) => p.copyWith(
                     blocks: _replace(p.blocks, which, done, (old, b) => old.copy()..translation = b.translation),
@@ -256,6 +295,7 @@ class StepsNotifier extends Notifier<StepState> {
                 final mask = await worker.makeMask(page.name, path: page.path, blocks: page.blocks, below: seams.below);
                 final file = p.join(workspace.pageDir(id).path, 'mask_${_stamp()}.png');
                 await worker.save([MaskOutput(file, mask)]);
+                timed();
                 commit((p) => p.copyWith(maskPath: file));
                 if (step == ManualStep.mask) ref.read(editorProvider.notifier).setTool(EditorTool.brush);
               case ManualStep.clean:
@@ -273,6 +313,7 @@ class StepsNotifier extends Notifier<StepState> {
                 final overflow = cleaned.overflow;
                 final patch = overflow == null ? null : p.join(dir, 'overflow_${_stamp()}.png');
                 await worker.save([ImageOutput(file, cleaned.clean), if (patch != null) PatchOutput(patch, overflow!)]);
+                timed();
                 // A mask within the page leaves what was cleaned below it.
                 final reached = mask.height > cleaned.clean.height;
                 commit(
@@ -327,7 +368,12 @@ class StepsNotifier extends Notifier<StepState> {
             e.key: e.value.skipWhile((s) => !viaChat(s)).where((s) => !viaChat(s)).toList(),
         });
       }
-      log.info('step_done', {'step': step.name, 'pages': targets.length});
+      if (timedPages.isNotEmpty) result = StepResult(step: step, pages: timedPages.length, count: count, ms: times);
+      log.info('step_done', {
+        'step': step.name,
+        'pages': targets.length,
+        'ms': {for (final e in times.entries) e.key.name: e.value},
+      });
     } on CancelledException {
       log.info('step_cancelled', {'step': step.name});
     } catch (e, st) {
@@ -336,7 +382,7 @@ class StepsNotifier extends Notifier<StepState> {
     } finally {
       if (worker != null) pool.release();
       _cancel = null;
-      state = const StepState();
+      state = StepState(last: result);
     }
   }
 
