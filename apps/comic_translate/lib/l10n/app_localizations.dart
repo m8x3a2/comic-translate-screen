@@ -3950,11 +3950,23 @@ abstract class AppLocalizations {
   /// **'Take from the txt files'**
   String get chatFromFiles;
 
-  /// No description provided for @chatFromFilesHelp.
+  /// No description provided for @chatFromFilesInfoTranslate.
   ///
   /// In en, this message translates to:
-  /// **'The answer can be written into ALL.txt or page_NN.txt in the exchange folder (Open the folder).'**
-  String get chatFromFilesHelp;
+  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Translate\" the program writes the original text with its labels into the file beforehand: a template. It waits for the translation: add it to every line and save the file:\n[01-001] Morning, guys {separator} Доброе утро, ребята\nor the translation alone:\n[01-001] Доброе утро, ребята\nLines left as in the template count as not answered. You can also replace the whole file with the chat\'s answer. When the original and the translation go to separate files (ALL_original.txt and ALL_translation.txt), write the translation into the second one.'**
+  String chatFromFilesInfoTranslate(String separator);
+
+  /// No description provided for @chatFromFilesInfoRecognize.
+  ///
+  /// In en, this message translates to:
+  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Recognize\" the file has only the labels. Write the text from the picture after each one (or paste the chat\'s answer) and save the file:\n[01-001] Morning, guys\nEmpty lines count as not answered.'**
+  String get chatFromFilesInfoRecognize;
+
+  /// No description provided for @chatFromFilesInfoBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Recognize and translate\" the file has only the labels. Each needs the text from the picture, \"{separator}\" and the translation (or paste the chat\'s answer); then save the file:\n[01-001] Morning, guys {separator} Доброе утро, ребята\nEmpty lines count as not answered. When the original and the translation go to separate files (ALL_original.txt and ALL_translation.txt), write the text from the picture into the first one and the translation into the second.'**
+  String chatFromFilesInfoBoth(String separator);
 
   /// No description provided for @chatOpenTxt.
   ///

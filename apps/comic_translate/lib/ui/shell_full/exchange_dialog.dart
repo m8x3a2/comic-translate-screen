@@ -19,6 +19,7 @@ import '../../services/file_clipboard.dart';
 import '../../state/app_state.dart';
 import '../../state/exchange.dart';
 import '../../state/workspace.dart';
+import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../settings/settings_screen.dart';
 import 'exchange_gallery.dart';
@@ -754,13 +755,20 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
               runSpacing: 8,
               children: [
                 OutlinedButton.icon(onPressed: _paste, icon: const Icon(Icons.content_paste), label: Text(l.chatPaste)),
-                Tooltip(
-                  message: l.chatFromFilesHelp,
-                  child: OutlinedButton.icon(
-                    onPressed: _export == null ? null : _fromTextFiles,
-                    icon: const Icon(Icons.description_outlined),
-                    label: Text(l.chatFromFiles),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _export == null ? null : _fromTextFiles,
+                      icon: const Icon(Icons.description_outlined),
+                      label: Text(l.chatFromFiles),
+                    ),
+                    InfoHint(switch (_mode) {
+                      ExchangeMode.translate => l.chatFromFilesInfoTranslate(sep),
+                      ExchangeMode.recognize => l.chatFromFilesInfoRecognize,
+                      ExchangeMode.both => l.chatFromFilesInfoBoth(sep),
+                    }),
+                  ],
                 ),
                 OutlinedButton.icon(
                   onPressed: _openTxt,
