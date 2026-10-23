@@ -73,6 +73,20 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
   stored only on this computer and never sent anywhere.
 - Removed: sign-in, accounts, credits, paid cloud OCR, automatic update checks.
 
+## New since stage 1 (stage 2, in progress)
+
+- **Exchange with a chat AI by hand**: crops of the bubbles (or text) go to ChatGPT, Gemini or Claude
+  in your own browser, and their answer is pasted back; the program itself sends nothing.
+- **Offline translation** English ↔ Russian (OPUS-MT, no internet and no keys).
+- **Comics / Sites and games**: screenshots of sites, games and visual novels are read line by line
+  (PP-OCRv5 line detector) instead of bubble by bubble.
+- **Preparing small text for reading**: only the pieces with thin lines are enlarged before OCR —
+  plain ×1.5 / ×2, or neural networks on three levels (waifu2x CUNet, waifu2x Swin-UNet, Fatality
+  Comix by Twittman, CC BY-NC-SA 4.0, the default for comics). Words glued together on tiny text can be
+  split by a dictionary; tiny text gets advice on what to do.
+- Each step shows how long it took, and the report of "Translate all" gives the time of every step.
+- An unexpected error builds a bug report by itself (kept on this computer).
+
 ## Building from source (Windows)
 
 Requirements: Flutter 3.47+ (Dart 3.13+), Visual Studio 2022 Build Tools with the
