@@ -34,6 +34,7 @@ class AppSettings {
     this.fixCyrillicLookalikes = false,
     this.splitGluedWords = false,
     this.checkLines = true,
+    this.textPrepSeconds = 60,
     this.inpaint = const InpaintConfig(),
     this.sourceLanguage = 'English',
     this.targetLanguage = 'Russian',
@@ -115,6 +116,10 @@ class AppSettings {
   /// Lines are checked on these pages: [checkLines] is on and the pages are
   /// comics (the line detector of "Sites and games" finds exact lines).
   bool get checksLines => checkLines && contentKind == ContentKind.comics;
+
+  /// Time a neural text preparation may spend on one page (seconds; 0: no
+  /// limit), see `readingNeuralBudgetMs`. New in this project.
+  int textPrepSeconds;
   InpaintConfig inpaint;
 
   /// Default languages for new pages (canonical English names).
@@ -206,6 +211,7 @@ class AppSettings {
       'fix_cyrillic_lookalikes': fixCyrillicLookalikes,
       'split_glued_words': splitGluedWords,
       'check_lines': checkLines,
+      'text_prep_seconds': textPrepSeconds,
     },
     'inpaint': inpaint.toJson(),
     'languages': {'source': sourceLanguage, 'target': targetLanguage},
@@ -284,6 +290,7 @@ class AppSettings {
       fixCyrillicLookalikes: pick(tools, 'fix_cyrillic_lookalikes', defaults.fixCyrillicLookalikes),
       splitGluedWords: pick(tools, 'split_glued_words', defaults.splitGluedWords),
       checkLines: pick(tools, 'check_lines', defaults.checkLines),
+      textPrepSeconds: pick(tools, 'text_prep_seconds', defaults.textPrepSeconds),
       inpaint: InpaintConfig(
         strategy: HdStrategy.values.firstWhere((s) => s.name == strategyName, orElse: () => HdStrategy.resize),
         resizeLimit: pick<num>(inpaint, 'resize_limit', defaults.inpaint.resizeLimit).toInt(),

@@ -223,6 +223,15 @@ void main() {
     final all = await prepareReading(page, [_withLines(topBox, 16), _withLines(bottomBox, 8)], upscaler: slow);
     expect((all.pieces, all.plainPieces, all.factor), (2, 2, 2.0));
     expect(slow.enlarged, isEmpty);
+
+    // No limit (the setting at 0): the network gets every piece.
+    final unlimited = await prepareReading(
+      page,
+      [_withLines(topBox, 16), _withLines(bottomBox, 8)],
+      upscaler: slow,
+      neuralBudgetMs: 0,
+    );
+    expect((unlimited.pieces, unlimited.plainPieces, slow.enlarged.length), (2, 0, 2));
   });
 
   test('merging overlapping boxes', () {

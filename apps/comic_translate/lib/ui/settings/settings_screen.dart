@@ -598,6 +598,21 @@ class _ToolsSection extends ConsumerWidget {
               ),
               l.textPrepInfo,
             ),
+            if (!const {textPrepOffId, plainX15Id, plainX2Id}.contains(s.activeTextPrep))
+              _Dropdown<int>(
+                label: l.textPrepSeconds,
+                value: s.textPrepSeconds,
+                options: {
+                  30: l.secondsShort('30'),
+                  60: l.textPrepSecondsDefault,
+                  120: l.minutesShort('2'),
+                  300: l.minutesShort('5'),
+                  600: l.minutesShort('10'),
+                  0: l.noTimeLimit,
+                },
+                onChanged: (v) => _change(ref, (s) => s.textPrepSeconds = v),
+                info: l.textPrepSecondsInfo,
+              ),
             _switch(
               l.fixCyrillic,
               s.fixCyrillicLookalikes,

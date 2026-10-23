@@ -29,6 +29,10 @@ class OcrCommand extends CtsCommand {
             'How small text is prepared for reading: text_prep_off, plain_x1_5, plain_x2, waifu2x_cunet, '
             'waifu2x_swin, fatality_comix (default from settings).',
       )
+      ..addOption(
+        'prep-seconds',
+        help: 'Time a neural network may spend preparing small text on one page, 0 for no limit (default from settings: 60).',
+      )
       ..addFlag(
         'upscale',
         help: '--no-upscale: read small text as it is (same as --prep text_prep_off).',
@@ -92,6 +96,9 @@ class OcrCommand extends CtsCommand {
     if (!services.registry.contains(prepId) || services.registry.info(prepId).kind != PluginKind.textPrep) {
       usageException('Unknown text preparation "$prepId".');
     }
+    final prepSeconds = int.tryParse(args.option('prep-seconds') ?? '${settings.textPrepSeconds}');
+    if (prepSeconds == null || prepSeconds < 0)
+      usageException('--prep-seconds takes a number of seconds (0: no limit).');
     final TextUpscaler textPrep;
     LineDetector? lineChecker;
     try {
@@ -143,6 +150,7 @@ class OcrCommand extends CtsCommand {
           context: context,
           upscaler: textPrep,
           lineChecker: lineChecker,
+          neuralBudgetMs: prepSeconds * 1000,
         );
         final linesRedone = blocks.where((b) => b.fixedLines).length - fixedBefore;
         if (settings.fixCyrillicLookalikes) {

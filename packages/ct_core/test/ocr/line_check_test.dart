@@ -44,6 +44,33 @@ TextBlock _block(BBox box, List<BBox> lines, {TextDirection direction = TextDire
 
 final _context = PluginContext(log: EventLog.silent());
 
+/// Reads every block as [text] and counts its calls.
+class _Ocr implements OcrEngine {
+  _Ocr(this.text);
+
+  final String text;
+  var calls = 0;
+
+  @override
+  PluginInfo get info => const PluginInfo(id: 'ocr', displayName: 'ocr', kind: PluginKind.ocr, privacy: Privacy.local);
+
+  @override
+  Future<void> recognize(
+    RgbImage image,
+    List<TextBlock> blocks, {
+    required String sourceLanguage,
+    required PluginContext context,
+  }) async {
+    calls++;
+    for (final b in blocks) {
+      b.text = text;
+    }
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
 void main() {
   test('bands of text across a line', () {
     final two = _page([(20, 40), (50, 70)]);
@@ -125,5 +152,43 @@ void main() {
     );
     expect(merged.lines.length, 2);
     expect(merged.linePx, 25);
+  });
+
+  test('junk in recognized text: symbols and letters of another script', () {
+    expect(junkShare('Hello, world! 10% "yes" — no…', 'en'), 0);
+    expect(looksLikeJunk('Istatde ①11∄¼1∄₿₿71118171¥Ⅱ❻¼¼¼❻Ⅺ7θθ7θ⑩', 'en'), isTrue);
+    expect(junkShare('Привет', 'ru'), 0);
+    expect(junkShare('Привет', 'en'), 1);
+    expect(junkShare('HET, Привет', 'ru'), 0, reason: 'Latin look-alikes are common in Cyrillic OCR');
+    expect(junkShare('こんにちは', 'ja'), 0);
+    expect(looksLikeJunk('√∏', 'en'), isFalse, reason: 'too short to tell');
+  });
+
+  test('a block read as junk is read again with the found lines; a worse reading is not kept', () async {
+    final img = _page([(20, 40), (50, 70)]);
+    final lines = _Lines([const BBox(15, 18, 385, 42), const BBox(15, 48, 385, 72)]);
+    TextBlock junk() =>
+        _block(const BBox(10, 10, 390, 80), [const BBox(10, 15, 390, 45), const BBox(10, 45, 390, 75)])
+          ..text = '①11∄¼1∄₿₿71¥❻¼¼';
+    final ok = _block(const BBox(10, 100, 390, 130), [const BBox(10, 100, 390, 130)])..text = 'FINE TEXT';
+
+    final a = junk();
+    final good = _Ocr('DID SHE ALSO HAPPEN TO--?');
+    expect(await rereadJunk(good, img, [a, ok], lines, _context, sourceLanguage: 'English', languageCode: 'en'), 1);
+    expect((a.text, a.fixedLines, a.lines.length, a.linePx), ('DID SHE ALSO HAPPEN TO--?', true, 2, 25));
+    expect(ok.text, 'FINE TEXT');
+
+    final b = junk();
+    expect(
+      await rereadJunk(_Ocr('√∏√∏√∏√∏√∏√∏'), img, [b], lines, _context, sourceLanguage: 'English', languageCode: 'en'),
+      0,
+    );
+    expect((b.text, b.fixedLines), ('①11∄¼1∄₿₿71¥❻¼¼', false));
+
+    // Nothing looks like junk: neither the line detector nor the OCR runs.
+    final quiet = _Lines(const []);
+    final idle = _Ocr('x');
+    expect(await rereadJunk(idle, img, [ok], quiet, _context, sourceLanguage: 'English', languageCode: 'en'), 0);
+    expect((quiet.calls, idle.calls), (0, 0));
   });
 }

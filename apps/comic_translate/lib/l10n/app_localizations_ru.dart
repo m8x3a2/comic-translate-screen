@@ -1999,6 +1999,24 @@ class AppLocalizationsRu extends AppLocalizations {
   String get findTextAgain => 'Найти текст заново';
 
   @override
+  String get textPrepSeconds => 'Время нейросети на страницу';
+
+  @override
+  String get textPrepSecondsDefault => '1 мин (по умолчанию)';
+
+  @override
+  String minutesShort(String value) {
+    return '$value мин';
+  }
+
+  @override
+  String get noTimeLimit => 'Без ограничения';
+
+  @override
+  String get textPrepSecondsInfo =>
+      'Сколько нейросеть может увеличивать мелкий текст на одной странице. Сначала она берёт самый мелкий текст; что не успела — увеличивается обычным способом: мгновенно, качество чуть ниже. На слабом ноутбуке «Высокий» тратит около 4 минут на миллион точек: скрин манги — 20–60 с, страница, сплошь покрытая мелким текстом, — 10 минут и больше. Если качество важнее времени (например, отходите попить чай) — поставьте больше или «Без ограничения». На видеокарте нейросеть успевает больше за то же время.';
+
+  @override
   String get modelLines => 'Поиск строк текста (PP-OCR)';
 
   @override

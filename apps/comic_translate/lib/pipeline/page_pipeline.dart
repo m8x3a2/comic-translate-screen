@@ -616,6 +616,7 @@ Future<void> recognizeBlocks(
     context: context,
     upscaler: textPrep,
     lineChecker: lineChecker,
+    neuralBudgetMs: settings.textPrepSeconds * 1000,
   );
   if (settings.fixCyrillicLookalikes) {
     // "Auto": each block has the language of its script.

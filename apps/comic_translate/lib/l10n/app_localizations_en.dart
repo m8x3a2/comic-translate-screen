@@ -1997,6 +1997,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get findTextAgain => 'Find text again';
 
   @override
+  String get textPrepSeconds => 'Network time per page';
+
+  @override
+  String get textPrepSecondsDefault => '1 min (default)';
+
+  @override
+  String minutesShort(String value) {
+    return '$value min';
+  }
+
+  @override
+  String get noTimeLimit => 'No limit';
+
+  @override
+  String get textPrepSecondsInfo =>
+      'How long the network may enlarge small text on one page. It takes the smallest text first; what it has no time for is enlarged the plain way: at once, slightly lower quality. On a weak laptop \"High\" takes about 4 minutes per million pixels: a manga screenshot 20–60 s, a page covered in small text 10 minutes or more. When quality matters more than time (say, you go for a cup of tea), choose more or \"No limit\". On a graphics card the network does more in the same time.';
+
+  @override
   String get modelLines => 'Text line finder (PP-OCR)';
 
   @override

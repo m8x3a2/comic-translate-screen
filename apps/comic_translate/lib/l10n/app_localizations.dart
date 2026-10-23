@@ -3488,6 +3488,36 @@ abstract class AppLocalizations {
   /// **'Find text again'**
   String get findTextAgain;
 
+  /// No description provided for @textPrepSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'Network time per page'**
+  String get textPrepSeconds;
+
+  /// No description provided for @textPrepSecondsDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'1 min (default)'**
+  String get textPrepSecondsDefault;
+
+  /// No description provided for @minutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} min'**
+  String minutesShort(String value);
+
+  /// No description provided for @noTimeLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get noTimeLimit;
+
+  /// No description provided for @textPrepSecondsInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'How long the network may enlarge small text on one page. It takes the smallest text first; what it has no time for is enlarged the plain way: at once, slightly lower quality. On a weak laptop \"High\" takes about 4 minutes per million pixels: a manga screenshot 20–60 s, a page covered in small text 10 minutes or more. When quality matters more than time (say, you go for a cup of tea), choose more or \"No limit\". On a graphics card the network does more in the same time.'**
+  String get textPrepSecondsInfo;
+
   /// No description provided for @modelLines.
   ///
   /// In en, this message translates to:

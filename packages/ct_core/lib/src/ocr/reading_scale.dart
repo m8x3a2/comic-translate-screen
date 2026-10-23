@@ -45,8 +45,9 @@ const readingPieceMargin = 8;
 /// page (webtoon) are spread over several canvases.
 const readingMaxPixels = 16000000;
 
-/// Time a neural network may spend on the pieces of one page (ms, by its
-/// estimate corrected with the speed it shows). Pieces with the smallest
+/// Time a neural network may spend on the pieces of one page by default
+/// (ms, by its estimate corrected with the speed it shows; the setting
+/// `tools.text_prep_seconds`). Pieces with the smallest
 /// text go first; the rest are enlarged plainly (Lanczos, same factor).
 /// "High" takes about 250 s per million pixels on a laptop processor: a
 /// page full of text took over ten minutes before.
@@ -156,13 +157,15 @@ class _Saved {
 /// on the page as it is: otherwise their text size would be unknown and they
 /// would be read as one line. With [lineChecker] the heuristic lines are
 /// then checked (see `line_check.dart`), before the text size is taken from
-/// them.
+/// them. A neural [upscaler] keeps to [neuralBudgetMs] a page (0 or less:
+/// no limit).
 Future<ReadingPage> prepareReading(
   RgbImage image,
   List<TextBlock> blocks, {
   String sourceLanguageCode = '',
   TextUpscaler? upscaler,
   LineDetector? lineChecker,
+  int neuralBudgetMs = readingNeuralBudgetMs,
   PluginContext? context,
 }) async {
   final bare = [
@@ -210,7 +213,7 @@ Future<ReadingPage> prepareReading(
   final saved = <TextBlock, _Saved>{};
   final canvases = <ReadingCanvas>[];
   final placed = <TextBlock>{};
-  final budget = _Budget(upscaler!, pieces, small);
+  final budget = _Budget(upscaler!, pieces, small, neuralBudgetMs);
   final plain = PlainTextUpscaler(plainX2Info, f);
   var plainPieces = 0;
   try {
@@ -286,11 +289,11 @@ Future<ReadingPage> prepareReading(
 }
 
 /// Which pieces the neural network enlarges ([neural]): those with the
-/// smallest text first, while their estimated time fits in
-/// [readingNeuralBudgetMs]. Planned again after every piece, with the speed
-/// it showed.
+/// smallest text first, while their estimated time fits in [budgetMs] (all
+/// of them when it is 0 or less). Planned again after every piece, with the
+/// speed it showed.
 class _Budget {
-  _Budget(this.upscaler, this.pieces, List<TextBlock> small) {
+  _Budget(this.upscaler, this.pieces, List<TextBlock> small, this.budgetMs) {
     double need(BBox r) {
       final inside = [
         for (final b in small)
@@ -307,6 +310,7 @@ class _Budget {
 
   final TextUpscaler upscaler;
   final List<BBox> pieces;
+  final int budgetMs;
   late final List<int> order;
   late Set<int> neural;
   final _done = <int>{};
@@ -319,7 +323,7 @@ class _Budget {
   double _estimate(int i) => upscaler.estimateMs(pieces[i].width, pieces[i].height);
 
   Set<int> _plan() {
-    final left = readingNeuralBudgetMs - spentMs;
+    final left = budgetMs <= 0 ? double.infinity : budgetMs - spentMs;
     var sum = 0.0;
     final out = <int>{};
     for (final i in order) {
@@ -352,6 +356,7 @@ Future<ReadingPage> readBlocks(
   required PluginContext context,
   TextUpscaler? upscaler,
   LineDetector? lineChecker,
+  int neuralBudgetMs = readingNeuralBudgetMs,
 }) async {
   final sw = Stopwatch()..start();
   final reading = await prepareReading(
@@ -360,6 +365,7 @@ Future<ReadingPage> readBlocks(
     sourceLanguageCode: Languages.byName(sourceLanguage)?.code ?? '',
     upscaler: upscaler,
     lineChecker: lineChecker,
+    neuralBudgetMs: neuralBudgetMs,
     context: context,
   );
   if (reading.scaled) {
@@ -383,6 +389,17 @@ Future<ReadingPage> readBlocks(
     }
   } finally {
     reading.restore();
+  }
+  if (lineChecker != null) {
+    await rereadJunk(
+      ocr,
+      image,
+      blocks,
+      lineChecker,
+      context,
+      sourceLanguage: sourceLanguage,
+      languageCode: Languages.byName(sourceLanguage)?.code ?? '',
+    );
   }
   return reading;
 }

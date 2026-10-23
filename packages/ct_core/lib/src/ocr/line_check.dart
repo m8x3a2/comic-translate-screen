@@ -18,6 +18,7 @@ import 'dart:typed_data';
 import '../image/raster.dart';
 import '../imaging/mahotas.dart';
 import '../imaging/py_compat.dart';
+import '../detection/ppocr_det.dart';
 import '../model/geometry.dart';
 import '../model/text_block.dart';
 import '../models/model_manager.dart';
@@ -26,6 +27,8 @@ import '../plugins/plugin.dart';
 import '../plugins/registry.dart';
 import '../plugins/settings_schema.dart';
 import '../settings/app_settings.dart';
+import 'reading_scale.dart';
+import 'script_fix.dart';
 
 /// Rows with less ink than this share of the fullest one separate two bands
 /// of text.
@@ -102,6 +105,38 @@ String? doubtfulLines(RgbImage image, TextBlock block, String languageCode) {
   return null;
 }
 
+/// Margin around a block cut out for the line detector (page pixels).
+const lineCropMargin = 16;
+
+/// Lines [detector] finds around [boxes] of [image] (page pixels): on
+/// pieces cut around the boxes when the detector has less to look at that
+/// way, else on the whole page (a large page with a doubtful bubble or two
+/// took 5–7 s).
+Future<List<BBox>> findLinesAround(
+  RgbImage image,
+  List<BBox> boxes,
+  LineDetector detector,
+  PluginContext context,
+) async {
+  final crops = mergeOverlapping([
+    for (final b in boxes) b.inflate(lineCropMargin, lineCropMargin).clampTo(image.width, image.height),
+  ]).where((c) => !c.isEmpty).toList();
+  int cost(int w, int h) {
+    final (dw, dh) = detInputSize(w, h);
+    return dw * dh;
+  }
+
+  final cropCost = crops.fold(0, (n, c) => n + cost(c.width, c.height));
+  // A tall narrow piece (a column of text) would be read in slices, whose
+  // seams break lines: the page is read whole then.
+  final tall = crops.any((c) => c.height > 3 * c.width);
+  if (crops.isEmpty || tall || cropCost >= cost(image.width, image.height)) return detector.findLines(image, context);
+  return [
+    for (final c in crops)
+      for (final l in await detector.findLines(image.crop(c), context)) l.translate(c.x1, c.y1),
+  ];
+}
+
 /// [lines] given to the smallest block of [blocks] their centre falls in
 /// (with a 4 px margin), clipped to it.
 List<List<BBox>> assignLines(List<TextBlock> blocks, List<BBox> lines) {
@@ -148,6 +183,92 @@ void useFoundLines(TextBlock block, List<BBox> found) {
   block.fixedLines = true;
 }
 
+// The safety net: text that came out as junk is read again.
+
+final _latin = RegExp(r'\p{Script=Latin}', unicode: true);
+// Cyrillic text: Latin letters too, the recognizers mix in look-alikes ("HET").
+final _cyrillic = RegExp(r'[\p{Script=Cyrillic}\p{Script=Latin}]', unicode: true);
+final _letter = RegExp(r'\p{L}', unicode: true);
+final _digit = RegExp(r'\p{Nd}', unicode: true);
+final _space = RegExp(r'\s', unicode: true);
+const _punctuation = '!"#\$%&\'()*+,-./:;<=>?@[\\]^_`{|}~«»“”„‘’…—–•';
+
+/// Share of the characters of [text] (spaces aside) that cannot be text in
+/// the source language [languageCode]: symbols (①, √, ∏, ₿, ¼) and letters
+/// of another script (Greek θ in English). Digits and ordinary punctuation
+/// are fine; with no language, or Japanese, Chinese or Korean, any letter.
+double junkShare(String text, String languageCode) {
+  final code = languageCode.toLowerCase();
+  final RegExp? script = cyrillicLanguageCodes.contains(code)
+      ? _cyrillic
+      : code.isEmpty || const {'ja', 'zh', 'zh-cn', 'zh-tw', 'ko', 'th'}.contains(code)
+      ? null
+      : _latin;
+  var all = 0, junk = 0;
+  for (final r in text.runes) {
+    final c = String.fromCharCode(r);
+    if (_space.hasMatch(c)) continue;
+    all++;
+    final ok =
+        _digit.hasMatch(c) ||
+        _punctuation.contains(c) ||
+        (_letter.hasMatch(c) && (script == null || script.hasMatch(c)));
+    if (!ok) junk++;
+  }
+  return all == 0 ? 0 : junk / all;
+}
+
+/// The recognized [text] is mostly junk: at least six characters, a fifth of
+/// them junk (see [junkShare]).
+bool looksLikeJunk(String text, String languageCode) =>
+    text.replaceAll(_space, '').length >= 6 && junkShare(text, languageCode) >= 0.2;
+
+/// Blocks of [blocks] read as junk (see [looksLikeJunk]) get the lines
+/// [detector] finds and are read again with [ocr] on [image]; the new
+/// reading stays when it holds less junk. Catches what [checkBlockLines]
+/// let through. Returns how many blocks got a better reading.
+Future<int> rereadJunk(
+  OcrEngine ocr,
+  RgbImage image,
+  List<TextBlock> blocks,
+  LineDetector detector,
+  PluginContext context, {
+  required String sourceLanguage,
+  String languageCode = '',
+}) async {
+  final junk = [
+    for (final b in blocks)
+      if (!b.fixedLines && looksLikeJunk(b.text, languageCode)) b,
+  ];
+  if (junk.isEmpty) return 0;
+  final sw = Stopwatch()..start();
+  await context.cancel.checkpoint();
+  final found = assignLines(junk, await findLinesAround(image, [for (final b in junk) b.xyxy], detector, context));
+  final again = <TextBlock, TextBlock>{};
+  for (final (i, b) in junk.indexed) {
+    if (found[i].isEmpty) continue;
+    final c = again[b] = b.copy();
+    useFoundLines(c, found[i]);
+  }
+  if (again.isEmpty) return 0;
+  await context.cancel.checkpoint();
+  await ocr.recognize(image, again.values.toList(), sourceLanguage: sourceLanguage, context: context);
+  var better = 0;
+  for (final MapEntry(key: b, value: c) in again.entries) {
+    if (junkShare(c.text, languageCode) >= junkShare(b.text, languageCode)) continue;
+    b
+      ..lines = c.lines
+      ..direction = c.direction
+      ..fixedLines = true
+      ..text = c.text
+      ..texts = c.texts
+      ..linePx = npPercentile(lineThicknesses([c]), 50);
+    better++;
+  }
+  context.log.info('junk_reread', {'blocks': junk.length, 'better': better, 'ms': sw.elapsedMilliseconds});
+  return better;
+}
+
 /// The plugin that checks the lines (`ppocr_lines`).
 const lineCheckerId = 'ppocr_lines';
 
@@ -183,7 +304,10 @@ Future<int> checkBlockLines(
   final doubtful = <int, String>{for (final (i, b) in blocks.indexed) i: ?doubtfulLines(image, b, languageCode)};
   if (doubtful.isEmpty) return 0;
   await context.cancel.checkpoint();
-  final found = assignLines(blocks, await detector.findLines(image, context));
+  final found = assignLines(
+    blocks,
+    await findLinesAround(image, [for (final i in doubtful.keys) blocks[i].xyxy], detector, context),
+  );
   var replaced = 0;
   for (final i in doubtful.keys) {
     if (preferFoundLines(blocks[i], found[i])) {
