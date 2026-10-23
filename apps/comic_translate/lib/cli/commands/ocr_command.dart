@@ -97,8 +97,9 @@ class OcrCommand extends CtsCommand {
       usageException('Unknown text preparation "$prepId".');
     }
     final prepSeconds = int.tryParse(args.option('prep-seconds') ?? '${settings.textPrepSeconds}');
-    if (prepSeconds == null || prepSeconds < 0)
+    if (prepSeconds == null || prepSeconds < 0) {
       usageException('--prep-seconds takes a number of seconds (0: no limit).');
+    }
     final TextUpscaler textPrep;
     LineDetector? lineChecker;
     try {
