@@ -23,6 +23,8 @@ import '../model/language.dart';
 import '../model/text_block.dart';
 import '../plugins/engines.dart';
 import '../plugins/plugin.dart';
+import 'line_check.dart';
+import 'text_prep.dart';
 
 /// Blocks whose lines are thinner than this (median line thickness, page
 /// pixels) are read from an enlarged copy. Thicker text gains little: the
@@ -42,6 +44,13 @@ const readingPieceMargin = 8;
 /// Upper bound for one canvas of enlarged pieces (pixels); pieces of a long
 /// page (webtoon) are spread over several canvases.
 const readingMaxPixels = 16000000;
+
+/// Time a neural network may spend on the pieces of one page (ms, by its
+/// estimate corrected with the speed it shows). Pieces with the smallest
+/// text go first; the rest are enlarged plainly (Lanczos, same factor).
+/// "High" takes about 250 s per million pixels on a laptop processor: a
+/// page full of text took over ten minutes before.
+const readingNeuralBudgetMs = 60000;
 
 /// Thickness of every heuristic line of [blocks].
 List<int> lineThicknesses(List<TextBlock> blocks) => [
@@ -97,7 +106,7 @@ class ReadingCanvas {
 /// A page prepared for reading: the blocks read on the page as it is
 /// ([asIs]) and the canvases of enlarged pieces.
 class ReadingPage {
-  ReadingPage._(this.asIs, this.canvases, this.factor, this._saved);
+  ReadingPage._(this.asIs, this.canvases, this.factor, this._saved, [this.plainPieces = 0]);
 
   final List<TextBlock> asIs;
   final List<ReadingCanvas> canvases;
@@ -110,6 +119,10 @@ class ReadingPage {
 
   /// Enlarged pieces, all canvases together.
   int get pieces => canvases.fold(0, (n, c) => n + c.pieces);
+
+  /// Pieces enlarged plainly instead of by the neural network, to keep the
+  /// page within [readingNeuralBudgetMs].
+  final int plainPieces;
 
   /// Puts the blocks back into page coordinates: boxes and the lines of a
   /// line detector exactly as they were, lines found on a canvas scaled
@@ -141,12 +154,15 @@ class _Saved {
 ///
 /// Blocks without lines (boxes drawn by hand, or resized) are split first,
 /// on the page as it is: otherwise their text size would be unknown and they
-/// would be read as one line.
+/// would be read as one line. With [lineChecker] the heuristic lines are
+/// then checked (see `line_check.dart`), before the text size is taken from
+/// them.
 Future<ReadingPage> prepareReading(
   RgbImage image,
   List<TextBlock> blocks, {
   String sourceLanguageCode = '',
   TextUpscaler? upscaler,
+  LineDetector? lineChecker,
   PluginContext? context,
 }) async {
   final bare = [
@@ -159,6 +175,9 @@ Future<ReadingPage> prepareReading(
     } on Object {
       // The heuristics gave up: those blocks are read whole, as before.
     }
+  }
+  if (lineChecker != null) {
+    await checkBlockLines(image, blocks, lineChecker, context ?? _noContext, languageCode: sourceLanguageCode);
   }
   for (final b in blocks) {
     final t = lineThicknesses([b]);
@@ -191,6 +210,9 @@ Future<ReadingPage> prepareReading(
   final saved = <TextBlock, _Saved>{};
   final canvases = <ReadingCanvas>[];
   final placed = <TextBlock>{};
+  final budget = _Budget(upscaler!, pieces, small);
+  final plain = PlainTextUpscaler(plainX2Info, f);
+  var plainPieces = 0;
   try {
     for (final group in groups) {
       final region = group.reduce((a, b) => a.union(b));
@@ -204,7 +226,16 @@ Future<ReadingPage> prepareReading(
         if (x2 <= x1 || y2 <= y1) continue;
         // The work runs in the background isolate: a cancel gets in here.
         await context?.cancel.checkpoint();
-        final piece = await upscaler!.enlarge(image.crop(r), x2 - x1, y2 - y1, context ?? _noContext);
+        final k = pieces.indexOf(r);
+        final RgbImage piece;
+        if (budget.neural.contains(k)) {
+          final sw = Stopwatch()..start();
+          piece = await upscaler.enlarge(image.crop(r), x2 - x1, y2 - y1, context ?? _noContext);
+          budget.record(k, sw.elapsedMilliseconds);
+        } else {
+          piece = await plain.enlarge(image.crop(r), x2 - x1, y2 - y1, context ?? _noContext);
+          plainPieces++;
+        }
         paste(canvas, piece, x1, y1);
       }
       final inside = [
@@ -243,7 +274,71 @@ Future<ReadingPage> prepareReading(
     for (final b in blocks)
       if (!placed.contains(b)) b,
   ];
-  return ReadingPage._(asIs, canvases, f, saved);
+  if (plainPieces > 0) {
+    context?.log.info('text_prep_budget', {
+      'with': upscaler.info.id,
+      'neural': pieces.length - plainPieces,
+      'plain': plainPieces,
+      'neural_ms': budget.spentMs.round(),
+    });
+  }
+  return ReadingPage._(asIs, canvases, f, saved, plainPieces);
+}
+
+/// Which pieces the neural network enlarges ([neural]): those with the
+/// smallest text first, while their estimated time fits in
+/// [readingNeuralBudgetMs]. Planned again after every piece, with the speed
+/// it showed.
+class _Budget {
+  _Budget(this.upscaler, this.pieces, List<TextBlock> small) {
+    double need(BBox r) {
+      final inside = [
+        for (final b in small)
+          if (r.containsBox(b.xyxy)) b.linePx ?? readingUnsureLinePx,
+      ];
+      return inside.isEmpty ? readingUnsureLinePx : inside.reduce(math.min);
+    }
+
+    final needs = [for (final r in pieces) need(r)];
+    order = [for (var i = 0; i < pieces.length; i++) i]
+      ..sort((a, b) => needs[a] != needs[b] ? needs[a].compareTo(needs[b]) : pieces[a].area.compareTo(pieces[b].area));
+    neural = _plan();
+  }
+
+  final TextUpscaler upscaler;
+  final List<BBox> pieces;
+  late final List<int> order;
+  late Set<int> neural;
+  final _done = <int>{};
+  var spentMs = 0.0;
+  var _estimatedDone = 0.0;
+
+  /// Real time against the estimate (1 until a piece is done).
+  double get _speed => _estimatedDone > 0 ? spentMs / _estimatedDone : 1.0;
+
+  double _estimate(int i) => upscaler.estimateMs(pieces[i].width, pieces[i].height);
+
+  Set<int> _plan() {
+    final left = readingNeuralBudgetMs - spentMs;
+    var sum = 0.0;
+    final out = <int>{};
+    for (final i in order) {
+      if (_done.contains(i)) continue;
+      final ms = _estimate(i) * _speed;
+      if (sum + ms <= left) {
+        sum += ms;
+        out.add(i);
+      }
+    }
+    return out;
+  }
+
+  void record(int i, int ms) {
+    _done.add(i);
+    spentMs += ms;
+    _estimatedDone += _estimate(i);
+    neural = _plan();
+  }
 }
 
 /// Prepares [image] for reading (see [prepareReading]) and recognizes
@@ -256,6 +351,7 @@ Future<ReadingPage> readBlocks(
   required String sourceLanguage,
   required PluginContext context,
   TextUpscaler? upscaler,
+  LineDetector? lineChecker,
 }) async {
   final sw = Stopwatch()..start();
   final reading = await prepareReading(
@@ -263,6 +359,7 @@ Future<ReadingPage> readBlocks(
     blocks,
     sourceLanguageCode: Languages.byName(sourceLanguage)?.code ?? '',
     upscaler: upscaler,
+    lineChecker: lineChecker,
     context: context,
   );
   if (reading.scaled) {
@@ -270,6 +367,7 @@ Future<ReadingPage> readBlocks(
       'with': upscaler!.info.id,
       'factor': reading.factor,
       'pieces': reading.pieces,
+      if (reading.plainPieces > 0) 'plain': reading.plainPieces,
       'blocks': blocks.length - reading.asIs.length,
       'ms': sw.elapsedMilliseconds,
     });

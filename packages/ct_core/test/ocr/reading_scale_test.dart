@@ -50,6 +50,24 @@ class _Counting extends PlainTextUpscaler {
   }
 }
 
+/// A "neural network" whose every piece is estimated at [estimate] ms and
+/// done at once; remembers the pieces it enlarged.
+class _Estimated extends PlainTextUpscaler {
+  _Estimated(this.estimate) : super(plainX2Info, 2);
+
+  final double estimate;
+  final enlarged = <(int, int)>[];
+
+  @override
+  Future<RgbImage> enlarge(RgbImage piece, int width, int height, PluginContext context) {
+    enlarged.add((piece.width, piece.height));
+    return super.enlarge(piece, width, height, context);
+  }
+
+  @override
+  double estimateMs(int width, int height) => estimate;
+}
+
 final _x2 = PlainTextUpscaler.x2();
 final _context = PluginContext(log: EventLog.silent());
 
@@ -186,6 +204,25 @@ void main() {
     final out = await _x2.enlarge(piece, 20, 12, _context);
     expect((out.width, out.height), (20, 12));
     expect(out.data.take(3), [10, 20, 30]);
+  });
+
+  test('the neural network keeps to its time on a page: smallest text first, the rest plainly', () async {
+    final page = RgbImage.filled(1000, 1400, 255, 255, 255);
+    // The top block has larger text: it goes plainly, the bottom one gets the network.
+    const topBox = BBox(100, 100, 300, 160), bottomBox = BBox(100, 900, 260, 950);
+    final top = _withLines(topBox, 16);
+    final bottom = _withLines(bottomBox, 8);
+    final half = _Estimated(readingNeuralBudgetMs * 0.8);
+    final reading = await prepareReading(page, [top, bottom], upscaler: half);
+    expect(reading.pieces, 2);
+    expect(reading.plainPieces, 1);
+    expect(half.enlarged, [(160 + 16, 50 + 16)]);
+
+    // Every piece estimated over the budget: all plainly, same factor.
+    final slow = _Estimated(readingNeuralBudgetMs * 2.0);
+    final all = await prepareReading(page, [_withLines(topBox, 16), _withLines(bottomBox, 8)], upscaler: slow);
+    expect((all.pieces, all.plainPieces, all.factor), (2, 2, 2.0));
+    expect(slow.enlarged, isEmpty);
   });
 
   test('merging overlapping boxes', () {

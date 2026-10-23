@@ -610,6 +610,8 @@ class _ToolsSection extends ConsumerWidget {
               (v) => _change(ref, (s) => s.splitGluedWords = v),
               info: l.splitGluedWordsInfo,
             ),
+            if (s.contentKind == ContentKind.comics)
+              _switch(l.checkLines, s.checkLines, (v) => _change(ref, (s) => s.checkLines = v), info: l.checkLinesInfo),
           ],
         ),
         pluginWithForm(l.inpainter, PluginKind.inpainter, s.inpainter, (s, v) => s.inpainter = v),

@@ -33,6 +33,7 @@ class AppSettings {
     this.screenTextPrep = 'plain_x1_5',
     this.fixCyrillicLookalikes = false,
     this.splitGluedWords = false,
+    this.checkLines = true,
     this.inpaint = const InpaintConfig(),
     this.sourceLanguage = 'English',
     this.targetLanguage = 'Russian',
@@ -105,6 +106,15 @@ class AppSettings {
   /// ("REALLIFE" → "REAL LIFE", see `glued_words.dart`). Off by default: the
   /// button in the text panel does it on demand. New in this project.
   bool splitGluedWords;
+
+  /// Before OCR, check the lines the heuristics split comic blocks into and
+  /// let the PP-OCR line detector redo the wrong ones (see `line_check.dart`).
+  /// New in this project.
+  bool checkLines;
+
+  /// Lines are checked on these pages: [checkLines] is on and the pages are
+  /// comics (the line detector of "Sites and games" finds exact lines).
+  bool get checksLines => checkLines && contentKind == ContentKind.comics;
   InpaintConfig inpaint;
 
   /// Default languages for new pages (canonical English names).
@@ -195,6 +205,7 @@ class AppSettings {
       'screen_text_prep': screenTextPrep,
       'fix_cyrillic_lookalikes': fixCyrillicLookalikes,
       'split_glued_words': splitGluedWords,
+      'check_lines': checkLines,
     },
     'inpaint': inpaint.toJson(),
     'languages': {'source': sourceLanguage, 'target': targetLanguage},
@@ -272,6 +283,7 @@ class AppSettings {
       screenTextPrep: pick(tools, 'screen_text_prep', oldOff ? textPrepOffId : defaults.screenTextPrep),
       fixCyrillicLookalikes: pick(tools, 'fix_cyrillic_lookalikes', defaults.fixCyrillicLookalikes),
       splitGluedWords: pick(tools, 'split_glued_words', defaults.splitGluedWords),
+      checkLines: pick(tools, 'check_lines', defaults.checkLines),
       inpaint: InpaintConfig(
         strategy: HdStrategy.values.firstWhere((s) => s.name == strategyName, orElse: () => HdStrategy.resize),
         resizeLimit: pick<num>(inpaint, 'resize_limit', defaults.inpaint.resizeLimit).toInt(),

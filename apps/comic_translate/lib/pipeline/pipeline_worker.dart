@@ -660,6 +660,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
           context,
           sourceLanguage: m.source,
           textPrep: await plugins.textPrep,
+          lineChecker: await plugins.lineChecker,
         );
         return blocks;
       case _Op.translate:

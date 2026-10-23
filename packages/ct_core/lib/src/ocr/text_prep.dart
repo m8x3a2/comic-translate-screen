@@ -71,6 +71,9 @@ class PlainTextUpscaler implements TextUpscaler {
       pilResize(piece, width, height, filter: PilFilter.lanczos);
 
   @override
+  double estimateMs(int width, int height) => 0;
+
+  @override
   Future<void> dispose() async {}
 }
 

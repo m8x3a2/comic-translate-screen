@@ -81,6 +81,14 @@ class AppServices {
     return loadTextPrep(registry, prep, config, env);
   }
 
+  /// The line detector that checks comic lines, or null (see
+  /// `loadLineChecker`).
+  Future<LineDetector?> lineChecker(AppSettings settings, {bool? useGpu, EventLog? log}) async {
+    final config = registry.contains(lineCheckerId) ? await pluginConfig(lineCheckerId, settings) : null;
+    final env = PluginEnvironment(models: models, log: log ?? appLog, useGpu: useGpu ?? settings.useGpu);
+    return loadLineChecker(registry, settings, config, env);
+  }
+
   /// [secretStore] defaults to the OS secure storage; tests pass a
   /// [MemorySecretStore]. Extra log sinks are built with the shared
   /// [Redactor] so they mask every registered secret too.

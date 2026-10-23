@@ -71,6 +71,9 @@ class _SlowPrep implements TextUpscaler {
   }
 
   @override
+  double estimateMs(int width, int height) => 0;
+
+  @override
   Future<void> dispose() async {}
 }
 

@@ -1,10 +1,19 @@
 import '../image/raster.dart';
+import '../model/geometry.dart';
 import '../model/text_block.dart';
 import 'plugin.dart';
 
 /// Finds text blocks (and speech bubbles) on a page.
 abstract interface class TextDetector implements Plugin {
   Future<List<TextBlock>> detect(RgbImage image, PluginContext context);
+}
+
+/// A detector that also finds single lines of text (new in this project):
+/// used to check the lines the heuristics split other detectors' blocks
+/// into (see `line_check.dart`).
+abstract interface class LineDetector implements TextDetector {
+  /// Whole lines of text on [image] (image pixels).
+  Future<List<BBox>> findLines(RgbImage image, PluginContext context);
 }
 
 /// Recognizes the text of each block; fills `TextBlock.text` (and `texts`).
@@ -27,6 +36,10 @@ abstract interface class TextUpscaler implements Plugin {
 
   /// [piece] enlarged to [width]×[height] (about [factor] times its size).
   Future<RgbImage> enlarge(RgbImage piece, int width, int height, PluginContext context);
+
+  /// Rough time to enlarge a [width]×[height] piece on the processor (ms);
+  /// 0 for instant ones. Keeps a page within `readingNeuralBudgetMs`.
+  double estimateMs(int width, int height);
 }
 
 class TranslationRequest {
@@ -84,11 +97,11 @@ class InpaintConfig {
   final int cropTriggerSize;
 
   Map<String, Object?> toJson() => {
-        'strategy': strategy.name,
-        'resize_limit': resizeLimit,
-        'crop_margin': cropMargin,
-        'crop_trigger_size': cropTriggerSize,
-      };
+    'strategy': strategy.name,
+    'resize_limit': resizeLimit,
+    'crop_margin': cropMargin,
+    'crop_trigger_size': cropTriggerSize,
+  };
 }
 
 /// Removes masked content (the original text) from an image.

@@ -35,6 +35,13 @@ class OcrCommand extends CtsCommand {
         defaultsTo: null,
       )
       ..addFlag(
+        'check-lines',
+        help:
+            'Check the heuristic lines of comic blocks and let the PP-OCR line detector redo the wrong ones '
+            '(default from settings: on for comics).',
+        defaultsTo: null,
+      )
+      ..addFlag(
         'split-words',
         help: 'Split English words glued together by the OCR (default from settings: off).',
         defaultsTo: null,
@@ -86,11 +93,15 @@ class OcrCommand extends CtsCommand {
       usageException('Unknown text preparation "$prepId".');
     }
     final TextUpscaler textPrep;
+    LineDetector? lineChecker;
     try {
       ocr = await services.plugin<OcrEngine>(args.option('ocr') ?? settings.ocr, settings, useGpu: useGpu, log: log);
       textPrep = await services.textPrep(settings, id: prepId, useGpu: useGpu, log: log);
       if (textPrep.info.id != prepId) {
         ctx.err.writeln('"$prepId" is not downloaded: plain ×2 instead (cts models download).');
+      }
+      if (args.wasParsed('check-lines') ? args.flag('check-lines') : settings.checksLines) {
+        lineChecker = await services.plugin<LineDetector>(lineCheckerId, settings, useGpu: useGpu, log: log);
       }
       if (blocksPath == null) {
         detector = await services.plugin<TextDetector>(
@@ -123,6 +134,7 @@ class OcrCommand extends CtsCommand {
           blocks = await detector!.detect(image, context);
         }
         final detectMs = sw.elapsedMilliseconds;
+        final fixedBefore = blocks.where((b) => b.fixedLines).length;
         final reading = await readBlocks(
           ocr,
           image,
@@ -130,7 +142,9 @@ class OcrCommand extends CtsCommand {
           sourceLanguage: language,
           context: context,
           upscaler: textPrep,
+          lineChecker: lineChecker,
         );
+        final linesRedone = blocks.where((b) => b.fixedLines).length - fixedBefore;
         if (settings.fixCyrillicLookalikes) {
           final code = Languages.byName(language)?.code ?? '';
           for (final b in blocks) {
@@ -156,6 +170,8 @@ class OcrCommand extends CtsCommand {
           'text_prep': textPrep.info.id,
           'reading_factor': reading.factor,
           'enlarged_pieces': reading.pieces,
+          'plain_pieces': reading.plainPieces,
+          'lines_redone': linesRedone,
           'blocks': [for (final b in blocks) b.toJson()],
           'reading_order': [for (final b in order) blocks.indexOf(b)],
         };
@@ -173,10 +189,12 @@ class OcrCommand extends CtsCommand {
           'texts': [for (final b in order) b.text],
         });
         final scaleNote = reading.scaled
-            ? ' (small text: ${reading.pieces} piece(s) at ×${reading.factor} with ${textPrep.info.id})'
+            ? ' (small text: ${reading.pieces} piece(s) at ×${reading.factor} with ${textPrep.info.id}'
+                  '${reading.plainPieces > 0 ? ', ${reading.plainPieces} plainly to save time' : ''})'
             : '';
         final langNote = language == Languages.auto ? ', language: $detected' : '';
-        ctx.say('$page: ${blocks.length} block(s), OCR $ocrMs ms$scaleNote$langNote → ${jsonFile.path}');
+        final linesNote = linesRedone > 0 ? ', lines redone in $linesRedone block(s)' : '';
+        ctx.say('$page: ${blocks.length} block(s), OCR $ocrMs ms$scaleNote$linesNote$langNote → ${jsonFile.path}');
         for (final b in order) {
           ctx.say('  ${b.text}');
         }

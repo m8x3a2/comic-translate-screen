@@ -105,6 +105,32 @@ class NeuralTextUpscaler implements TextUpscaler {
   double get factor => 2.0;
 
   @override
+  double estimateMs(int width, int height) => msPerMegapixel * inputPixels(width, height) / 1e6;
+
+  /// Time per million input pixels on the processor of the owner's laptop
+  /// (i5, 4 threads; measured 2026-10-23): a cautious guess until the first
+  /// piece of a page shows the real speed.
+  double get msPerMegapixel => switch (info.id) {
+    'waifu2x_cunet' => 8000,
+    'waifu2x_swin' => 20000,
+    _ => 250000,
+  };
+
+  /// Pixels the network gets for a [w]×[h] piece: its tiles with their
+  /// overlap, padding and rounding.
+  int inputPixels(int w, int h) {
+    var n = 0;
+    for (final (y0, x0) in _tiles(w, h)) {
+      final ch = math.min<int>(h, y0 + _step + overlap) - math.max<int>(0, y0 - overlap);
+      final cw = math.min<int>(w, x0 + _step + overlap) - math.max<int>(0, x0 - overlap);
+      n +=
+          (ch + (multiple - ch % multiple) % multiple + 2 * pad) *
+          (cw + (multiple - cw % multiple) % multiple + 2 * pad);
+    }
+    return n;
+  }
+
+  @override
   Future<RgbImage> enlarge(RgbImage piece, int width, int height, PluginContext context) async {
     final h = piece.height, w = piece.width;
     final out = Uint8List(h * scale * w * scale * 3);

@@ -412,7 +412,7 @@ class _ToolBar extends ConsumerWidget {
               ],
             ),
           ),
-          const ContentKindSwitch(compact: true),
+          ContentKindSwitch(compact: true, onSwitched: (_) => _offerFindAgain(context, ref)),
           const SizedBox(width: 4),
           Tooltip(
             message: l.webtoonModeHelp,
@@ -549,6 +549,29 @@ class _StepStrip extends ConsumerWidget {
       },
     );
   }
+}
+
+/// After "Comics / Sites and games" is switched: the boxes on the page were
+/// found the other way and stay until the text is found again, so that is
+/// offered.
+void _offerFindAgain(BuildContext context, WidgetRef ref) {
+  final page = ref.read(workspaceProvider).currentPage;
+  if (page == null || page.blocks.isEmpty) return;
+  final l = context.l10n;
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text(l.contentSwitchedHint),
+        duration: const Duration(seconds: 10),
+        action: SnackBarAction(
+          label: l.findTextAgain,
+          onPressed: () {
+            if (context.mounted) ref.read(stepsProvider.notifier).run(ManualStep.detect, DialogBatchUi(context));
+          },
+        ),
+      ),
+    );
 }
 
 /// The name of a step on its button.

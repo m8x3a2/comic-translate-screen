@@ -605,6 +605,7 @@ Future<List<ModelSpec>> missingModels(
   final chosen = [
     if (parts.contains(PipelinePart.detector)) settings.activeDetector,
     if (parts.contains(PipelinePart.ocr)) ...[settings.ocr, settings.activeTextPrep],
+    if (parts.contains(PipelinePart.ocr) && settings.checksLines) lineCheckerId,
     if (parts.contains(PipelinePart.translator)) settings.translator,
     if (parts.contains(PipelinePart.inpainter)) settings.inpainter,
   ];

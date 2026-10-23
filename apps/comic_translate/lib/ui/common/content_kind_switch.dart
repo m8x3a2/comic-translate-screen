@@ -11,10 +11,13 @@ import '../../state/app_state.dart';
 import 'labels.dart';
 
 class ContentKindSwitch extends ConsumerWidget {
-  const ContentKindSwitch({super.key, this.compact = false});
+  const ContentKindSwitch({super.key, this.compact = false, this.onSwitched});
 
   /// Icons only, the labels in tooltips.
   final bool compact;
+
+  /// Called after the user switched the kind.
+  final void Function(ContentKind kind)? onSwitched;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,7 +36,10 @@ class ContentKindSwitch extends ConsumerWidget {
       ],
       selected: {kind},
       showSelectedIcon: false,
-      onSelectionChanged: (s) => ref.read(settingsProvider.notifier).change((x) => x.contentKind = s.first),
+      onSelectionChanged: (s) {
+        ref.read(settingsProvider.notifier).change((x) => x.contentKind = s.first);
+        onSwitched?.call(s.first);
+      },
     );
   }
 }

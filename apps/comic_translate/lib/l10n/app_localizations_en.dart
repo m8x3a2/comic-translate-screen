@@ -1983,11 +1983,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.';
 
   @override
+  String get checkLines => 'Check the lines of text before recognition';
+
+  @override
+  String get checkLinesInfo =>
+      'Comics only. On dense text (a wall of text, text over a drawing, a screenshot of prose) the program sometimes takes several lines for one and reads only a word or two. A quick check finds such blocks, and the \"Text line finder (PP-OCR)\" network finds their lines again: about 1–7 s on a page where it is needed. Ordinary bubbles are not changed.';
+
+  @override
+  String get contentSwitchedHint =>
+      'The boxes on this page were found in the previous mode. The new mode applies when the text is found again.';
+
+  @override
+  String get findTextAgain => 'Find text again';
+
+  @override
   String get modelLines => 'Text line finder (PP-OCR)';
 
   @override
   String get modelLinesInfo =>
-      'Finds lines of ordinary text for \"Sites and games\": screenshots, games, visual novels. Small and fast.';
+      'Finds lines of ordinary text for \"Sites and games\": screenshots, games, visual novels. In \"Comics\" it helps to read dense text (see \"Check the lines\"). Small and fast.';
 
   @override
   String get modelOpusEnRu => 'Offline translation English → Russian (OPUS-MT)';

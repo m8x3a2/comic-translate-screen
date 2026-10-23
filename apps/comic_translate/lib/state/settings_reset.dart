@@ -41,6 +41,7 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..screenTextPrep = d.screenTextPrep
           ..fixCyrillicLookalikes = d.fixCyrillicLookalikes
           ..splitGluedWords = d.splitGluedWords
+          ..checkLines = d.checkLines
           ..inpaint = d.inpaint;
         forgetPlugins({PluginKind.detector, PluginKind.ocr, PluginKind.inpainter, PluginKind.textPrep});
       case SettingsPart.text:

@@ -363,6 +363,8 @@ class PipelineSpec {
         // An unknown text preparation (a newer settings file) gives way to plain ×2.
         if (services.registry.contains(settings.activeTextPrep))
           settings.activeTextPrep: await services.pluginConfig(settings.activeTextPrep, settings),
+        if (settings.checksLines && services.registry.contains(lineCheckerId))
+          lineCheckerId: await services.pluginConfig(lineCheckerId, settings),
       },
     );
   }
@@ -379,6 +381,7 @@ class PagePipeline {
     required this.translator,
     required this.inpainter,
     this.textPrep,
+    this.lineChecker,
   });
 
   final AppSettings settings;
@@ -391,6 +394,9 @@ class PagePipeline {
 
   /// Prepares small text for reading; null: it is read as it is.
   final TextUpscaler? textPrep;
+
+  /// Checks the lines of comic blocks before reading; null: not checked.
+  final LineDetector? lineChecker;
 
   /// Creates the plugins chosen in [settings] ([translatorId] overrides the
   /// translator). Throws [ModelNotInstalledException] for missing models.
@@ -433,6 +439,7 @@ class PagePipeline {
       translator: await make<Translator>(spec.translatorId),
       inpainter: await make<Inpainter>(s.inpainter),
       textPrep: await loadTextPrep(registry, s.activeTextPrep, spec.configs[s.activeTextPrep], env),
+      lineChecker: await loadLineChecker(registry, s, spec.configs[lineCheckerId], env),
     );
   }
 
@@ -446,6 +453,7 @@ class PagePipeline {
     translator: translator,
     inpainter: inpainter,
     textPrep: textPrep,
+    lineChecker: lineChecker,
   );
 
   /// Detection, OCR, translation and cleaning of [image]. [onStage] is called
@@ -494,7 +502,16 @@ class PagePipeline {
 
     if (read) {
       start('02_ocr');
-      await recognizeBlocks(ocr, work, found, settings, context, sourceLanguage: sourceLanguage, textPrep: textPrep);
+      await recognizeBlocks(
+        ocr,
+        work,
+        found,
+        settings,
+        context,
+        sourceLanguage: sourceLanguage,
+        textPrep: textPrep,
+        lineChecker: lineChecker,
+      );
       // "Auto": read right to left when the page turned out to be Japanese.
       found = sortBlocks(found, rightToLeft: resolveAutoSourceLanguage(found, sourceLanguage) == 'Japanese');
       lap('02_ocr');
@@ -578,7 +595,8 @@ Future<List<TextBlock>> detectOnStrip(
 }
 
 /// OCR of [blocks] on [image]; small text is enlarged first by [textPrep]
-/// (read as it is without one).
+/// (read as it is without one), the lines of comic blocks are checked first
+/// by [lineChecker].
 Future<void> recognizeBlocks(
   OcrEngine ocr,
   RgbImage image,
@@ -587,9 +605,18 @@ Future<void> recognizeBlocks(
   PluginContext context, {
   required String sourceLanguage,
   TextUpscaler? textPrep,
+  LineDetector? lineChecker,
 }) async {
   final code = Languages.byName(sourceLanguage)?.code ?? '';
-  await readBlocks(ocr, image, blocks, sourceLanguage: sourceLanguage, context: context, upscaler: textPrep);
+  await readBlocks(
+    ocr,
+    image,
+    blocks,
+    sourceLanguage: sourceLanguage,
+    context: context,
+    upscaler: textPrep,
+    lineChecker: lineChecker,
+  );
   if (settings.fixCyrillicLookalikes) {
     // "Auto": each block has the language of its script.
     for (final b in blocks) {
@@ -667,6 +694,12 @@ class LazyPlugins {
     spec.configs[spec.settings.activeTextPrep],
     PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
   );
+  Future<LineDetector?> get lineChecker => loadLineChecker(
+    registry,
+    spec.settings,
+    spec.configs[lineCheckerId],
+    PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
+  );
 
   /// Every plugin, for whole-page runs.
   Future<PagePipeline> pipeline(String source, String target) async => PagePipeline(
@@ -678,5 +711,6 @@ class LazyPlugins {
     translator: await translator,
     inpainter: await inpainter,
     textPrep: await textPrep,
+    lineChecker: await lineChecker,
   );
 }

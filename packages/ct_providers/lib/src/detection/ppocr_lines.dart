@@ -52,7 +52,7 @@ const lineUnclipRatio = 1.4;
 /// columns of a phone screenshot into one line).
 const lineMergeGap = 1.0;
 
-class PpocrLineDetector implements TextDetector {
+class PpocrLineDetector implements LineDetector {
   PpocrLineDetector._(this._session, this.post, this.lineGap);
 
   factory PpocrLineDetector.open(
@@ -88,13 +88,17 @@ class PpocrLineDetector implements TextDetector {
   PluginInfo get info => ppocrLinesInfo;
 
   @override
-  Future<List<TextBlock>> detect(RgbImage image, PluginContext context) async {
+  Future<List<TextBlock>> detect(RgbImage image, PluginContext context) async =>
+      groupLinesIntoBlocks(await findLines(image, context));
+
+  @override
+  Future<List<BBox>> findLines(RgbImage image, PluginContext context) async {
     context.cancel.throwIfCancelled();
     final found = await slicer.processSlicesForDetection(image, (slice) async {
       context.cancel.throwIfCancelled();
       return (bubbles: const <BBox>[], texts: detectLines(slice));
     });
-    return groupLinesIntoBlocks(mergeLineBoxes(found.texts, image.width, image.height, maxGap: lineGap));
+    return mergeLineBoxes(found.texts, image.width, image.height, maxGap: lineGap);
   }
 
   /// `PPOCRLineDetector.detect_lines`: whole text lines of [image].

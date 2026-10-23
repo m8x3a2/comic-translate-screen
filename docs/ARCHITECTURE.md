@@ -88,7 +88,25 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   step 2 (30 networks and factors on manga screenshots, reduced comic pages
   and Russian webtoon strips) chose the levels; the program reproduces its
   numbers, and the networks its output pixels
-  (`test_data/reference/text_prep.json`).
+  (`test_data/reference/text_prep.json`). A neural network gets at most 60 s
+  of a page by its estimate (`readingNeuralBudgetMs`, the speed measured on
+  the owner's laptop and corrected by the first pieces): the pieces with the
+  smallest text go first, the rest are enlarged plainly at the same factor.
+  "High" runs at about 250 s per million pixels on a laptop processor, and a
+  page full of text took over ten minutes before.
+- Checking the lines of comic blocks (new, `line_check.dart`,
+  `tools.check_lines`, on): on dense text (a wall of text, text over a
+  drawing, a screenshot of prose) the original's heuristics take several
+  lines for one, or turn horizontal text vertical, and the recognizer reads a
+  word or two. Before reading, a block is doubtful when a heuristic line holds
+  several bands of ink, or when its text is vertical outside Japanese and
+  Chinese; a page with such blocks is run through the PP-OCR line detector
+  (the original has `annotate_blocks_with_ppocr_lines` but never calls it),
+  and its lines replace the heuristic ones when there are more of them and
+  they are at most ¾ as thick. Checked on 59 pages (2026-10-23): full-size
+  comic pages read the same (no block changed), small screenshots slightly
+  better, game screens 59 → 73 % of words, a wall of text 0 → 83 %. Using the
+  PP-OCR lines everywhere was worse on comics (and on Russian 85 → 43 %).
 - For Cyrillic source languages, Latin look-alike letters that OCR returns in
   Cyrillic words ("HET" for "НЕТ") are replaced with Cyrillic ones (setting
   `tools.fix_cyrillic_lookalikes`, off by default; never applied to other

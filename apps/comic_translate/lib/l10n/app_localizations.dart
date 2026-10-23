@@ -3464,6 +3464,30 @@ abstract class AppLocalizations {
   /// **'On very small text the recognizer often reads two words as one: \"REALLIFE\", \"MYINSTINCTS\". Words missing from the dictionary are split into dictionary words; letters are never changed. The same is done by the button in the text panel, for a page or one bubble.'**
   String get splitGluedWordsInfo;
 
+  /// No description provided for @checkLines.
+  ///
+  /// In en, this message translates to:
+  /// **'Check the lines of text before recognition'**
+  String get checkLines;
+
+  /// No description provided for @checkLinesInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Comics only. On dense text (a wall of text, text over a drawing, a screenshot of prose) the program sometimes takes several lines for one and reads only a word or two. A quick check finds such blocks, and the \"Text line finder (PP-OCR)\" network finds their lines again: about 1–7 s on a page where it is needed. Ordinary bubbles are not changed.'**
+  String get checkLinesInfo;
+
+  /// No description provided for @contentSwitchedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The boxes on this page were found in the previous mode. The new mode applies when the text is found again.'**
+  String get contentSwitchedHint;
+
+  /// No description provided for @findTextAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Find text again'**
+  String get findTextAgain;
+
   /// No description provided for @modelLines.
   ///
   /// In en, this message translates to:
@@ -3473,7 +3497,7 @@ abstract class AppLocalizations {
   /// No description provided for @modelLinesInfo.
   ///
   /// In en, this message translates to:
-  /// **'Finds lines of ordinary text for \"Sites and games\": screenshots, games, visual novels. Small and fast.'**
+  /// **'Finds lines of ordinary text for \"Sites and games\": screenshots, games, visual novels. In \"Comics\" it helps to read dense text (see \"Check the lines\"). Small and fast.'**
   String get modelLinesInfo;
 
   /// No description provided for @modelOpusEnRu.
