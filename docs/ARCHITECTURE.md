@@ -80,7 +80,7 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   text, are read as they are. Choices (`tools.text_prep` for comics,
   `tools.screen_text_prep` for sites and games): off, plain Lanczos ×1.5 or
   ×2, and neural networks ×2 — waifu2x CUNet (Simple), waifu2x Swin-UNet
-  (Medium, the default for comics), Fatality Comix ×4 brought to ×2 (High,
+  (Medium), Fatality Comix ×4 brought to ×2 (High, the default for comics,
   CC-BY-NC-SA, converted to ONNX here and published in this project's
   releases); sites and games default to plain ×1.5. A network whose model is
   missing gives way to plain ×2. Until 0.1.2 the whole page was enlarged to

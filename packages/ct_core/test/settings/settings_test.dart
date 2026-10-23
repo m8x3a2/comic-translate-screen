@@ -20,7 +20,7 @@ void main() {
     expect(s.sendPageImage, isFalse);
     expect(s.theme, 'dark');
     expect(s.upperCase, isFalse);
-    expect(s.textPrep, 'waifu2x_swin');
+    expect(s.textPrep, 'fatality_comix');
     expect(s.screenTextPrep, plainX15Id);
     expect(s.fixCyrillicLookalikes, isFalse);
   });

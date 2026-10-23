@@ -3143,7 +3143,7 @@ abstract class AppLocalizations {
   /// No description provided for @textPrepInfo.
   ///
   /// In en, this message translates to:
-  /// **'Pieces of the page with small text (lines thinner than 24 px) are enlarged before recognition; ordinary text is left alone. Without a neural network it is instant. Neural networks restore the shape of the letters but take longer (times on a slow laptop, for a screenshot page of small text): Simple about 1 s, Medium about 2 s (best on manga screenshots), High about 15 s (best on reduced comic pages); faster with the graphics card. For sites and games Plain ×1.5 is best. The program offers to download the model it needs.'**
+  /// **'Pieces of the page with small text (lines thinner than 20 px) are enlarged before recognition; ordinary text is left alone. Without a neural network it is instant. Neural networks restore the shape of the letters but take longer (times on a slow laptop, for a screenshot page of small text): Simple about 1 s, Medium about 2 s (best on manga screenshots), High about 15 s (best overall, the default for comics); faster with the graphics card. For sites and games Plain ×1.5 is best. The program offers to download the model it needs.'**
   String get textPrepInfo;
 
   /// No description provided for @hdStrategyField.

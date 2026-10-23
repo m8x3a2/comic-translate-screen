@@ -29,7 +29,7 @@ class AppSettings {
     this.translator = 'openai_compatible',
     this.inpainter = 'aot',
     this.useGpu = false,
-    this.textPrep = 'waifu2x_swin',
+    this.textPrep = 'fatality_comix',
     this.screenTextPrep = 'plain_x1_5',
     this.fixCyrillicLookalikes = false,
     this.splitGluedWords = false,

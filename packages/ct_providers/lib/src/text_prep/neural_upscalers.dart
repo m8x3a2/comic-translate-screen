@@ -3,8 +3,10 @@
 /// project; the levels and the tiling come from the experiment of step 2
 /// (`ocr-experiment/sr_run.py`, `RESULTS.md`):
 /// - Simple: waifu2x CUNet art ×2 (MIT);
-/// - Medium: waifu2x Swin-UNet art ×2 (MIT), the default for comics;
-/// - High: Fatality Comix ×4 by Twittman (CC-BY-NC-SA-4.0), brought to ×2.
+/// - Medium: waifu2x Swin-UNet art ×2 (MIT);
+/// - High: Fatality Comix ×4 by Twittman (CC-BY-NC-SA-4.0), brought to ×2; the
+///   default for comics (best in the check of step 2.1, and quick enough on
+///   the pieces alone).
 library;
 
 import 'dart:math' as math;
