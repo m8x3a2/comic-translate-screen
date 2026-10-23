@@ -491,7 +491,8 @@ class _StepStrip extends ConsumerWidget {
             ),
           );
         }
-        final last = steps.running ? null : steps.last;
+        // Hidden while anything runs; a new run of a step or of "Translate all" replaces it.
+        final last = busy ? null : steps.last;
         final strip = Padding(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
           child: Row(
@@ -530,7 +531,7 @@ class _StepStrip extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
               child: Row(
                 children: [
-                  Icon(Icons.timer_outlined, size: 16, color: Theme.of(context).hintColor),
+                  Icon(Icons.timer_outlined, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -579,7 +580,7 @@ String stepResultLine(BuildContext context, StepResult r) {
   if (r.ms.length > 1) {
     final each = [
       for (final s in ManualStep.values)
-        if (r.ms[s] case final ms?) '${stepLabel(l, s)} ${formatStepTime(context, ms)}',
+        if (r.ms[s] case final ms?) keepTogether('${stepLabel(l, s)} ${formatStepTime(context, ms)}'),
     ];
     line = '$line (${each.join(' · ')})';
   }

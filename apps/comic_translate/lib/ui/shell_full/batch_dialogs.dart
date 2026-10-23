@@ -186,10 +186,10 @@ String stageTimesLine(BuildContext context, Map<String, int> stageMs, int pages)
   };
   final each = [
     for (final e in names.entries)
-      if (stageMs[e.key] case final ms?) '${e.value} ${formatStepTime(context, ms ~/ pages)}',
+      if (stageMs[e.key] case final ms?) keepTogether('${e.value} ${formatStepTime(context, ms ~/ pages)}'),
   ];
   final total = stageMs.values.fold(0, (a, b) => a + b) ~/ pages;
-  return '${each.join(' · ')} · ${l.reportTotalPerPage(formatStepTime(context, total))}';
+  return '${each.join(' · ')} · ${keepTogether(l.reportTotalPerPage(formatStepTime(context, total)))}';
 }
 
 Future<void> showBatchReport(BuildContext context, BatchReport report) =>

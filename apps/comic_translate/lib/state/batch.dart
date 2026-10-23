@@ -13,6 +13,7 @@ import '../pipeline/pipeline_worker.dart';
 import 'app_state.dart';
 import 'exchange.dart';
 import 'page_render.dart';
+import 'steps.dart';
 import 'worker_pool.dart';
 import 'workspace.dart';
 
@@ -187,6 +188,8 @@ class BatchNotifier extends Notifier<BatchState> {
   Future<void> run(BatchUi ui, {bool all = false}) async {
     if (isRunning) return;
     final services = ref.read(servicesProvider);
+    // The line of the last step would tell about the pages before this run.
+    ref.read(stepsProvider.notifier).clearLast();
     final workspace = ref.read(workspaceProvider.notifier);
     final pages = ref.read(workspaceProvider).pages;
     var todo = all || pages.every((p) => p.isDone)

@@ -95,6 +95,11 @@ class StepsNotifier extends Notifier<StepState> {
 
   void cancel() => _cancel?.cancel();
 
+  /// Forgets the line of the last run ("Translate all" started).
+  void clearLast() {
+    if (!state.running && state.last != null) state = const StepState();
+  }
+
   /// The steps [step] needs on [page], in order.
   static List<ManualStep> plan(ManualStep step, PageEntry page, {int? block}) {
     final noBlocks = page.blocks.isEmpty;

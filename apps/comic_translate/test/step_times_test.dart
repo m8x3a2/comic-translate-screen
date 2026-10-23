@@ -33,39 +33,54 @@ void main() {
       expect(formatStepTime(context, 65000), '1 мин 05 с');
 
       expect(
-        stepResultLine(
-          context,
-          const StepResult(step: ManualStep.recognize, pages: 1, count: 12, ms: {ManualStep.recognize: 3200}),
+        plain(
+          stepResultLine(
+            context,
+            const StepResult(step: ManualStep.recognize, pages: 1, count: 12, ms: {ManualStep.recognize: 3200}),
+          ),
         ),
         'Распознано пузырей: 12 — за 3,2 с',
       );
       expect(
-        stepResultLine(
-          context,
-          const StepResult(
-            step: ManualStep.translate,
-            pages: 2,
-            count: 20,
-            ms: {ManualStep.detect: 2000, ManualStep.recognize: 6000, ManualStep.translate: 4000},
+        plain(
+          stepResultLine(
+            context,
+            const StepResult(
+              step: ManualStep.translate,
+              pages: 2,
+              count: 20,
+              ms: {ManualStep.detect: 2000, ManualStep.recognize: 6000, ManualStep.translate: 4000},
+            ),
           ),
         ),
         'Переведено пузырей: 20 — за 12 с, 2 стр., в среднем 6 с на страницу '
         '(Найти текст 2 с · Распознать 6 с · Перевести 4 с)',
       );
       expect(
-        stageTimesLine(context, {'01_detect': 2000, '02_ocr': 30000, '06_render': 1000}, 2),
+        plain(stageTimesLine(context, {'01_detect': 2000, '02_ocr': 30000, '06_render': 1000}, 2)),
         'Найти текст 1 с · Распознать 15 с · Наложение перевода 0,5 с · всего 17 с',
+      );
+      expect(
+        stageTimesLine(context, {'02_ocr': 30000}, 2),
+        contains('Распознать 15 с'),
+        reason: 'a step and its time are never split between lines',
       );
     });
     await inLocale(tester, 'en', (context) {
       expect(formatStepTime(context, 3240), '3.2 s');
       expect(
-        stepResultLine(
-          context,
-          const StepResult(step: ManualStep.clean, pages: 1, count: 0, ms: {ManualStep.clean: 900}),
+        plain(
+          stepResultLine(
+            context,
+            const StepResult(step: ManualStep.clean, pages: 1, count: 0, ms: {ManualStep.clean: 900}),
+          ),
         ),
         'Cleaning done in 0.9 s',
       );
     });
   });
 }
+
+/// [s] with the no-break spaces that keep a step and its time together
+/// turned into plain ones.
+String plain(String s) => s.replaceAll(' ', ' ');

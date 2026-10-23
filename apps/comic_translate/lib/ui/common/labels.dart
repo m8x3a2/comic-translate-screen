@@ -86,6 +86,9 @@ String formatFactor(BuildContext context, double f) {
   return pointLanguages.contains(Localizations.localeOf(context).languageCode) ? text : text.replaceAll('.', ',');
 }
 
+/// [text] that a line never breaks inside ("Очистить 2 с" stays whole).
+String keepTogether(String text) => text.replaceAll(' ', ' ');
+
 /// How long a step took: `0,4 с`, `12 с`, `1 мин 05 с`.
 String formatStepTime(BuildContext context, int ms) {
   final l = context.l10n;
