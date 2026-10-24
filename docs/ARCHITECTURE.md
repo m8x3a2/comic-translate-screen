@@ -53,6 +53,10 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   neighbour goes to the network, those letters were never removed (pieces of
   "happen" and "?" stayed on the test page). Here the letters of blocks left
   to the network are kept in the mask.
+- The heuristic line splitter of the original fails (IndexError) when a line
+  box ends at the right or bottom edge of the crop, e.g. on an almost empty
+  block enlarged for reading; the whole page then had no text. Here the box
+  is summed like a slice and the block is read.
 - A moved box takes its lines, bubble and outline along (the original keeps
   them in place); a resized one loses its lines and keeps its bubble only while
   it is still inside it.

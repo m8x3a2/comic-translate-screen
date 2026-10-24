@@ -118,6 +118,12 @@ final class _Integral {
 }
 
 int _sumBoxPixels(_Integral integral, int x1, int y1, int x2, int y2) {
+  // Boxes clamped to the image size end one past the last pixel; sum like
+  // the slice `mask[y1:y2 + 1, x1:x2 + 1]` (the original indexes past the
+  // end and fails).
+  x2 = math.min(x2, integral.width - 1);
+  y2 = math.min(y2, integral.height - 1);
+  if (x2 < x1 || y2 < y1) return 0;
   var total = integral.at(y2, x2);
   if (x1 > 0) total -= integral.at(y2, x1 - 1);
   if (y1 > 0) total -= integral.at(y1 - 1, x2);
