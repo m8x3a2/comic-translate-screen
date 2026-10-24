@@ -2772,4 +2772,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String repeatsLeft(String count) {
     return 'Repeats not added: $count';
   }
+
+  @override
+  String get pageSort =>
+      'Order of pages (pages can be dragged with the mouse too)';
+
+  @override
+  String get pageSortNameUp => 'By name: A → Z';
+
+  @override
+  String get pageSortNameDown => 'By name: Z → A';
+
+  @override
+  String get pageSortDateUp => 'By file date: oldest first';
+
+  @override
+  String get pageSortDateDown => 'By file date: newest first';
+
+  @override
+  String get pageSortReverse => 'Turn the order round';
+
+  @override
+  String get pageSortDone => 'The order of pages changed';
+
+  @override
+  String get gridTileSize => 'Size of the pictures';
 }

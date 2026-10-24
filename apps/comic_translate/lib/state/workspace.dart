@@ -369,6 +369,10 @@ class RepeatedPage {
   final String sameAsPath;
 }
 
+/// How "Sort" puts the pages: by name or by file date (of the archive for
+/// its pages), either way, or the order turned round.
+enum PageOrder { nameUp, nameDown, dateUp, dateDown, reverse }
+
 /// Which of the repeats to add anyway (indexes into the list).
 typedef RepeatChooser = Future<Set<int>> Function(List<RepeatedPage> repeats);
 
@@ -616,10 +620,63 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   void movePage(int from, int to) {
     final n = state.pages.length;
     if (from < 0 || from >= n || to < 0 || to >= n || from == to) return;
-    final current = state.currentPage?.id;
     final pages = [...state.pages];
     final page = pages.removeAt(from);
     pages.insert(to, page);
+    _reorder(pages);
+  }
+
+  /// Puts the pages in [order] (by name or date, or turned round); the
+  /// order before is returned, for "Undo". Pages that tie (the pages of
+  /// one archive by date) keep their order.
+  List<String> sortPages(PageOrder order) {
+    final before = [for (final p in state.pages) p.id];
+    final indexed = state.pages.indexed.toList();
+    int byIndex((int, PageEntry) a, (int, PageEntry) b) => a.$1.compareTo(b.$1);
+    switch (order) {
+      case PageOrder.nameUp || PageOrder.nameDown:
+        final sign = order == PageOrder.nameUp ? 1 : -1;
+        indexed.sort((a, b) {
+          final c = naturalCompare(a.$2.name, b.$2.name) * sign;
+          return c != 0 ? c : byIndex(a, b);
+        });
+      case PageOrder.dateUp || PageOrder.dateDown:
+        final sign = order == PageOrder.dateUp ? 1 : -1;
+        final times = <String, DateTime>{};
+        DateTime time(PageEntry p) => times.putIfAbsent(p.source ?? p.path, () {
+          try {
+            return File(p.source ?? p.path).lastModifiedSync();
+          } on FileSystemException {
+            return DateTime(0);
+          }
+        });
+        indexed.sort((a, b) {
+          final c = time(a.$2).compareTo(time(b.$2)) * sign;
+          return c != 0 ? c : byIndex(a, b);
+        });
+      case PageOrder.reverse:
+        indexed.sort((a, b) => byIndex(b, a));
+    }
+    _reorder([for (final (_, p) in indexed) p]);
+    return before;
+  }
+
+  /// The pages in the order of [ids] (an order returned by [sortPages]);
+  /// pages not named stay at the end.
+  void setPageOrder(List<String> ids) {
+    final place = {for (final (i, id) in ids.indexed) id: i};
+    final indexed = state.pages.indexed.toList()
+      ..sort((a, b) {
+        final c = (place[a.$2.id] ?? ids.length).compareTo(place[b.$2.id] ?? ids.length);
+        return c != 0 ? c : a.$1.compareTo(b.$1);
+      });
+    _reorder([for (final (_, p) in indexed) p]);
+  }
+
+  /// The open pages in a new order [pages]; see [movePage].
+  void _reorder(List<PageEntry> pages) {
+    final n = pages.length;
+    final current = state.currentPage?.id;
     final oldNext = {for (var i = 0; i + 1 < n; i++) state.pages[i].id: state.pages[i + 1].id};
     final redraw = <String>{};
     final moved = <PageEntry>[];

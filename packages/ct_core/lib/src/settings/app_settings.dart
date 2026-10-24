@@ -54,6 +54,7 @@ class AppSettings {
     Set<String>? hiddenPanels,
     Map<String, String>? gpuCpuModels,
     this.showLookInPanel = true,
+    this.gridTileSize = 190,
     this.testMode = false,
     this.autoBugReport = true,
     this.projectAutosave = true,
@@ -180,6 +181,9 @@ class AppSettings {
   /// off: plain text. Not in the original.
   bool showLookInPanel;
 
+  /// Width of a page in the grid of all pages (logical pixels).
+  int gridTileSize;
+
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
@@ -240,6 +244,7 @@ class AppSettings {
       if (shortcuts.isNotEmpty) 'shortcuts': shortcuts,
       if (hiddenPanels.isNotEmpty) 'hidden_panels': [...hiddenPanels],
       if (!showLookInPanel) 'show_look_in_panel': false,
+      if (gridTileSize != 190) 'grid_tile_size': gridTileSize,
     },
     'test_mode': testMode,
     'auto_bug_report': autoBugReport,
@@ -333,6 +338,7 @@ class AppSettings {
       },
       hiddenPanels: {...?(ui['hidden_panels'] as List?)?.whereType<String>()},
       showLookInPanel: ui['show_look_in_panel'] != false,
+      gridTileSize: ((ui['grid_tile_size'] as num?)?.toInt() ?? 190).clamp(100, 400),
       testMode: pick(json, 'test_mode', defaults.testMode),
       autoBugReport: pick(json, 'auto_bug_report', defaults.autoBugReport),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),

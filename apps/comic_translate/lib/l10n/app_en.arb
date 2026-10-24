@@ -1801,5 +1801,13 @@
         "type": "String"
       }
     }
-  }
+  },
+  "pageSort": "Order of pages (pages can be dragged with the mouse too)",
+  "pageSortNameUp": "By name: A → Z",
+  "pageSortNameDown": "By name: Z → A",
+  "pageSortDateUp": "By file date: oldest first",
+  "pageSortDateDown": "By file date: newest first",
+  "pageSortReverse": "Turn the order round",
+  "pageSortDone": "The order of pages changed",
+  "gridTileSize": "Size of the pictures"
 }

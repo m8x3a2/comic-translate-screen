@@ -2773,4 +2773,29 @@ class AppLocalizationsRu extends AppLocalizations {
   String repeatsLeft(String count) {
     return 'Повторы не добавлены: $count';
   }
+
+  @override
+  String get pageSort =>
+      'Порядок страниц (страницы можно и перетаскивать мышкой)';
+
+  @override
+  String get pageSortNameUp => 'По имени: А → Я';
+
+  @override
+  String get pageSortNameDown => 'По имени: Я → А';
+
+  @override
+  String get pageSortDateUp => 'По дате файла: старые сначала';
+
+  @override
+  String get pageSortDateDown => 'По дате файла: новые сначала';
+
+  @override
+  String get pageSortReverse => 'Перевернуть порядок';
+
+  @override
+  String get pageSortDone => 'Порядок страниц изменён';
+
+  @override
+  String get gridTileSize => 'Размер миниатюр';
 }

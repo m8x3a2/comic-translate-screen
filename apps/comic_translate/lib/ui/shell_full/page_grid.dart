@@ -9,10 +9,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../state/app_state.dart';
 import '../../state/batch.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
-import 'page_list.dart' show showPageMenu;
+import 'page_list.dart' show PageSortButton, showPageMenu;
 
 /// The grid of pages is open.
 final pageGridOpenProvider = NotifierProvider<_GridOpen, bool>(_GridOpen.new);
@@ -41,6 +42,9 @@ class _PageGridState extends ConsumerState<PageGrid> {
   /// Where a dragged page would land (index), for the marker.
   int? _target;
 
+  /// The size of the pictures while the slider moves (saved when let go).
+  double? _size;
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +67,7 @@ class _PageGridState extends ConsumerState<PageGrid> {
     final notifier = ref.read(workspaceProvider.notifier);
     final locked = ref.watch(batchProvider) is BatchRunning;
     final picked = ws.pickedPageIds;
+    final size = _size ?? ref.watch(settingsProvider.select((s) => s.gridTileSize)).toDouble();
     return KeyboardListener(
       focusNode: _focus,
       onKeyEvent: (e) {
@@ -80,6 +85,24 @@ class _PageGridState extends ConsumerState<PageGrid> {
                   const SizedBox(width: 16),
                   Text(l.pageGridPicked('${picked.length}'), style: theme.textTheme.bodyMedium),
                   const Spacer(),
+                  Tooltip(message: l.gridTileSize, child: const Icon(Icons.photo_size_select_large, size: 20)),
+                  SizedBox(
+                    width: 160,
+                    child: Slider(
+                      value: size,
+                      min: 100,
+                      max: 400,
+                      divisions: 12,
+                      label: l.gridTileSize,
+                      onChanged: (v) => setState(() => _size = v),
+                      onChangeEnd: (v) => ref
+                          .read(settingsProvider.notifier)
+                          .change((s) => s.gridTileSize = v.round())
+                          .then((_) => mounted ? setState(() => _size = null) : null),
+                    ),
+                  ),
+                  PageSortButton(enabled: !locked && ws.pages.length > 1),
+                  const SizedBox(width: 8),
                   TextButton(onPressed: notifier.pickAllPages, child: Text(l.pageGridPickAll)),
                   TextButton(onPressed: notifier.clearPageSelection, child: Text(l.pageGridPickNone)),
                   const SizedBox(width: 8),
@@ -105,8 +128,8 @@ class _PageGridState extends ConsumerState<PageGrid> {
             Expanded(
               child: GridView.builder(
                 padding: const EdgeInsets.all(12),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 190,
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: size,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
                   childAspectRatio: 0.62,
@@ -121,6 +144,7 @@ class _PageGridState extends ConsumerState<PageGrid> {
                     current: i == ws.current,
                     marker: _target == i,
                     onTap: () => notifier.togglePick(i),
+                    pictureWidth: (size * MediaQuery.devicePixelRatioOf(context) / 50).ceil() * 50,
                     onOpen: () {
                       notifier.select(i);
                       _close();
@@ -174,6 +198,7 @@ class _GridTile extends StatelessWidget {
     required this.marker,
     required this.onTap,
     required this.onOpen,
+    required this.pictureWidth,
   });
 
   final PageEntry page;
@@ -185,6 +210,9 @@ class _GridTile extends StatelessWidget {
   final bool marker;
   final VoidCallback onTap;
   final VoidCallback onOpen;
+
+  /// Pixels across the picture is decoded at (sharp at the chosen size).
+  final int pictureWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +246,7 @@ class _GridTile extends StatelessWidget {
                       child: Image.file(
                         File(thumb),
                         key: ValueKey(thumb),
-                        cacheWidth: 360,
+                        cacheWidth: pictureWidth,
                         fit: BoxFit.contain,
                         errorBuilder: (_, _, _) =>
                             const ColoredBox(color: Colors.black12, child: Icon(Icons.broken_image_outlined)),

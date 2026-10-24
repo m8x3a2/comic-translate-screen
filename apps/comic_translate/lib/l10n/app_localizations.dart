@@ -4801,6 +4801,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Repeats not added: {count}'**
   String repeatsLeft(String count);
+
+  /// No description provided for @pageSort.
+  ///
+  /// In en, this message translates to:
+  /// **'Order of pages (pages can be dragged with the mouse too)'**
+  String get pageSort;
+
+  /// No description provided for @pageSortNameUp.
+  ///
+  /// In en, this message translates to:
+  /// **'By name: A → Z'**
+  String get pageSortNameUp;
+
+  /// No description provided for @pageSortNameDown.
+  ///
+  /// In en, this message translates to:
+  /// **'By name: Z → A'**
+  String get pageSortNameDown;
+
+  /// No description provided for @pageSortDateUp.
+  ///
+  /// In en, this message translates to:
+  /// **'By file date: oldest first'**
+  String get pageSortDateUp;
+
+  /// No description provided for @pageSortDateDown.
+  ///
+  /// In en, this message translates to:
+  /// **'By file date: newest first'**
+  String get pageSortDateDown;
+
+  /// No description provided for @pageSortReverse.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn the order round'**
+  String get pageSortReverse;
+
+  /// No description provided for @pageSortDone.
+  ///
+  /// In en, this message translates to:
+  /// **'The order of pages changed'**
+  String get pageSortDone;
+
+  /// No description provided for @gridTileSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size of the pictures'**
+  String get gridTileSize;
 }
 
 class _AppLocalizationsDelegate

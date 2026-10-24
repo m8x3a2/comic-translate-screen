@@ -38,6 +38,7 @@ class PageList extends ConsumerWidget {
             children: [
               PanelToggle(Panels.pages, label: l.panelPages),
               Expanded(child: Text(l.panelPages, style: Theme.of(context).textTheme.titleSmall)),
+              PageSortButton(enabled: !running && ws.pages.length > 1),
               IconButton(
                 tooltip: l.pageGridOpen,
                 visualDensity: VisualDensity.compact,
@@ -48,17 +49,25 @@ class PageList extends ConsumerWidget {
           ),
         ),
         Expanded(
-          child: ListView.builder(
+          // Dragging a page moves it (not while "Translate all" runs).
+          child: ReorderableListView.builder(
             padding: const EdgeInsets.symmetric(vertical: 6),
+            buildDefaultDragHandles: false,
             itemCount: ws.pages.length,
-            itemBuilder: (context, i) => _PageTile(
-              page: ws.pages[i],
+            onReorderItem: (from, to) => ref.read(workspaceProvider.notifier).movePage(from, to),
+            itemBuilder: (context, i) => ReorderableDragStartListener(
+              key: ValueKey(('page list', ws.pages[i].id)),
               index: i,
-              selected: i == ws.current,
-              picked: ws.selectedPages.contains(ws.pages[i].id),
-              canRemove: !running,
-              onAddAt: onAddAt,
-              onPasteAt: onPasteAt,
+              enabled: !running,
+              child: _PageTile(
+                page: ws.pages[i],
+                index: i,
+                selected: i == ws.current,
+                picked: ws.selectedPages.contains(ws.pages[i].id),
+                canRemove: !running,
+                onAddAt: onAddAt,
+                onPasteAt: onPasteAt,
+              ),
             ),
           ),
         ),
@@ -96,6 +105,51 @@ class PageList extends ConsumerWidget {
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// "Order of pages": by name or file date, either way, or turned round;
+/// a note with "Undo" puts the order back.
+class PageSortButton extends ConsumerWidget {
+  const PageSortButton({super.key, required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    return PopupMenuButton<PageOrder>(
+      tooltip: l.pageSort,
+      enabled: enabled,
+      icon: const Icon(Icons.sort),
+      style: const ButtonStyle(visualDensity: VisualDensity.compact),
+      onSelected: (order) {
+        final ws = ref.read(workspaceProvider.notifier);
+        final before = ws.sortPages(order);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(l.pageSortDone),
+              showCloseIcon: true,
+              action: SnackBarAction(label: l.keyUndo, onPressed: () => ws.setPageOrder(before)),
+            ),
+          );
+      },
+      itemBuilder: (_) => [
+        for (final (order, icon, label) in [
+          (PageOrder.nameUp, Icons.arrow_downward, l.pageSortNameUp),
+          (PageOrder.nameDown, Icons.arrow_upward, l.pageSortNameDown),
+          (PageOrder.dateUp, Icons.schedule, l.pageSortDateUp),
+          (PageOrder.dateDown, Icons.update, l.pageSortDateDown),
+          (PageOrder.reverse, Icons.swap_vert, l.pageSortReverse),
+        ])
+          PopupMenuItem(
+            value: order,
+            child: ListTile(dense: true, leading: Icon(icon), title: Text(label)),
+          ),
       ],
     );
   }

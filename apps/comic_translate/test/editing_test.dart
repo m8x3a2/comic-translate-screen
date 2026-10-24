@@ -224,6 +224,36 @@ void main() {
     expect(names(), ['d.png', 'page.png', 'b.png', 'c.png', 'a.png', 'e.png', 'a.png']);
   });
 
+  test('pages sort by name or file date, turn round, and the order comes back', () async {
+    final files = <String>[];
+    for (final (name, day) in [('p10.png', 3), ('p2.png', 1), ('P1.png', 2)]) {
+      final f = p.join(dir.path, name);
+      await ImageCodec.writeFile(f, RgbImage.filled(10, 10, day, day, day));
+      File(f).setLastModifiedSync(DateTime(2026, 10, day));
+      files.add(f);
+    }
+    File(p.join(dir.path, 'page.png')).setLastModifiedSync(DateTime(2026, 9, 1));
+    await ws().addInputs(files);
+    ws().select(2);
+    List<String> names() => [for (final x in container.read(workspaceProvider).pages) x.name];
+    final first = names();
+
+    final before = ws().sortPages(PageOrder.nameUp);
+    expect(names(), ['P1.png', 'p2.png', 'p10.png', 'page.png']);
+    expect(page().name, 'p2.png', reason: 'the open page stays open');
+    ws().sortPages(PageOrder.nameDown);
+    expect(names(), ['page.png', 'p10.png', 'p2.png', 'P1.png']);
+    ws().sortPages(PageOrder.dateUp);
+    expect(names(), ['page.png', 'p2.png', 'P1.png', 'p10.png']);
+    ws().sortPages(PageOrder.dateDown);
+    expect(names(), ['p10.png', 'P1.png', 'p2.png', 'page.png']);
+    ws().sortPages(PageOrder.reverse);
+    expect(names(), ['page.png', 'p2.png', 'P1.png', 'p10.png']);
+
+    ws().setPageOrder(before);
+    expect(names(), first);
+  });
+
   test('step plans do what is missing first', () {
     final fresh = page();
     expect(StepsNotifier.plan(ManualStep.translate, fresh), [

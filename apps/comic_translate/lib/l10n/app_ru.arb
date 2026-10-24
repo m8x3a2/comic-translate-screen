@@ -783,5 +783,13 @@
   "repeatsSkipAll": "Пропустить все",
   "repeatsAddPicked": "Добавить отмеченные ({count})",
   "repeatsAddAll": "Всё равно добавить все",
-  "repeatsLeft": "Повторы не добавлены: {count}"
+  "repeatsLeft": "Повторы не добавлены: {count}",
+  "pageSort": "Порядок страниц (страницы можно и перетаскивать мышкой)",
+  "pageSortNameUp": "По имени: А → Я",
+  "pageSortNameDown": "По имени: Я → А",
+  "pageSortDateUp": "По дате файла: старые сначала",
+  "pageSortDateDown": "По дате файла: новые сначала",
+  "pageSortReverse": "Перевернуть порядок",
+  "pageSortDone": "Порядок страниц изменён",
+  "gridTileSize": "Размер миниатюр"
 }
