@@ -564,6 +564,7 @@ void _offerFindAgain(BuildContext context, WidgetRef ref) {
       SnackBar(
         content: Text(l.contentSwitchedHint),
         duration: const Duration(seconds: 10),
+        showCloseIcon: true,
         action: SnackBarAction(
           label: l.findTextAgain,
           onPressed: () {
