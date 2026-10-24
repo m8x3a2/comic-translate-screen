@@ -191,4 +191,32 @@ void main() {
     expect(await rereadJunk(idle, img, [ok], quiet, _context, sourceLanguage: 'English', languageCode: 'en'), 0);
     expect((quiet.calls, idle.calls), (0, 0));
   });
+
+  test('a block with lines of ink read as nothing is read again; an empty block on blank paper is not', () async {
+    final img = _page([(20, 40), (50, 70)]);
+    final lines = _Lines([const BBox(15, 18, 385, 42), const BBox(15, 48, 385, 72)]);
+    // Prose split into two "vertical" strips: the recognizer read nothing.
+    TextBlock lost() => _block(const BBox(10, 10, 390, 80), [
+      const BBox(10, 10, 200, 80),
+      const BBox(200, 10, 390, 80),
+    ], direction: TextDirection.vertical);
+    final blank = _block(const BBox(10, 150, 390, 250), [const BBox(10, 150, 390, 250)]);
+    expect((readNothing(img, lost()), readNothing(img, blank)), (true, false));
+
+    final a = lost();
+    final good = _Ocr('DID SHE ALSO HAPPEN TO--?');
+    expect(await rereadJunk(good, img, [a, blank], lines, _context, sourceLanguage: 'English', languageCode: 'en'), 1);
+    expect(
+      (a.text, a.direction, a.fixedLines, a.lines.length),
+      ('DID SHE ALSO HAPPEN TO--?', TextDirection.horizontal, true, 2),
+    );
+    expect(blank.text, '');
+
+    // Still nothing, or junk, the second time: the block stays as it was.
+    for (final text in ['', '√∏√∏√∏√∏√∏√∏']) {
+      final b = lost();
+      expect(await rereadJunk(_Ocr(text), img, [b], lines, _context, sourceLanguage: 'English', languageCode: 'en'), 0);
+      expect((b.text, b.fixedLines, b.direction), ('', false, TextDirection.vertical));
+    }
+  });
 }

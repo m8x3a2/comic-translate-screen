@@ -223,10 +223,18 @@ double junkShare(String text, String languageCode) {
 bool looksLikeJunk(String text, String languageCode) =>
     text.replaceAll(_space, '').length >= 6 && junkShare(text, languageCode) >= 0.2;
 
-/// Blocks of [blocks] read as junk (see [looksLikeJunk]) get the lines
-/// [detector] finds and are read again with [ocr] on [image]; the new
-/// reading stays when it holds less junk. Catches what [checkBlockLines]
-/// let through. Returns how many blocks got a better reading.
+/// [block] of [image] came out empty though it holds lines of ink (two
+/// bands or more, see [inkBands]): its lines were most likely wrong (a
+/// column of English prose split into two "vertical" strips on an enlarged
+/// copy, after [checkBlockLines] had looked).
+bool readNothing(RgbImage image, TextBlock block) => block.text.trim().isEmpty && inkBands(image, block.xyxy) >= 2;
+
+/// Blocks of [blocks] read as junk (see [looksLikeJunk]) or as nothing (see
+/// [readNothing]) get the lines [detector] finds and are read again with
+/// [ocr] on [image]; the new reading stays when it holds less junk (for an
+/// empty block: when it has letters and is not junk). Catches what
+/// [checkBlockLines] let through. Returns how many blocks got a better
+/// reading.
 Future<int> rereadJunk(
   OcrEngine ocr,
   RgbImage image,
@@ -238,7 +246,7 @@ Future<int> rereadJunk(
 }) async {
   final junk = [
     for (final b in blocks)
-      if (!b.fixedLines && looksLikeJunk(b.text, languageCode)) b,
+      if (!b.fixedLines && (looksLikeJunk(b.text, languageCode) || readNothing(image, b))) b,
   ];
   if (junk.isEmpty) return 0;
   final sw = Stopwatch()..start();
@@ -255,7 +263,10 @@ Future<int> rereadJunk(
   await ocr.recognize(image, again.values.toList(), sourceLanguage: sourceLanguage, context: context);
   var better = 0;
   for (final MapEntry(key: b, value: c) in again.entries) {
-    if (junkShare(c.text, languageCode) >= junkShare(b.text, languageCode)) continue;
+    final gained = b.text.trim().isEmpty
+        ? _letter.hasMatch(c.text) && !looksLikeJunk(c.text, languageCode)
+        : junkShare(c.text, languageCode) < junkShare(b.text, languageCode);
+    if (!gained) continue;
     b
       ..lines = c.lines
       ..direction = c.direction
