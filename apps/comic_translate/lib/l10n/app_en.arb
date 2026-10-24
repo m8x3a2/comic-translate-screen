@@ -1809,5 +1809,52 @@
   "pageSortDateDown": "By file date: newest first",
   "pageSortReverse": "Turn the order round",
   "pageSortDone": "The order of pages changed",
-  "gridTileSize": "Size of the pictures"
+  "gridTileSize": "Size of the pictures",
+  "pageNumbers": "Page numbers",
+  "pageNumbersHint": "numbers: 1,5-8,10",
+  "pageNumbersTip": "Pick pages by their numbers, like 1,5-8,10, and press Enter. The steps (Detect, Recognize…), the chat, the export and \"Translate selected\" work on the picked pages.",
+  "pageNumbersWrong": "Not a page: \"{part}\" (there are {count})",
+  "@pageNumbersWrong": {
+    "placeholders": {
+      "part": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pageNumbersPick": "Pick (Enter)",
+  "translateSelected": "Translate selected ({count})",
+  "@translateSelected": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "translateShort": "Translate",
+  "translateShortCount": "Translate ({count})",
+  "@translateShortCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "translateWhich": "What to translate: everything or only the picked pages (remembered)",
+  "translateAllPages": "Translate all",
+  "translateSelectedHint": "Pick pages first: Ctrl+click in the list, numbers like 1,5-8, or ticks in the grid",
+  "exportNumbers": "Numbers",
+  "exportNumbersReady": "Translated among them: {done} of {count}; only these are saved",
+  "@exportNumbersReady": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  }
 }

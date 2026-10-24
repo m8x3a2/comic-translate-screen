@@ -607,6 +607,20 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     state = state.copyWith(current: go, clearBlock: true, selectedPages: picked.length < 2 ? const {} : picked);
   }
 
+  /// Picks the pages at [indexes] for the steps ("1,5-8,10" in the page
+  /// list). One page is just opened; with several, the current page stays
+  /// open if it is among them, otherwise the first one is opened.
+  void pickPages(Set<int> indexes) {
+    final valid = indexes.where((i) => i >= 0 && i < state.pages.length).toList()..sort();
+    if (valid.isEmpty) return;
+    final go = valid.contains(state.current) ? state.current : valid.first;
+    state = state.copyWith(
+      current: go,
+      clearBlock: go != state.current,
+      selectedPages: valid.length < 2 ? const {} : {for (final i in valid) state.pages[i].id},
+    );
+  }
+
   /// Ticks every page for the steps.
   void pickAllPages() {
     if (state.pages.length < 2) return;

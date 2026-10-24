@@ -184,14 +184,17 @@ class BatchNotifier extends Notifier<BatchState> {
   }
 
   /// Translates the pages that are not done yet (all of them when every
-  /// page is done, or with [all]).
-  Future<void> run(BatchUi ui, {bool all = false}) async {
+  /// page is done, or with [all]); with [only], among these pages.
+  Future<void> run(BatchUi ui, {bool all = false, Set<String>? only}) async {
     if (isRunning) return;
     final services = ref.read(servicesProvider);
     // The line of the last step would tell about the pages before this run.
     ref.read(stepsProvider.notifier).clearLast();
     final workspace = ref.read(workspaceProvider.notifier);
-    final pages = ref.read(workspaceProvider).pages;
+    final pages = [
+      for (final p in ref.read(workspaceProvider).pages)
+        if (only == null || only.contains(p.id)) p,
+    ];
     var todo = all || pages.every((p) => p.isDone)
         ? pages
         : [

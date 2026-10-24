@@ -55,6 +55,7 @@ class AppSettings {
     Map<String, String>? gpuCpuModels,
     this.showLookInPanel = true,
     this.gridTileSize = 190,
+    this.translateSelected = false,
     this.testMode = false,
     this.autoBugReport = true,
     this.projectAutosave = true,
@@ -184,6 +185,10 @@ class AppSettings {
   /// Width of a page in the grid of all pages (logical pixels).
   int gridTileSize;
 
+  /// "Translate all" translates only the picked pages when some are picked
+  /// (the choice under its arrow).
+  bool translateSelected;
+
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
@@ -245,6 +250,7 @@ class AppSettings {
       if (hiddenPanels.isNotEmpty) 'hidden_panels': [...hiddenPanels],
       if (!showLookInPanel) 'show_look_in_panel': false,
       if (gridTileSize != 190) 'grid_tile_size': gridTileSize,
+      if (translateSelected) 'translate_selected': true,
     },
     'test_mode': testMode,
     'auto_bug_report': autoBugReport,
@@ -339,6 +345,7 @@ class AppSettings {
       hiddenPanels: {...?(ui['hidden_panels'] as List?)?.whereType<String>()},
       showLookInPanel: ui['show_look_in_panel'] != false,
       gridTileSize: ((ui['grid_tile_size'] as num?)?.toInt() ?? 190).clamp(100, 400),
+      translateSelected: ui['translate_selected'] == true,
       testMode: pick(json, 'test_mode', defaults.testMode),
       autoBugReport: pick(json, 'auto_bug_report', defaults.autoBugReport),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),

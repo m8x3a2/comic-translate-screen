@@ -10,12 +10,18 @@ import 'package:flutter/services.dart';
 import '../common/labels.dart';
 
 class ExportChoice {
-  const ExportChoice(this.settings, {required this.currentOnly});
+  const ExportChoice(this.settings, {required this.currentOnly, this.numbers});
 
   /// The window's choices, remembered for next time.
   final ExportSettings settings;
   final bool currentOnly;
+
+  /// The pages written by number (0-based among all pages), if chosen so.
+  final Set<int>? numbers;
 }
+
+/// Which pages the Export window saves.
+enum _Which { all, current, numbers }
 
 Future<ExportChoice?> showExportDialog(
   BuildContext context, {
@@ -25,6 +31,9 @@ Future<ExportChoice?> showExportDialog(
   required bool currentAvailable,
   required bool hasSevenZip,
   bool webtoon = false,
+  int allCount = 0,
+  Set<int> doneIndexes = const {},
+  String picked = '',
 }) => showDialog<ExportChoice>(
   context: context,
   builder: (_) => _ExportDialog(
@@ -34,6 +43,9 @@ Future<ExportChoice?> showExportDialog(
     currentAvailable: currentAvailable,
     hasSevenZip: hasSevenZip,
     webtoon: webtoon,
+    allCount: allCount,
+    doneIndexes: doneIndexes,
+    picked: picked,
   ),
 );
 
@@ -45,13 +57,24 @@ class _ExportDialog extends StatefulWidget {
     required this.currentAvailable,
     required this.hasSevenZip,
     required this.webtoon,
+    required this.allCount,
+    required this.doneIndexes,
+    required this.picked,
   });
 
   final ExportSettings initial;
+
+  /// Translated pages (the ones "All" saves).
   final int pageCount;
   final int chapters;
   final bool currentAvailable;
   final bool hasSevenZip;
+
+  /// All open pages, the translated ones among them (0-based), and the
+  /// picked pages as numbers ("1,5-8"; empty: none picked).
+  final int allCount;
+  final Set<int> doneIndexes;
+  final String picked;
 
   /// The webtoon mode: the strip can be saved joined or cut again.
   final bool webtoon;
@@ -68,12 +91,45 @@ class _ExportDialogState extends State<_ExportDialog> {
     if (s.imageFormat == 'psd') s = s.copyWith(strip: StripExport.pages);
     return s;
   }();
-  bool _currentOnly = false;
+  // Picked pages are offered first.
+  late _Which _which = widget.picked.isEmpty ? _Which.all : _Which.numbers;
+  late final _numbers = TextEditingController(text: widget.picked);
   late final _slice = TextEditingController(text: '${widget.initial.sliceHeight}');
   final _scroll = ScrollController();
 
+  /// The pages in the numbers field, or the part that is not a page.
+  (Set<int>?, String?) get _parsed {
+    try {
+      return (parsePageNumbers(_numbers.text, widget.allCount), null);
+    } on FormatException catch (e) {
+      return (null, e.message);
+    }
+  }
+
+  /// Translated pages among the numbers.
+  Set<int> get _numbered => (_parsed.$1 ?? const {}).intersection(widget.doneIndexes);
+
+  /// Brings the end of the window into view (after the next frame).
+  void _scrollDown() => WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (_scroll.hasClients) {
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    }
+  });
+
+  @override
+  void initState() {
+    super.initState();
+    // Picked pages are offered: their numbers in view.
+    if (_which == _Which.numbers) _scrollDown();
+  }
+
   @override
   void dispose() {
+    _numbers.dispose();
     _slice.dispose();
     _scroll.dispose();
     super.dispose();
@@ -190,15 +246,7 @@ class _ExportDialogState extends State<_ExportDialog> {
                   onSelectionChanged: (v) {
                     setState(() => _s = _s.copyWith(strip: v.first));
                     // The part height comes below: in view.
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (_scroll.hasClients) {
-                        _scroll.animateTo(
-                          _scroll.position.maxScrollExtent,
-                          duration: const Duration(milliseconds: 200),
-                          curve: Curves.easeOut,
-                        );
-                      }
-                    });
+                    _scrollDown();
                   },
                 ),
                 if (_psd)
@@ -231,15 +279,42 @@ class _ExportDialogState extends State<_ExportDialog> {
                   ),
               ],
               heading(l.exportWhich),
-              SegmentedButton<bool>(
+              SegmentedButton<_Which>(
                 segments: [
-                  ButtonSegment(value: false, label: Text(l.exportAllPages('${widget.pageCount}'))),
-                  ButtonSegment(value: true, label: Text(l.exportCurrentPage), enabled: widget.currentAvailable),
+                  ButtonSegment(value: _Which.all, label: Text(l.exportAllPages('${widget.pageCount}'))),
+                  ButtonSegment(
+                    value: _Which.current,
+                    label: Text(l.exportCurrentPage),
+                    enabled: widget.currentAvailable,
+                  ),
+                  ButtonSegment(value: _Which.numbers, label: Text(l.exportNumbers), enabled: widget.allCount > 1),
                 ],
-                selected: {_currentOnly},
-                onSelectionChanged: (v) => setState(() => _currentOnly = v.first),
+                selected: {_which},
+                onSelectionChanged: (v) {
+                  setState(() => _which = v.first);
+                  if (_which == _Which.numbers) _scrollDown();
+                },
               ),
-              if (widget.chapters > 1 && !_currentOnly)
+              if (_which == _Which.numbers)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: TextField(
+                    controller: _numbers,
+                    autofocus: widget.picked.isEmpty,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      border: const OutlineInputBorder(),
+                      labelText: l.pageNumbers,
+                      hintText: l.pageNumbersHint,
+                      errorText: _parsed.$2 == null ? null : l.pageNumbersWrong(_parsed.$2!, '${widget.allCount}'),
+                      helperText: _parsed.$2 == null
+                          ? l.exportNumbersReady('${_numbered.length}', '${_parsed.$1!.length}')
+                          : null,
+                    ),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+              if (widget.chapters > 1 && _which != _Which.current)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: check(l.exportByChapter('${widget.chapters}'), _s.byChapter, (v) => _s.copyWith(byChapter: v)),
@@ -251,7 +326,16 @@ class _ExportDialogState extends State<_ExportDialog> {
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
         FilledButton(
-          onPressed: _ready ? () => Navigator.pop(context, ExportChoice(_s, currentOnly: _currentOnly)) : null,
+          onPressed: _ready && (_which != _Which.numbers || _numbered.isNotEmpty)
+              ? () => Navigator.pop(
+                  context,
+                  ExportChoice(
+                    _s,
+                    currentOnly: _which == _Which.current,
+                    numbers: _which == _Which.numbers ? _numbered : null,
+                  ),
+                )
+              : null,
           child: Text(l.exportStart),
         ),
       ],

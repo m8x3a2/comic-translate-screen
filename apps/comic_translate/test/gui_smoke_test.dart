@@ -200,7 +200,8 @@ void main() {
     final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
     await tester.runAsync(() => container.read(workspaceProvider.notifier).addInputs([page.path]));
     await tester.pump();
-    expect(find.text('Перевести всё'), findsOneWidget);
+    expect(find.text('Перевести'), findsOneWidget);
+    expect(find.byTooltip('Перевести всё'), findsOneWidget, reason: 'the whole label');
   });
 
   testWidgets('"Auto" is the first source language and explains itself', (tester) async {

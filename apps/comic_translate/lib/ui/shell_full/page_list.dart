@@ -15,6 +15,7 @@ import '../common/key_bindings.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
 import 'page_grid.dart';
+import 'page_numbers_field.dart';
 
 class PageList extends ConsumerWidget {
   const PageList({super.key, this.onAdd, this.onAddAt, this.onPasteAt});
@@ -48,6 +49,7 @@ class PageList extends ConsumerWidget {
             ],
           ),
         ),
+        const Padding(padding: EdgeInsets.fromLTRB(8, 6, 8, 2), child: PageNumbersField()),
         Expanded(
           // Dragging a page moves it (not while "Translate all" runs).
           child: ReorderableListView.builder(

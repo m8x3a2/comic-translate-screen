@@ -330,4 +330,29 @@ void main() {
     expect(page().blocks.single.translation, 'Моё', reason: 'the hand-made text comes back');
     expect(page().handEdited, isTrue);
   });
+
+  test('pages picked by numbers; "Translate selected" translates only them', () async {
+    final more = [
+      for (final n in ['p2.png', 'p3.png', 'p4.png']) p.join(dir.path, n),
+    ];
+    for (final f in more) {
+      await ImageCodec.writeFile(f, RgbImage.filled(100, 60, 255, 255, 255));
+    }
+    await ws().addInputs(more);
+    ws().pickPages(parsePageNumbers('2, 4', 4));
+    var state = container.read(workspaceProvider);
+    expect(state.stepPages.map((x) => x.name), ['p2.png', 'p4.png']);
+    expect(state.currentPage!.name, 'p2.png', reason: 'the current page was not picked: the first one opens');
+
+    ws().pickPages({2});
+    state = container.read(workspaceProvider);
+    expect(state.selectedPages, isEmpty);
+    expect(state.currentPage!.name, 'p3.png', reason: 'one page is just opened');
+
+    ws().pickPages({0, 3});
+    state = container.read(workspaceProvider);
+    await container.read(batchProvider.notifier).run(_YesUi(), only: state.selectedPages);
+    final pages = container.read(workspaceProvider).pages;
+    expect([for (final x in pages) x.isDone], [true, false, false, true]);
+  });
 }

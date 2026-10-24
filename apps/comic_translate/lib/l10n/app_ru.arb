@@ -791,5 +791,18 @@
   "pageSortDateDown": "По дате файла: новые сначала",
   "pageSortReverse": "Перевернуть порядок",
   "pageSortDone": "Порядок страниц изменён",
-  "gridTileSize": "Размер миниатюр"
+  "gridTileSize": "Размер миниатюр",
+  "pageNumbers": "Номера страниц",
+  "pageNumbersHint": "номера: 1,5-8,10",
+  "pageNumbersTip": "Выбрать страницы номерами, например 1,5-8,10, и нажать Enter. Выбранные страницы берут шаги (Найти текст, Распознать…), обмен с чатом, экспорт и «Перевести выбранные».",
+  "pageNumbersWrong": "Не понял «{part}»: страниц всего {count}",
+  "pageNumbersPick": "Выбрать (Enter)",
+  "translateSelected": "Перевести выбранные ({count})",
+  "translateShort": "Перевести",
+  "translateShortCount": "Перевести ({count})",
+  "translateWhich": "Что переводить: всё или только выбранные страницы (выбор запоминается)",
+  "translateAllPages": "Перевести всё",
+  "translateSelectedHint": "Выберите страницы: Ctrl+щелчок в списке, номера вроде 1,5-8 или галочки в сетке",
+  "exportNumbers": "Номера",
+  "exportNumbersReady": "Переведённых среди них: {done} из {count} — сохранятся только они"
 }

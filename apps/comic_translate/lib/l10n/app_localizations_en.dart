@@ -2797,4 +2797,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get gridTileSize => 'Size of the pictures';
+
+  @override
+  String get pageNumbers => 'Page numbers';
+
+  @override
+  String get pageNumbersHint => 'numbers: 1,5-8,10';
+
+  @override
+  String get pageNumbersTip =>
+      'Pick pages by their numbers, like 1,5-8,10, and press Enter. The steps (Detect, Recognize…), the chat, the export and \"Translate selected\" work on the picked pages.';
+
+  @override
+  String pageNumbersWrong(String part, String count) {
+    return 'Not a page: \"$part\" (there are $count)';
+  }
+
+  @override
+  String get pageNumbersPick => 'Pick (Enter)';
+
+  @override
+  String translateSelected(String count) {
+    return 'Translate selected ($count)';
+  }
+
+  @override
+  String get translateShort => 'Translate';
+
+  @override
+  String translateShortCount(String count) {
+    return 'Translate ($count)';
+  }
+
+  @override
+  String get translateWhich =>
+      'What to translate: everything or only the picked pages (remembered)';
+
+  @override
+  String get translateAllPages => 'Translate all';
+
+  @override
+  String get translateSelectedHint =>
+      'Pick pages first: Ctrl+click in the list, numbers like 1,5-8, or ticks in the grid';
+
+  @override
+  String get exportNumbers => 'Numbers';
+
+  @override
+  String exportNumbersReady(String done, String count) {
+    return 'Translated among them: $done of $count; only these are saved';
+  }
 }

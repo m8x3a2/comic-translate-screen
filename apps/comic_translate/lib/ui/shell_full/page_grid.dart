@@ -14,6 +14,7 @@ import '../../state/batch.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
 import 'page_list.dart' show PageSortButton, showPageMenu;
+import 'page_numbers_field.dart';
 
 /// The grid of pages is open.
 final pageGridOpenProvider = NotifierProvider<_GridOpen, bool>(_GridOpen.new);
@@ -85,6 +86,30 @@ class _PageGridState extends ConsumerState<PageGrid> {
                   const SizedBox(width: 16),
                   Text(l.pageGridPicked('${picked.length}'), style: theme.textTheme.bodyMedium),
                   const Spacer(),
+                  TextButton(onPressed: notifier.pickAllPages, child: Text(l.pageGridPickAll)),
+                  TextButton(onPressed: notifier.clearPageSelection, child: Text(l.pageGridPickNone)),
+                  const SizedBox(width: 8),
+                  FilledButton.tonalIcon(
+                    onPressed: _close,
+                    icon: const Icon(Icons.close),
+                    label: Text(l.pageGridClose),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      locked ? l.pageGridLocked : l.pageGridHint,
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const SizedBox(width: 220, child: PageNumbersField(dense: false)),
+                  const SizedBox(width: 16),
                   Tooltip(message: l.gridTileSize, child: const Icon(Icons.photo_size_select_large, size: 20)),
                   SizedBox(
                     width: 160,
@@ -102,26 +127,7 @@ class _PageGridState extends ConsumerState<PageGrid> {
                     ),
                   ),
                   PageSortButton(enabled: !locked && ws.pages.length > 1),
-                  const SizedBox(width: 8),
-                  TextButton(onPressed: notifier.pickAllPages, child: Text(l.pageGridPickAll)),
-                  TextButton(onPressed: notifier.clearPageSelection, child: Text(l.pageGridPickNone)),
-                  const SizedBox(width: 8),
-                  FilledButton.tonalIcon(
-                    onPressed: _close,
-                    icon: const Icon(Icons.close),
-                    label: Text(l.pageGridClose),
-                  ),
                 ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  locked ? l.pageGridLocked : l.pageGridHint,
-                  style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
-                ),
               ),
             ),
             const Divider(height: 1),

@@ -4849,6 +4849,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Size of the pictures'**
   String get gridTileSize;
+
+  /// No description provided for @pageNumbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Page numbers'**
+  String get pageNumbers;
+
+  /// No description provided for @pageNumbersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'numbers: 1,5-8,10'**
+  String get pageNumbersHint;
+
+  /// No description provided for @pageNumbersTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick pages by their numbers, like 1,5-8,10, and press Enter. The steps (Detect, Recognize…), the chat, the export and \"Translate selected\" work on the picked pages.'**
+  String get pageNumbersTip;
+
+  /// No description provided for @pageNumbersWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a page: \"{part}\" (there are {count})'**
+  String pageNumbersWrong(String part, String count);
+
+  /// No description provided for @pageNumbersPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick (Enter)'**
+  String get pageNumbersPick;
+
+  /// No description provided for @translateSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate selected ({count})'**
+  String translateSelected(String count);
+
+  /// No description provided for @translateShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get translateShort;
+
+  /// No description provided for @translateShortCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate ({count})'**
+  String translateShortCount(String count);
+
+  /// No description provided for @translateWhich.
+  ///
+  /// In en, this message translates to:
+  /// **'What to translate: everything or only the picked pages (remembered)'**
+  String get translateWhich;
+
+  /// No description provided for @translateAllPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate all'**
+  String get translateAllPages;
+
+  /// No description provided for @translateSelectedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick pages first: Ctrl+click in the list, numbers like 1,5-8, or ticks in the grid'**
+  String get translateSelectedHint;
+
+  /// No description provided for @exportNumbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbers'**
+  String get exportNumbers;
+
+  /// No description provided for @exportNumbersReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Translated among them: {done} of {count}; only these are saved'**
+  String exportNumbersReady(String done, String count);
 }
 
 class _AppLocalizationsDelegate

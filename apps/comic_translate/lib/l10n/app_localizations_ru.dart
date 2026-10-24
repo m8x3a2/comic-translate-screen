@@ -2798,4 +2798,54 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get gridTileSize => 'Размер миниатюр';
+
+  @override
+  String get pageNumbers => 'Номера страниц';
+
+  @override
+  String get pageNumbersHint => 'номера: 1,5-8,10';
+
+  @override
+  String get pageNumbersTip =>
+      'Выбрать страницы номерами, например 1,5-8,10, и нажать Enter. Выбранные страницы берут шаги (Найти текст, Распознать…), обмен с чатом, экспорт и «Перевести выбранные».';
+
+  @override
+  String pageNumbersWrong(String part, String count) {
+    return 'Не понял «$part»: страниц всего $count';
+  }
+
+  @override
+  String get pageNumbersPick => 'Выбрать (Enter)';
+
+  @override
+  String translateSelected(String count) {
+    return 'Перевести выбранные ($count)';
+  }
+
+  @override
+  String get translateShort => 'Перевести';
+
+  @override
+  String translateShortCount(String count) {
+    return 'Перевести ($count)';
+  }
+
+  @override
+  String get translateWhich =>
+      'Что переводить: всё или только выбранные страницы (выбор запоминается)';
+
+  @override
+  String get translateAllPages => 'Перевести всё';
+
+  @override
+  String get translateSelectedHint =>
+      'Выберите страницы: Ctrl+щелчок в списке, номера вроде 1,5-8 или галочки в сетке';
+
+  @override
+  String get exportNumbers => 'Номера';
+
+  @override
+  String exportNumbersReady(String done, String count) {
+    return 'Переведённых среди них: $done из $count — сохранятся только они';
+  }
 }

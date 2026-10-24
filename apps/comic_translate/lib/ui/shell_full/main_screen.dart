@@ -438,14 +438,18 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
-  Future<void> _translate() async {
+  /// "Translate all", or only the picked pages ([selectedOnly]; by default
+  /// as chosen under the button's arrow).
+  Future<void> _translate({bool? selectedOnly}) async {
     final l = context.l10n;
     BatchReport? lastReport() => switch (ref.read(batchProvider)) {
       BatchIdle(:final last) => last,
       _ => null,
     };
     final before = lastReport();
-    await ref.read(batchProvider.notifier).run(DialogBatchUi(context));
+    final picked = ref.read(workspaceProvider).selectedPages;
+    final only = (selectedOnly ?? ref.read(settingsProvider).translateSelected) && picked.length > 1;
+    await ref.read(batchProvider.notifier).run(DialogBatchUi(context), only: only ? picked : null);
     if (!mounted) return;
     final report = lastReport();
     // Not run (cancelled before starting): no report of an earlier run.
@@ -478,10 +482,29 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       currentAvailable: current != null && current.isDone,
       hasSevenZip: findSevenZip() != null,
       webtoon: ws.webtoon,
+      allCount: ws.pages.length,
+      doneIndexes: {
+        for (final (i, page) in ws.pages.indexed)
+          if (page.isDone) i,
+      },
+      picked: ws.selectedPages.length < 2
+          ? ''
+          : pageNumbersText([
+              for (final (i, page) in ws.pages.indexed)
+                if (ws.selectedPages.contains(page.id)) i,
+            ]),
     );
     if (choice == null || !mounted) return;
     await ref.read(settingsProvider.notifier).change((s) => s.export = choice.settings);
-    final pages = choice.currentOnly ? [current!] : done;
+    final numbers = choice.numbers;
+    final pages = choice.currentOnly
+        ? [current!]
+        : numbers != null
+        ? [
+            for (final (i, page) in ws.pages.indexed)
+              if (numbers.contains(i)) page,
+          ]
+        : done;
     // Pages are joined or cut again only as a webtoon strip.
     final options = (ws.webtoon ? choice.settings : choice.settings.copyWith(strip: StripExport.pages)).options;
     final split = options.byChapter && chapterCount(pages) > 1;
@@ -760,6 +783,90 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   }
 }
 
+/// "Translate all | ▾": the arrow chooses between all pages and only the
+/// picked ones (the owner's idea); the choice stays on the button.
+class _TranslateButton extends ConsumerWidget {
+  const _TranslateButton({required this.enabled, required this.compact, required this.onTranslate});
+
+  final bool enabled;
+
+  /// A narrow window: a short label, the whole one in the tooltip.
+  final bool compact;
+  final void Function({bool? selectedOnly}) onTranslate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final ws = ref.watch(workspaceProvider);
+    final picked = ws.selectedPages.length > 1 ? ws.selectedPages.length : 0;
+    final selectedOnly = ref.watch(settingsProvider.select((s) => s.translateSelected)) && picked > 0;
+    final pages = selectedOnly ? ws.stepPages : ws.pages;
+    final label = selectedOnly
+        ? l.translateSelected('$picked')
+        : pages.isNotEmpty && pages.every((p) => p.isDone)
+        ? l.translateAgain
+        : l.translateAll;
+    const round = Radius.circular(20);
+    void choose(bool only) {
+      ref.read(settingsProvider.notifier).change((s) => s.translateSelected = only);
+      onTranslate(selectedOnly: only);
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FilledButton.icon(
+          style: FilledButton.styleFrom(
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.horizontal(left: round)),
+          ),
+          onPressed: enabled ? () => onTranslate(selectedOnly: selectedOnly) : null,
+          icon: const Icon(Icons.translate),
+          label: Tooltip(
+            message: compact ? label : '',
+            child: Text(compact ? (selectedOnly ? l.translateShortCount('$picked') : l.translateShort) : label),
+          ),
+        ),
+        const SizedBox(width: 2),
+        MenuAnchor(
+          alignmentOffset: const Offset(-200, 4),
+          menuChildren: [
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.translate),
+              onPressed: () => choose(false),
+              child: Text(l.translateAllPages),
+            ),
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.checklist),
+              onPressed: picked > 0 ? () => choose(true) : null,
+              child: Text(l.translateSelected('$picked')),
+            ),
+            if (picked == 0)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 280),
+                  child: Text(l.translateSelectedHint, style: Theme.of(context).textTheme.bodySmall),
+                ),
+              ),
+          ],
+          builder: (context, menu, _) => Tooltip(
+            message: l.translateWhich,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.horizontal(right: round)),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: const Size(36, 40),
+              ),
+              onPressed: enabled ? () => menu.isOpen ? menu.close() : menu.open() : null,
+              child: const Icon(Icons.arrow_drop_down),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _TopBar extends ConsumerWidget {
   const _TopBar({
     required this.onOpenFiles,
@@ -780,7 +887,7 @@ class _TopBar extends ConsumerWidget {
   final void Function([String? path]) onOpenProject;
   final VoidCallback onSaveProject;
   final VoidCallback onSaveProjectAs;
-  final VoidCallback onTranslate;
+  final void Function({bool? selectedOnly}) onTranslate;
   final void Function(ExchangeMode mode) onChat;
   final VoidCallback onChatFolder;
   final VoidCallback onExport;
@@ -932,10 +1039,11 @@ class _TopBar extends ConsumerWidget {
                   label: Text(batch.stopping ? l.stopping : l.stop),
                 )
               else
-                FilledButton.icon(
-                  onPressed: hasPages && !ref.watch(stepsProvider).running ? onTranslate : null,
-                  icon: const Icon(Icons.translate),
-                  label: Text(hasPages && ws.pages.every((p) => p.isDone) ? l.translateAgain : l.translateAll),
+                _TranslateButton(
+                  enabled: hasPages && !ref.watch(stepsProvider).running,
+                  // The smallest windows: the label is cut short.
+                  compact: c.maxWidth < 1150,
+                  onTranslate: onTranslate,
                 ),
               if (last != null) ...[
                 const SizedBox(width: 8),
