@@ -713,14 +713,31 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   void selectBlock(int? index) =>
       state = index == null ? state.copyWith(clearBlock: true) : state.copyWith(selectedBlock: index);
 
-  void remove(String id) {
-    final pages = [...state.pages]..removeWhere((p) => p.id == id);
-    final picked = {...state.selectedPages}..remove(id);
+  void remove(String id) => removePages({id});
+
+  /// Takes pages [ids] out of the list (their files stay on disk). The open
+  /// page stays open unless it goes; then the page after it opens.
+  void removePages(Set<String> ids) {
+    if (ids.isEmpty) return;
+    final old = state.pages;
+    final open = state.currentPage?.id;
+    final pages = [
+      for (final p in old)
+        if (!ids.contains(p.id)) p,
+    ];
+    var current = pages.indexWhere((p) => p.id == open);
+    if (current < 0) {
+      // The first page after the open one that stays.
+      final from = old.indexWhere((p) => p.id == open);
+      final next = old.skip(from + 1).where((p) => !ids.contains(p.id)).firstOrNull;
+      current = next == null ? pages.length - 1 : pages.indexOf(next);
+    }
+    final picked = {...state.selectedPages}..removeAll(ids);
     state = state.copyWith(
       pages: pages,
-      current: state.current.clamp(0, pages.isEmpty ? 0 : pages.length - 1),
+      current: current.clamp(0, pages.isEmpty ? 0 : pages.length - 1),
       clearBlock: true,
-      history: {...state.history}..remove(id),
+      history: {...state.history}..removeWhere((id, _) => ids.contains(id)),
       selectedPages: picked.length < 2 ? const {} : picked,
     );
   }

@@ -985,7 +985,7 @@
   },
   "boxesDeleteAll": "Delete all boxes of the page",
   "languagesForAll": "Use this page's languages for all pages",
-  "pagesPicked": "Pages selected: {count} (Ctrl or Shift + click)",
+  "pagesPicked": "Pages selected: {count}",
   "@pagesPicked": {
     "placeholders": {
       "count": {
@@ -1845,7 +1845,7 @@
   "translateWhich": "What to translate: everything or only the picked pages (remembered)",
   "translateAllPages": "Translate all",
   "translateSelectedHint": "Pick pages first: Ctrl+click in the list, numbers like 1,5-8, or ticks in the grid",
-  "exportNumbers": "Numbers",
+  "exportNumbers": "Picked / numbers",
   "exportNumbersReady": "Translated among them: {done} of {count}; only these are saved",
   "@exportNumbersReady": {
     "placeholders": {
@@ -1886,5 +1886,23 @@
   "settingsViewFull": "Over the whole window",
   "settingsViewPanel": "As a panel beside the page",
   "settingsViewLast": "As the last time",
-  "settingsViewHelp": "While the app runs, the settings open as you left them (the button in their title). This is how they open after the app starts."
+  "settingsViewHelp": "While the app runs, the settings open as you left them (the button in their title). This is how they open after the app starts.",
+  "removePicked": "Remove the picked ({count})…",
+  "@removePicked": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "removePagesTitle": "Remove {count} pages from the list?",
+  "@removePagesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "removePagesBody": "The files on disk stay. The translation and edits of these pages are lost unless saved in a project or exported.",
+  "removePagesYes": "Remove"
 }

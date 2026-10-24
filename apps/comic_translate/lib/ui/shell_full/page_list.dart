@@ -84,6 +84,13 @@ class PageList extends ConsumerWidget {
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                 ),
+                if (!running)
+                  IconButton(
+                    tooltip: context.l10n.removePicked('${ws.selectedPages.length}'),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => removePickedPages(context, ref),
+                    icon: const Icon(Icons.delete_sweep_outlined, size: 18),
+                  ),
                 IconButton(
                   tooltip: context.l10n.pagesPickedClear,
                   visualDensity: VisualDensity.compact,
@@ -157,6 +164,26 @@ class PageSortButton extends ConsumerWidget {
   }
 }
 
+/// Takes the picked pages out of the list, after asking (their files stay).
+Future<void> removePickedPages(BuildContext context, WidgetRef ref) async {
+  final ids = {...ref.read(workspaceProvider).selectedPages};
+  if (ids.isEmpty) return;
+  final l = context.l10n;
+  final yes = await showDialog<bool>(
+    context: context,
+    builder: (c) => AlertDialog(
+      icon: const Icon(Icons.delete_sweep_outlined),
+      title: Text(l.removePagesTitle('${ids.length}')),
+      content: Text(l.removePagesBody),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.cancel)),
+        FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.removePagesYes)),
+      ],
+    ),
+  );
+  if (yes ?? false) ref.read(workspaceProvider.notifier).removePages(ids);
+}
+
 /// The right-click menu of a page in the list and in the grid: pages from
 /// the clipboard or files below it, removing it.
 void showPageMenu(
@@ -169,6 +196,7 @@ void showPageMenu(
   ValueChanged<int>? onPasteAt,
 }) {
   final l = context.l10n;
+  final picked = ref.read(workspaceProvider).selectedPages;
   showMenu<void>(
     context: context,
     position: RelativeRect.fromLTRB(at.dx, at.dy, at.dx, at.dy),
@@ -196,6 +224,15 @@ void showPageMenu(
         onTap: () => ref.read(workspaceProvider.notifier).remove(page.id),
         child: ListTile(dense: true, leading: const Icon(Icons.delete_outline), title: Text(l.removePage)),
       ),
+      if (picked.length > 1 && picked.contains(page.id))
+        PopupMenuItem(
+          onTap: () => removePickedPages(context, ref),
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.delete_sweep_outlined),
+            title: Text(l.removePicked('${picked.length}')),
+          ),
+        ),
     ],
   );
 }

@@ -1523,7 +1523,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String pagesPicked(String count) {
-    return 'Выбрано страниц: $count (Ctrl или Shift + щелчок)';
+    return 'Выбрано страниц: $count';
   }
 
   @override
@@ -2842,7 +2842,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Выберите страницы: Ctrl+щелчок в списке, номера вроде 1,5-8 или галочки в сетке';
 
   @override
-  String get exportNumbers => 'Номера';
+  String get exportNumbers => 'Выбранные / номера';
 
   @override
   String exportNumbersReady(String done, String count) {
@@ -2902,4 +2902,21 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get settingsViewHelp =>
       'Пока программа открыта, настройки открываются так, как вы их оставили (кнопка в заголовке настроек). Здесь — как открывать после запуска программы.';
+
+  @override
+  String removePicked(String count) {
+    return 'Убрать выбранные ($count)…';
+  }
+
+  @override
+  String removePagesTitle(String count) {
+    return 'Убрать из списка страниц: $count?';
+  }
+
+  @override
+  String get removePagesBody =>
+      'Файлы на диске останутся. Перевод и правки этих страниц пропадут, если они не сохранены в проект или не экспортированы.';
+
+  @override
+  String get removePagesYes => 'Убрать';
 }

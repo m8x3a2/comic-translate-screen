@@ -1523,7 +1523,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String pagesPicked(String count) {
-    return 'Pages selected: $count (Ctrl or Shift + click)';
+    return 'Pages selected: $count';
   }
 
   @override
@@ -2841,7 +2841,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pick pages first: Ctrl+click in the list, numbers like 1,5-8, or ticks in the grid';
 
   @override
-  String get exportNumbers => 'Numbers';
+  String get exportNumbers => 'Picked / numbers';
 
   @override
   String exportNumbersReady(String done, String count) {
@@ -2901,4 +2901,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsViewHelp =>
       'While the app runs, the settings open as you left them (the button in their title). This is how they open after the app starts.';
+
+  @override
+  String removePicked(String count) {
+    return 'Remove the picked ($count)…';
+  }
+
+  @override
+  String removePagesTitle(String count) {
+    return 'Remove $count pages from the list?';
+  }
+
+  @override
+  String get removePagesBody =>
+      'The files on disk stay. The translation and edits of these pages are lost unless saved in a project or exported.';
+
+  @override
+  String get removePagesYes => 'Remove';
 }

@@ -355,4 +355,27 @@ void main() {
     final pages = container.read(workspaceProvider).pages;
     expect([for (final x in pages) x.isDone], [true, false, false, true]);
   });
+
+  test('several pages go at once; the open one stays, or the next one opens', () async {
+    final more = [
+      for (final n in ['p2.png', 'p3.png', 'p4.png', 'p5.png']) p.join(dir.path, n),
+    ];
+    for (final f in more) {
+      await ImageCodec.writeFile(f, RgbImage.filled(100, 60, 255, 255, 255));
+    }
+    await ws().addInputs(more);
+    List<String> names() => [for (final x in container.read(workspaceProvider).pages) x.name];
+    String id(String name) => container.read(workspaceProvider).pages.firstWhere((x) => x.name == name).id;
+
+    ws().select(3);
+    ws().removePages({id('page.png'), id('p3.png')});
+    expect(names(), ['p2.png', 'p4.png', 'p5.png']);
+    expect(page().name, 'p4.png', reason: 'the open page stays open');
+
+    ws().pickPages({0, 1});
+    ws().removePages({...container.read(workspaceProvider).selectedPages});
+    expect(names(), ['p5.png']);
+    expect(page().name, 'p5.png', reason: 'the open page went: the next one opens');
+    expect(container.read(workspaceProvider).selectedPages, isEmpty);
+  });
 }

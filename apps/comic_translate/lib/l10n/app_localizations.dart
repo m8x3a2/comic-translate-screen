@@ -2735,7 +2735,7 @@ abstract class AppLocalizations {
   /// No description provided for @pagesPicked.
   ///
   /// In en, this message translates to:
-  /// **'Pages selected: {count} (Ctrl or Shift + click)'**
+  /// **'Pages selected: {count}'**
   String pagesPicked(String count);
 
   /// No description provided for @pagesPickedClear.
@@ -4919,7 +4919,7 @@ abstract class AppLocalizations {
   /// No description provided for @exportNumbers.
   ///
   /// In en, this message translates to:
-  /// **'Numbers'**
+  /// **'Picked / numbers'**
   String get exportNumbers;
 
   /// No description provided for @exportNumbersReady.
@@ -5023,6 +5023,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'While the app runs, the settings open as you left them (the button in their title). This is how they open after the app starts.'**
   String get settingsViewHelp;
+
+  /// No description provided for @removePicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the picked ({count})…'**
+  String removePicked(String count);
+
+  /// No description provided for @removePagesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {count} pages from the list?'**
+  String removePagesTitle(String count);
+
+  /// No description provided for @removePagesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The files on disk stay. The translation and edits of these pages are lost unless saved in a project or exported.'**
+  String get removePagesBody;
+
+  /// No description provided for @removePagesYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removePagesYes;
 }
 
 class _AppLocalizationsDelegate
