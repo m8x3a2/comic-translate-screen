@@ -10,6 +10,7 @@ import 'package:ct_core/ct_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
+import '../../render/bundled_fonts.dart';
 import '../../render/text_renderer.dart';
 import '../../state/app_state.dart';
 
@@ -36,9 +37,10 @@ const _windowsFonts = {
 
 List<String>? _installed;
 
-/// Families to choose from, the bundled font first.
+/// Families to choose from: the bundled fonts (the default first), then
+/// common Windows fonts that are installed.
 List<String> availableFonts() => _installed ??= [
-  defaultFontFamily,
+  for (final f in bundledFonts) f.family,
   if (Platform.isWindows)
     for (final e in _windowsFonts.entries)
       if (File(p.join(Platform.environment['WINDIR'] ?? r'C:\Windows', 'Fonts', e.value)).existsSync()) e.key,

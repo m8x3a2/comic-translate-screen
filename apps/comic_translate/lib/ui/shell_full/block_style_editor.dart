@@ -10,10 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/app_state.dart';
+import '../../state/block_looks.dart';
 import '../../state/page_layout.dart';
 import '../../state/workspace.dart';
 import '../common/fonts.dart';
 import '../common/labels.dart';
+import 'font_suggest.dart';
 
 const _colors = [
   0xFF000000, 0xFFFFFFFF, 0xFF424242, 0xFF9E9E9E, 0xFFD32F2F, 0xFFF57C00, //
@@ -34,7 +36,10 @@ class BlockStyleEditor extends ConsumerWidget {
     if (page == null || index >= page.blocks.length) return const SizedBox.shrink();
     final block = page.blocks[index];
     final s = block.style ?? const BlockStyle();
-    final r = s.applyTo(ref.watch(settingsProvider.select((x) => x.render)));
+    final settings = ref.watch(settingsProvider);
+    // As drawn: the source look (see "Look as in the original") under the
+    // block's own.
+    final r = blockRenderSettings(block, settings.render, PageLettering.of(page.blocks));
     final ws = ref.read(workspaceProvider.notifier);
     void set(BlockStyle Function(BlockStyle s) change, {String? merge}) =>
         ws.styleBlock(index, change, mergeKey: merge);
@@ -89,6 +94,12 @@ class BlockStyleEditor extends ConsumerWidget {
                   if (file != null) set((s) => s.copyWith(fontFamily: file.path));
                 },
               ),
+              IconButton(
+                tooltip: l.fontSuggest,
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.auto_awesome_outlined, size: 20),
+                onPressed: () => showFontSuggestions(context, ref, block: index),
+              ),
             ],
           ),
         ),
@@ -99,9 +110,21 @@ class BlockStyleEditor extends ConsumerWidget {
             children: [
               FilterChip(
                 label: Text(l.sizeAuto),
-                selected: s.fontSizePt == null,
+                selected: s.fontSizePt == null && s.sourceSizePx == null,
                 visualDensity: VisualDensity.compact,
-                onSelected: (auto) => set((s) => s.copyWith(fontSizePt: auto ? null : (fitted ?? r.maxFontSize))),
+                onSelected: (auto) =>
+                    set((s) => s.copyWith(fontSizePt: auto ? null : (fitted ?? r.maxFontSize), sourceSizePx: null)),
+              ),
+              FilterChip(
+                label: Text(l.fromSource),
+                tooltip: l.sizeFromSource,
+                selected: s.sourceSizePx != null,
+                visualDensity: VisualDensity.compact,
+                onSelected: (_) {
+                  if (toggleSourceSize(ref, block: index) == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.sizeFromSourceUnknown)));
+                  }
+                },
               ),
               // − size + wrap as one group.
               Row(
@@ -111,7 +134,10 @@ class BlockStyleEditor extends ConsumerWidget {
                     visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.remove, size: 18),
                     onPressed: () => set(
-                      (s) => s.copyWith(fontSizePt: ((s.fontSizePt ?? fitted ?? r.maxFontSize) - 1).clamp(4, 200)),
+                      (s) => s.copyWith(
+                        fontSizePt: ((s.fontSizePt ?? fitted ?? r.maxFontSize) - 1).clamp(4, 200),
+                        sourceSizePx: null,
+                      ),
                       merge: 'size:$index',
                     ),
                   ),
@@ -126,7 +152,10 @@ class BlockStyleEditor extends ConsumerWidget {
                     visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.add, size: 18),
                     onPressed: () => set(
-                      (s) => s.copyWith(fontSizePt: ((s.fontSizePt ?? fitted ?? r.minFontSize) + 1).clamp(4, 200)),
+                      (s) => s.copyWith(
+                        fontSizePt: ((s.fontSizePt ?? fitted ?? r.minFontSize) + 1).clamp(4, 200),
+                        sourceSizePx: null,
+                      ),
                       merge: 'size:$index',
                     ),
                   ),
@@ -207,6 +236,46 @@ class BlockStyleEditor extends ConsumerWidget {
           ),
         ),
         row(
+          l.textCase,
+          Wrap(
+            children: [
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: true, label: Text('АБВ')),
+                  ButtonSegment(value: false, label: Text('Абв')),
+                ],
+                selected: {drawnInCapitals(block, settings)},
+                showSelectedIcon: false,
+                style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                onSelectionChanged: (v) => set((s) => s.copyWith(upperCase: v.first)),
+              ),
+            ],
+          ),
+        ),
+        row(
+          l.textFit,
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              FilterChip(
+                label: Text(l.hyphenateBlock),
+                tooltip: l.hyphenateInfo,
+                selected: r.hyphenate,
+                visualDensity: VisualDensity.compact,
+                onSelected: (v) => set((s) => s.copyWith(hyphenate: v)),
+              ),
+              FilterChip(
+                label: Text(l.shapeFitBlock),
+                tooltip: l.shapeFitInfo,
+                selected: r.shapeFit,
+                visualDensity: VisualDensity.compact,
+                onSelected: (v) => set((s) => s.copyWith(shapeFit: v)),
+              ),
+            ],
+          ),
+        ),
+        row(
           l.lineSpacing,
           Slider(
             value: r.lineSpacing.clamp(0.6, 2.5),
@@ -244,9 +313,14 @@ class BlockStyleEditor extends ConsumerWidget {
               icon: const Icon(Icons.copy_all_outlined, size: 18),
               label: Text(l.styleToAll),
               onPressed: () {
-                final look = s.copyWith(textBox: null, angle: null, fontSizePt: null);
+                final look = s.copyWith(textBox: null, angle: null, fontSizePt: null, sourceSizePx: null);
                 ws.styleAll(
-                  (other) => look.copyWith(textBox: other.textBox, angle: other.angle, fontSizePt: other.fontSizePt),
+                  (other) => look.copyWith(
+                    textBox: other.textBox,
+                    angle: other.angle,
+                    fontSizePt: other.fontSizePt,
+                    sourceSizePx: other.sourceSizePx,
+                  ),
                 );
               },
             ),

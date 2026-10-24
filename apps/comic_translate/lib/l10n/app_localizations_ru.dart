@@ -2565,4 +2565,98 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get chatSeparatorHelp =>
       'Любой знак, по умолчанию -->. Он попадёт в инструкцию для чата; обычные стрелки тоже понимаются.';
+
+  @override
+  String get textCase => 'Регистр';
+
+  @override
+  String get textCaseSource => 'Как в оригинале';
+
+  @override
+  String get textCaseUpper => 'ВСЕ ЗАГЛАВНЫЕ';
+
+  @override
+  String get textCaseNormal => 'Обычные буквы';
+
+  @override
+  String get textCaseInfo =>
+      'Почти все комиксы написаны заглавными буквами. «Как в оригинале»: где в пузыре оригинала заглавные, перевод тоже будет заглавными, иначе — обычными буквами. Для страницы или одного пузыря — кнопка «Аа» в панели «Текст».';
+
+  @override
+  String get matchSource => 'Оформление как в оригинале';
+
+  @override
+  String get matchSourceInfo =>
+      'Программа смотрит на буквы оригинала и рисует перевод так же: жирным, где буквы заметно толще, чем в других пузырях страницы; курсивом, где они наклонены; с обводкой того же цвета у надписей и звуков поверх рисунка. Определяется при распознавании; у очень мелкого текста жирность и наклон не определяются. Выключите, чтобы оформление было одинаковым для всех пузырей.';
+
+  @override
+  String get hyphenate => 'Переносы по слогам';
+
+  @override
+  String get hyphenateInfo =>
+      'Длинные русские слова можно переносить по слогам («пре-восходительство»). Перенос ставится только там, где без него текст пришлось бы заметно уменьшить.';
+
+  @override
+  String get shapeFit => 'Строки по форме пузыря';
+
+  @override
+  String get shapeFitInfo =>
+      'Строки ложатся по овалу пузыря, как у леттеров: сверху и снизу короче, посередине длиннее; размер букв в пузыре один. Работает, когда в пузыре один кусок текста. Для одного пузыря — в его оформлении.';
+
+  @override
+  String get fontSuggest => 'Подобрать шрифт…';
+
+  @override
+  String get fontSuggestTitle => 'Похожие шрифты';
+
+  @override
+  String get fontSuggestHint =>
+      'Сравнение с буквами оригинала на этой странице. Шрифт сам не меняется: выберите подходящий.';
+
+  @override
+  String get fontSuggestNoText =>
+      'На странице нет распознанного текста: сначала нажмите «Распознать».';
+
+  @override
+  String get fontSuggestForAll => 'Для всех пузырей';
+
+  @override
+  String get fontSuggestForBlock => 'Только для этого пузыря';
+
+  @override
+  String get fontSuggestOriginal => 'Оригинал';
+
+  @override
+  String get caseToggle =>
+      'ЗАГЛАВНЫЕ ↔ обычные буквы на этой странице или выбранных страницах';
+
+  @override
+  String get caseToggleBlock => 'ЗАГЛАВНЫЕ ↔ обычные буквы в этом пузыре';
+
+  @override
+  String get sizeFromSource => 'Размер как в оригинале';
+
+  @override
+  String get sizeFromSourcePages =>
+      'Размер букв как в оригинале на этой странице или выбранных страницах (в тесном пузыре меньше)';
+
+  @override
+  String get sizeFromSourceUnknown =>
+      'Размер букв оригинала неизвестен: нажмите «Распознать» ещё раз.';
+
+  @override
+  String get styleResetPages =>
+      'Сбросить оформление пузырей на этой странице или выбранных страницах';
+
+  @override
+  String get hyphenateBlock => 'Переносы';
+
+  @override
+  String get shapeFitBlock => 'По форме пузыря';
+
+  @override
+  String get fromSource => 'как в оригинале';
+
+  @override
+  String get textFit => 'Вписывание';
 }

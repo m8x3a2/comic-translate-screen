@@ -13,6 +13,8 @@ import 'dart:ui' as ui;
 import 'package:crypto/crypto.dart';
 import 'package:ct_core/ct_core.dart';
 
+import 'bundled_fonts.dart';
+
 /// Bundled default lettering font (see pubspec.yaml).
 const defaultFontFamily = 'Pangolin';
 
@@ -46,12 +48,23 @@ Future<String> resolveFontFamily(String setting) async {
 final _rotateInVertical = RegExp('[ー―—–~〜～…‥()（）［］\\[\\]「」『』【】〈〉《》<>-]');
 
 /// Measures and draws text with one set of render settings.
-class UiTextEngine implements TextMeasurer {
-  UiTextEngine(this.settings, {required this.fontFamily, this.rtl = false});
+class UiTextEngine implements TextMeasurer, LetterMetrics {
+  UiTextEngine(this.settings, {required this.fontFamily, this.rtl = false, this.capHeight = 0.7, this.xHeight = 0.5})
+    : _variable = bundledFont(fontFamily)?.variable ?? false;
 
   final RenderSettings settings;
   final String fontFamily;
   final bool rtl;
+
+  @override
+  final double capHeight;
+
+  @override
+  final double xHeight;
+
+  /// The font's weight is an axis: bold sets it instead of thickening the
+  /// letters.
+  final bool _variable;
   final _cache = <String, ui.Paragraph>{};
   final _naturalRatio = <int, double>{};
 
@@ -76,7 +89,8 @@ class UiTextEngine implements TextMeasurer {
     fontFamily: fontFamily,
     fontFamilyFallback: const ['Segoe UI', 'Yu Gothic UI', 'Microsoft YaHei UI', 'Malgun Gothic', 'Noto Sans'],
     fontSize: ptToPx(pt),
-    fontWeight: settings.bold ? ui.FontWeight.bold : ui.FontWeight.normal,
+    fontWeight: settings.bold && !_variable ? ui.FontWeight.bold : ui.FontWeight.normal,
+    fontVariations: _variable ? [ui.FontVariation('wght', settings.bold ? 700 : 400)] : null,
     fontStyle: settings.italic ? ui.FontStyle.italic : ui.FontStyle.normal,
     decoration: settings.underline ? ui.TextDecoration.underline : null,
     height: lineHeight,
@@ -199,13 +213,16 @@ class UiTextEngine implements TextMeasurer {
 /// Text engines of one page: the render settings and every block style's
 /// variant of them. Fonts are loaded by [TextEngines.load].
 class TextEngines {
-  TextEngines._(this.base, this.rtl, this._families);
+  TextEngines._(this.base, this.rtl, this._families, this._letters);
 
   final RenderSettings base;
   final bool rtl;
 
   /// Font setting → family.
   final Map<String, String> _families;
+
+  /// Family → ink heights of its capitals and small letters.
+  final Map<String, (double, double)> _letters;
   final _engines = <String, UiTextEngine>{};
 
   /// Loads the fonts of [base] and of the styles of [blocks]. A font file
@@ -223,7 +240,8 @@ class TextEngines {
         families[setting] = defaultFontFamily;
       }
     }
-    return TextEngines._(base, rtl, families);
+    final letters = {for (final family in families.values.toSet()) family: await _letterHeights(family)};
+    return TextEngines._(base, rtl, families, letters);
   }
 
   /// Whether the fonts of [blocks] are loaded.
@@ -231,13 +249,83 @@ class TextEngines {
 
   UiTextEngine get main => of(base);
 
-  UiTextEngine of(RenderSettings s) => _engines.putIfAbsent(
-    jsonEncode(s.toJson()),
-    () => UiTextEngine(s, fontFamily: _families[s.fontFamily] ?? defaultFontFamily, rtl: rtl),
-  );
+  UiTextEngine of(RenderSettings s) => _engines.putIfAbsent(jsonEncode(s.toJson()), () {
+    final family = _families[s.fontFamily] ?? defaultFontFamily;
+    final letters = _letters[family];
+    return UiTextEngine(s, fontFamily: family, rtl: rtl, capHeight: letters?.$1 ?? 0.7, xHeight: letters?.$2 ?? 0.5);
+  });
 
   /// Draws [item] with its own settings.
   void draw(ui.Canvas canvas, TextItem item) => of(item.settings ?? base).draw(canvas, item);
+}
+
+final _letterCache = <String, (double, double)>{};
+
+/// Ink heights of "H" and "x" in [family] per pixel of font size, drawn at
+/// 100 px (once per family).
+Future<(double, double)> _letterHeights(String family) async {
+  if (_letterCache[family] case final known?) return known;
+  const size = 100.0;
+  Future<double> ink(String letter) async {
+    final paragraph =
+        (ui.ParagraphBuilder(ui.ParagraphStyle())
+              ..pushStyle(ui.TextStyle(color: const ui.Color(0xFF000000), fontFamily: family, fontSize: size))
+              ..addText(letter))
+            .build()
+          ..layout(const ui.ParagraphConstraints(width: 1000));
+    final w = paragraph.maxIntrinsicWidth.ceil() + 8, h = paragraph.height.ceil() + 8;
+    final recorder = ui.PictureRecorder();
+    ui.Canvas(recorder).drawParagraph(paragraph, const ui.Offset(4, 4));
+    final picture = recorder.endRecording();
+    final image = await picture.toImage(w, h);
+    final data = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+    image.dispose();
+    picture.dispose();
+    var first = -1, last = -1;
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        if (data.getUint8((y * w + x) * 4 + 3) >= 128) {
+          if (first < 0) first = y;
+          last = y;
+          break;
+        }
+      }
+    }
+    return first < 0 ? 0 : (last - first + 1) / size;
+  }
+
+  final cap = await ink('H'), x = await ink('x');
+  return _letterCache[family] = (cap > 0.2 ? cap : 0.7, x > 0.2 ? x : 0.5);
+}
+
+/// [text] in black on white in [family], one line at [size] pixels (to
+/// measure how the font's letters look); null when nothing shows.
+Future<RgbImage?> renderSample(String text, String family, {double size = 64}) async {
+  final paragraph =
+      (ui.ParagraphBuilder(ui.ParagraphStyle(maxLines: 1))
+            ..pushStyle(ui.TextStyle(color: const ui.Color(0xFF000000), fontFamily: family, fontSize: size))
+            ..addText(text))
+          .build()
+        ..layout(const ui.ParagraphConstraints(width: double.infinity));
+  final pad = (size / 4).ceil();
+  final w = paragraph.maxIntrinsicWidth.ceil() + 2 * pad, h = paragraph.height.ceil() + 2 * pad;
+  if (w <= 2 * pad || w > 16384) return null;
+  final recorder = ui.PictureRecorder();
+  ui.Canvas(recorder)
+    ..drawColor(const ui.Color(0xFFFFFFFF), ui.BlendMode.src)
+    ..drawParagraph(paragraph, ui.Offset(pad.toDouble(), pad.toDouble()));
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(w, h);
+  final data = (await image.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+  image.dispose();
+  picture.dispose();
+  final rgb = Uint8List(w * h * 3);
+  for (var i = 0, j = 0; i < rgb.length; i += 3, j += 4) {
+    rgb[i] = data.getUint8(j);
+    rgb[i + 1] = data.getUint8(j + 1);
+    rgb[i + 2] = data.getUint8(j + 2);
+  }
+  return RgbImage(w, h, rgb);
 }
 
 /// Converts an [RgbImage] to a `dart:ui` image.

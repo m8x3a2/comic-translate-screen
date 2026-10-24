@@ -69,7 +69,7 @@ void main() {
       TextBlock(xyxy: const BBox(400, 0, 500, 400), translation: '縦書き', direction: TextDirection.vertical),
     ];
     final items = layoutPage(blocks, 1000, 1000, FakeMeasurer(),
-        settings: const RenderSettings(upperCase: true), targetLanguage: 'Russian');
+        settings: const RenderSettings(textCase: TextCase.upper), targetLanguage: 'Russian');
     expect(items.length, 2, reason: 'punctuation-only translation is not drawn');
     expect(items.first.text, 'ПРИВЕТ');
     expect(items.first.color, 0xFF0A141E);

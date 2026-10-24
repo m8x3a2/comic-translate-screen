@@ -26,6 +26,10 @@ class BlockStyle {
     this.vertical,
     this.angle,
     this.textBox,
+    this.upperCase,
+    this.sourceSizePx,
+    this.hyphenate,
+    this.shapeFit,
   });
 
   /// Font family or font file (see [RenderSettings.fontFamily]).
@@ -57,6 +61,16 @@ class BlockStyle {
   /// smaller, as in the automatic run.
   final BBox? textBox;
 
+  /// Capitals (true) or ordinary letters (false) whatever the setting says.
+  final bool? upperCase;
+
+  /// Height of the source letters (page pixels) the translation takes, as
+  /// the largest size: "size as in the original".
+  final double? sourceSizePx;
+
+  final bool? hyphenate;
+  final bool? shapeFit;
+
   bool get isEmpty =>
       fontFamily == null &&
       fontSizePt == null &&
@@ -71,7 +85,15 @@ class BlockStyle {
       alignment == null &&
       vertical == null &&
       angle == null &&
-      textBox == null;
+      textBox == null &&
+      upperCase == null &&
+      sourceSizePx == null &&
+      hyphenate == null &&
+      shapeFit == null;
+
+  /// Only where the text goes (its own text box), without the look; null
+  /// when that is not set either.
+  BlockStyle? get placeOnly => textBox == null ? null : BlockStyle(textBox: textBox);
 
   /// [settings] with this style's font, outline and spacing; a fixed size
   /// becomes both size limits.
@@ -87,6 +109,8 @@ class BlockStyle {
     underline: underline,
     lineSpacing: lineSpacing,
     alignment: alignment,
+    hyphenate: hyphenate,
+    shapeFit: shapeFit,
   );
 
   /// A copy with the given fields changed; pass null to unset a field.
@@ -105,6 +129,10 @@ class BlockStyle {
     Object? vertical = _keep,
     Object? angle = _keep,
     Object? textBox = _keep,
+    Object? upperCase = _keep,
+    Object? sourceSizePx = _keep,
+    Object? hyphenate = _keep,
+    Object? shapeFit = _keep,
   }) {
     T? pick<T>(Object? v, T? old) => identical(v, _keep) ? old : v as T?;
     return BlockStyle(
@@ -122,6 +150,10 @@ class BlockStyle {
       vertical: pick(vertical, this.vertical),
       angle: pick(angle, this.angle),
       textBox: pick(textBox, this.textBox),
+      upperCase: pick(upperCase, this.upperCase),
+      sourceSizePx: pick(sourceSizePx, this.sourceSizePx),
+      hyphenate: pick(hyphenate, this.hyphenate),
+      shapeFit: pick(shapeFit, this.shapeFit),
     );
   }
 
@@ -141,19 +173,26 @@ class BlockStyle {
     vertical: other.vertical ?? vertical,
     angle: other.angle ?? angle,
     textBox: other.textBox ?? textBox,
+    upperCase: other.upperCase ?? upperCase,
+    sourceSizePx: other.sourceSizePx ?? sourceSizePx,
+    hyphenate: other.hyphenate ?? hyphenate,
+    shapeFit: other.shapeFit ?? shapeFit,
   );
 
   /// The style for a page enlarged by [sx]×[sy] (the text box moves; sizes
   /// in points stay, like the automatic layout on an enlarged page).
-  BlockStyle scaled(double sx, double sy) => textBox == null
+  BlockStyle scaled(double sx, double sy) => textBox == null && sourceSizePx == null
       ? this
       : copyWith(
-          textBox: BBox(
-            (textBox!.x1 * sx).round(),
-            (textBox!.y1 * sy).round(),
-            (textBox!.x2 * sx).round(),
-            (textBox!.y2 * sy).round(),
-          ),
+          textBox: textBox == null
+              ? null
+              : BBox(
+                  (textBox!.x1 * sx).round(),
+                  (textBox!.y1 * sy).round(),
+                  (textBox!.x2 * sx).round(),
+                  (textBox!.y2 * sy).round(),
+                ),
+          sourceSizePx: sourceSizePx == null ? null : sourceSizePx! * sy,
         );
 
   Map<String, Object?> toJson() => {
@@ -171,6 +210,10 @@ class BlockStyle {
     if (vertical != null) 'vertical': vertical,
     if (angle != null) 'angle': angle,
     if (textBox != null) 'text_box': textBox!.toJson(),
+    if (upperCase != null) 'upper_case': upperCase,
+    if (sourceSizePx != null) 'source_size_px': sourceSizePx,
+    if (hyphenate != null) 'hyphenate': hyphenate,
+    if (shapeFit != null) 'shape_fit': shapeFit,
   };
 
   factory BlockStyle.fromJson(Map<String, Object?> j) {
@@ -191,6 +234,10 @@ class BlockStyle {
       vertical: get<bool>('vertical'),
       angle: get<num>('angle')?.toDouble(),
       textBox: j['text_box'] is List ? BBox.fromJson(j['text_box']) : null,
+      upperCase: get<bool>('upper_case'),
+      sourceSizePx: get<num>('source_size_px')?.toDouble(),
+      hyphenate: get<bool>('hyphenate'),
+      shapeFit: get<bool>('shape_fit'),
     );
   }
 
@@ -210,7 +257,11 @@ class BlockStyle {
       other.alignment == alignment &&
       other.vertical == vertical &&
       other.angle == angle &&
-      other.textBox == textBox;
+      other.textBox == textBox &&
+      other.upperCase == upperCase &&
+      other.sourceSizePx == sourceSizePx &&
+      other.hyphenate == hyphenate &&
+      other.shapeFit == shapeFit;
 
   @override
   int get hashCode => Object.hash(
@@ -228,6 +279,7 @@ class BlockStyle {
     vertical,
     angle,
     textBox,
+    Object.hash(upperCase, sourceSizePx, hyphenate, shapeFit),
   );
 }
 

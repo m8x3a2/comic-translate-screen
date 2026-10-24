@@ -57,6 +57,15 @@ class PsdPage {
 
 String _flat(String s) => s.replaceAll(RegExp(r'\s+'), ' ').trim();
 
+/// Whether a text layer still shows [translation]: the program draws it in
+/// capitals or with words broken at line ends, which is no change.
+bool _sameText(String layer, String translation) {
+  String bare(String s) => s.replaceAll(_spacesAndHyphens, '').toLowerCase();
+  return bare(layer) == bare(translation);
+}
+
+final _spacesAndHyphens = RegExp(r'[\s\-­]+');
+
 /// A block showing [t] as it is: its box, text and look; [stroke] is the
 /// layer's outline style (else the text engine's outline, if any).
 TextBlock blockOfText(PsdText t, {FontCatalog? fonts, PsdStroke? stroke, String targetLanguage = ''}) {
@@ -127,7 +136,7 @@ List<TextBlock> psdBlocks(PsdPageContent c, int width, int height, {FontCatalog?
     if (name.endsWith(psdFromAboveSuffix)) continue;
     final i = mapped[name];
     if (i != null) {
-      if (_flat(t.text) != _flat(own[i].translation)) out[i] = own[i].copy()..translation = _flat(t.text);
+      if (!_sameText(t.text, own[i].translation)) out[i] = own[i].copy()..translation = _flat(t.text);
     } else {
       out.add(blockOfText(t, fonts: fonts, stroke: stroke));
     }

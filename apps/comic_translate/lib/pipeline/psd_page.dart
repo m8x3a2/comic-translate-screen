@@ -9,25 +9,37 @@ import 'dart:math' as math;
 import 'package:ct_core/ct_core.dart';
 import 'package:path/path.dart' as p;
 
+import '../render/bundled_fonts.dart';
 import '../render/text_renderer.dart';
 import 'page_pipeline.dart';
 
-/// PostScript name of the bundled lettering font.
+/// PostScript name of the default lettering font.
 const _defaultPostScript = 'Pangolin-Regular';
 
-/// Whether text layers of [doc] use the bundled font.
-bool usesBundledFont(PsdDocument doc) => doc.flatLayers().any((e) => e.$1.text?.font == _defaultPostScript);
-
-/// The bundled font and its licence, to put beside PSD files that use it
-/// (Photoshop needs the font installed to show the text as drawn here):
-/// path in the export → file. Empty when the files are not found.
-Map<String, String> bundledFontFiles() {
-  final dir = p.join(p.dirname(Platform.resolvedExecutable), 'data', 'flutter_assets', 'assets', 'fonts');
-  final files = {
-    'fonts/Pangolin-Regular.ttf': p.join(dir, 'Pangolin-Regular.ttf'),
-    'fonts/Pangolin-OFL.txt': p.join(dir, 'Pangolin-OFL.txt'),
+/// PostScript names of the bundled fonts the text layers of [doc] use.
+Set<String> bundledFontsUsed(PsdDocument doc) {
+  final bundled = bundledFacesByPostScript();
+  return {
+    for (final e in doc.flatLayers())
+      if (e.$1.text?.font case final font? when bundled.containsKey(font)) font,
   };
-  return files.values.every((f) => File(f).existsSync()) ? files : const {};
+}
+
+/// The bundled fonts named by [postScripts] (see [bundledFontsUsed]) and
+/// their licences, to put beside PSD files that use them (Photoshop needs
+/// the fonts installed to show the text as drawn here): path in the export
+/// → file. Files not found are left out.
+Map<String, String> bundledFontFiles(Set<String> postScripts) {
+  final dir = bundledFontDir();
+  final bundled = bundledFacesByPostScript();
+  final names = {
+    for (final ps in postScripts)
+      if (bundled[ps] case (final file, final licence)) ...[file, licence],
+  };
+  return {
+    for (final name in names)
+      if (File(p.join(dir, name)).existsSync()) 'fonts/$name': p.join(dir, name),
+  };
 }
 
 Future<FontCatalog>? _fonts;
@@ -44,6 +56,8 @@ Future<FontCatalog> installedFonts() => _fonts ??= Isolate.run(FontCatalog.scan)
   final lower = setting.toLowerCase();
   if (lower.endsWith('.ttf') || lower.endsWith('.otf') || lower.endsWith('.ttc')) {
     face = readFontFaces(setting).firstOrNull;
+  } else if (bundledFont(setting) case final bundled?) {
+    face = readFontFaces(p.join(bundledFontDir(), bundled.fileFor(isBold: s.bold, isItalic: s.italic))).firstOrNull;
   } else {
     face = fonts.face(setting, bold: s.bold, italic: s.italic);
   }

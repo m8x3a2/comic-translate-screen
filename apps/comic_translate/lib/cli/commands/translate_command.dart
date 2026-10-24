@@ -106,7 +106,9 @@ class TranslateCommand extends CtsCommand {
           ),
           PluginContext(log: pageLog, recorder: recorder, page: page, onUsage: services.usage.record),
         );
-        setUpperCase(ordered, settings.upperCase);
+        for (final b in ordered) {
+          b.translation = casedTranslation(b, settings.textCase, upperCase: b.style?.upperCase);
+        }
         final ms = sw.elapsedMilliseconds;
         recorder?.recordTiming('03_translate', Duration(milliseconds: ms), page: page);
 

@@ -4447,6 +4447,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Any sign, --> by default. It goes into the instructions; the usual arrows are understood as well.'**
   String get chatSeparatorHelp;
+
+  /// No description provided for @textCase.
+  ///
+  /// In en, this message translates to:
+  /// **'Letter case'**
+  String get textCase;
+
+  /// No description provided for @textCaseSource.
+  ///
+  /// In en, this message translates to:
+  /// **'As in the original'**
+  String get textCaseSource;
+
+  /// No description provided for @textCaseUpper.
+  ///
+  /// In en, this message translates to:
+  /// **'ALL CAPITALS'**
+  String get textCaseUpper;
+
+  /// No description provided for @textCaseNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Ordinary letters'**
+  String get textCaseNormal;
+
+  /// No description provided for @textCaseInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost all comics are lettered in capitals. \"As in the original\": where a bubble of the original is in capitals, so is its translation; elsewhere ordinary letters. For a page or one bubble, use the \"Aa\" button of the Text panel.'**
+  String get textCaseInfo;
+
+  /// No description provided for @matchSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Look as in the original'**
+  String get matchSource;
+
+  /// No description provided for @matchSourceInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The program looks at the original letters and draws the translation alike: bold where they are clearly heavier than in the page\'s other bubbles, italic where they lean, with an outline of the same colour for captions and sounds over the art. Found when the text is recognized; very small text gets no bold or italic. Turn it off for the same look in every bubble.'**
+  String get matchSourceInfo;
+
+  /// No description provided for @hyphenate.
+  ///
+  /// In en, this message translates to:
+  /// **'Hyphenation'**
+  String get hyphenate;
+
+  /// No description provided for @hyphenateInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Long Russian words may be broken by syllables. A break is made only where the text would otherwise have to be clearly smaller.'**
+  String get hyphenateInfo;
+
+  /// No description provided for @shapeFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines follow the bubble'**
+  String get shapeFit;
+
+  /// No description provided for @shapeFitInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Lines follow the oval of the bubble, as letterers do: shorter at the top and bottom, longer in the middle; one letter size in the bubble. Works when a bubble holds one piece of text. For one bubble, see its look.'**
+  String get shapeFitInfo;
+
+  /// No description provided for @fontSuggest.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggest a font…'**
+  String get fontSuggest;
+
+  /// No description provided for @fontSuggestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar fonts'**
+  String get fontSuggestTitle;
+
+  /// No description provided for @fontSuggestHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Compared with the original letters on this page. The font is not changed by itself: pick one.'**
+  String get fontSuggestHint;
+
+  /// No description provided for @fontSuggestNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'No recognized text on this page: press Recognize first.'**
+  String get fontSuggestNoText;
+
+  /// No description provided for @fontSuggestForAll.
+  ///
+  /// In en, this message translates to:
+  /// **'For all bubbles'**
+  String get fontSuggestForAll;
+
+  /// No description provided for @fontSuggestForBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'For this bubble only'**
+  String get fontSuggestForBlock;
+
+  /// No description provided for @fontSuggestOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get fontSuggestOriginal;
+
+  /// No description provided for @caseToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'CAPITALS ↔ ordinary letters on this page or the selected pages'**
+  String get caseToggle;
+
+  /// No description provided for @caseToggleBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'CAPITALS ↔ ordinary letters in this bubble'**
+  String get caseToggleBlock;
+
+  /// No description provided for @sizeFromSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Size as in the original'**
+  String get sizeFromSource;
+
+  /// No description provided for @sizeFromSourcePages.
+  ///
+  /// In en, this message translates to:
+  /// **'Letter size as in the original on this page or the selected pages (smaller in a tight bubble)'**
+  String get sizeFromSourcePages;
+
+  /// No description provided for @sizeFromSourceUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'The size of the original letters is unknown: press Recognize again.'**
+  String get sizeFromSourceUnknown;
+
+  /// No description provided for @styleResetPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset the look of the bubbles on this page or the selected pages'**
+  String get styleResetPages;
+
+  /// No description provided for @hyphenateBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Hyphenation'**
+  String get hyphenateBlock;
+
+  /// No description provided for @shapeFitBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the bubble'**
+  String get shapeFitBlock;
+
+  /// No description provided for @fromSource.
+  ///
+  /// In en, this message translates to:
+  /// **'as in the original'**
+  String get fromSource;
+
+  /// No description provided for @textFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Fitting'**
+  String get textFit;
 }
 
 class _AppLocalizationsDelegate

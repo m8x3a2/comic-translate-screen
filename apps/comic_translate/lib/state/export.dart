@@ -63,8 +63,8 @@ Future<ExportResult> exportOpenPages(
 }
 
 /// Writes the layered Photoshop file of [page] into [dir] (see
-/// [buildPagePsd]); with whether it uses the bundled font.
-Future<(String, bool)> writePagePsd(Reader read, PageEntry page, String dir) async {
+/// [buildPagePsd]); with the bundled fonts it uses (see [bundledFontsUsed]).
+Future<(String, Set<String>)> writePagePsd(Reader read, PageEntry page, String dir) async {
   final settings = read(settingsProvider);
   final path = page.path, cleanPath = page.cleanPath;
   final original = await Isolate.run(() => ImageCodec.readFile(path));
@@ -79,7 +79,7 @@ Future<(String, bool)> writePagePsd(Reader read, PageEntry page, String dir) asy
   );
   final file = p.join(dir, '${page.id}${doc.large ? '.psb' : '.psd'}');
   await Isolate.run(() => writePsdFile(file, doc));
-  return (file, usesBundledFont(doc));
+  return (file, bundledFontsUsed(doc));
 }
 
 Future<ExportResult> _exportPsd(
@@ -95,21 +95,21 @@ Future<ExportResult> _exportPsd(
   final dir = Directory.systemTemp.createTempSync('cts_psd_');
   try {
     final out = <ExportPage>[];
-    var font = false;
+    final fonts = <String>{};
     for (final (i, page) in pages.indexed) {
       onProgress?.call(i, pages.length);
       String? file;
       if (options.translated) {
         final (f, bundled) = await writePagePsd(read, page, dir.path);
         file = f;
-        font |= bundled;
+        fonts.addAll(bundled);
       }
       out.add(exportPageOf(page, translatedImage: file));
     }
     onProgress?.call(pages.length, pages.length);
     return await _exportInBackground(
       out,
-      font ? options.withExtraFiles(bundledFontFiles()) : options,
+      fonts.isEmpty ? options : options.withExtraFiles(bundledFontFiles(fonts)),
       output,
       bookName,
       null,

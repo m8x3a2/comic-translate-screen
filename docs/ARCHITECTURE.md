@@ -27,6 +27,40 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 
 ### Deliberate differences from the original
 
+- Lettering as in the source (new, `source_style.dart`): when a block is read,
+  its letters are measured on the page (`TextBlock.sourceStyle`): letter
+  height (cap height of capitals, x-height band otherwise), stroke weight
+  (area per side length of the Otsu letter mask, split again for three-tone
+  outlined letters), slant (the shear that sharpens the column profile) and,
+  for text outside speech bubbles, an outline (a uniform colour ring that
+  ends where the background begins). With `render.match_source` (on) a block
+  is drawn bold when it is 15 % heavier than the page's median, italic from a
+  slant of 0.12, with the measured outline. Letters under 10 px give no weight
+  or slant. The original has one look for all blocks.
+- Letter case (new, `render.text_case`, `text_case.dart`): "as in the source"
+  (the default: capitals where the source block is mostly capitals, else
+  sentence case for an all-caps translation), all capitals, or ordinary
+  letters; a block's `style.upper_case` wins. The original's one switch
+  (`upper_case`: true) becomes "all capitals". Sentence case starts a sentence
+  after . ! ? but not after an ellipsis, and keeps English "I".
+- Hyphenation (new, `render.hyphenate`, on; `hyphenation.dart`): Russian words
+  of seven letters or more may break by syllables (one consonant goes to the
+  next line, of more the first stays; ь, ъ, й stay; two letters a part at
+  least). It is used only when unbroken text does not fit or is under 80 % of
+  the largest size and breaking makes it 12 % larger.
+- Lines along the bubble (new, `render.shape_fit`, off; per block): the lines
+  fill the oval of the block's speech bubble (86 % of its half-sizes), each as
+  wide as the oval at its height, centred on the bubble. Bubbles holding more
+  than one block (the block's centre off the bubble's) keep the box.
+- "Size as in the original" (new, a button; `style.source_size_px`): the
+  source letter height becomes the largest font size, through the font's
+  measured cap/x-height; the page's median size, unless a block's own differs
+  by more than 35 %. A tight bubble still gets smaller letters.
+- New translations (the Translate step) drop a block's hand-made look and keep
+  only its text box. Fonts: 16 OFL families with Cyrillic come with the
+  program (`bundled_fonts.dart`); "Suggest a font" ranks them (and added
+  fonts) by weight, slant and width per letter against the page's lettering.
+
 - The original runs the PP-OCR line detector only when no block has text
   lines, and reads a hand-drawn box among detected ones as one line. Here
   every block without lines (drawn by hand, or resized) is split by the

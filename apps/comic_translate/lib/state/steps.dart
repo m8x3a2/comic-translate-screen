@@ -276,7 +276,8 @@ class StepsNotifier extends Notifier<StepState> {
                       read,
                       (old, b) => old.copy()
                         ..text = b.text
-                        ..linePx = b.linePx,
+                        ..linePx = b.linePx
+                        ..sourceStyle = b.sourceStyle,
                     ),
                   ),
                 );
@@ -297,7 +298,16 @@ class StepsNotifier extends Notifier<StepState> {
                 timed(which.length);
                 commit(
                   (p) => p.copyWith(
-                    blocks: _replace(p.blocks, which, done, (old, b) => old.copy()..translation = b.translation),
+                    // A new translation starts from the automatic look (the owner's
+                    // choice): only where its text goes stays.
+                    blocks: _replace(
+                      p.blocks,
+                      which,
+                      done,
+                      (old, b) => old.copy()
+                        ..translation = b.translation
+                        ..style = old.style?.placeOnly,
+                    ),
                   ),
                 );
               case ManualStep.mask:

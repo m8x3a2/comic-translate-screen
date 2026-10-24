@@ -17,9 +17,12 @@ ported from Comic Translate (upstream commit
 8977b91a4f7a40c3917c5a268e9e7d78e1d818da, 2026-09-10) and rewritten in
 Dart/Flutter.
 
-The bundled lettering font Pangolin (Copyright 2016 The Pangolin Project
-Authors) is licensed under the SIL Open Font License 1.1; see
-apps/comic_translate/assets/fonts/Pangolin-OFL.txt.
+The bundled lettering fonts are licensed under the SIL Open Font License
+1.1, each with its licence (copyright and reserved names) beside it in
+apps/comic_translate/assets/fonts (*-OFL.txt): Pangolin, Shantell Sans,
+Balsamiq Sans, Neucha, Underdog, Marmelad, Russo One, Rubik Mono One, Rubik
+Wet Paint, Rubik Bubbles, Caveat, Amatic SC, Bad Script, PT Sans, PT Sans
+Narrow and Press Start 2P (from Google Fonts, https://github.com/google/fonts).
 
 The page used by the graphics card speed test
 (apps/comic_translate/assets/samples/speed_test_page.jpg) is from Pepper&Carrot

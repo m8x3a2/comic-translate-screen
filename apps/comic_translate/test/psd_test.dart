@@ -42,7 +42,7 @@ void main() {
       ['Editable Text:Text 1', 'Inpaint Patches:Patch 1', ':Raw Image'],
     );
     final text = layers.first.$1.text!;
-    expect(text.text.replaceAll('\n', ' '), 'Привет, мир');
+    expect(text.text.replaceAll('\n', ' '), 'ПРИВЕТ, МИР', reason: 'capitals, as the source');
     expect(text.font, 'Pangolin-Regular');
     expect(text.justification, PsdJustification.center);
     expect(text.strokeColor, isNull, reason: 'the outline is a layer style');
@@ -134,7 +134,7 @@ void main() {
     expect(box.x2 - box.x1, inInclusiveRange(120, 132));
   });
 
-  test('the bundled font goes beside the files that use it', () async {
+  test('the bundled fonts go beside the files that use them', () async {
     final (page, clean) = pages();
     final doc = await buildPagePsd(
       page,
@@ -143,7 +143,11 @@ void main() {
       settings,
       targetLanguage: 'Russian',
     );
-    expect(usesBundledFont(doc), isTrue);
+    expect(bundledFontsUsed(doc), {'Pangolin-Regular'});
+    expect(
+      bundledFontFiles(bundledFontsUsed(doc)).keys,
+      unorderedEquals(['fonts/Pangolin-Regular.ttf', 'fonts/Pangolin-OFL.txt']),
+    );
     final arial = await buildPagePsd(
       page,
       clean,
@@ -154,7 +158,22 @@ void main() {
       ),
       targetLanguage: 'Russian',
     );
-    expect(usesBundledFont(arial), isFalse);
+    expect(bundledFontsUsed(arial), isEmpty);
+    final balsamiq = await buildPagePsd(
+      page,
+      clean,
+      [TextBlock(xyxy: const BBox(60, 40, 320, 120), translation: 'Текст')],
+      AppSettings(
+        upscale: settings.upscale,
+        render: const RenderSettings(fontFamily: 'Balsamiq Sans', bold: true),
+      ),
+      targetLanguage: 'Russian',
+    );
+    expect(bundledFontsUsed(balsamiq), {'BalsamiqSans-Bold'}, reason: 'its own bold face, not imitated');
+    expect(
+      bundledFontFiles(bundledFontsUsed(balsamiq)).keys,
+      unorderedEquals(['fonts/BalsamiqSans-Bold.ttf', 'fonts/BalsamiqSans-OFL.txt']),
+    );
   });
 
   test('export: PSD files into a folder, cleaned pages as PNG, the font beside them', () async {

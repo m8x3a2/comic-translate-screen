@@ -1,4 +1,5 @@
 import '../render/block_style.dart';
+import '../render/source_style.dart';
 import 'geometry.dart';
 
 /// Where a block of text sits on the page.
@@ -64,6 +65,7 @@ class TextBlock {
     this.style,
     this.linePx,
     this.fixedLines = false,
+    this.sourceStyle,
   })  : lines = lines ?? [],
         texts = texts ?? [],
         skippedSmallTexts = skippedSmallTexts ?? [],
@@ -122,6 +124,10 @@ class TextBlock {
   /// original.
   bool fixedLines;
 
+  /// How the source lettering looks (size, weight, slant, outline), measured
+  /// when the block is read; null before. Not in the original.
+  SourceStyle? sourceStyle;
+
   BBox get bbox => xyxy;
   Point2 get center => xyxy.center;
 
@@ -177,6 +183,7 @@ class TextBlock {
         style: style,
         linePx: linePx,
         fixedLines: fixedLines,
+        sourceStyle: sourceStyle,
       )..text = text;
 
   /// JSON with the original attribute names, so artifacts can be compared
@@ -206,6 +213,7 @@ class TextBlock {
         if (style != null && !style!.isEmpty) 'style': style!.toJson(),
         if (linePx != null) 'line_px': linePx,
         if (fixedLines) 'fixed_lines': true,
+        if (sourceStyle != null) 'source_style': sourceStyle!.toJson(),
       };
 
   factory TextBlock.fromJson(Map<String, Object?> json) {
@@ -236,6 +244,9 @@ class TextBlock {
       style: json['style'] is Map ? BlockStyle.fromJson((json['style'] as Map).cast<String, Object?>()) : null,
       linePx: (json['line_px'] as num?)?.toDouble(),
       fixedLines: json['fixed_lines'] == true,
+      sourceStyle: json['source_style'] is Map
+          ? SourceStyle.fromJson((json['source_style'] as Map).cast<String, Object?>())
+          : null,
     );
     // `text` is stored explicitly; it may differ from texts.join(' ').
     block.text = json['text'] as String? ?? block.text;

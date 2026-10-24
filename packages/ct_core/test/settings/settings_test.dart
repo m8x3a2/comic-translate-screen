@@ -21,7 +21,9 @@ void main() {
     expect(s.inpaint.resizeLimit, 960);
     expect(s.sendPageImage, isFalse);
     expect(s.theme, 'dark');
-    expect(s.upperCase, isFalse);
+    expect(s.textCase, TextCase.source);
+    expect(s.render.hyphenate, isTrue);
+    expect(s.render.shapeFit, isFalse);
     expect(s.textPrep, 'fatality_comix');
     expect(s.screenTextPrep, plainX15Id);
     expect(s.fixCyrillicLookalikes, isFalse);
@@ -34,7 +36,13 @@ void main() {
       useGpu: true,
       textPrep: plainX2Id,
       fixCyrillicLookalikes: true,
-      render: const RenderSettings(upperCase: true, maxFontSize: 30, alignment: TextAlignment.left, color: 0xFF112233),
+      render: const RenderSettings(
+        textCase: TextCase.upper,
+        shapeFit: true,
+        maxFontSize: 30,
+        alignment: TextAlignment.left,
+        color: 0xFF112233,
+      ),
       inpaint: const InpaintConfig(strategy: HdStrategy.crop, cropMargin: 256),
       plugins: {
         'openai_compatible': {'url': 'http://localhost:1234/v1', 'model': 'x'},
@@ -59,7 +67,13 @@ void main() {
       textPrepOffId,
       reason: 'the old switch, turned off',
     );
-    expect(loaded.upperCase, isTrue);
+    expect(loaded.textCase, TextCase.upper);
+    expect(loaded.render.shapeFit, isTrue);
+    expect(
+      RenderSettings.fromJson(const {'upper_case': true}).textCase,
+      TextCase.upper,
+      reason: 'the old switch, turned on',
+    );
     expect(loaded.shortcuts, {'undo': 'Ctrl+U', 'help': ''});
     expect(loaded.gpuCpuModels, {'rec.onnx': 'Softmax failed'});
     expect(loaded.autoBugReport, isFalse);

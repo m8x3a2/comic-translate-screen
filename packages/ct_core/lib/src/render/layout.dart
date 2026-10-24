@@ -13,6 +13,9 @@ import '../model/geometry.dart';
 import '../model/language.dart';
 import '../model/text_block.dart';
 import '../translation/llm_protocol.dart';
+import 'hyphenation.dart';
+import 'source_style.dart';
+import 'text_case.dart';
 
 enum TextAlignment { left, center, right }
 
@@ -24,7 +27,7 @@ class RenderSettings {
     this.minFontSize = 9,
     this.maxFontSize = 40,
     this.color = 0xFF000000,
-    this.upperCase = false,
+    this.textCase = TextCase.source,
     this.outline = true,
     this.outlineColor = 0xFFFFFFFF,
     this.outlineWidth = 1.0,
@@ -34,6 +37,9 @@ class RenderSettings {
     this.lineSpacing = 1.0,
     this.alignment = TextAlignment.center,
     this.placeInBlock = true,
+    this.matchSource = true,
+    this.hyphenate = true,
+    this.shapeFit = false,
   });
 
   /// Font family or font file; empty = the app's default font.
@@ -45,7 +51,7 @@ class RenderSettings {
 
   /// ARGB colours.
   final int color;
-  final bool upperCase;
+  final TextCase textCase;
   final bool outline;
   final int outlineColor;
   final double outlineWidth;
@@ -60,12 +66,23 @@ class RenderSettings {
   /// (false), which leaves short lines off-centre in their bubbles.
   final bool placeInBlock;
 
+  /// Outline, bold and italic as the source lettering has them (see
+  /// [SourceStyle]). Not in the original.
+  final bool matchSource;
+
+  /// Russian words may be broken by syllables where that lets the text be
+  /// much larger. Not in the original.
+  final bool hyphenate;
+
+  /// Lines follow the oval of the speech bubble. Not in the original.
+  final bool shapeFit;
+
   RenderSettings copyWith({
     String? fontFamily,
     int? minFontSize,
     int? maxFontSize,
     int? color,
-    bool? upperCase,
+    TextCase? textCase,
     bool? outline,
     int? outlineColor,
     double? outlineWidth,
@@ -75,13 +92,16 @@ class RenderSettings {
     double? lineSpacing,
     TextAlignment? alignment,
     bool? placeInBlock,
+    bool? matchSource,
+    bool? hyphenate,
+    bool? shapeFit,
   }) =>
       RenderSettings(
         fontFamily: fontFamily ?? this.fontFamily,
         minFontSize: minFontSize ?? this.minFontSize,
         maxFontSize: maxFontSize ?? this.maxFontSize,
         color: color ?? this.color,
-        upperCase: upperCase ?? this.upperCase,
+        textCase: textCase ?? this.textCase,
         outline: outline ?? this.outline,
         outlineColor: outlineColor ?? this.outlineColor,
         outlineWidth: outlineWidth ?? this.outlineWidth,
@@ -91,6 +111,9 @@ class RenderSettings {
         lineSpacing: lineSpacing ?? this.lineSpacing,
         alignment: alignment ?? this.alignment,
         placeInBlock: placeInBlock ?? this.placeInBlock,
+        matchSource: matchSource ?? this.matchSource,
+        hyphenate: hyphenate ?? this.hyphenate,
+        shapeFit: shapeFit ?? this.shapeFit,
       );
 
   Map<String, Object?> toJson() => {
@@ -98,7 +121,7 @@ class RenderSettings {
         'min_font_size': minFontSize,
         'max_font_size': maxFontSize,
         'color': _hex(color),
-        'upper_case': upperCase,
+        'text_case': textCase.name,
         'outline': outline,
         'outline_color': _hex(outlineColor),
         'outline_width': outlineWidth,
@@ -108,6 +131,9 @@ class RenderSettings {
         'line_spacing': lineSpacing,
         'alignment': alignment.name,
         'place_in_block': placeInBlock,
+        'match_source': matchSource,
+        'hyphenate': hyphenate,
+        'shape_fit': shapeFit,
       };
 
   factory RenderSettings.fromJson(Map<String, Object?> j) {
@@ -118,7 +144,9 @@ class RenderSettings {
       minFontSize: pick<num>('min_font_size', d.minFontSize).toInt(),
       maxFontSize: pick<num>('max_font_size', d.maxFontSize).toInt(),
       color: parseColor(pick('color', '')) ?? d.color,
-      upperCase: pick('upper_case', d.upperCase),
+      // Older settings had one switch: on = all capitals.
+      textCase: TextCase.values.asNameMap()[j['text_case']] ??
+          (j['upper_case'] == true ? TextCase.upper : d.textCase),
       outline: pick('outline', d.outline),
       outlineColor: parseColor(pick('outline_color', '')) ?? d.outlineColor,
       outlineWidth: pick<num>('outline_width', d.outlineWidth).toDouble(),
@@ -128,6 +156,9 @@ class RenderSettings {
       lineSpacing: pick<num>('line_spacing', d.lineSpacing).toDouble(),
       alignment: TextAlignment.values.firstWhere((a) => a.name == j['alignment'], orElse: () => d.alignment),
       placeInBlock: pick('place_in_block', d.placeInBlock),
+      matchSource: pick('match_source', d.matchSource),
+      hyphenate: pick('hyphenate', d.hyphenate),
+      shapeFit: pick('shape_fit', d.shapeFit),
     );
   }
 }
@@ -149,6 +180,17 @@ int? parseColor(String s) {
 abstract interface class TextMeasurer {
   ({double width, double height}) measure(String text, int fontSizePt, {required bool vertical});
 }
+
+/// Ink heights of a font's letters per pixel of font size: of a capital
+/// (H) and of a small letter (x). A [TextMeasurer] that knows them lets the
+/// translation take the size of the source letters.
+abstract interface class LetterMetrics {
+  double get capHeight;
+  double get xHeight;
+}
+
+/// Typical ink heights when the font's are unknown.
+const _defaultCapHeight = 0.7, _defaultXHeight = 0.5;
 
 /// One piece of text to draw on a page.
 class TextItem {
@@ -226,14 +268,37 @@ class TextItem {
   return best;
 }
 
+/// The longest start of [word] up to one of its syllable breaks that still
+/// fits after [line] with a hyphen; null when none does.
+(String, String)? _splitAtFittingSyllable(String line, String word, double Function(String) measure, double maxSide) {
+  for (final i in hyphenationPoints(word).reversed) {
+    final prefix = '${word.substring(0, i)}-';
+    final candidate = line.isEmpty ? prefix : '$line $prefix';
+    if (measure(candidate) <= maxSide) return (prefix, word.substring(i));
+  }
+  return null;
+}
+
 final _whitespace = RegExp(r'\s+');
 
 /// `_wrap_text_greedily`: fills lines word by word; words are split only at
 /// their own hyphens; a word longer than a line gets a line of its own.
-String wrapTextGreedily(String text, double Function(String) measure, double maxSide) {
+/// With [hyphenate], Russian words are also broken by syllables (see
+/// `hyphenation.dart`) where a line still has room.
+String wrapTextGreedily(String text, double Function(String) measure, double maxSide, {bool hyphenate = false}) =>
+    _wrapWords(text, measure, (_) => maxSide, hyphenate: hyphenate).join('\n');
+
+/// [wrapTextGreedily] with a width of its own for each line.
+List<String> _wrapWords(
+  String text,
+  double Function(String) measure,
+  double Function(int line) maxSideOf, {
+  bool hyphenate = false,
+}) {
   final words = text.trim().isEmpty ? <String>[] : text.trim().split(_whitespace);
   final lines = <String>[];
   while (words.isNotEmpty) {
+    final maxSide = maxSideOf(lines.length);
     var line = '';
     while (words.isNotEmpty) {
       final next = words.first;
@@ -243,7 +308,9 @@ String wrapTextGreedily(String text, double Function(String) measure, double max
         words.removeAt(0);
         continue;
       }
-      final split = _splitAtFittingHyphen(line, next, measure, maxSide);
+      final split =
+          _splitAtFittingHyphen(line, next, measure, maxSide) ??
+          (hyphenate ? _splitAtFittingSyllable(line, next, measure, maxSide) : null);
       if (split != null) {
         line = line.isEmpty ? split.$1 : '$line ${split.$1}';
         words[0] = split.$2;
@@ -255,7 +322,7 @@ String wrapTextGreedily(String text, double Function(String) measure, double max
     }
     lines.add(line);
   }
-  return lines.join('\n');
+  return lines;
 }
 
 /// `_wrap_no_space_text_greedily`: character-by-character wrapping for
@@ -288,7 +355,7 @@ String wrapNoSpaceTextGreedily(String text, double Function(String) measure, dou
 
 /// Result of [fitText].
 class FittedText {
-  FittedText(this.text, this.fontSizePt, this.width, this.height);
+  FittedText(this.text, this.fontSizePt, this.width, this.height, {this.fits = true});
 
   final String text;
   final int fontSizePt;
@@ -296,11 +363,27 @@ class FittedText {
   /// Size of the text without the outline (`return_metrics`).
   final double width;
   final double height;
+
+  /// False: the text does not fit even at the smallest size.
+  final bool fits;
 }
+
+/// How much larger hyphenated text must get to be chosen over unbroken
+/// words.
+const _hyphenGain = 1.12;
+
+/// Share of the largest size from which text is large enough without
+/// hyphenation.
+const _largeEnough = 0.8;
 
 /// `pyside_word_wrap`: the largest font size (binary search between the
 /// limits) at which the greedily wrapped text fits the box, outline
 /// included; the minimum size when nothing fits.
+///
+/// With [RenderSettings.hyphenate], Russian words may be broken by syllables
+/// when that makes the text clearly larger (or lets it fit at all). With
+/// [ellipse] (semi-axes, in pixels) the lines follow that oval instead of
+/// the box.
 FittedText fitText(
   String text,
   TextMeasurer measurer,
@@ -309,13 +392,66 @@ FittedText fitText(
   required RenderSettings settings,
   bool vertical = false,
   bool noSpaceLanguage = false,
+  ({double a, double b})? ellipse,
+}) {
+  FittedText fit(bool hyphenate) {
+    if (ellipse != null && !vertical && !noSpaceLanguage && !text.contains('\n')) {
+      final oval = _fitInEllipse(text, measurer, ellipse.a, ellipse.b, settings, hyphenate: hyphenate);
+      if (oval != null) return oval;
+    }
+    return _fitInBox(
+      text,
+      measurer,
+      roiWidth,
+      roiHeight,
+      settings: settings,
+      vertical: vertical,
+      noSpaceLanguage: noSpaceLanguage,
+      hyphenate: hyphenate,
+    );
+  }
+
+  final plain = fit(false);
+  if (!settings.hyphenate || vertical || noSpaceLanguage || !text.split(_whitespace).any(_breakable)) return plain;
+  // Large enough already: words stay whole.
+  if (plain.fits && plain.fontSizePt >= settings.maxFontSize * _largeEnough) return plain;
+  final broken = fit(true);
+  if (broken.fits && !plain.fits) return broken;
+  return broken.fits && broken.fontSizePt > plain.fontSizePt && broken.fontSizePt >= plain.fontSizePt * _hyphenGain
+      ? broken
+      : plain;
+}
+
+bool _breakable(String word) => hyphenationPoints(word).isNotEmpty;
+
+/// Width and height of [t] at [size] with the outline around it (or
+/// without).
+({double width, double height}) _metrics(
+  TextMeasurer measurer,
+  RenderSettings settings,
+  String t,
+  int size, {
+  bool vertical = false,
+  bool withOutline = true,
 }) {
   final outline = settings.outline ? settings.outlineWidth : 0.0;
-  ({double width, double height}) metrics(String t, int size, {bool withOutline = true}) {
-    final m = measurer.measure(t, size, vertical: vertical);
-    final pad = withOutline && outline > 0 ? 2 * outline : 0.0;
-    return (width: m.width + pad, height: m.height + pad);
-  }
+  final m = measurer.measure(t, size, vertical: vertical);
+  final pad = withOutline && outline > 0 ? 2 * outline : 0.0;
+  return (width: m.width + pad, height: m.height + pad);
+}
+
+FittedText _fitInBox(
+  String text,
+  TextMeasurer measurer,
+  double roiWidth,
+  double roiHeight, {
+  required RenderSettings settings,
+  required bool vertical,
+  required bool noSpaceLanguage,
+  required bool hyphenate,
+}) {
+  ({double width, double height}) metrics(String t, int size, {bool withOutline = true}) =>
+      _metrics(measurer, settings, t, size, vertical: vertical, withOutline: withOutline);
 
   (String, double, double) wrapAndSize(int size) {
     double side(String candidate) {
@@ -324,8 +460,9 @@ FittedText fitText(
     }
 
     final maxSide = vertical ? roiHeight : roiWidth;
-    String wrap(String t) =>
-        noSpaceLanguage ? wrapNoSpaceTextGreedily(t, side, maxSide) : wrapTextGreedily(t, side, maxSide);
+    String wrap(String t) => noSpaceLanguage
+        ? wrapNoSpaceTextGreedily(t, side, maxSide)
+        : wrapTextGreedily(t, side, maxSide, hyphenate: hyphenate);
     // Line breaks typed by the user are kept (the original wraps them away).
     final wrapped = !noSpaceLanguage && text.contains('\n')
         ? text.replaceAll('\r\n', '\n').split('\n').map(wrap).join('\n')
@@ -355,7 +492,61 @@ FittedText fitText(
     bestSize = settings.minFontSize;
   }
   final m = metrics(bestText, bestSize, withOutline: false);
-  return FittedText(bestText, bestSize, m.width, m.height);
+  return FittedText(bestText, bestSize, m.width, m.height, fits: found);
+}
+
+/// The largest size at which [text] fits an oval with semi-axes [a]×[b]:
+/// lines are centred on top of each other, each as wide as the oval is at
+/// its height. Null when it does not fit even at the smallest size.
+FittedText? _fitInEllipse(
+  String text,
+  TextMeasurer measurer,
+  double a,
+  double b,
+  RenderSettings settings, {
+  required bool hyphenate,
+}) {
+  String? wrapAt(int size) {
+    final one = _metrics(measurer, settings, 'Ag', size);
+    final pitch = _metrics(measurer, settings, 'Ag\nAg', size).height - one.height;
+    if (one.height > 2 * b || pitch <= 0) return null;
+    double side(String candidate) => _metrics(measurer, settings, candidate, size).width;
+    for (var n = 1; one.height + (n - 1) * pitch <= 2 * b; n++) {
+      final total = one.height + (n - 1) * pitch;
+      double widthOf(int k) {
+        if (k >= n) return 0;
+        final top = -total / 2 + k * pitch, bottom = top + one.height;
+        final y = math.max(top.abs(), bottom.abs());
+        return y >= b ? 0 : 2 * a * math.sqrt(1 - (y / b) * (y / b));
+      }
+
+      final lines = _wrapWords(text, side, widthOf, hyphenate: hyphenate);
+      var ok = lines.length <= n;
+      for (var k = 0; ok && k < lines.length; k++) {
+        ok = side(lines[k]) <= widthOf(k);
+      }
+      if (ok) return lines.join('\n');
+    }
+    return null;
+  }
+
+  String? best;
+  var bestSize = 0;
+  var lo = settings.minFontSize, hi = settings.maxFontSize;
+  while (lo <= hi) {
+    final mid = (lo + hi) ~/ 2;
+    final wrapped = wrapAt(mid);
+    if (wrapped != null) {
+      best = wrapped;
+      bestSize = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  if (best == null) return null;
+  final m = _metrics(measurer, settings, best, bestSize, withOutline: false);
+  return FittedText(best, bestSize, m.width, m.height);
 }
 
 /// `get_best_render_area`: blocks shrink by 5% (except Korean and Chinese
@@ -417,6 +608,13 @@ int smartTextColor(List<int>? detected, int settingColor) {
 ///
 /// [areaHeight] (default: [imageHeight]) is how far down text areas may go:
 /// on webtoon pages, blocks reach into the page below.
+///
+/// Not in the original: the letter case follows [RenderSettings.textCase]
+/// and each block's own choice; with [RenderSettings.matchSource] a block
+/// takes the outline, bold and italic of its source lettering ([lettering]
+/// tells the page's usual weight; default: from [blocks]); a block style's
+/// [BlockStyle.sourceSizePx] gives the size of the source letters; with
+/// [RenderSettings.shapeFit] the lines follow the oval of the speech bubble.
 List<TextItem> layoutPage(
   List<TextBlock> blocks,
   int imageWidth,
@@ -426,9 +624,13 @@ List<TextItem> layoutPage(
   required String targetLanguage,
   TextMeasurer Function(RenderSettings settings)? measurerFor,
   int? areaHeight,
+  PageLettering? lettering,
 }) {
   final code = Languages.byName(targetLanguage)?.code ?? '';
-  setUpperCase(blocks, settings.upperCase);
+  final page = lettering ?? PageLettering.of(blocks);
+  for (final b in blocks) {
+    b.translation = casedTranslation(b, settings.textCase, upperCase: b.style?.upperCase);
+  }
   final chosen = [for (final b in blocks) b.style?.textBox];
   adjustRenderAreas(blocks, imageWidth, areaHeight ?? imageHeight);
   final noSpace = _isNoSpace(code);
@@ -436,20 +638,30 @@ List<TextItem> layoutPage(
   for (final (i, b) in blocks.indexed) {
     if (!hasTranslatableContent(b.translation)) continue;
     final style = b.style;
-    final s = style == null ? settings : style.applyTo(settings);
+    var s = blockRenderSettings(b, settings, page);
+    final m = identical(s, settings) || measurerFor == null ? measurer : measurerFor(s);
+    if (style?.sourceSizePx case final px?) {
+      final pt = sourceSizePt(px, b, m);
+      s = s.copyWith(minFontSize: math.min(s.minFontSize, pt), maxFontSize: pt);
+    }
     final area = chosen[i] ?? b.xyxy;
     final vertical = style?.vertical ?? isVerticalBlock(b, code);
+    final oval = s.shapeFit && chosen[i] == null && !vertical ? _bubbleOval(b, area) : null;
     final fit = fitText(
       b.translation,
-      style == null || measurerFor == null ? measurer : measurerFor(s),
+      m,
       area.width.toDouble(),
       area.height.toDouble(),
       settings: s,
       vertical: vertical,
       noSpaceLanguage: noSpace,
+      ellipse: oval == null ? null : (a: oval.a, b: oval.b),
     );
     var x = area.x1.toDouble(), y = area.y1.toDouble();
-    if (s.placeInBlock) {
+    if (oval != null && fit.fits) {
+      x = oval.cx - fit.width / 2;
+      y = oval.cy - fit.height / 2;
+    } else if (s.placeInBlock) {
       final spareW = math.max(0.0, area.width - fit.width);
       final spareH = math.max(0.0, area.height - fit.height);
       x += switch (s.alignment) {
@@ -470,10 +682,56 @@ List<TextItem> layoutPage(
       vertical: vertical,
       block: b,
       angle: style?.angle ?? b.angle,
-      settings: style == null ? null : s,
+      settings: identical(s, settings) ? null : s,
     ));
   }
   return items;
+}
+
+/// [settings] for drawing [block]: with [RenderSettings.matchSource], the
+/// outline, bold and italic of its source lettering ([page] tells which
+/// blocks are bold), then its own style.
+RenderSettings blockRenderSettings(TextBlock block, RenderSettings settings, PageLettering page) {
+  var s = settings;
+  final source = block.sourceStyle;
+  if (settings.matchSource && source != null) {
+    if (page.isBold(source) && !s.bold) s = s.copyWith(bold: true);
+    if (source.italic && !s.italic) s = s.copyWith(italic: true);
+    if (source.hasOutline) {
+      s = s.copyWith(
+        outline: true,
+        outlineColor: 0xFF000000 | source.outlineColor!,
+        outlineWidth: source.outlinePx.clamp(1.0, 8.0),
+      );
+    }
+  }
+  return block.style?.applyTo(s) ?? s;
+}
+
+/// The font size in points at which [measurer]'s letters are [px] high
+/// (cap height for source text in capitals, else x-height, as
+/// [SourceStyle.letterPx] measures them).
+int sourceSizePt(double px, TextBlock block, TextMeasurer measurer) {
+  final metrics = measurer is LetterMetrics ? measurer as LetterMetrics : null;
+  final ratio = isMostlyUpperCase(block.text)
+      ? metrics?.capHeight ?? _defaultCapHeight
+      : metrics?.xHeight ?? _defaultXHeight;
+  final fontPx = px / (ratio > 0.1 ? ratio : _defaultCapHeight);
+  return (fontPx * 72 / 96).round().clamp(4, 200);
+}
+
+/// Share of the speech bubble's half-sizes that the lines may use.
+const _ovalShare = 0.86;
+
+/// The oval of [block]'s speech bubble (centre and semi-axes) when the
+/// bubble is around [area]'s centre: a bubble holding several blocks is
+/// left to their boxes.
+({double cx, double cy, double a, double b})? _bubbleOval(TextBlock block, BBox area) {
+  final bubble = block.bubbleXyxy;
+  if (bubble == null || bubble.width < 8 || bubble.height < 8) return null;
+  final c = bubble.center, t = area.center;
+  if ((c.x - t.x).abs() > bubble.width * 0.15 || (c.y - t.y).abs() > bubble.height * 0.15) return null;
+  return (cx: c.x, cy: c.y, a: bubble.width / 2 * _ovalShare, b: bubble.height / 2 * _ovalShare);
 }
 
 bool _isNoSpace(String code) {

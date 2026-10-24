@@ -5,6 +5,7 @@ import '../export/strip_export.dart';
 import '../inpainting/clean_level.dart';
 import '../plugins/engines.dart';
 import '../render/layout.dart';
+import '../render/text_case.dart';
 import '../render/upscale.dart';
 
 /// What the pages are: each kind finds text its own way.
@@ -144,11 +145,10 @@ class AppSettings {
   /// original.
   RenderSettings render;
 
-  /// "Render text in upper case" (off by default, as in the original): when
-  /// on, translations are upper-cased; when off, all-caps translations are
-  /// turned into sentence case.
-  bool get upperCase => render.upperCase;
-  set upperCase(bool value) => render = render.copyWith(upperCase: value);
+  /// Letter case of the drawn translations (the original has one switch,
+  /// "Render text in upper case"; see [TextCase]).
+  TextCase get textCase => render.textCase;
+  set textCase(TextCase value) => render = render.copyWith(textCase: value);
 
   /// Enlarging small pages before the translation is drawn, so the letters
   /// stay readable. New in this project.

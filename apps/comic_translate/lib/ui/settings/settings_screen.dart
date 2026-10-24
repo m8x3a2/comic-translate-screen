@@ -15,6 +15,7 @@ import '../../state/settings_reset.dart';
 import '../../render/text_renderer.dart' show defaultFontFamily;
 import '../common/content_kind_switch.dart';
 import '../common/fonts.dart';
+import '../shell_full/font_suggest.dart';
 import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../common/plugin_form.dart';
@@ -735,6 +736,11 @@ class _TextSection extends ConsumerWidget {
                       }
                     },
                   ),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    label: Text(l.fontSuggest),
+                    onPressed: () => showFontSuggestions(context, ref),
+                  ),
                   for (final f in added)
                     InputChip(
                       label: Text(fontLabel(f)),
@@ -791,7 +797,25 @@ class _TextSection extends ConsumerWidget {
               onChanged: (v) => set((r) => r.copyWith(alignment: v)),
             ),
             _switch(l.placeInBlock, r.placeInBlock, (v) => set((r) => r.copyWith(placeInBlock: v))),
-            _switch(l.upperCase, r.upperCase, (v) => set((r) => r.copyWith(upperCase: v))),
+            _Dropdown(
+              label: l.textCase,
+              value: r.textCase,
+              options: {
+                TextCase.source: l.textCaseSource,
+                TextCase.upper: l.textCaseUpper,
+                TextCase.normal: l.textCaseNormal,
+              },
+              onChanged: (v) => set((r) => r.copyWith(textCase: v)),
+              info: l.textCaseInfo,
+            ),
+            _switch(
+              l.matchSource,
+              r.matchSource,
+              (v) => set((r) => r.copyWith(matchSource: v)),
+              info: l.matchSourceInfo,
+            ),
+            _switch(l.hyphenate, r.hyphenate, (v) => set((r) => r.copyWith(hyphenate: v)), info: l.hyphenateInfo),
+            _switch(l.shapeFit, r.shapeFit, (v) => set((r) => r.copyWith(shapeFit: v)), info: l.shapeFitInfo),
             _switch(l.bold, r.bold, (v) => set((r) => r.copyWith(bold: v))),
             _switch(l.italic, r.italic, (v) => set((r) => r.copyWith(italic: v))),
             _switch(l.underline, r.underline, (v) => set((r) => r.copyWith(underline: v))),

@@ -23,6 +23,7 @@ import '../model/language.dart';
 import '../model/text_block.dart';
 import '../plugins/engines.dart';
 import '../plugins/plugin.dart';
+import '../render/source_style.dart';
 import 'line_check.dart';
 import 'text_prep.dart';
 
@@ -400,6 +401,9 @@ Future<ReadingPage> readBlocks(
       sourceLanguage: sourceLanguage,
       languageCode: Languages.byName(sourceLanguage)?.code ?? '',
     );
+  }
+  for (final b in blocks) {
+    b.sourceStyle = measureSourceStyle(image, b);
   }
   return reading;
 }

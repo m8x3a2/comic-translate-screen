@@ -2564,4 +2564,98 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chatSeparatorHelp =>
       'Any sign, --> by default. It goes into the instructions; the usual arrows are understood as well.';
+
+  @override
+  String get textCase => 'Letter case';
+
+  @override
+  String get textCaseSource => 'As in the original';
+
+  @override
+  String get textCaseUpper => 'ALL CAPITALS';
+
+  @override
+  String get textCaseNormal => 'Ordinary letters';
+
+  @override
+  String get textCaseInfo =>
+      'Almost all comics are lettered in capitals. \"As in the original\": where a bubble of the original is in capitals, so is its translation; elsewhere ordinary letters. For a page or one bubble, use the \"Aa\" button of the Text panel.';
+
+  @override
+  String get matchSource => 'Look as in the original';
+
+  @override
+  String get matchSourceInfo =>
+      'The program looks at the original letters and draws the translation alike: bold where they are clearly heavier than in the page\'s other bubbles, italic where they lean, with an outline of the same colour for captions and sounds over the art. Found when the text is recognized; very small text gets no bold or italic. Turn it off for the same look in every bubble.';
+
+  @override
+  String get hyphenate => 'Hyphenation';
+
+  @override
+  String get hyphenateInfo =>
+      'Long Russian words may be broken by syllables. A break is made only where the text would otherwise have to be clearly smaller.';
+
+  @override
+  String get shapeFit => 'Lines follow the bubble';
+
+  @override
+  String get shapeFitInfo =>
+      'Lines follow the oval of the bubble, as letterers do: shorter at the top and bottom, longer in the middle; one letter size in the bubble. Works when a bubble holds one piece of text. For one bubble, see its look.';
+
+  @override
+  String get fontSuggest => 'Suggest a font…';
+
+  @override
+  String get fontSuggestTitle => 'Similar fonts';
+
+  @override
+  String get fontSuggestHint =>
+      'Compared with the original letters on this page. The font is not changed by itself: pick one.';
+
+  @override
+  String get fontSuggestNoText =>
+      'No recognized text on this page: press Recognize first.';
+
+  @override
+  String get fontSuggestForAll => 'For all bubbles';
+
+  @override
+  String get fontSuggestForBlock => 'For this bubble only';
+
+  @override
+  String get fontSuggestOriginal => 'Original';
+
+  @override
+  String get caseToggle =>
+      'CAPITALS ↔ ordinary letters on this page or the selected pages';
+
+  @override
+  String get caseToggleBlock => 'CAPITALS ↔ ordinary letters in this bubble';
+
+  @override
+  String get sizeFromSource => 'Size as in the original';
+
+  @override
+  String get sizeFromSourcePages =>
+      'Letter size as in the original on this page or the selected pages (smaller in a tight bubble)';
+
+  @override
+  String get sizeFromSourceUnknown =>
+      'The size of the original letters is unknown: press Recognize again.';
+
+  @override
+  String get styleResetPages =>
+      'Reset the look of the bubbles on this page or the selected pages';
+
+  @override
+  String get hyphenateBlock => 'Hyphenation';
+
+  @override
+  String get shapeFitBlock => 'Follow the bubble';
+
+  @override
+  String get fromSource => 'as in the original';
+
+  @override
+  String get textFit => 'Fitting';
 }

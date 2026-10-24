@@ -37,16 +37,81 @@ flutter:
   uses-material-design: true
   generate: true
 
-  # Default lettering font (SIL OFL 1.1, Latin and Cyrillic); CJK text falls
-  # back to system fonts.
+  # Lettering fonts (SIL OFL 1.1, Latin and Cyrillic; see lib/render/bundled_fonts.dart),
+  # Pangolin the default; CJK text falls back to system fonts.
   fonts:
     - family: Pangolin
       fonts:
         - asset: assets/fonts/Pangolin-Regular.ttf
+    - family: Shantell Sans
+      fonts:
+        - asset: assets/fonts/ShantellSans-Regular.ttf
+        - asset: assets/fonts/ShantellSans-Italic.ttf
+          style: italic
+    - family: Balsamiq Sans
+      fonts:
+        - asset: assets/fonts/BalsamiqSans-Regular.ttf
+        - asset: assets/fonts/BalsamiqSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/BalsamiqSans-Italic.ttf
+          style: italic
+        - asset: assets/fonts/BalsamiqSans-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: Neucha
+      fonts:
+        - asset: assets/fonts/Neucha-Regular.ttf
+    - family: Underdog
+      fonts:
+        - asset: assets/fonts/Underdog-Regular.ttf
+    - family: Marmelad
+      fonts:
+        - asset: assets/fonts/Marmelad-Regular.ttf
+    - family: Russo One
+      fonts:
+        - asset: assets/fonts/RussoOne-Regular.ttf
+    - family: Rubik Mono One
+      fonts:
+        - asset: assets/fonts/RubikMonoOne-Regular.ttf
+    - family: Rubik Wet Paint
+      fonts:
+        - asset: assets/fonts/RubikWetPaint-Regular.ttf
+    - family: Rubik Bubbles
+      fonts:
+        - asset: assets/fonts/RubikBubbles-Regular.ttf
+    - family: Caveat
+      fonts:
+        - asset: assets/fonts/Caveat-Regular.ttf
+    - family: Amatic SC
+      fonts:
+        - asset: assets/fonts/AmaticSC-Regular.ttf
+        - asset: assets/fonts/AmaticSC-Bold.ttf
+          weight: 700
+    - family: Bad Script
+      fonts:
+        - asset: assets/fonts/BadScript-Regular.ttf
+    - family: PT Sans
+      fonts:
+        - asset: assets/fonts/PTSans-Regular.ttf
+        - asset: assets/fonts/PTSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PTSans-Italic.ttf
+          style: italic
+        - asset: assets/fonts/PTSans-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: PT Sans Narrow
+      fonts:
+        - asset: assets/fonts/PTSansNarrow-Regular.ttf
+        - asset: assets/fonts/PTSansNarrow-Bold.ttf
+          weight: 700
+    - family: Press Start 2P
+      fonts:
+        - asset: assets/fonts/PressStart2P-Regular.ttf
 
-  # The font's licence goes with it (also next to exported PSD files).
+  # The fonts' licences go with them (also next to exported PSD files).
   assets:
-    - assets/fonts/Pangolin-OFL.txt
+    - assets/fonts/
     - assets/samples/speed_test_page.jpg
     # English words for splitting glued words after OCR (MIT, see the licence file).
     - assets/dict/en_words.txt

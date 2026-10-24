@@ -127,7 +127,7 @@ class ExportCommand extends CtsCommand {
         return ExitCodes.failure;
       }
       final pages = <ExportPage>[];
-      var bundledFont = false;
+      final bundledFonts = <String>{};
       for (final (i, page) in data.pages.indexed) {
         if (page.cleanImage == null && !page.blocks.any((b) => hasTranslatableContent(b.translation))) continue;
         String? translated;
@@ -146,7 +146,7 @@ class ExportCommand extends CtsCommand {
             translated = p.join(work.path, 'drawn', '$i${doc.large ? '.psb' : '.psd'}');
             Directory(p.dirname(translated)).createSync(recursive: true);
             await writePsdFile(translated, doc);
-            bundledFont |= usesBundledFont(doc);
+            bundledFonts.addAll(bundledFontsUsed(doc));
           } else {
             final render = await renderPage(base, page.blocks, settings, targetLanguage: targetOf(page), above: above);
             translated = p.join(work.path, 'drawn', '$i.png');
@@ -174,7 +174,7 @@ class ExportCommand extends CtsCommand {
       try {
         result = await exportPages(
           pages,
-          bundledFont ? options.withExtraFiles(bundledFontFiles()) : options,
+          bundledFonts.isEmpty ? options : options.withExtraFiles(bundledFontFiles(bundledFonts)),
           output,
           bookName: p.basenameWithoutExtension(args.rest.single),
           sevenZip: container == ExportContainer.cb7 ? findArchiveTool(output) : null,

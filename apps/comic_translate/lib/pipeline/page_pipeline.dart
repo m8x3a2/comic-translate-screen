@@ -90,6 +90,8 @@ RenderLayout layoutRender(
   final w0 = width, h0 = height;
   final reach = h0 + overflowOf(blocks, h0);
   (int, int) sizeAt(double f) => (((w0 * f).round()), ((h0 * f).round()));
+  // Bold blocks are told from the whole page, also when laid out one by one.
+  final lettering = PageLettering.of(blocks);
   List<TextItem> layoutBlocks(List<TextBlock> copies, int w, int h, int areaHeight) => layoutPage(
     copies,
     w,
@@ -99,6 +101,7 @@ RenderLayout layoutRender(
     targetLanguage: targetLanguage,
     measurerFor: engines.of,
     areaHeight: areaHeight,
+    lettering: lettering,
   );
   List<TextItem> layoutAt(double f) {
     final (w, h) = sizeAt(f);
@@ -107,7 +110,7 @@ RenderLayout layoutRender(
     if (cache == null || copies.isEmpty) return layoutBlocks(copies, w, h, area);
     // Block by block: the page's first block decides the render areas.
     final first = copies.first.sourceLang;
-    final prefix = '$w|$h|$area|$first|$targetLanguage|${jsonEncode(settings.render.toJson())}|';
+    final prefix = '$w|$h|$area|$first|$targetLanguage|$lettering|${jsonEncode(settings.render.toJson())}|';
     return [
       for (final c in copies)
         ?cache._lookup('$prefix${jsonEncode(c.toJson())}', () {

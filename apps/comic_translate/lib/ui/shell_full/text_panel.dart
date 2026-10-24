@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../state/app_state.dart';
+import '../../state/block_looks.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
 import '../../state/glued_words.dart';
@@ -84,6 +85,7 @@ class _TextPanelState extends ConsumerState<TextPanel> {
                 onPressed: busy || blocks.isEmpty ? null : () => _splitWords(context, ref),
                 icon: const Icon(Icons.space_bar),
               ),
+              _LookMenu(enabled: !busy && blocks.isNotEmpty),
               IconButton(
                 tooltip: l.findReplace,
                 isSelected: findOpen,
@@ -129,6 +131,14 @@ class _TextPanelState extends ConsumerState<TextPanel> {
         ),
       ],
     );
+  }
+}
+
+/// "Size as in the original" on the step pages, or in [block] of the current
+/// page; says when the size of the source letters is unknown.
+void _sourceSize(BuildContext context, WidgetRef ref, {int? block}) {
+  if (toggleSourceSize(ref, block: block) == null) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.sizeFromSourceUnknown)));
   }
 }
 
@@ -337,3 +347,30 @@ String tinyTextAdvice(AppLocalizations l, AppSettings settings, double px) =>
     settings.contentKind == ContentKind.comics && settings.activeTextPrep != 'fatality_comix'
     ? l.tinyTextTryHigh('${px.round()}')
     : l.tinyTextLarger('${px.round()}');
+
+/// The look buttons for the step pages, in one menu to save room.
+class _LookMenu extends ConsumerWidget {
+  const _LookMenu({required this.enabled});
+
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    PopupMenuItem<VoidCallback> item(IconData icon, String text, VoidCallback action) => PopupMenuItem(
+      value: action,
+      child: ListTile(leading: Icon(icon), title: Text(text), contentPadding: EdgeInsets.zero, dense: true),
+    );
+    return PopupMenuButton<VoidCallback>(
+      tooltip: l.textLook,
+      enabled: enabled,
+      icon: const Icon(Icons.format_paint_outlined),
+      onSelected: (action) => action(),
+      itemBuilder: (context) => [
+        item(Icons.text_fields, l.caseToggle, () => toggleCapitals(ref)),
+        item(Icons.format_size, l.sizeFromSourcePages, () => _sourceSize(context, ref)),
+        item(Icons.format_clear, l.styleResetPages, () => resetLooks(ref)),
+      ],
+    );
+  }
+}
