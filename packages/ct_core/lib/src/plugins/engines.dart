@@ -104,6 +104,14 @@ class InpaintConfig {
   };
 }
 
+/// Finds the letters themselves (pixels of text) on a page, so that the
+/// network removes the letters and little of the drawing around them (new in
+/// this project, see `generateMask`).
+abstract interface class TextMasker implements Plugin {
+  /// 255 where a pixel belongs to text, 0 elsewhere; the size of [image].
+  Future<GrayImage> letters(RgbImage image, PluginContext context);
+}
+
 /// Removes masked content (the original text) from an image.
 abstract interface class Inpainter implements Plugin {
   /// [mask]: 255 where content must be removed. Returns a new image of the

@@ -235,6 +235,22 @@ abstract final class ModelCatalog {
     ],
   );
 
+  static const comicTextDetector = ModelSpec(
+    id: 'comic-text-detector',
+    displayName: 'comic-text-detector (text mask)',
+    purpose: 'Text removal: finds the letters themselves, so less of the drawing is repainted',
+    license: 'GPL-3.0',
+    homepage: 'https://github.com/dmMaze/comic-text-detector',
+    files: [
+      ModelFile(
+        name: 'comic-text-detector.onnx',
+        url: 'https://huggingface.co/EarthWL/hiyori-onnx/resolve/0aec190c115609c48e6a49536626dd86b68dbe9e/comic-text-detector.onnx',
+        sha256: 'd42652e2ef88c660e28ea818c2a007614a94821a464110a8c356f78b574ce791',
+        size: 82215153,
+      ),
+    ],
+  );
+
   static const osdScript = ModelSpec(
     id: 'osd-script-id',
     displayName: 'Script identification (OSD LSTM)',
@@ -408,6 +424,7 @@ abstract final class ModelCatalog {
     mangaOcr,
     aot,
     lamaManga,
+    comicTextDetector,
     osdScript,
   ];
 

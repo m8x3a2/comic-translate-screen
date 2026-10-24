@@ -39,11 +39,25 @@ GitHub releases under the model's own licence, CC BY-NC-SA 4.0: non-commercial
 use, credit the author, share changes under the same licence. Comic Translate
 Screen is free and non-commercial.
 
+Text removal levels (new in this project; Settings → Tools → Text removal quality): Simple uses
+`aot-inpainting`, Medium `comic-text-detector` + `aot-inpainting`, High (default)
+`comic-text-detector` + `lama-manga`.
+
+| Id | Purpose | File | Size | License | Source |
+|---|---|---|---|---|---|
+| `comic-text-detector` | The letters themselves for text removal (mask head of comic-text-detector) | `comic-text-detector.onnx` | 78.4 MB | GPL-3.0 (dmMaze) | huggingface.co/EarthWL/hiyori-onnx (pinned commit) |
+
+comic-text-detector (https://github.com/dmMaze/comic-text-detector, by dmMaze) is GPL-3.0. It is not
+bundled and not linked into the program: it is a separate download, run by ONNX Runtime like any
+other model file. The export used (EarthWL/hiyori-onnx, pinned to commit 0aec190) keeps the
+mask and line heads with unchanged weights and takes any input size.
+
 Only the recognizer of the chosen source language is needed. The PP-OCR line
 detector of the original is not used (see docs/ARCHITECTURE.md).
 
-MI-GAN is not included: the original's ONNX download URL returns 404 and the
-original user interface only offers LaMa and AOT.
+MI-GAN is not included: the original's ONNX download URL returns 404, and in the night experiment
+of 2026-10-25 it (and big-LaMa, Telea, Stable Diffusion 1.5 inpainting) cleaned worse than
+LaMa manga and AOT.
 
 ## Commands
 

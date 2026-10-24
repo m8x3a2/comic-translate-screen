@@ -112,6 +112,10 @@ Future<RgbImage> inpaintPage(
 
   final (workingImage, workingMask, cleaned) = applyFastBubbleCleanup(image, mask, blocks, report: report);
   report.fastFilledBlocks = cleaned;
+  // A two-value mask (see generateMask): the network gets the letters only.
+  for (var i = 0; i < mask.data.length; i++) {
+    if (!isNetworkMaskValue(mask.data[i])) workingMask.data[i] = 0;
+  }
   if (!workingMask.data.any((v) => v != 0)) {
     report.mode = 'fast-fill-only';
     return workingImage;

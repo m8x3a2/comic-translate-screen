@@ -2,6 +2,7 @@ import '../export/export_pages.dart';
 import '../exchange/exchange_settings.dart';
 import '../ocr/text_prep.dart';
 import '../export/strip_export.dart';
+import '../inpainting/clean_level.dart';
 import '../plugins/engines.dart';
 import '../render/layout.dart';
 import '../render/upscale.dart';
@@ -27,7 +28,8 @@ class AppSettings {
     this.screenDetector = 'ppocr_lines',
     this.ocr = 'default',
     this.translator = 'openai_compatible',
-    this.inpainter = 'aot',
+    this.inpainter = 'lama',
+    this.textMask = comicTextDetectorId,
     this.useGpu = false,
     this.textPrep = 'fatality_comix',
     this.screenTextPrep = 'plain_x1_5',
@@ -81,6 +83,11 @@ class AppSettings {
   String ocr;
   String translator;
   String inpainter;
+
+  /// The `TextMasker` that finds the letters for the inpainting network, or
+  /// '' for the original's mask alone. Together with [inpainter] it makes
+  /// the cleaning level (see `clean_level.dart`). New in this project.
+  String textMask;
 
   bool useGpu;
 
@@ -204,6 +211,7 @@ class AppSettings {
       'ocr': ocr,
       'translator': translator,
       'inpainter': inpainter,
+      'text_mask': textMask,
       'use_gpu': useGpu,
       if (gpuCpuModels.isNotEmpty) 'gpu_cpu_models': gpuCpuModels,
       'text_prep': textPrep,
@@ -279,7 +287,12 @@ class AppSettings {
       screenDetector: pick(tools, 'screen_detector', defaults.screenDetector),
       ocr: pick(tools, 'ocr', defaults.ocr),
       translator: pick(tools, 'translator', defaults.translator),
-      inpainter: pick(tools, 'inpainter', defaults.inpainter),
+      // Files from before the cleaning levels (no text_mask) left on the old
+      // default AOT get the new default level.
+      inpainter: tools.containsKey('text_mask') || tools['inpainter'] != 'aot'
+          ? pick(tools, 'inpainter', defaults.inpainter)
+          : defaults.inpainter,
+      textMask: pick(tools, 'text_mask', defaults.textMask),
       useGpu: pick(tools, 'use_gpu', defaults.useGpu),
       gpuCpuModels: {
         for (final e in ((tools['gpu_cpu_models'] as Map?) ?? const {}).entries)

@@ -365,6 +365,8 @@ class PipelineSpec {
           settings.activeTextPrep: await services.pluginConfig(settings.activeTextPrep, settings),
         if (settings.checksLines && services.registry.contains(lineCheckerId))
           lineCheckerId: await services.pluginConfig(lineCheckerId, settings),
+        if (services.registry.contains(settings.textMask))
+          settings.textMask: await services.pluginConfig(settings.textMask, settings),
       },
     );
   }
@@ -382,6 +384,7 @@ class PagePipeline {
     required this.inpainter,
     this.textPrep,
     this.lineChecker,
+    this.textMasker,
   });
 
   final AppSettings settings;
@@ -397,6 +400,10 @@ class PagePipeline {
 
   /// Checks the lines of comic blocks before reading; null: not checked.
   final LineDetector? lineChecker;
+
+  /// Finds the letters for the inpainting network; null: the original's
+  /// mask alone (cleaning level "Simple", or its model is missing).
+  final TextMasker? textMasker;
 
   /// Creates the plugins chosen in [settings] ([translatorId] overrides the
   /// translator). Throws [ModelNotInstalledException] for missing models.
@@ -440,6 +447,7 @@ class PagePipeline {
       inpainter: await make<Inpainter>(s.inpainter),
       textPrep: await loadTextPrep(registry, s.activeTextPrep, spec.configs[s.activeTextPrep], env),
       lineChecker: await loadLineChecker(registry, s, spec.configs[lineCheckerId], env),
+      textMasker: await loadTextMasker(registry, s, spec.configs[s.textMask], env),
     );
   }
 
@@ -454,6 +462,7 @@ class PagePipeline {
     inpainter: inpainter,
     textPrep: textPrep,
     lineChecker: lineChecker,
+    textMasker: textMasker,
   );
 
   /// Detection, OCR, translation and cleaning of [image]. [onStage] is called
@@ -533,7 +542,8 @@ class PagePipeline {
 
     start('04_mask');
     final inpaintBlocks = selectInpaintBlocks(blocks);
-    final mask = generateMask(work, inpaintBlocks);
+    final letters = await textMasker?.letters(work, context);
+    final mask = generateMask(work, inpaintBlocks, letters: letters);
     lap('04_mask');
     await recorder?.writeArtifact('04_mask', 'mask.png', ImageCodec.encodeGrayPng(mask), page: page);
 
@@ -701,6 +711,12 @@ class LazyPlugins {
     spec.configs[lineCheckerId],
     PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
   );
+  Future<TextMasker?> get textMasker => loadTextMasker(
+    registry,
+    spec.settings,
+    spec.configs[spec.settings.textMask],
+    PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
+  );
 
   /// Every plugin, for whole-page runs.
   Future<PagePipeline> pipeline(String source, String target) async => PagePipeline(
@@ -713,5 +729,6 @@ class LazyPlugins {
     inpainter: await inpainter,
     textPrep: await textPrep,
     lineChecker: await lineChecker,
+    textMasker: await textMasker,
   );
 }

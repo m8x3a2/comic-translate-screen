@@ -18,6 +18,11 @@ class MaskCommand extends CtsCommand {
   MaskCommand(super.holder) {
     argParser
       ..addOption('blocks', help: 'Blocks JSON from cts detect / ocr / translate (required).')
+      ..addOption(
+        'level',
+        allowed: ['simple', 'medium', 'high'],
+        help: 'Cleaning level (default from settings): simple is the original mask, medium and high add the letters of comic-text-detector.',
+      )
       ..addOption('output', abbr: 'o', help: 'Output directory.', defaultsTo: 'cts_out');
   }
 
@@ -28,7 +33,7 @@ class MaskCommand extends CtsCommand {
   String get description => 'Build the text-removal mask; writes <name>.mask.png (white = removed).';
 
   @override
-  String get invocation => 'cts mask <image> --blocks name.ocr.json [-o dir]';
+  String get invocation => 'cts mask <image> --blocks name.ocr.json [--level simple|medium|high] [-o dir]';
 
   @override
   Future<int> run() async {
@@ -39,8 +44,12 @@ class MaskCommand extends CtsCommand {
     final input = args.rest.single;
     final image = await ImageCodec.readFile(input);
     final blocks = selectInpaintBlocks(loadBlocksJson(blocksPath));
+    final settings = await ctx.services.settingsStore.load();
+    if (args.option('level') case final level?) CleanLevel.values.byName(level).applyTo(settings);
+    final masker = await ctx.services.textMasker(settings);
     final sw = Stopwatch()..start();
-    final mask = generateMask(image, blocks);
+    final letters = await masker?.letters(image, PluginContext(log: ctx.services.appLog.child(stage: 'mask')));
+    final mask = generateMask(image, blocks, letters: letters);
     final ms = sw.elapsedMilliseconds;
     final outDir = Directory(args.option('output')!)..createSync(recursive: true);
     final file = File(p.join(outDir.path, '${p.basenameWithoutExtension(input)}.mask.png'))
@@ -62,7 +71,12 @@ class InpaintCommand extends CtsCommand {
         help: 'Blocks JSON from cts detect / ocr / translate. Without it (and --mask) text is detected first.',
       )
       ..addOption('mask', help: 'Use this mask PNG instead of building one (no fast bubble fill).')
-      ..addOption('inpainter', help: 'Inpainter plugin id: aot (default from settings) or lama.')
+      ..addOption(
+        'level',
+        allowed: ['simple', 'medium', 'high'],
+        help: 'Cleaning level: simple (the original mask, AOT), medium (comic-text-detector letters, AOT), high (letters, LaMa). Default from settings.',
+      )
+      ..addOption('inpainter', help: 'Inpainter plugin id: aot or lama (default: that of the level).')
       ..addOption(
         'strategy',
         allowed: ['resize', 'crop', 'original'],
@@ -81,7 +95,8 @@ class InpaintCommand extends CtsCommand {
       'Remove text: fast fill of uniform bubbles, then the inpainting network; writes <name>.clean.png.';
 
   @override
-  String get invocation => 'cts inpaint <image>... [--blocks f.json | --mask m.png] [--inpainter aot|lama] [-o dir]';
+  String get invocation =>
+      'cts inpaint <image>... [--blocks f.json | --mask m.png] [--level simple|medium|high] [--inpainter aot|lama] [-o dir]';
 
   @override
   Future<int> run() async {
@@ -92,6 +107,7 @@ class InpaintCommand extends CtsCommand {
     }
     final services = ctx.services;
     final settings = await services.settingsStore.load();
+    if (args.option('level') case final level?) CleanLevel.values.byName(level).applyTo(settings);
     final useGpu = args.wasParsed('gpu') ? args.flag('gpu') : null;
     final strategy = args.option('strategy');
     final config = strategy == null
@@ -117,7 +133,9 @@ class InpaintCommand extends CtsCommand {
 
     final Inpainter inpainter;
     TextDetector? detector;
+    TextMasker? masker;
     try {
+      if (args.option('mask') == null) masker = await services.textMasker(settings, useGpu: useGpu, log: log);
       inpainter = await services.plugin<Inpainter>(
         args.option('inpainter') ?? settings.inpainter,
         settings,
@@ -156,7 +174,8 @@ class InpaintCommand extends CtsCommand {
               ? loadBlocksJson(args.option('blocks')!)
               : await detector!.detect(image, context);
           blocks = selectInpaintBlocks(all);
-          mask = generateMask(image, blocks);
+          final letters = await masker?.letters(image, context);
+          mask = generateMask(image, blocks, letters: letters);
         }
         final maskMs = sw.elapsedMilliseconds;
         await recorder?.writeArtifact('04_mask', 'mask.png', ImageCodec.encodeGrayPng(mask), page: page);

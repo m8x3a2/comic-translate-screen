@@ -4,6 +4,7 @@ import 'src/detection/ppocr_lines.dart';
 import 'src/detection/rtdetr_v2.dart';
 import 'src/exchange/chat_exchange.dart';
 import 'src/inpainting/aot.dart';
+import 'src/inpainting/comic_text_detector.dart';
 import 'src/inpainting/lama.dart';
 import 'src/ocr/default_ocr.dart';
 import 'src/ocr/manga_ocr.dart';
@@ -29,6 +30,7 @@ void registerBuiltInPlugins(PluginRegistry registry) {
   registry.register(chatTranslatorFactory);
   registry.register(aotFactory);
   registry.register(lamaFactory);
+  registry.register(comicTextDetectorFactory);
   registry.register(textPrepOffFactory);
   registry.register(plainX15Factory);
   registry.register(plainX2Factory);

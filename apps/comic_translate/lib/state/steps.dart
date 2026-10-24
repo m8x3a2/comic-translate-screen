@@ -129,12 +129,12 @@ class StepsNotifier extends Notifier<StepState> {
       if ((only == null || only == i) && b.text.trim().isEmpty) i,
   ];
 
-  static PipelinePart? _part(ManualStep s) => switch (s) {
+  static PipelinePart _part(ManualStep s) => switch (s) {
     ManualStep.detect => PipelinePart.detector,
     ManualStep.recognize => PipelinePart.ocr,
     ManualStep.translate => PipelinePart.translator,
     ManualStep.clean => PipelinePart.inpainter,
-    ManualStep.mask => null,
+    ManualStep.mask => PipelinePart.textMask,
   };
 
   static String _stage(ManualStep s) => switch (s) {

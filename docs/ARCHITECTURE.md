@@ -47,6 +47,19 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   of a phone screenshot stay apart; blocks are read row by row, each row from
   the left. These lines are kept (`fixed_lines`) when the page
   is enlarged for reading.
+- Text removal levels (new, `tools.text_mask` + `tools.inpainter`, see
+  `clean_level.dart`): Simple is the original (its mask, AOT); Medium and High
+  add a `TextMasker` (comic-text-detector, GPL-3.0, separate download) that
+  finds the letters themselves. The mask then has two values: 255 on the
+  letters grown by 2 px (the network repaints only those) and 128 where only
+  the original's mask is (the flat fill of plain bubbles still decides and
+  paints with the whole mask). A block where the masker finds almost nothing
+  (under 30 % of the original's mask in the text box: logos, tiny text) keeps
+  the original's mask for the network. Brush strokes are 255. Medium repaints
+  with AOT, High (the default) with LaMa. The night experiment (23 pages)
+  measured 2.5–4× fewer letter remains and less of the drawing repainted
+  (the original's mask is the letters plus ≈6 px); the model needs
+  `session.set_denormal_as_zero` (90 s per run without it on the CPU).
 - After the fast fill of plain bubbles, the original drops whatever mask is
   left inside a filled bubble's box but outside its interior. In touching
   bubbles that box often holds the end of the neighbour's text; when the

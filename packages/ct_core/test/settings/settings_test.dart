@@ -13,7 +13,9 @@ void main() {
 
   test('defaults follow the original application', () {
     final s = AppSettings();
-    expect(s.inpainter, 'aot');
+    expect(s.inpainter, 'lama');
+    expect(s.textMask, comicTextDetectorId);
+    expect(CleanLevel.of(s), CleanLevel.high);
     expect(s.useGpu, isFalse);
     expect(s.inpaint.strategy, HdStrategy.resize);
     expect(s.inpaint.resizeLimit, 960);
@@ -84,6 +86,18 @@ void main() {
     expect(s.useGpu, isFalse);
     expect(s.inpainter, 'lama');
     expect(s.inpaint.resizeLimit, 1280);
+  });
+
+  test('files from before the cleaning levels move from the old default to High', () {
+    AppSettings read(String tools) => AppSettings.fromJson(jsonDecode('{"tools": $tools}') as Map<String, Object?>);
+    expect(CleanLevel.of(read('{"inpainter": "aot"}')), CleanLevel.high);
+    expect(CleanLevel.of(read('{"inpainter": "lama"}')), CleanLevel.high);
+    expect(CleanLevel.of(read('{"inpainter": "aot", "text_mask": ""}')), CleanLevel.simple);
+    expect(CleanLevel.of(read('{"inpainter": "aot", "text_mask": "comic_text_detector"}')), CleanLevel.medium);
+    final custom = read('{"inpainter": "lama", "text_mask": ""}');
+    expect(CleanLevel.of(custom), isNull);
+    CleanLevel.simple.applyTo(custom);
+    expect((custom.inpainter, custom.textMask), ('aot', ''));
   });
 
   test('RedactingSecretStore masks secrets as soon as they are read or written', () async {

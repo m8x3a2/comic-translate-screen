@@ -84,6 +84,9 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
   plain ×1.5 / ×2, or neural networks on three levels (waifu2x CUNet, waifu2x Swin-UNet, Fatality
   Comix by Twittman, CC BY-NC-SA 4.0, the default for comics). Words glued together on tiny text can be
   split by a dictionary; tiny text gets advice on what to do.
+- **Text removal levels** Simple / Medium / High: Medium and High find the letters themselves
+  (comic-text-detector, GPL-3.0, separate download), so the network repaints the letters and not the
+  drawing around them; High repaints with LaMa (the default).
 - Each step shows how long it took, and the report of "Translate all" gives the time of every step.
 - An unexpected error builds a bug report by itself (kept on this computer).
 

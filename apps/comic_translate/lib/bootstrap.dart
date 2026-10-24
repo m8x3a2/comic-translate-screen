@@ -89,6 +89,14 @@ class AppServices {
     return loadLineChecker(registry, settings, config, env);
   }
 
+  /// The text masker of the cleaning level, or null (see `loadTextMasker`).
+  Future<TextMasker?> textMasker(AppSettings settings, {bool? useGpu, EventLog? log}) async {
+    final id = settings.textMask;
+    final config = registry.contains(id) ? await pluginConfig(id, settings) : null;
+    final env = PluginEnvironment(models: models, log: log ?? appLog, useGpu: useGpu ?? settings.useGpu);
+    return loadTextMasker(registry, settings, config, env);
+  }
+
   /// [secretStore] defaults to the OS secure storage; tests pass a
   /// [MemorySecretStore]. Extra log sinks are built with the shared
   /// [Redactor] so they mask every registered secret too.

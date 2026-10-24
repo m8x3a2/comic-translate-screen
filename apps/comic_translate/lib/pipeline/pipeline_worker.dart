@@ -24,7 +24,7 @@ import 'package:path/path.dart' as p;
 import 'page_pipeline.dart';
 
 /// The plugins of a pipeline.
-enum PipelinePart { detector, ocr, translator, inpainter }
+enum PipelinePart { detector, ocr, translator, inpainter, textMask }
 
 /// What a worker needs to start.
 class WorkerSetup {
@@ -590,6 +590,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
         PipelinePart.ocr => plugins.ocr,
         PipelinePart.translator => plugins.translator,
         PipelinePart.inpainter => plugins.inpainter,
+        PipelinePart.textMask => plugins.textMasker,
       };
     }
   }
@@ -685,7 +686,8 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
       case _Op.mask:
         final work = strip(blocks);
         await token.checkpoint();
-        return generateMask(work, blocks);
+        final letters = await (await plugins.textMasker)?.letters(work, context);
+        return generateMask(work, blocks, letters: letters);
       case _Op.inpaint:
         final inpainter = await plugins.inpainter;
         var mask = m.mask!;

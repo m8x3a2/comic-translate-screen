@@ -608,6 +608,7 @@ Future<List<ModelSpec>> missingModels(
     if (parts.contains(PipelinePart.ocr) && settings.checksLines) lineCheckerId,
     if (parts.contains(PipelinePart.translator)) settings.translator,
     if (parts.contains(PipelinePart.inpainter)) settings.inpainter,
+    if (parts.contains(PipelinePart.textMask)) settings.textMask,
   ];
   final languages = sourceLanguages ?? {settings.sourceLanguage};
   final ids = <String>{

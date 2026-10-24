@@ -629,7 +629,25 @@ class _ToolsSection extends ConsumerWidget {
               _switch(l.checkLines, s.checkLines, (v) => _change(ref, (s) => s.checkLines = v), info: l.checkLinesInfo),
           ],
         ),
-        pluginWithForm(l.inpainter, PluginKind.inpainter, s.inpainter, (s, v) => s.inpainter = v),
+        SettingsGroup(
+          title: l.inpainter,
+          children: [
+            _Dropdown<CleanLevel?>(
+              label: l.cleanLevel,
+              value: CleanLevel.of(s),
+              options: {
+                CleanLevel.simple: l.cleanLevelSimple,
+                CleanLevel.medium: l.cleanLevelMedium,
+                CleanLevel.high: l.cleanLevelHigh,
+                if (CleanLevel.of(s) == null) null: l.cleanLevelCustom,
+              },
+              onChanged: (v) {
+                if (v != null) _change(ref, v.applyTo);
+              },
+              info: l.cleanLevelInfo,
+            ),
+          ],
+        ),
         SettingsGroup(
           title: l.hdStrategy,
           children: [

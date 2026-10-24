@@ -55,9 +55,28 @@ void paintStrokes(ui.Canvas canvas, List<MaskStroke> strokes, ui.Color color, {d
 }
 
 /// The mask to clean a [width]×[height] page with: [base] (the generated
-/// mask) plus [strokes]; 255 = remove.
+/// mask) plus [strokes]. Brush strokes are 255 (letters for the network),
+/// erased pixels 0, the rest keeps the value of [base] (see
+/// `maskMarginValue`).
 Future<GrayImage> rasterizeMask(int width, int height, {GrayImage? base, List<MaskStroke> strokes = const []}) async {
+  if (strokes.isEmpty && base != null && base.width == width && base.height == height) {
+    return GrayImage(width, height, Uint8List.fromList(base.data));
+  }
+  final covered = await _coverage(width, height, base: base, strokes: strokes);
+  final brushed = strokes.isEmpty ? null : await _coverage(width, height, strokes: strokes);
   final out = Uint8List(width * height);
+  for (var i = 0; i < out.length; i++) {
+    if (!covered[i]) continue;
+    final y = i ~/ width, x = i % width;
+    final b = base != null && y < base.height && x < base.width ? base.data[y * base.width + x] : 0;
+    out[i] = brushed != null && brushed[i] ? 255 : (b != 0 ? b : 255);
+  }
+  return GrayImage(width, height, out);
+}
+
+/// Pixels covered by [base] (non-zero) drawn with [strokes] over it.
+Future<List<bool>> _coverage(int width, int height, {GrayImage? base, List<MaskStroke> strokes = const []}) async {
+  final out = List<bool>.filled(width * height, false);
   final baseImage = base == null ? null : await maskToUiImage(base, 0xFFFFFFFF);
   try {
     for (var top = 0; top < height; top += _maxStrip) {
@@ -77,13 +96,13 @@ Future<GrayImage> rasterizeMask(int width, int height, {GrayImage? base, List<Ma
       final bytes = rgba.buffer.asUint8List(rgba.offsetInBytes, rgba.lengthInBytes);
       final o = top * width;
       for (var i = 0, j = 3; j < bytes.length; i++, j += 4) {
-        if (bytes[j] >= 128) out[o + i] = 255;
+        if (bytes[j] >= 128) out[o + i] = true;
       }
     }
   } finally {
     baseImage?.dispose();
   }
-  return GrayImage(width, height, out);
+  return out;
 }
 
 /// Width and height of the image file at [path], without decoding it.

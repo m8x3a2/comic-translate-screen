@@ -156,7 +156,11 @@ class PrivacyBadge extends StatelessWidget {
 enum ModelGroup { core, language, textPrep, extra }
 
 ModelGroup modelGroupOf(String id) => switch (id) {
-  'rtdetr-v2-int8' || 'aot-inpainting' || 'ppocr-v5-det-mobile' => ModelGroup.core,
+  'rtdetr-v2-int8' ||
+  'aot-inpainting' ||
+  'ppocr-v5-det-mobile' ||
+  'lama-manga' ||
+  'comic-text-detector' => ModelGroup.core,
   'ppocr-v5-rec-en' ||
   'ppocr-v5-rec-latin' ||
   'ppocr-v5-rec-eslav' ||
@@ -173,6 +177,7 @@ ModelGroup modelGroupOf(String id) => switch (id) {
   'rtdetr-v2-int8' => (l.modelDetector, l.modelDetectorInfo),
   'aot-inpainting' => (l.modelAot, l.modelAotInfo),
   'lama-manga' => (l.modelLama, l.modelLamaInfo),
+  'comic-text-detector' => (l.modelCtd, l.modelCtdInfo),
   'ppocr-v5-rec-en' => (l.modelOcrEn, l.modelOcrEnInfo),
   'ppocr-v5-rec-latin' => (l.modelOcrLatin, l.modelOcrLatinInfo),
   'ppocr-v5-rec-eslav' => (l.modelOcrEslav, l.modelOcrEslavInfo),

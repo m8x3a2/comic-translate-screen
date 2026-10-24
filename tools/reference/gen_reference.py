@@ -1,6 +1,6 @@
 """Generate parity reference data by running the original comic-translate code.
 
-    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr|translation|mask|inpaint|render]
+    uv run python -B gen_reference.py [--original DIR] [--only primitives|geometry|detection|heuristics|ocr|manga_ocr|translation|mask|inpaint|render|text_prep|text_mask]
 
 The original repository is only imported (bytecode writing is disabled), never
 modified. Outputs go to test_data/reference/ and are compared by Dart tests.
@@ -1028,6 +1028,41 @@ def gen_text_prep(out: Path, pages_dir: Path, models_dir: Path, detection_dir: P
     write_json(out / "text_prep.json", records)
 
 
+def gen_text_mask(out: Path, pages_dir: Path, models_dir: Path) -> None:
+    """comic-text-detector letters (new in this project, not in the original): the procedure of the night
+    experiment of 2026-10-25 (`self\\mask-inpaint-experiment\\scripts\\ctd_mask.py`): letterbox to 1024,
+    RGB/255, the seg head, back to the page size (uint8, PIL bilinear), letters = > int(0.3 * 255)."""
+    import onnxruntime as ort
+    from PIL import Image
+
+    path = models_dir / "comic-text-detector" / "comic-text-detector.onnx"
+    if not path.exists():
+        sys.exit(f"Model not found: {path}. Run: cts models download comic-text-detector")
+    so = ort.SessionOptions()
+    so.add_session_config_entry("session.set_denormal_as_zero", "1")
+    session = ort.InferenceSession(str(path), so, providers=["CPUExecutionProvider"])
+    records = []
+    for page in ["en_E01P01", "en_E06P05"]:
+        img = decode_rgb(pages_dir / f"{page}.jpg")
+        h, w = img.shape[:2]
+        r = 1024 / max(h, w)
+        nw, nh = round(w * r), round(h * r)
+        small = np.asarray(Image.fromarray(img).resize((nw, nh), Image.BILINEAR))
+        canvas = np.zeros((1024, 1024, 3), np.uint8)
+        canvas[:nh, :nw] = small
+        x = canvas.astype(np.float32).transpose(2, 0, 1)[None] / 255.0
+        seg = session.run(["seg"], {session.get_inputs()[0].name: x})[0][0, 0, :nh, :nw]
+        q = (seg * 255).clip(0, 255).astype(np.uint8)
+        prob = np.asarray(Image.fromarray(q).resize((w, h), Image.BILINEAR))
+        letters = (prob > int(0.3 * 255)).astype(np.uint8) * 255
+        records.append({
+            "page": page, "size": [w, h], "small": [nw, nh],
+            "prob_small_sha256": sha256(q), "prob_sha256": sha256(prob),
+            "letters_sha256": sha256(letters), "letters": int((letters > 0).sum()),
+        })
+    write_json(out / "text_mask.json", records)
+
+
 # ------------------------------------------------------------------- main ---
 
 def main() -> None:
@@ -1036,7 +1071,7 @@ def main() -> None:
     ap.add_argument("--pages", type=Path, default=DEFAULT_PAGES)
     ap.add_argument("--models", type=Path, default=DEFAULT_MODELS)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "search", "translation", "mask", "inpaint", "render", "ppocr_lines", "text_prep"], action="append")
+    ap.add_argument("--only", choices=["primitives", "geometry", "detection", "heuristics", "ocr", "manga_ocr", "script", "search", "translation", "mask", "inpaint", "render", "ppocr_lines", "text_prep", "text_mask"], action="append")
     args = ap.parse_args()
 
     original = args.original.resolve()
@@ -1091,6 +1126,8 @@ def main() -> None:
         gen_ppocr_lines(args.out, args.pages, args.models)
     if "text_prep" in only:
         gen_text_prep(args.out, args.pages, args.models, args.out / "detection")
+    if "text_mask" in only:
+        gen_text_mask(args.out, args.pages, args.models)
 
 
 if __name__ == "__main__":

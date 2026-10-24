@@ -6,6 +6,7 @@ export 'src/detection/ppocr_lines.dart';
 export 'src/detection/rtdetr_v2.dart';
 export 'src/exchange/chat_exchange.dart';
 export 'src/inpainting/aot.dart';
+export 'src/inpainting/comic_text_detector.dart';
 export 'src/inpainting/lama.dart';
 export 'src/ocr/default_ocr.dart';
 export 'src/ocr/manga_ocr.dart';

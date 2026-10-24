@@ -612,6 +612,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inpainter => 'Text removal';
 
   @override
+  String get cleanLevel => 'Text removal quality';
+
+  @override
+  String get cleanLevelSimple => 'Simple — as before';
+
+  @override
+  String get cleanLevelMedium => 'Medium';
+
+  @override
+  String get cleanLevelHigh => 'High (default)';
+
+  @override
+  String get cleanLevelCustom => 'Custom combination';
+
+  @override
+  String get cleanLevelInfo =>
+      'How text is removed from the page (times on a slow laptop without a graphics card, per page on average):\n• Simple — as before: a mask by the algorithm with a margin around the letters, repainted by the AOT network. About 4 s.\n• Medium — the comic-text-detector network finds the letters themselves and AOT repaints only them: the drawing next to the text is hardly touched, 2–4 times fewer letter remains. About 6 s.\n• High — the same, repainted by LaMa: best on grey screentone and drawings. About 7 s, plus 8 s on the first run. Large pages take longer (up to 15–20 s).\nWhite bubbles are filled at once, without a network, on every level. comic-text-detector is a separate download (82 MB, GPL-3.0 licence); until it is there, the mask of Simple is used.';
+
+  @override
   String get hdStrategy => 'Cleaning large pages';
 
   @override
@@ -1564,7 +1583,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelLamaInfo =>
-      'Restores the drawing under the text more neatly, especially under sound effects. Slower and larger than AOT. Chosen in Settings → Tools.';
+      'Restores the drawing under the text more neatly, especially on grey screentone and under sound effects. Slower and larger than AOT. Used by the High text removal level (Settings → Tools → Text removal quality).';
+
+  @override
+  String get modelCtd => 'Letters for text removal (comic-text-detector)';
+
+  @override
+  String get modelCtdInfo =>
+      'Finds the letters themselves, so that text removal repaints them and not the drawing around them. Used by the Medium and High text removal levels. About 2 s per page. By dmMaze, licence GPL-3.0; file from EarthWL/hiyori-onnx.';
 
   @override
   String get modelOcrEn => 'English';

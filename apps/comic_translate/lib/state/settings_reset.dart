@@ -37,6 +37,7 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..screenDetector = d.screenDetector
           ..ocr = d.ocr
           ..inpainter = d.inpainter
+          ..textMask = d.textMask
           ..textPrep = d.textPrep
           ..screenTextPrep = d.screenTextPrep
           ..fixCyrillicLookalikes = d.fixCyrillicLookalikes
@@ -44,7 +45,13 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..checkLines = d.checkLines
           ..textPrepSeconds = d.textPrepSeconds
           ..inpaint = d.inpaint;
-        forgetPlugins({PluginKind.detector, PluginKind.ocr, PluginKind.inpainter, PluginKind.textPrep});
+        forgetPlugins({
+          PluginKind.detector,
+          PluginKind.ocr,
+          PluginKind.inpainter,
+          PluginKind.textPrep,
+          PluginKind.textMask,
+        });
       case SettingsPart.text:
         s.render = d.render;
       case SettingsPart.upscale:

@@ -463,9 +463,28 @@ BlockMask? buildBlockMaskData(
   return BlockMask(dilated, bounds);
 }
 
+/// Mask value of the margin around letters that only the flat fill of plain
+/// bubbles may paint; the inpainting network gets the letters (255) alone.
+/// Masks of one value (255) are the original's: everything goes everywhere.
+const maskMarginValue = 128;
+
+/// Whether the inpainting network gets a mask pixel of value [v] (letters
+/// and hand-painted strokes, not the fill-only margin).
+bool isNetworkMaskValue(int v) => v >= 192;
+
+/// Margin added around the letters of a [TextMasker], in pixels.
+const letterMaskMargin = 2;
+
 /// `generate_mask`: the union of every block's mask (0/255).
-GrayImage generateMask(RgbImage image, List<TextBlock> blocks, {int defaultPadding = 5}) {
-  final mask = GrayImage.zeros(image.width, image.height);
+///
+/// With [letters] (from a [TextMasker], new in this project) the mask has
+/// two values: [maskMarginValue] where only the original's mask is, 255 on
+/// the letters grown by [letterMaskMargin] inside the blocks. A block where
+/// the masker found almost nothing (a logo, tiny text it misses) keeps the
+/// original's mask as letters.
+GrayImage generateMask(RgbImage image, List<TextBlock> blocks, {int defaultPadding = 5, GrayImage? letters}) {
+  final w = image.width, h = image.height;
+  final mask = GrayImage.zeros(w, h);
   for (final b in blocks) {
     final entry = buildBlockMaskData(image, b, defaultPadding: defaultPadding, clipToBubble: true);
     if (entry == null) continue;
@@ -474,10 +493,59 @@ GrayImage generateMask(RgbImage image, List<TextBlock> blocks, {int defaultPaddi
       for (var x = 0; x < entry.mask.width; x++) {
         final v = entry.mask.data[y * entry.mask.width + x];
         if (v == 0) continue;
-        final i = (bb.y1 + y) * image.width + bb.x1 + x;
+        final i = (bb.y1 + y) * w + bb.x1 + x;
         mask.data[i] |= v;
       }
     }
+  }
+  if (letters == null) return mask;
+
+  final net = Uint8List(w * h);
+  for (final b in blocks) {
+    final t = b.xyxy;
+    final bubble = b.textClass == TextClass.bubble ? b.bubbleXyxy : null;
+    final dx = t.width ~/ 20 + 6, dy = t.height ~/ 20 + 6;
+    final r = bubble ?? BBox(t.x1 - dx, t.y1 - dy, t.x2 + dx, t.y2 + dy);
+    final rx1 = math.max(0, r.x1), ry1 = math.max(0, r.y1), rx2 = math.min(w, r.x2), ry2 = math.min(h, r.y2);
+    if (rx2 <= rx1 || ry2 <= ry1) continue;
+
+    // The letters inside the region, grown by the margin (which may step
+    // out of the region like a dilation of the whole page would).
+    const m = letterMaskMargin;
+    final cx1 = math.max(0, rx1 - m), cy1 = math.max(0, ry1 - m);
+    final cw = math.min(w, rx2 + m) - cx1, ch = math.min(h, ry2 + m) - cy1;
+    final crop = GrayImage.zeros(cw, ch);
+    for (var y = ry1; y < ry2; y++) {
+      for (var x = rx1; x < rx2; x++) {
+        if (letters.data[y * w + x] != 0) crop.data[(y - cy1) * cw + x - cx1] = 255;
+      }
+    }
+    final grown = imkDilate(crop, StructuringElement.rect(2 * m + 1, 2 * m + 1));
+
+    var own = 0, found = 0;
+    for (var y = math.max(0, t.y1); y < math.min(h, t.y2); y++) {
+      for (var x = math.max(0, t.x1); x < math.min(w, t.x2); x++) {
+        if (mask.data[y * w + x] != 0) own++;
+        final gy = y - cy1, gx = x - cx1;
+        if (gy >= 0 && gy < ch && gx >= 0 && gx < cw && grown.data[gy * cw + gx] != 0) found++;
+      }
+    }
+    if (own > 0 && found < 0.3 * own) {
+      for (var y = ry1; y < ry2; y++) {
+        for (var x = rx1; x < rx2; x++) {
+          if (mask.data[y * w + x] != 0) net[y * w + x] = 1;
+        }
+      }
+      continue;
+    }
+    for (var y = 0; y < ch; y++) {
+      for (var x = 0; x < cw; x++) {
+        if (grown.data[y * cw + x] != 0) net[(cy1 + y) * w + cx1 + x] = 1;
+      }
+    }
+  }
+  for (var i = 0; i < w * h; i++) {
+    mask.data[i] = net[i] != 0 ? 255 : (mask.data[i] != 0 ? maskMarginValue : 0);
   }
   return mask;
 }

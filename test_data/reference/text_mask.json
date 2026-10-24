@@ -1,0 +1,32 @@
+[
+ {
+  "page": "en_E01P01",
+  "size": [
+   1200,
+   1660
+  ],
+  "small": [
+   740,
+   1024
+  ],
+  "prob_small_sha256": "e877a6d70fbc898ab0f03daacaf6eba649c7a4e007b5326ee141a200e725f137",
+  "prob_sha256": "48690b6a62622bf569e33b38c57233684808f2ddc7c7fcced64d3e862893245e",
+  "letters_sha256": "eeffba13902bf1aad837de3389dc942e4e008fb02590193b6f8f6316aa805239",
+  "letters": 5930
+ },
+ {
+  "page": "en_E06P05",
+  "size": [
+   1200,
+   1660
+  ],
+  "small": [
+   740,
+   1024
+  ],
+  "prob_small_sha256": "c5184a598a7ea6738bf8d5031cf28c5fd64dc587e540856268a5306fd4825fb3",
+  "prob_sha256": "95a94e3ebd1e671ffa1b13d2b59097dc8a4d3d12f17c8284807afbb499d5e2dd",
+  "letters_sha256": "34df48651c8c79b8507db067e855466c28c51d38c627c6000969f6f4dd188d8f",
+  "letters": 181193
+ }
+]
