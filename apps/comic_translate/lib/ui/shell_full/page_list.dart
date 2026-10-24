@@ -7,17 +7,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../state/app_state.dart';
 import '../../state/batch.dart';
 import '../../state/steps.dart';
 import '../../state/workspace.dart';
+import '../common/key_bindings.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
 import 'page_grid.dart';
 
 class PageList extends ConsumerWidget {
-  const PageList({super.key, this.onAdd});
+  const PageList({super.key, this.onAdd, this.onAddAt, this.onPasteAt});
 
   final VoidCallback? onAdd;
+
+  /// Files or the clipboard's pages to this place in the list (null: not now).
+  final ValueChanged<int>? onAddAt;
+  final ValueChanged<int>? onPasteAt;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,6 +57,8 @@ class PageList extends ConsumerWidget {
               selected: i == ws.current,
               picked: ws.selectedPages.contains(ws.pages[i].id),
               canRemove: !running,
+              onAddAt: onAddAt,
+              onPasteAt: onPasteAt,
             ),
           ),
         ),
@@ -93,6 +101,49 @@ class PageList extends ConsumerWidget {
   }
 }
 
+/// The right-click menu of a page in the list and in the grid: pages from
+/// the clipboard or files below it, removing it.
+void showPageMenu(
+  BuildContext context,
+  WidgetRef ref,
+  Offset at, {
+  required PageEntry page,
+  required int index,
+  ValueChanged<int>? onAddAt,
+  ValueChanged<int>? onPasteAt,
+}) {
+  final l = context.l10n;
+  showMenu<void>(
+    context: context,
+    position: RelativeRect.fromLTRB(at.dx, at.dy, at.dx, at.dy),
+    items: [
+      if (onPasteAt != null)
+        PopupMenuItem(
+          onTap: () => onPasteAt(index + 1),
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.content_paste),
+            title: Text(l.pasteBelow),
+            trailing: Text(KeyBindings.of(ref.read(settingsProvider)).labelOf(ShortcutAction.paste)),
+          ),
+        ),
+      if (onAddAt != null)
+        PopupMenuItem(
+          onTap: () => onAddAt(index + 1),
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.add_photo_alternate_outlined),
+            title: Text(l.addBelow),
+          ),
+        ),
+      PopupMenuItem(
+        onTap: () => ref.read(workspaceProvider.notifier).remove(page.id),
+        child: ListTile(dense: true, leading: const Icon(Icons.delete_outline), title: Text(l.removePage)),
+      ),
+    ],
+  );
+}
+
 class _PageTile extends ConsumerWidget {
   const _PageTile({
     required this.page,
@@ -100,6 +151,8 @@ class _PageTile extends ConsumerWidget {
     required this.selected,
     required this.picked,
     required this.canRemove,
+    this.onAddAt,
+    this.onPasteAt,
   });
 
   final PageEntry page;
@@ -109,6 +162,8 @@ class _PageTile extends ConsumerWidget {
   /// Among the pages selected for the steps.
   final bool picked;
   final bool canRemove;
+  final ValueChanged<int>? onAddAt;
+  final ValueChanged<int>? onPasteAt;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -135,20 +190,14 @@ class _PageTile extends ConsumerWidget {
     final thumb = page.translatedPath ?? page.cleanPath ?? page.path;
     return GestureDetector(
       onSecondaryTapDown: canRemove
-          ? (d) => showMenu<void>(
-              context: context,
-              position: RelativeRect.fromLTRB(
-                d.globalPosition.dx,
-                d.globalPosition.dy,
-                d.globalPosition.dx,
-                d.globalPosition.dy,
-              ),
-              items: [
-                PopupMenuItem(
-                  onTap: () => ref.read(workspaceProvider.notifier).remove(page.id),
-                  child: Text(l.removePage),
-                ),
-              ],
+          ? (d) => showPageMenu(
+              context,
+              ref,
+              d.globalPosition,
+              page: page,
+              index: index,
+              onAddAt: onAddAt,
+              onPasteAt: onPasteAt,
             )
           : null,
       child: Padding(

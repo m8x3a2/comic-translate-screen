@@ -2707,4 +2707,70 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get lookPresetHelp =>
       'Стиль — набор оформления (шрифт, цвет, обводка, жирный…), который ставится одним щелчком на пузырь или слово. Изменили стиль — изменились все пузыри и слова с ним.';
+
+  @override
+  String get keyPaste => 'Вставить страницы из буфера обмена';
+
+  @override
+  String pastedPageName(String time) {
+    return 'Вставка $time';
+  }
+
+  @override
+  String get pasteNothing => 'В буфере обмена нет картинки или файлов';
+
+  @override
+  String get pasteBelow => 'Вставить из буфера под эту страницу';
+
+  @override
+  String get addBelow => 'Добавить файлы под эту страницу…';
+
+  @override
+  String repeatsTitle(String count) {
+    return 'Уже добавлены: $count';
+  }
+
+  @override
+  String get repeatsHint =>
+      'Такие же картинки уже есть среди страниц. Отметьте те, что всё равно нужно добавить. Миниатюры: новый файл и страница, которая уже есть; щелчок по ним или по «Сравнить» покажет обе крупно.';
+
+  @override
+  String get repeatsCompare => 'Сравнить';
+
+  @override
+  String get repeatsCompareNew => 'Добавляемый файл';
+
+  @override
+  String repeatsComparePage(String number) {
+    return 'Страница $number';
+  }
+
+  @override
+  String get repeatsCompareAdding => 'Тоже добавляется';
+
+  @override
+  String repeatsSameAs(String number, String name) {
+    return 'как страница $number «$name»';
+  }
+
+  @override
+  String repeatsSameAsNew(String name) {
+    return 'как «$name» из добавляемых';
+  }
+
+  @override
+  String get repeatsSkipAll => 'Пропустить все';
+
+  @override
+  String repeatsAddPicked(String count) {
+    return 'Добавить отмеченные ($count)';
+  }
+
+  @override
+  String get repeatsAddAll => 'Всё равно добавить все';
+
+  @override
+  String repeatsLeft(String count) {
+    return 'Повторы не добавлены: $count';
+  }
 }

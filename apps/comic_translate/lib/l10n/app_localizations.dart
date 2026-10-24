@@ -4699,6 +4699,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A style is a set of looks (font, colour, outline, bold…) put on a bubble or a word with one click. Change the style and every bubble and word with it changes.'**
   String get lookPresetHelp;
+
+  /// No description provided for @keyPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste pages from the clipboard'**
+  String get keyPaste;
+
+  /// No description provided for @pastedPageName.
+  ///
+  /// In en, this message translates to:
+  /// **'Pasted {time}'**
+  String pastedPageName(String time);
+
+  /// No description provided for @pasteNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'The clipboard has no picture or files'**
+  String get pasteNothing;
+
+  /// No description provided for @pasteBelow.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from the clipboard below this page'**
+  String get pasteBelow;
+
+  /// No description provided for @addBelow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add files below this page…'**
+  String get addBelow;
+
+  /// No description provided for @repeatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Already added: {count}'**
+  String repeatsTitle(String count);
+
+  /// No description provided for @repeatsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The same pictures are among the pages already. Tick the ones to add anyway. The small pictures: the new file and the page already open; click them or \"Compare\" to see both big.'**
+  String get repeatsHint;
+
+  /// No description provided for @repeatsCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get repeatsCompare;
+
+  /// No description provided for @repeatsCompareNew.
+  ///
+  /// In en, this message translates to:
+  /// **'File being added'**
+  String get repeatsCompareNew;
+
+  /// No description provided for @repeatsComparePage.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {number}'**
+  String repeatsComparePage(String number);
+
+  /// No description provided for @repeatsCompareAdding.
+  ///
+  /// In en, this message translates to:
+  /// **'Also being added'**
+  String get repeatsCompareAdding;
+
+  /// No description provided for @repeatsSameAs.
+  ///
+  /// In en, this message translates to:
+  /// **'same as page {number} \"{name}\"'**
+  String repeatsSameAs(String number, String name);
+
+  /// No description provided for @repeatsSameAsNew.
+  ///
+  /// In en, this message translates to:
+  /// **'same as \"{name}\" being added'**
+  String repeatsSameAsNew(String name);
+
+  /// No description provided for @repeatsSkipAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip all'**
+  String get repeatsSkipAll;
+
+  /// No description provided for @repeatsAddPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Add ticked ({count})'**
+  String repeatsAddPicked(String count);
+
+  /// No description provided for @repeatsAddAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Add all anyway'**
+  String get repeatsAddAll;
+
+  /// No description provided for @repeatsLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats not added: {count}'**
+  String repeatsLeft(String count);
 }
 
 class _AppLocalizationsDelegate

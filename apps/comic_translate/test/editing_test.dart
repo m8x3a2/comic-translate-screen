@@ -187,6 +187,43 @@ void main() {
     expect(container.read(workspaceProvider).selectedPages, isEmpty, reason: 'a plain click clears the selection');
   });
 
+  test('pages go below a page; the same pictures are added only when picked', () async {
+    Future<String> picture(String name, int shade) async {
+      final f = p.join(dir.path, name);
+      await ImageCodec.writeFile(f, RgbImage.filled(100, 60, shade, shade, shade));
+      return f;
+    }
+
+    final a = await picture('a.png', 10), b = await picture('b.png', 20), c = await picture('c.png', 30);
+    await ws().addInputs([a]);
+    ws().select(1);
+    await ws().addInputs([b, c], at: 1);
+    List<String> names() => [for (final x in container.read(workspaceProvider).pages) x.name];
+    expect(names(), ['page.png', 'b.png', 'c.png', 'a.png']);
+    expect(page().name, 'a.png', reason: 'the open page stays open');
+
+    await ws().addInputs([await picture('d.png', 40)], at: 0, open: true);
+    expect(names().first, 'd.png');
+    expect(page().name, 'd.png', reason: 'a pasted page is opened');
+
+    final asked = <List<RepeatedPage>>[];
+    final copy = await picture('copy of b.png', 20);
+    final outcome = await ws().addInputs(
+      [copy, await picture('e.png', 50), a],
+      chooseRepeats: (repeats) async {
+        asked.add(repeats);
+        return {1};
+      },
+    );
+    final repeats = asked.single;
+    expect([for (final r in repeats) (r.name, r.sameAs, r.sameAsNumber, p.basename(r.sameAsPath))], [
+      ('copy of b.png', 'b.png', 3, 'b.png'),
+      ('a.png', 'a.png', 5, 'a.png'),
+    ]);
+    expect((outcome.added, outcome.repeatsLeft), (2, 1));
+    expect(names(), ['d.png', 'page.png', 'b.png', 'c.png', 'a.png', 'e.png', 'a.png']);
+  });
+
   test('step plans do what is missing first', () {
     final fresh = page();
     expect(StepsNotifier.plan(ManualStep.translate, fresh), [

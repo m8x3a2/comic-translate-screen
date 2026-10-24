@@ -7,6 +7,7 @@
 library;
 
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -330,10 +331,13 @@ class WorkspaceState {
 
 /// What opening files produced, for messages to the user.
 class ImportOutcome {
-  ImportOutcome(this.added, this.skipped, this.errors, [this.notices = const {}]);
+  ImportOutcome(this.added, this.skipped, this.errors, [this.notices = const {}, this.repeatsLeft = 0]);
 
   final int added;
   final List<String> skipped;
+
+  /// Pages not added: the same pictures are open already.
+  final int repeatsLeft;
 
   /// File → error.
   final Map<String, Object> errors;
@@ -341,6 +345,32 @@ class ImportOutcome {
   /// PSD file name → what to tell about it.
   final Map<String, List<PsdNotice>> notices;
 }
+
+/// A page about to be added with the same picture as an open page or as an
+/// earlier one of the same adding.
+class RepeatedPage {
+  const RepeatedPage({
+    required this.name,
+    required this.path,
+    required this.sameAs,
+    required this.sameAsPath,
+    this.sameAsNumber,
+  });
+
+  final String name;
+  final String path;
+
+  /// The name of the page with the same picture, and its number among the
+  /// open pages (null: one of the pages being added).
+  final String sameAs;
+  final int? sameAsNumber;
+
+  /// The picture of that page, to compare.
+  final String sameAsPath;
+}
+
+/// Which of the repeats to add anyway (indexes into the list).
+typedef RepeatChooser = Future<Set<int>> Function(List<RepeatedPage> repeats);
 
 final workspaceProvider = NotifierProvider<WorkspaceNotifier, WorkspaceState>(WorkspaceNotifier.new);
 
@@ -413,13 +443,21 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     }
   }
 
-  Future<ImportOutcome> addInputs(List<String> inputs) async {
+  /// Adds the pages of [inputs] at [at] (the end by default). Pages with the
+  /// same picture as an open page are added only if [chooseRepeats] picks
+  /// them (without it: all are added). [open] goes to the first added page.
+  Future<ImportOutcome> addInputs(
+    List<String> inputs, {
+    int? at,
+    RepeatChooser? chooseRepeats,
+    bool open = false,
+  }) async {
     if (inputs.isEmpty || state.importing) return ImportOutcome(0, const [], const {});
     state = state.copyWith(importing: true);
     final skipped = <String>[];
     final errors = <String, Object>{};
     try {
-      final imported = await importPages(
+      var imported = await importPages(
         inputs,
         cacheDir: Directory(p.join(sessionDir.path, 'import')),
         pdf: rasterizePdf,
@@ -427,6 +465,38 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
         onError: (input, e) => errors[input] = e,
         fonts: installedFonts,
       );
+      var repeatsLeft = 0;
+      if (chooseRepeats != null && imported.isNotEmpty) {
+        final open = state.pages;
+        final added = [for (final page in imported) page.path];
+        final existing = [for (final page in open) page.path];
+        final same = await _repeatsInBackground(existing, added);
+        final repeats = <int>[
+          for (final (i, j) in same.indexed)
+            if (j != null) i,
+        ];
+        if (repeats.isNotEmpty) {
+          final keep = await chooseRepeats([
+            for (final i in repeats)
+              RepeatedPage(
+                name: imported[i].name,
+                path: imported[i].path,
+                sameAs: same[i]! < open.length ? open[same[i]!].name : imported[same[i]! - open.length].name,
+                sameAsNumber: same[i]! < open.length ? same[i]! + 1 : null,
+                sameAsPath: same[i]! < open.length ? open[same[i]!].path : imported[same[i]! - open.length].path,
+              ),
+          ]);
+          final drop = {
+            for (final (k, i) in repeats.indexed)
+              if (!keep.contains(k)) i,
+          };
+          repeatsLeft = drop.length;
+          imported = [
+            for (final (i, page) in imported.indexed)
+              if (!drop.contains(i)) page,
+          ];
+        }
+      }
       final wasEmpty = state.pages.isEmpty;
       final settings = ref.read(settingsProvider);
       final added = [
@@ -444,16 +514,28 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
             targetLanguage: settings.targetLanguage,
           ),
       ];
-      state = state.copyWith(pages: [...state.pages, ...added], current: wasEmpty ? 0 : null);
+      final pages = state.pages;
+      final where = (at ?? pages.length).clamp(0, pages.length);
+      state = state.copyWith(
+        pages: [...pages.take(where), ...added, ...pages.skip(where)],
+        current: open && added.isNotEmpty
+            ? where
+            : wasEmpty
+            ? 0
+            : (where <= state.current ? state.current + added.length : null),
+        clearBlock: open && added.isNotEmpty,
+      );
       ref.read(servicesProvider).appLog.info('pages_opened', {
         'added': added.length,
         'skipped': skipped.length,
         'errors': errors.length,
+        'repeats_left': repeatsLeft,
+        'at': ?at,
       });
       return ImportOutcome(added.length, skipped, errors, {
         for (final page in imported)
           if (page.notices.isNotEmpty) page.name: page.notices,
-      });
+      }, repeatsLeft);
     } finally {
       state = state.copyWith(importing: false);
     }
@@ -793,3 +875,8 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     );
   }
 }
+
+/// [findRepeatedFiles] off the UI thread (a top-level function: the closure
+/// must not hold the notifier).
+Future<List<int?>> _repeatsInBackground(List<String> existing, List<String> added) =>
+    Isolate.run(() => findRepeatedFiles(existing, added));

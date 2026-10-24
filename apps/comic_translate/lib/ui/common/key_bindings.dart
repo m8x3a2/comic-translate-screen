@@ -136,6 +136,7 @@ enum ShortcutAction {
   open('open', ShortcutGroup.files),
   save('save', ShortcutGroup.files),
   saveAs('save_as', ShortcutGroup.files),
+  paste('paste_pages', ShortcutGroup.files),
   translateAll('translate_all', ShortcutGroup.files),
   previousPage('previous_page', ShortcutGroup.files),
   nextPage('next_page', ShortcutGroup.files),
@@ -161,7 +162,7 @@ enum ShortcutAction {
 
   /// Undo, redo and deleting belong to a text field while one is focused,
   /// whatever the keys.
-  bool get yieldsToTyping => this == undo || this == redo || this == deleteBox;
+  bool get yieldsToTyping => this == undo || this == redo || this == deleteBox || this == paste;
 }
 
 KeyCombo _ctrl(LogicalKeyboardKey k, {bool shift = false}) => KeyCombo(k, ctrl: true, shift: shift);
@@ -172,6 +173,7 @@ final defaultShortcuts = <ShortcutAction, List<KeyCombo>>{
   ShortcutAction.open: [_ctrl(LogicalKeyboardKey.keyO)],
   ShortcutAction.save: [_ctrl(LogicalKeyboardKey.keyS)],
   ShortcutAction.saveAs: [_ctrl(LogicalKeyboardKey.keyS, shift: true)],
+  ShortcutAction.paste: [_ctrl(LogicalKeyboardKey.keyV)],
   ShortcutAction.translateAll: [_ctrl(LogicalKeyboardKey.enter)],
   ShortcutAction.previousPage: [const KeyCombo(LogicalKeyboardKey.pageUp)],
   ShortcutAction.nextPage: [const KeyCombo(LogicalKeyboardKey.pageDown)],

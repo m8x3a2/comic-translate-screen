@@ -2706,4 +2706,70 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get lookPresetHelp =>
       'A style is a set of looks (font, colour, outline, bold…) put on a bubble or a word with one click. Change the style and every bubble and word with it changes.';
+
+  @override
+  String get keyPaste => 'Paste pages from the clipboard';
+
+  @override
+  String pastedPageName(String time) {
+    return 'Pasted $time';
+  }
+
+  @override
+  String get pasteNothing => 'The clipboard has no picture or files';
+
+  @override
+  String get pasteBelow => 'Paste from the clipboard below this page';
+
+  @override
+  String get addBelow => 'Add files below this page…';
+
+  @override
+  String repeatsTitle(String count) {
+    return 'Already added: $count';
+  }
+
+  @override
+  String get repeatsHint =>
+      'The same pictures are among the pages already. Tick the ones to add anyway. The small pictures: the new file and the page already open; click them or \"Compare\" to see both big.';
+
+  @override
+  String get repeatsCompare => 'Compare';
+
+  @override
+  String get repeatsCompareNew => 'File being added';
+
+  @override
+  String repeatsComparePage(String number) {
+    return 'Page $number';
+  }
+
+  @override
+  String get repeatsCompareAdding => 'Also being added';
+
+  @override
+  String repeatsSameAs(String number, String name) {
+    return 'same as page $number \"$name\"';
+  }
+
+  @override
+  String repeatsSameAsNew(String name) {
+    return 'same as \"$name\" being added';
+  }
+
+  @override
+  String get repeatsSkipAll => 'Skip all';
+
+  @override
+  String repeatsAddPicked(String count) {
+    return 'Add ticked ($count)';
+  }
+
+  @override
+  String get repeatsAddAll => 'Add all anyway';
+
+  @override
+  String repeatsLeft(String count) {
+    return 'Repeats not added: $count';
+  }
 }

@@ -29,6 +29,7 @@ export 'src/exchange/exchange_sheets.dart';
 export 'src/image/cv_bridge.dart';
 export 'src/image/raster.dart';
 export 'src/import/page_import.dart';
+export 'src/import/repeated_files.dart';
 export 'src/imaging/mahotas.dart';
 export 'src/imaging/pil.dart';
 export 'src/imaging/py_compat.dart';

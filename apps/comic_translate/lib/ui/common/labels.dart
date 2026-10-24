@@ -199,6 +199,7 @@ String shortcutLabel(AppLocalizations l, ShortcutAction a) => switch (a) {
   ShortcutAction.open => l.keyOpen,
   ShortcutAction.save => l.keySave,
   ShortcutAction.saveAs => l.keySaveAs,
+  ShortcutAction.paste => l.keyPaste,
   ShortcutAction.translateAll => l.keyTranslateAll,
   ShortcutAction.previousPage => l.keyPreviousPage,
   ShortcutAction.nextPage => l.keyNextPage,

@@ -1732,5 +1732,74 @@
       }
     }
   },
-  "lookPresetHelp": "A style is a set of looks (font, colour, outline, bold…) put on a bubble or a word with one click. Change the style and every bubble and word with it changes."
+  "lookPresetHelp": "A style is a set of looks (font, colour, outline, bold…) put on a bubble or a word with one click. Change the style and every bubble and word with it changes.",
+  "keyPaste": "Paste pages from the clipboard",
+  "pastedPageName": "Pasted {time}",
+  "@pastedPageName": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pasteNothing": "The clipboard has no picture or files",
+  "pasteBelow": "Paste from the clipboard below this page",
+  "addBelow": "Add files below this page…",
+  "repeatsTitle": "Already added: {count}",
+  "@repeatsTitle": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatsHint": "The same pictures are among the pages already. Tick the ones to add anyway. The small pictures: the new file and the page already open; click them or \"Compare\" to see both big.",
+  "repeatsCompare": "Compare",
+  "repeatsCompareNew": "File being added",
+  "repeatsComparePage": "Page {number}",
+  "@repeatsComparePage": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatsCompareAdding": "Also being added",
+  "repeatsSameAs": "same as page {number} \"{name}\"",
+  "@repeatsSameAs": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatsSameAsNew": "same as \"{name}\" being added",
+  "@repeatsSameAsNew": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatsSkipAll": "Skip all",
+  "repeatsAddPicked": "Add ticked ({count})",
+  "@repeatsAddPicked": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "repeatsAddAll": "Add all anyway",
+  "repeatsLeft": "Repeats not added: {count}",
+  "@repeatsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  }
 }

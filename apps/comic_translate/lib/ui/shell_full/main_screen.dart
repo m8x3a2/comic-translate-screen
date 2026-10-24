@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:ui' show AppExitResponse;
 
@@ -16,6 +17,7 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 
 import '../../app_info.dart';
+import '../../services/file_clipboard.dart';
 import '../../pipeline/pipeline_worker.dart' show GpuFallback, gpuFallbacks;
 import '../../state/app_state.dart';
 import '../../state/batch.dart';
@@ -38,6 +40,7 @@ import 'home_view.dart';
 import 'page_grid.dart';
 import 'page_list.dart';
 import 'page_viewer.dart';
+import 'repeats_dialog.dart';
 import 'shortcuts_dialog.dart';
 import 'text_panel.dart';
 
@@ -293,7 +296,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   void _snack(String text, {SnackBarAction? action}) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), action: action, showCloseIcon: true));
 
-  Future<void> _open(List<String> paths) async {
+  /// Opens [paths] as pages at [at] (the end by default); [open] goes to the
+  /// first one. A project among them is opened instead.
+  Future<void> _open(List<String> paths, {int? at, bool open = false}) async {
     if (paths.isEmpty) return;
     final project = paths.where(isProjectPath).firstOrNull;
     if (project != null) {
@@ -301,8 +306,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       return;
     }
     final l = context.l10n;
-    final outcome = await ref.read(workspaceProvider.notifier).addInputs(paths);
+    final outcome = await ref
+        .read(workspaceProvider.notifier)
+        .addInputs(
+          paths,
+          at: at,
+          open: open,
+          chooseRepeats: (repeats) async => mounted ? showRepeatsDialog(context, repeats) : const {},
+        );
     if (!mounted) return;
+    if (outcome.repeatsLeft > 0) _snack(l.repeatsLeft('${outcome.repeatsLeft}'));
     for (final e in outcome.errors.entries) {
       final why = e.value is ArchiveToolMissingException ? l.needsArchiveTool : '${e.value}';
       _snack(l.importFailed(p.basename(e.key), why));
@@ -330,10 +343,45 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       }
     }
     if (outcome.skipped.isNotEmpty) _snack(l.skippedFiles(outcome.skipped.map(p.basename).join(', ')));
-    if (outcome.added == 0 && outcome.errors.isEmpty && outcome.skipped.isEmpty) _snack(l.noPagesFound);
+    if (outcome.added == 0 && outcome.errors.isEmpty && outcome.skipped.isEmpty && outcome.repeatsLeft == 0) {
+      _snack(l.noPagesFound);
+    }
   }
 
-  Future<void> _pickFiles() async {
+  /// Ctrl+V: copied files or a copied picture become pages at [at] (the end
+  /// by default); a pasted picture is opened.
+  Future<void> _paste({int? at}) async {
+    final l = context.l10n;
+    switch (readClipboardPages()) {
+      case ClipboardFiles(:final paths):
+        await _open(paths, at: at);
+      case final ClipboardPicture picture:
+        String two(int n) => n.toString().padLeft(2, '0');
+        final t = DateTime.now();
+        final name = l.pastedPageName(
+          '${t.year}-${two(t.month)}-${two(t.day)} ${two(t.hour)}-${two(t.minute)}-${two(t.second)}',
+        );
+        final dir = Directory(p.join(ref.read(workspaceProvider.notifier).sessionDir.path, 'pasted'));
+        var file = File(p.join(dir.path, '$name.png'));
+        for (var n = 2; file.existsSync(); n++) {
+          file = File(p.join(dir.path, '$name ($n).png'));
+        }
+        try {
+          final png = await _pngInBackground(picture);
+          await dir.create(recursive: true);
+          await file.writeAsBytes(png);
+        } catch (e) {
+          if (mounted) _snack(l.importFailed(p.basename(file.path), '$e'));
+          return;
+        }
+        if (mounted) await _open([file.path], at: at, open: true);
+      case null:
+        _snack(l.pasteNothing);
+    }
+  }
+
+  /// The file window; the pages go to [at] (the end by default).
+  Future<void> _pickFiles({int? at}) async {
     final files = await openFiles(
       acceptedTypeGroups: [
         XTypeGroup(
@@ -351,7 +399,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         ),
       ],
     );
-    await _open([for (final f in files) f.path]);
+    await _open([for (final f in files) f.path], at: at);
   }
 
   Future<void> _pickFolder() async {
@@ -584,7 +632,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                             busy: ws.importing,
                           )
                         : ref.watch(pageGridOpenProvider)
-                        ? const PageGrid()
+                        ? PageGrid(
+                            onAddAt: running ? null : (i) => _pickFiles(at: i),
+                            onPasteAt: running ? null : (i) => _paste(at: i),
+                          )
                         : LayoutBuilder(
                             builder: (context, c) => Row(
                               children: [
@@ -593,7 +644,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                 else
                                   SizedBox(
                                     width: c.maxWidth < 1200 ? 200 : 230,
-                                    child: PageList(onAdd: running ? null : _pickFiles),
+                                    child: PageList(
+                                      onAdd: running ? null : _pickFiles,
+                                      onAddAt: running ? null : (i) => _pickFiles(at: i),
+                                      onPasteAt: running ? null : (i) => _paste(at: i),
+                                    ),
                                   ),
                                 const VerticalDivider(width: 1),
                                 const Expanded(child: PageViewer()),
@@ -658,6 +713,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     switch (action) {
       case ShortcutAction.open:
         if (!running) _pickFiles();
+      case ShortcutAction.paste:
+        if (running || state.importing) return false;
+        _paste();
       case ShortcutAction.save || ShortcutAction.saveAs:
         if (state.pages.isNotEmpty) _saveProject(asNew: action == ShortcutAction.saveAs);
       case ShortcutAction.translateAll:
@@ -1136,3 +1194,7 @@ class _StatusBar extends ConsumerWidget {
     );
   }
 }
+
+/// [pictureToPng] off the UI thread (a top-level function: the closure must
+/// not hold the screen).
+Future<Uint8List> _pngInBackground(ClipboardPicture picture) => Isolate.run(() => pictureToPng(picture));

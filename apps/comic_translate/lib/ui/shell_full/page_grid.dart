@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/batch.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
+import 'page_list.dart' show showPageMenu;
 
 /// The grid of pages is open.
 final pageGridOpenProvider = NotifierProvider<_GridOpen, bool>(_GridOpen.new);
@@ -24,7 +25,11 @@ class _GridOpen extends Notifier<bool> {
 }
 
 class PageGrid extends ConsumerStatefulWidget {
-  const PageGrid({super.key});
+  const PageGrid({super.key, this.onAddAt, this.onPasteAt});
+
+  /// Files or the clipboard's pages to this place (null: not now).
+  final ValueChanged<int>? onAddAt;
+  final ValueChanged<int>? onPasteAt;
 
   @override
   ConsumerState<PageGrid> createState() => _PageGridState();
@@ -136,7 +141,18 @@ class _PageGridState extends ConsumerState<PageGrid> {
                       data: i,
                       feedback: SizedBox(width: 150, height: 200, child: Opacity(opacity: 0.8, child: tile)),
                       childWhenDragging: Opacity(opacity: 0.3, child: tile),
-                      child: tile,
+                      child: GestureDetector(
+                        onSecondaryTapDown: (d) => showPageMenu(
+                          context,
+                          ref,
+                          d.globalPosition,
+                          page: page,
+                          index: i,
+                          onAddAt: widget.onAddAt,
+                          onPasteAt: widget.onPasteAt,
+                        ),
+                        child: tile,
+                      ),
                     ),
                   );
                 },
