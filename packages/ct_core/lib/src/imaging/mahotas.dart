@@ -181,28 +181,44 @@ Int32List _mahotasLabel(GrayImage image, int connectivity) {
     }
   }
 
+  final eight = connectivity == 8;
   for (var y = 0; y < h; y++) {
     for (var x = 0; x < w; x++) {
       final i = y * w + x;
       if (data[i] == 0) continue;
-      var label = 0;
-      void consider(int nx, int ny) {
-        if (nx < 0 || ny < 0 || nx >= w) return;
-        final ni = ny * w + nx;
-        final nl = provisional[ni];
-        if (nl == 0) return;
-        if (label == 0) {
-          label = nl;
-        } else {
-          union(label, nl);
+      // The already labelled neighbours: left, up (and the up diagonals).
+      var label = x > 0 ? provisional[i - 1] : 0;
+      if (y > 0) {
+        final up = provisional[i - w];
+        if (up != 0) {
+          if (label == 0) {
+            label = up;
+          } else if (up != label) {
+            union(label, up);
+          }
         }
-      }
-
-      consider(x - 1, y);
-      consider(x, y - 1);
-      if (connectivity == 8) {
-        consider(x - 1, y - 1);
-        consider(x + 1, y - 1);
+        if (eight) {
+          if (x > 0) {
+            final nl = provisional[i - w - 1];
+            if (nl != 0) {
+              if (label == 0) {
+                label = nl;
+              } else if (nl != label) {
+                union(label, nl);
+              }
+            }
+          }
+          if (x < w - 1) {
+            final nl = provisional[i - w + 1];
+            if (nl != 0) {
+              if (label == 0) {
+                label = nl;
+              } else if (nl != label) {
+                union(label, nl);
+              }
+            }
+          }
+        }
       }
       if (label == 0) {
         label = next;

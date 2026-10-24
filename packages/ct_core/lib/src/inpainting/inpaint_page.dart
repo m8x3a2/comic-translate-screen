@@ -38,9 +38,17 @@ typedef InpaintRegion = Future<RgbImage> Function(RgbImage image, GrayImage mask
 List<TextBlock> selectInpaintBlocks(List<TextBlock> blocks) {
   bool hasRenderable(TextBlock b) => b.translation.trim().isNotEmpty && _alnum.hasMatch(b.translation);
   if (blocks.any((b) => b.translation.trim().isNotEmpty)) {
-    return [for (final b in blocks) if (b.text.trim().isNotEmpty && hasRenderable(b)) b];
+    return [
+      for (final b in blocks)
+        if (b.text.trim().isNotEmpty && hasRenderable(b)) b,
+    ];
   }
-  if (blocks.any((b) => b.text.trim().isNotEmpty)) return [for (final b in blocks) if (b.text.trim().isNotEmpty) b];
+  if (blocks.any((b) => b.text.trim().isNotEmpty)) {
+    return [
+      for (final b in blocks)
+        if (b.text.trim().isNotEmpty) b,
+    ];
+  }
   return [for (final b in blocks) b.copy()..text = 'text'];
 }
 
@@ -174,15 +182,63 @@ GrayImage _sub(GrayImage m, BBox b) => m.crop(b);
 
 void _putSub(GrayImage target, BBox b, GrayImage values) {
   for (var y = 0; y < values.height; y++) {
-    target.data.setRange((b.y1 + y) * target.width + b.x1, (b.y1 + y) * target.width + b.x1 + values.width, values.data,
-        y * values.width);
+    target.data.setRange(
+      (b.y1 + y) * target.width + b.x1,
+      (b.y1 + y) * target.width + b.x1 + values.width,
+      values.data,
+      y * values.width,
+    );
   }
 }
 
-int _count(GrayImage m) => m.data.where((v) => v != 0).length;
+int _count(GrayImage m) {
+  var n = 0;
+  for (final v in m.data) {
+    if (v != 0) n++;
+  }
+  return n;
+}
 
-GrayImage _where(int w, int h, bool Function(int i) f) =>
-    GrayImage(w, h, Uint8List.fromList([for (var i = 0; i < w * h; i++) f(i) ? 1 : 0]));
+GrayImage _where(int w, int h, bool Function(int i) f) {
+  final out = Uint8List(w * h);
+  for (var i = 0; i < w * h; i++) {
+    if (f(i)) out[i] = 1;
+  }
+  return GrayImage(w, h, out);
+}
+
+/// What one [applyFastBubbleCleanup] asks of the unchanged page several
+/// times per block: the block masks and the bubble interiors.
+class _PageCache {
+  _PageCache(this.image);
+
+  final RgbImage image;
+  final _blocks = <TextBlock, BlockMask?>{};
+  final _clips = <(TextBlock, BBox), GrayImage?>{};
+
+  /// `build_block_mask_data(..., clip_to_bubble=True)`, null on errors too.
+  BlockMask? blockMask(TextBlock block) => _blocks.putIfAbsent(block, () {
+    try {
+      return buildBlockMaskData(image, block, requireTextOrTranslation: false, clipToBubble: true);
+    } catch (_) {
+      return null;
+    }
+  });
+
+  /// The fast-fill bubble interior of [block] placed at [bounds].
+  GrayImage? bubbleClip(TextBlock block, BBox bounds) => _clips.putIfAbsent(
+    (block, bounds),
+    () => buildBubbleClipMask(
+      bounds.width,
+      bounds.height,
+      bounds,
+      block.bubbleXyxy,
+      inset: fastFillBubbleInset,
+      image: image,
+      seedBbox: block.xyxy,
+    ),
+  );
+}
 
 /// `_apply_fast_bubble_cleanup`: fills uniform bubbles; returns the image,
 /// the mask that still needs the network, and how many blocks were filled.
@@ -196,6 +252,7 @@ GrayImage _where(int w, int h, bool Function(int i) f) =>
   final residual = GrayImage(mask.width, mask.height, Uint8List.fromList(mask.data));
   if (blocks == null || blocks.isEmpty || !mask.data.any((v) => v != 0)) return (cleaned, residual, 0);
 
+  final cache = _PageCache(image);
   var cleanedBlocks = 0;
   final cleanedBubbles = <TextBlock>[];
   for (final (idx, block) in blocks.indexed) {
@@ -206,27 +263,30 @@ GrayImage _where(int w, int h, bool Function(int i) f) =>
     if (!residualCrop.data.any((v) => v != 0)) continue;
     var cropMask = toMask255(residualCrop);
 
-    var (uniform, reason) = isFastFillBubbleBackgroundUniform(image, block, bounds, cropMask);
+    final bubbleClip = cache.bubbleClip(block, bounds);
+    var (uniform, reason) = isFastFillBubbleBackgroundUniform(image, block, bounds, cropMask, bubbleClip: bubbleClip);
     if (uniform) {
-      final routing = _fastFillUniformityMask(image, block, bounds, cropMask);
-      (uniform, reason) = isFastFillBubbleBackgroundUniform(image, block, bounds, routing);
+      final routing = _fastFillUniformityMask(cache.blockMask(block), bounds, cropMask);
+      (uniform, reason) = isFastFillBubbleBackgroundUniform(image, block, bounds, routing, bubbleClip: bubbleClip);
     }
     if (!uniform) {
       report?.notes.add('block[$idx] routed to NN ($reason)');
       continue;
     }
 
-    cropMask = clipMaskComponentsToBubble(cropMask, bounds, block.bubbleXyxy,
-        inset: fastFillBubbleInset, image: image, seedBbox: block.xyxy);
+    cropMask = clipMaskComponentsToBubble(
+      cropMask,
+      bounds,
+      block.bubbleXyxy,
+      inset: fastFillBubbleInset,
+      image: image,
+      seedBbox: block.xyxy,
+      clip: bubbleClip,
+    );
     if (_count(cropMask) <= 0) continue;
     var (ok, why) = _fastFillBlock(cleaned, residual, block, bounds, cropMask);
     if (!ok) {
-      BlockMask? fallback;
-      try {
-        fallback = buildBlockMaskData(image, block, requireTextOrTranslation: false, clipToBubble: true);
-      } catch (_) {
-        fallback = null;
-      }
+      final fallback = cache.blockMask(block);
       if (fallback == null) {
         report?.notes.add('block[$idx] fast fill failed without fallback ($why)');
         continue;
@@ -258,8 +318,7 @@ GrayImage _where(int w, int h, bool Function(int i) f) =>
     for (final b in cleanedBubbles) {
       final bb = fastFillBounds(b, image.width, image.height);
       if (bb == null) continue;
-      final clip = buildBubbleClipMask(bb.width, bb.height, bb, b.bubbleXyxy,
-          inset: fastFillBubbleInset, image: image, seedBbox: b.xyxy);
+      final clip = cache.bubbleClip(b, bb);
       for (var y = bb.y1; y < bb.y2; y++) {
         for (var x = bb.x1; x < bb.x2; x++) {
           scope[y * w + x] = 1;
@@ -271,12 +330,7 @@ GrayImage _where(int w, int h, bool Function(int i) f) =>
     // a touching bubble's box often covers part of them.
     for (final b in blocks) {
       if (cleanedBubbles.contains(b)) continue;
-      BlockMask? own;
-      try {
-        own = buildBlockMaskData(image, b, requireTextOrTranslation: false, clipToBubble: true);
-      } catch (_) {
-        own = null;
-      }
+      final own = cache.blockMask(b);
       if (own == null) continue;
       final ob = own.bounds;
       for (var y = ob.y1; y < ob.y2; y++) {
@@ -294,12 +348,29 @@ GrayImage _where(int w, int h, bool Function(int i) f) =>
 
 /// `_is_fast_fill_bubble_background_uniform`: flat fill only when the bubble
 /// background has one colour everywhere (no artwork showing through).
-(bool, String) isFastFillBubbleBackgroundUniform(RgbImage image, TextBlock block, BBox bounds, GrayImage cropMask) {
+/// [bubbleClip], when given, is this bubble's interior at [bounds] already
+/// built by [buildBubbleClipMask].
+(bool, String) isFastFillBubbleBackgroundUniform(
+  RgbImage image,
+  TextBlock block,
+  BBox bounds,
+  GrayImage cropMask, {
+  GrayImage? bubbleClip,
+}) {
   final crop = image.crop(bounds);
   final cw = crop.width, ch = crop.height;
   if (cw == 0 || ch == 0) return (false, 'bubble-background-invalid');
-  final bubble = buildBubbleClipMask(cw, ch, bounds, block.bubbleXyxy,
-      inset: fastFillBubbleInset, image: image, seedBbox: block.xyxy);
+  final bubble =
+      bubbleClip ??
+      buildBubbleClipMask(
+        cw,
+        ch,
+        bounds,
+        block.bubbleXyxy,
+        inset: fastFillBubbleInset,
+        image: image,
+        seedBbox: block.xyxy,
+      );
   if (bubble == null) return (false, 'bubble-background-unavailable');
 
   final binary = toMask01(cropMask);
@@ -308,20 +379,29 @@ GrayImage _where(int w, int h, bool Function(int i) f) =>
   final sampleCount = _count(sample);
   if (sampleCount < 64) return (false, 'bubble-background-too-small:$sampleCount');
 
-  List<double> median(Iterable<int> indices) {
-    final r = <int>[], g = <int>[], b = <int>[];
-    for (final i in indices) {
-      r.add(crop.data[i * 3]);
-      g.add(crop.data[i * 3 + 1]);
-      b.add(crop.data[i * 3 + 2]);
+  // Channel histograms of the crop where [m] (and [m2]) is set, within the
+  // given rows and columns.
+  List<ByteHistogram> histograms(Uint8List m, {Uint8List? m2, int x1 = 0, int y1 = 0, int? x2, int? y2}) {
+    final hs = [ByteHistogram(), ByteHistogram(), ByteHistogram()];
+    final d = crop.data;
+    for (var y = y1; y < (y2 ?? ch); y++) {
+      for (var x = x1; x < (x2 ?? cw); x++) {
+        final i = y * cw + x;
+        if (m[i] == 0 || (m2 != null && m2[i] == 0)) continue;
+        hs[0].add(d[i * 3]);
+        hs[1].add(d[i * 3 + 1]);
+        hs[2].add(d[i * 3 + 2]);
+      }
     }
-    return [npMedian(r), npMedian(g), npMedian(b)];
+    return hs;
   }
 
-  final sampleIdx = [for (var i = 0; i < cw * ch; i++) if (sample.data[i] != 0) i];
-  final med = median(sampleIdx);
+  List<double> median(List<ByteHistogram> hs) => [for (final h in hs) h.median()];
+
+  final med = median(histograms(sample.data));
   var close = 0;
-  for (final i in sampleIdx) {
+  for (var i = 0; i < cw * ch; i++) {
+    if (sample.data[i] == 0) continue;
     var ok = true;
     for (var c = 0; c < 3; c++) {
       if ((crop.data[i * 3 + c] - med[c]).abs() > fastFillUniformColorTolerance) {
@@ -352,12 +432,14 @@ GrayImage _where(int w, int h, bool Function(int i) f) =>
       final cy1 = by1 + pyRound(gy * (by2 - by1) / 3), cy2 = by1 + pyRound((gy + 1) * (by2 - by1) / 3);
       for (var gx = 0; gx < 3; gx++) {
         final cx1 = bx1 + pyRound(gx * (bx2 - bx1) / 3), cx2 = bx1 + pyRound((gx + 1) * (bx2 - bx1) / 3);
-        final cell = <int>[
-          for (var y = math.max(0, cy1); y < math.min(ch, cy2); y++)
-            for (var x = math.max(0, cx1); x < math.min(cw, cx2); x++)
-              if (sample.data[y * cw + x] != 0) y * cw + x,
-        ];
-        if (cell.length < minCount) continue;
+        final cell = histograms(
+          sample.data,
+          x1: math.max(0, cx1),
+          y1: math.max(0, cy1),
+          x2: math.min(cw, cx2),
+          y2: math.min(ch, cy2),
+        );
+        if (cell[0].length < minCount) continue;
         final cm = median(cell);
         final shift = [for (var c = 0; c < 3; c++) (cm[c] - med[c]).abs()].reduce(math.max);
         if (shift > fastFillUniformColorTolerance) {
@@ -367,11 +449,12 @@ GrayImage _where(int w, int h, bool Function(int i) f) =>
     }
   }
 
-  final maskedIdx = [for (var i = 0; i < cw * ch; i++) if (bubble.data[i] != 0 && binary.data[i] != 0) i];
+  final maskedHist = histograms(bubble.data, m2: binary.data);
+  final maskedCount = maskedHist[0].length;
   final bubbleCount = _count(bubble);
-  final maskedCoverage = maskedIdx.length / math.max(1, bubbleCount);
-  if (maskedIdx.length >= 64 && maskedCoverage >= 0.20) {
-    final mm = median(maskedIdx);
+  final maskedCoverage = maskedCount / math.max(1, bubbleCount);
+  if (maskedCount >= 64 && maskedCoverage >= 0.20) {
+    final mm = median(maskedHist);
     final shift = [for (var c = 0; c < 3; c++) (mm[c] - med[c]).abs()].reduce(math.max);
     if (shift > fastFillUniformColorTolerance) {
       return (false, 'bubble-background-nonuniform:expanded-mask-color-shift=$shift');
@@ -380,14 +463,9 @@ GrayImage _where(int w, int h, bool Function(int i) f) =>
   return (true, 'bubble-background-uniform:coverage=$coverage,mask-coverage=$maskedCoverage');
 }
 
-/// `_get_fast_fill_uniformity_mask`: the block's own mask placed in [bounds].
-GrayImage _fastFillUniformityMask(RgbImage image, TextBlock block, BBox bounds, GrayImage fallback) {
-  BlockMask? bm;
-  try {
-    bm = buildBlockMaskData(image, block, requireTextOrTranslation: false, clipToBubble: true);
-  } catch (_) {
-    return fallback;
-  }
+/// `_get_fast_fill_uniformity_mask`: the block's own mask [bm] placed in
+/// [bounds].
+GrayImage _fastFillUniformityMask(BlockMask? bm, BBox bounds, GrayImage fallback) {
   if (bm == null || !bm.mask.data.any((v) => v != 0)) return fallback;
   final b = bm.bounds;
   final ix1 = math.max(bounds.x1, b.x1), iy1 = math.max(bounds.y1, b.y1);
@@ -396,7 +474,8 @@ GrayImage _fastFillUniformityMask(RgbImage image, TextBlock block, BBox bounds, 
   final routing = GrayImage.zeros(fallback.width, fallback.height);
   for (var y = iy1; y < iy2; y++) {
     for (var x = ix1; x < ix2; x++) {
-      routing.data[(y - bounds.y1) * routing.width + (x - bounds.x1)] = bm.mask.data[(y - b.y1) * bm.mask.width + (x - b.x1)];
+      routing.data[(y - bounds.y1) * routing.width + (x - bounds.x1)] =
+          bm.mask.data[(y - b.y1) * bm.mask.width + (x - b.x1)];
     }
   }
   return routing.data.any((v) => v != 0) ? routing : fallback;
@@ -419,23 +498,32 @@ GrayImage _fastFillUniformityMask(RgbImage image, TextBlock block, BBox bounds, 
   var applied = fillRegion;
   GrayImage? bubble;
   if (block.textClass == TextClass.bubble && block.bubbleXyxy != null) {
-    bubble = buildBubbleClipMask(w, h, bounds, block.bubbleXyxy,
-        inset: fastFillBubbleInset, image: cleaned, seedBbox: block.xyxy);
+    bubble = buildBubbleClipMask(
+      w,
+      h,
+      bounds,
+      block.bubbleXyxy,
+      inset: fastFillBubbleInset,
+      image: cleaned,
+      seedBbox: block.xyxy,
+    );
     if (bubble != null) {
-      final labels = connectedComponentsWithStats(fillRegion, connectivity: 4).labels;
-      final keep = <int>{
-        for (var i = 0; i < w * h; i++)
-          if (bubble.data[i] != 0 && labels[i] > 0) labels[i],
-      };
-      applied = _where(w, h, (i) => keep.contains(labels[i]) && bubble!.data[i] != 0);
+      final cc = connectedComponentsWithStats(fillRegion, connectivity: 4);
+      final labels = cc.labels;
+      final keep = List<bool>.filled(cc.count, false);
+      for (var i = 0; i < w * h; i++) {
+        if (bubble.data[i] != 0 && labels[i] > 0) keep[labels[i]] = true;
+      }
+      applied = _where(w, h, (i) => keep[labels[i]] && bubble!.data[i] != 0);
     }
   }
 
   final blurred = pilGaussianBlurGray(toMask255(applied), 1.0);
   for (var i = 0; i < w * h; i++) {
+    // Weight 0 keeps the pixel as it is.
+    if (blurred.data[i] == 0 || (bubble != null && bubble.data[i] == 0)) continue;
     var soft = _fround(blurred.data[i] / 255.0);
     soft = soft.clamp(0.0, 1.0);
-    if (bubble != null && bubble.data[i] == 0) soft = 0.0;
     final inv = _fround(1.0 - soft);
     for (var c = 0; c < 3; c++) {
       final v = _fround(_fround(crop.data[i * 3 + c] * inv) + _fround(fill[c] * soft));
@@ -445,8 +533,12 @@ GrayImage _fastFillUniformityMask(RgbImage image, TextBlock block, BBox bounds, 
   }
   // Write back (numpy views).
   for (var y = 0; y < h; y++) {
-    cleaned.data.setRange(cleaned.offset(bounds.x1, bounds.y1 + y), cleaned.offset(bounds.x1 + w, bounds.y1 + y), crop.data,
-        crop.offset(0, y));
+    cleaned.data.setRange(
+      cleaned.offset(bounds.x1, bounds.y1 + y),
+      cleaned.offset(bounds.x1 + w, bounds.y1 + y),
+      crop.data,
+      crop.offset(0, y),
+    );
   }
   for (var i = 0; i < w * h; i++) {
     if (applied.data[i] != 0) residualCrop.data[i] = 0;
@@ -467,19 +559,21 @@ GrayImage _fastFillUniformityMask(RgbImage image, TextBlock block, BBox bounds, 
   final lx1 = (t.x1 - bounds.x1).clamp(0, w), ly1 = (t.y1 - bounds.y1).clamp(0, h);
   final lx2 = math.max(lx1, math.min(w, t.x2 - bounds.x1)), ly2 = math.max(ly1, math.min(h, t.y2 - bounds.y1));
   if (lx2 > lx1 && ly2 > ly1) {
-    bool inBlock(int i) {
-      final x = i % w, y = i ~/ w;
-      return x >= lx1 && x < lx2 && y >= ly1 && y < ly2;
-    }
-
     final maskedPixels = _count(masked);
     var maskedInText = 0;
-    for (var i = 0; i < w * h; i++) {
-      if (masked.data[i] != 0 && inBlock(i)) maskedInText++;
+    for (var y = ly1; y < ly2; y++) {
+      for (var x = lx1; x < lx2; x++) {
+        if (masked.data[y * w + x] != 0) maskedInText++;
+      }
     }
     final ratio = maskedPixels > 0 ? maskedInText / maskedPixels : 0.0;
     if (maskedInText >= 8 && ratio >= 0.6) {
-      final blockBackground = _where(w, h, (i) => background.data[i] != 0 && inBlock(i));
+      final blockBackground = GrayImage.zeros(w, h);
+      for (var y = ly1; y < ly2; y++) {
+        for (var x = lx1; x < lx2; x++) {
+          if (background.data[y * w + x] != 0) blockBackground.data[y * w + x] = 1;
+        }
+      }
       if (_count(blockBackground) >= 32) background = blockBackground;
     }
   }
@@ -496,7 +590,10 @@ GrayImage _fastFillUniformityMask(RgbImage image, TextBlock block, BBox bounds, 
 /// colour, or null when the background is not one clear colour.
 (List<double>?, String) _estimateFastFillColor(RgbImage crop, GrayImage masked, GrayImage background) {
   final n = crop.width * crop.height;
-  final bgIdx = [for (var i = 0; i < n; i++) if (background.data[i] != 0) i];
+  final bgIdx = [
+    for (var i = 0; i < n; i++)
+      if (background.data[i] != 0) i,
+  ];
   if (bgIdx.isEmpty || _count(masked) == 0) return (null, 'empty-crop-or-regions');
   if (bgIdx.length < 64) return (null, 'background-too-small:${bgIdx.length}');
   var union = 0;
@@ -531,9 +628,12 @@ GrayImage _fastFillUniformityMask(RgbImage image, TextBlock block, BBox bounds, 
     final offs = byKey[keys[k]]!;
     final median = <double>[], spread = <double>[];
     for (var c = 0; c < 3; c++) {
-      final v = [for (final o in offs) crop.data[o + c]];
-      median.add(npMedian(v));
-      spread.add(npPercentile(v, 90) - npPercentile(v, 10));
+      final v = ByteHistogram();
+      for (final o in offs) {
+        v.add(crop.data[o + c]);
+      }
+      median.add(v.median());
+      spread.add(v.percentile(90) - v.percentile(10));
     }
     final brightness = _fround(_fround(_fround(median[0] + median[1]) + median[2]) / 3);
     candidates.add((
@@ -547,7 +647,8 @@ GrayImage _fastFillUniformityMask(RgbImage image, TextBlock block, BBox bounds, 
   if (candidates.isEmpty) return (null, 'no-candidates:min_cluster=$minCluster');
 
   // Stable sort by count, descending.
-  final sorted = [...candidates.indexed]..sort((a, b) {
+  final sorted = [...candidates.indexed]
+    ..sort((a, b) {
       final c = b.$2.count.compareTo(a.$2.count);
       return c != 0 ? c : a.$1.compareTo(b.$1);
     });
@@ -600,10 +701,11 @@ GrayImage _associatedResidualComponents(GrayImage residualCrop, GrayImage masked
   final cc = connectedComponentsWithStats(binary, connectivity: 8);
   if (cc.count <= 1) return binary;
   final near = imkDilate(masked, StructuringElement.rect(17, 17));
-  final labels = <int>{
-    for (var i = 0; i < w * h; i++)
-      if (near.data[i] != 0 && cc.labels[i] > 0) cc.labels[i],
-  };
-  if (labels.isEmpty) return masked;
-  return _where(w, h, (i) => labels.contains(cc.labels[i]));
+  final keep = List<bool>.filled(cc.count, false);
+  var any = false;
+  for (var i = 0; i < w * h; i++) {
+    if (near.data[i] != 0 && cc.labels[i] > 0) keep[cc.labels[i]] = any = true;
+  }
+  if (!any) return masked;
+  return _where(w, h, (i) => keep[cc.labels[i]]);
 }

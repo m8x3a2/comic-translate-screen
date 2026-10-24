@@ -42,32 +42,49 @@ GrayImage detectContentMaskInBbox(RgbImage image, {int minArea = 10, int margin 
     if (v < minV) minV = v;
     if (v > maxV) maxV = v;
   }
-  GrayImage binary(bool Function(int) f) => GrayImage(w, h, Uint8List.fromList([for (final v in gray.data) f(v) ? 1 : 0]));
+  GrayImage binary(bool Function(int) f) {
+    final out = Uint8List(w * h);
+    for (var i = 0; i < w * h; i++) {
+      if (f(gray.data[i])) out[i] = 1;
+    }
+    return GrayImage(w, h, out);
+  }
+
   var black = binary((v) => v < t);
   var white = binary((v) => v > t);
   if (!black.data.contains(1)) black = binary((v) => v == minV);
   if (!white.data.contains(1)) white = binary((v) => v == maxV);
   final mb = _maskFromComponentStats(black, minArea: minArea, margin: margin);
   final mw = _maskFromComponentStats(white, minArea: minArea, margin: margin);
-  return GrayImage(w, h, Uint8List.fromList([for (var i = 0; i < w * h; i++) mb[i] || mw[i] ? 255 : 0]));
+  final out = Uint8List(w * h);
+  for (var i = 0; i < w * h; i++) {
+    if (mb[i] != 0 || mw[i] != 0) out[i] = 255;
+  }
+  return GrayImage(w, h, out);
 }
 
-List<bool> _maskFromComponentStats(GrayImage binary, {required int minArea, required int margin}) {
+/// 1 where a kept component is.
+Uint8List _maskFromComponentStats(GrayImage binary, {required int minArea, required int margin}) {
   final w = binary.width, h = binary.height;
   final cc = connectedComponentsWithStats(binary, connectivity: 8);
-  final keep = List<bool>.filled(cc.count, false);
-  if (cc.count <= 1) return List.filled(w * h, false);
+  final keep = Uint8List(cc.count);
+  if (cc.count <= 1) return Uint8List(w * h);
   final maxArea = (0.50 * h * w).toInt();
   for (var l = 1; l < cc.count; l++) {
     final s = cc.stats[l];
     final areaOk = s.area > minArea;
     final small = s.area >= 4 && s.width <= 6 && s.height <= 6;
-    final inside = s.left >= margin && s.top >= margin && s.left + s.width <= w - margin && s.top + s.height <= h - margin;
+    final inside =
+        s.left >= margin && s.top >= margin && s.left + s.width <= w - margin && s.top + s.height <= h - margin;
     var k = (areaOk || small) && inside;
     if (h * w > 150) k = k && s.area < maxArea;
-    keep[l] = k;
+    keep[l] = k ? 1 : 0;
   }
-  return [for (final l in cc.labels) keep[l]];
+  final out = Uint8List(w * h);
+  for (var i = 0; i < w * h; i++) {
+    out[i] = keep[cc.labels[i]];
+  }
+  return out;
 }
 
 /// `_resolve_block_crop_bounds`: the region examined for a block (the text
@@ -155,10 +172,12 @@ GrayImage selectTextLikeComponents(
       final colOverlap = math.max(0, math.min(x2, ax2) - math.max(x, ax));
       final hGap = math.max(0, math.max(x, ax) - math.min(x2, ax2));
       final vGap = math.max(0, math.max(y, ay) - math.min(y2, ay2));
-      final sameRow = rowOverlap >= 0.50 * math.min(ch, ah) &&
+      final sameRow =
+          rowOverlap >= 0.50 * math.min(ch, ah) &&
           heightSim >= 0.45 &&
           hGap <= math.max(18, pyRound(0.80 * math.max(ch, ah)));
-      final sameCol = colOverlap >= 0.50 * math.min(cw, aw) &&
+      final sameCol =
+          colOverlap >= 0.50 * math.min(cw, aw) &&
           widthSim >= 0.45 &&
           vGap <= math.max(18, pyRound(0.80 * math.max(cw, aw)));
       if (areaSim >= 0.18 && (sameRow || sameCol)) {
@@ -167,7 +186,15 @@ GrayImage selectTextLikeComponents(
       }
     }
   }
-  return GrayImage(w, h, Uint8List.fromList([for (final l in cc.labels) keep.contains(l) ? 255 : 0]));
+  final kept = List<bool>.filled(cc.count, false);
+  for (final l in keep) {
+    kept[l] = true;
+  }
+  final out = Uint8List(w * h);
+  for (var i = 0; i < w * h; i++) {
+    if (kept[cc.labels[i]]) out[i] = 255;
+  }
+  return GrayImage(w, h, out);
 }
 
 /// `build_bubble_clip_mask`: where text may be removed inside a speech
@@ -205,7 +232,22 @@ GrayImage? buildBubbleClipMask(
 
   if (image != null) {
     try {
-      final segmented = _segmentBubble(image, width, height, x1, y1, x2, y2, bx1, by1, bx2, by2, inset, seedBbox, ellipse);
+      final segmented = _segmentBubble(
+        image,
+        width,
+        height,
+        x1,
+        y1,
+        x2,
+        y2,
+        bx1,
+        by1,
+        bx2,
+        by2,
+        inset,
+        seedBbox,
+        ellipse,
+      );
       if (segmented != null) return segmented;
     } catch (_) {
       // The original falls back to the ellipse on any error.
@@ -270,18 +312,26 @@ GrayImage? _segmentBubble(
     if (hist[i] > hist[maxBin]) maxBin = i;
   }
   final bgVal = maxBin * 16 + 8.0;
-  final bg = GrayImage(cw, ch, Uint8List.fromList([for (final g in gray) (g - bgVal).abs() <= 20 ? 1 : 0]));
-  final labels = connectedComponentsWithStats(bg, connectivity: 4).labels;
-
-  final seedLabels = <int>{};
+  final bg = Uint8List(cw * ch);
+  for (var i = 0; i < cw * ch; i++) {
+    if ((gray[i] - bgVal).abs() <= 20) bg[i] = 1;
+  }
+  // The 4-connected background components holding a seed pixel, filled from
+  // the seeds (the same pixels as labelling everything and keeping theirs).
+  final filled = Uint8List(cw * ch);
+  final stack = <int>[];
   for (var y = ry1; y < ry2; y++) {
     for (var x = rx1; x < rx2; x++) {
       final i = y * cw + x;
-      if (bg.data[i] != 0 && labels[i] > 0) seedLabels.add(labels[i]);
+      if (bg[i] != 0 && filled[i] == 0) {
+        filled[i] = 1;
+        stack.add(i);
+      }
     }
   }
-  if (seedLabels.isEmpty) return null;
-  var bubbleMask = GrayImage(cw, ch, Uint8List.fromList([for (final l in labels) seedLabels.contains(l) ? 1 : 0]));
+  if (stack.isEmpty) return null;
+  flood4(stack, filled, bg, cw);
+  var bubbleMask = GrayImage(cw, ch, filled);
 
   // Share of the bubble box border covered by the segmentation: above half,
   // the fill leaked outside the bubble.
@@ -360,6 +410,8 @@ GrayImage? _segmentBubble(
 
 /// `clip_mask_components_to_bubble`: keeps the mask components touching the
 /// bubble interior, clipped to it, optionally dilated inside it. 0/255.
+/// [clip], when given, is that interior already built by
+/// [buildBubbleClipMask] with the same arguments.
 GrayImage clipMaskComponentsToBubble(
   GrayImage mask,
   BBox bounds,
@@ -369,29 +421,39 @@ GrayImage clipMaskComponentsToBubble(
   BBox? seedBbox,
   int dilateKernelSize = 0,
   int dilateIterations = 1,
+  GrayImage? clip,
 }) {
   final w = mask.width, h = mask.height;
-  final clip = buildBubbleClipMask(w, h, bounds, bubble, inset: inset, image: image, seedBbox: seedBbox);
+  clip ??= buildBubbleClipMask(w, h, bounds, bubble, inset: inset, image: image, seedBbox: seedBbox);
   if (clip == null) {
     if (dilateKernelSize > 0) {
       return imkDilate(mask, StructuringElement.rect(dilateKernelSize, dilateKernelSize), iterations: dilateIterations);
     }
     return mask;
   }
-  final labels = connectedComponentsWithStats(toMask01(mask), connectivity: 4).labels;
-  final keepLabels = <int>{
-    for (var i = 0; i < w * h; i++)
-      if (clip.data[i] != 0 && labels[i] > 0) labels[i],
-  };
-  if (keepLabels.isEmpty) return GrayImage.zeros(w, h);
-  final kept = GrayImage(w, h, Uint8List.fromList([
-    for (var i = 0; i < w * h; i++) keepLabels.contains(labels[i]) && clip.data[i] != 0 ? 255 : 0,
-  ]));
+  final cc = connectedComponentsWithStats(toMask01(mask), connectivity: 4);
+  final labels = cc.labels;
+  final keepLabel = List<bool>.filled(cc.count, false);
+  var anyKept = false;
+  for (var i = 0; i < w * h; i++) {
+    if (clip.data[i] != 0 && labels[i] > 0) keepLabel[labels[i]] = anyKept = true;
+  }
+  if (!anyKept) return GrayImage.zeros(w, h);
+  final kept = GrayImage.zeros(w, h);
+  for (var i = 0; i < w * h; i++) {
+    if (keepLabel[labels[i]] && clip.data[i] != 0) kept.data[i] = 255;
+  }
   if (dilateKernelSize <= 0) return kept;
-  final dilated = imkDilate(kept, StructuringElement.rect(dilateKernelSize, dilateKernelSize), iterations: dilateIterations);
-  return GrayImage(w, h, Uint8List.fromList([
-    for (var i = 0; i < w * h; i++) (clip.data[i] != 0 && dilated.data[i] != 0) || kept.data[i] != 0 ? 255 : 0,
-  ]));
+  final dilated = imkDilate(
+    kept,
+    StructuringElement.rect(dilateKernelSize, dilateKernelSize),
+    iterations: dilateIterations,
+  );
+  final out = Uint8List(w * h);
+  for (var i = 0; i < w * h; i++) {
+    if ((clip.data[i] != 0 && dilated.data[i] != 0) || kept.data[i] != 0) out[i] = 255;
+  }
+  return GrayImage(w, h, out);
 }
 
 /// One block's part of the mask (`build_block_mask_data`).
@@ -423,7 +485,11 @@ BlockMask? buildBlockMaskData(
   final t = block.xyxy;
   final textBounds = (t.x1 - bounds.x1, t.y1 - bounds.y1, t.x2 - bounds.x1, t.y2 - bounds.y1);
   if (bubbleClip) {
-    cropMask = selectTextLikeComponents(cropMask, textBounds, searchPadding: math.max(16, math.min(defaultPadding + 23, 32)));
+    cropMask = selectTextLikeComponents(
+      cropMask,
+      textBounds,
+      searchPadding: math.max(16, math.min(defaultPadding + 23, 32)),
+    );
   }
   final kernel = defaultPadding;
   const iterations = 3;

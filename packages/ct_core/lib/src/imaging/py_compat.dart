@@ -46,6 +46,47 @@ double npPercentile(Iterable<num> values, num q) {
   return frac >= 0.5 ? b - diff * (1 - frac) : a + diff * frac;
 }
 
+/// Counts of byte values (0..255): [npMedian] and [npPercentile] of many
+/// pixels without sorting them, with the same results.
+class ByteHistogram {
+  final counts = Int32List(256);
+  int length = 0;
+
+  void add(int v) {
+    counts[v]++;
+    length++;
+  }
+
+  /// The [k]-th smallest value (0-based).
+  int nth(int k) {
+    var seen = 0;
+    for (var v = 0; v < 256; v++) {
+      seen += counts[v];
+      if (seen > k) return v;
+    }
+    throw RangeError.range(k, 0, length - 1);
+  }
+
+  double median() {
+    if (length == 0) throw ArgumentError('median of an empty list');
+    final mid = length ~/ 2;
+    if (length.isOdd) return nth(mid).toDouble();
+    return (nth(mid - 1).toDouble() + nth(mid).toDouble()) / 2;
+  }
+
+  double percentile(num q) {
+    if (length == 0) throw ArgumentError('percentile of an empty list');
+    if (length == 1) return nth(0).toDouble();
+    final pos = (length - 1) * q.toDouble() / 100.0;
+    final lo = pos.floor();
+    final hi = math.min(lo + 1, length - 1);
+    final frac = pos - lo;
+    final a = nth(lo).toDouble(), b = nth(hi).toDouble();
+    final diff = b - a;
+    return frac >= 0.5 ? b - diff * (1 - frac) : a + diff * frac;
+  }
+}
+
 /// `numpy.sum` of float64 values, with numpy's summation order: pairwise
 /// summation inside buffers of 8192 elements, buffers added in sequence.
 double npSum(Iterable<num> values) {
