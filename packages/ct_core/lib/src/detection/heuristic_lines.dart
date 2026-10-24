@@ -32,13 +32,11 @@ part 'heuristic_lines/vertical.dart';
 /// A text line as the original keeps it: an inclusive box `[x1, y1, x2, y2]`
 /// or, for skewed text, a quadrilateral of four integer `[x, y]` points.
 final class HLine {
-  HLine.box(List<int> box)
-      : box = List.unmodifiable(box),
-        points = null;
+  HLine.box(List<int> box) : box = List.unmodifiable(box), points = null;
 
   HLine.quad(List<List<int>> points)
-      : points = List.unmodifiable([for (final p in points) List<int>.unmodifiable(p)]),
-        box = null;
+    : points = List.unmodifiable([for (final p in points) List<int>.unmodifiable(p)]),
+      box = null;
 
   factory HLine.fromJson(Object? json) {
     final l = json as List;
@@ -103,24 +101,28 @@ final class HLine {
 (List<HLine>, String) detectLinesAndDirectionInCrop(RgbImage image, [String sourceLanguage = '']) =>
     _detectLinesAndDirectionInCrop(image, sourceLanguage);
 
+/// How far past a block the line splitter looks (per cent of the block's
+/// width and height, as in the original).
+const heuristicCropPercent = 4;
+
 /// Fills `lines` and `direction` of every block
 /// (`annotate_blocks_with_heuristic_lines`). [sourceLanguage] overrides each
 /// block's own `sourceLang`.
 ///
 /// Like the original, an internal failure aborts the remaining blocks by
 /// throwing; blocks processed before it keep their lines.
-List<TextBlock> annotateBlocksWithHeuristicLines(
-  RgbImage image,
-  List<TextBlock> blocks, {
-  String? sourceLanguage,
-}) {
+List<TextBlock> annotateBlocksWithHeuristicLines(RgbImage image, List<TextBlock> blocks, {String? sourceLanguage}) {
   if (image.width == 0 || image.height == 0 || blocks.isEmpty) return blocks;
 
   final height = image.height, width = image.width;
   for (final block in blocks) {
     final lang = sourceLanguage ?? block.sourceLang;
     final blockBox = _toBox(block.xyxy);
-    final cropBox = _clampBox(_expandBox(blockBox, 4, 4, width, height), width, height);
+    final cropBox = _clampBox(
+      _expandBox(blockBox, heuristicCropPercent, heuristicCropPercent, width, height),
+      width,
+      height,
+    );
     final [x1, y1, x2, y2] = cropBox;
     if (x2 <= x1 || y2 <= y1) {
       block.lines = [HLine.box(cropBox).toTextLine()];
@@ -226,9 +228,9 @@ int _index(int i, int n) {
 
 /// `np.flatnonzero(values > 0)`.
 List<int> _activeIndices(List<int> values) => [
-      for (var i = 0; i < values.length; i++)
-        if (values[i] > 0) i,
-    ];
+  for (var i = 0; i < values.length; i++)
+    if (values[i] > 0) i,
+];
 
 /// `int(values[a:b].sum())`.
 int _sumRange(List<int> values, int a, int b) {

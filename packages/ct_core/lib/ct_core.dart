@@ -6,7 +6,8 @@ export 'src/cancel.dart';
 export 'src/page_numbers.dart';
 export 'src/detection/foreground_color.dart';
 export 'src/detection/geometry.dart';
-export 'src/detection/heuristic_lines.dart' show HLine, annotateBlocksWithHeuristicLines, detectLinesAndDirectionInCrop;
+export 'src/detection/heuristic_lines.dart'
+    show HLine, annotateBlocksWithHeuristicLines, detectLinesAndDirectionInCrop, heuristicCropPercent;
 export 'src/detection/overlay.dart';
 export 'src/detection/ppocr_det.dart';
 export 'src/detection/reading_order.dart';

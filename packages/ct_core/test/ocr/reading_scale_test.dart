@@ -91,8 +91,8 @@ void main() {
     // Large text on the page itself, small text on a canvas of its piece only.
     expect(ocr.calls.first.width, 1000);
     expect(ocr.calls.first.boxes, [const BBox(500, 800, 900, 1000)]);
-    expect((ocr.calls.last.width, ocr.calls.last.height), (2 * 216, 2 * 76));
-    expect(ocr.calls.last.boxes, [const BBox(16, 16, 416, 136)]);
+    expect((ocr.calls.last.width, ocr.calls.last.height), (2 * 220, 2 * 76));
+    expect(ocr.calls.last.boxes, [const BBox(20, 16, 420, 136)]);
     expect(small.xyxy, const BBox(100, 100, 300, 160), reason: 'restored');
     expect(small.linePx, 12);
     expect(large.lines, hasLength(2));
@@ -135,6 +135,45 @@ void main() {
       [a.xyxy, b.xyxy, c.xyxy],
       [const BBox(100, 100, 200, 140), const BBox(190, 130, 300, 170), const BBox(600, 600, 700, 640)],
     );
+  });
+
+  test('the line splitter sees the same page around a block, alone or with a neighbour', () async {
+    // A column of prose at the left edge of a wide page, another one at the
+    // right (the page of 2026-10-24: alone the column read fine, with its
+    // neighbour it came out as two "vertical" strips and nothing).
+    final page = RgbImage.filled(1280, 407, 255, 255, 255);
+    for (var y = 0; y < 407; y++) {
+      for (var x = 0; x < 1280; x++) {
+        // Ink rows like text, and a drawing between the columns.
+        final ink = (x < 330 || x > 950) ? (y % 13 < 8 && x % 7 < 5) : (x + y) % 9 < 4;
+        if (ink) page.data.fillRange(page.offset(x, y), page.offset(x, y) + 3, 40);
+      }
+    }
+    TextBlock left() => _withLines(const BBox(0, 0, 324, 407), 9);
+    TextBlock right() => _withLines(const BBox(955, 1, 1279, 400), 9);
+
+    // What the splitter crops around the left block on its canvas (as
+    // annotateBlocksWithHeuristicLines does: 4 % past the block).
+    Future<List<int>> seen(List<TextBlock> blocks) async {
+      final reading = await prepareReading(page, blocks, upscaler: _x2);
+      final c = reading.canvases.single;
+      final b = c.toCanvas(const BBox(0, 0, 324, 407));
+      final dx = b.width * heuristicCropPercent / 100, dy = b.height * heuristicCropPercent / 100;
+      final crop = BBox(
+        (b.x1 - dx).round().clamp(0, c.image.width),
+        (b.y1 - dy).round().clamp(0, c.image.height),
+        (b.x2 + dx).round().clamp(0, c.image.width),
+        (b.y2 + dy).round().clamp(0, c.image.height),
+      );
+      reading.restore();
+      final img = c.image.crop(crop);
+      return [img.width, img.height, ...img.data];
+    }
+
+    final alone = await seen([left()]);
+    expect(await seen([left(), right()]), alone);
+    // And it is the page there: the drawing past the column, not blank canvas.
+    expect(readingPiece(left(), page).containsBox(const BBox(0, 0, 337, 407)), isTrue);
   });
 
   test('pieces of a long page are spread over several canvases', () async {
@@ -216,7 +255,7 @@ void main() {
     final reading = await prepareReading(page, [top, bottom], upscaler: half);
     expect(reading.pieces, 2);
     expect(reading.plainPieces, 1);
-    expect(half.enlarged, [(160 + 16, 50 + 16)]);
+    expect(half.enlarged, [(160 + 18, 50 + 16)]);
 
     // Every piece estimated over the budget: all plainly, same factor.
     final slow = _Estimated(readingNeuralBudgetMs * 2.0);

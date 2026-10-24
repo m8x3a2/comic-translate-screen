@@ -71,7 +71,11 @@ void main() {
     expect(reading.scaled, isTrue);
     final canvas = reading.canvases.single;
     expect(block.lines.single.box, canvas.lineToCanvas(TextLine.box(const BBox(10, 10, 190, 20))).box);
-    expect(block.lines.single.box, const BBox(12, 12, 282, 27), reason: 'the piece starts 8 px before the block');
+    expect(
+      block.lines.single.box,
+      const BBox(15, 12, 285, 27),
+      reason: 'the piece starts 10 px left of the block (4 % of it), 8 px above',
+    );
     reading.restore();
     expect(block.lines.single.box, const BBox(10, 10, 190, 20));
     expect(block.linePx, 11);

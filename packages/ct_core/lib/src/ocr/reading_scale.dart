@@ -37,10 +37,19 @@ const readingSmallLinePx = 20.0;
 /// often takes two or three lines for one thick line.
 const readingUnsureLinePx = 64.0;
 
-/// Margin around each piece (page pixels): the line splitter looks a few
-/// pixels past a block, and the neural networks are least exact at the
-/// edges.
+/// Least margin around each piece (page pixels): the neural networks are
+/// least exact at the edges.
 const readingPieceMargin = 8;
+
+/// The piece of [image] that [b] is enlarged with: the block with at least
+/// [readingPieceMargin], and with all the page the line splitter looks at
+/// past the block ([heuristicCropPercent]). With less, the splitter saw the
+/// canvas there, blank between pieces or cut at its edge: a column of prose
+/// read as nothing on the whole page and fine alone (2026-10-24).
+BBox readingPiece(TextBlock b, RgbImage image) {
+  int margin(int size) => math.max(readingPieceMargin, (size * heuristicCropPercent / 100).ceil() + 2);
+  return b.xyxy.inflate(margin(b.xyxy.width), margin(b.xyxy.height)).clampTo(image.width, image.height);
+}
 
 /// Upper bound for one canvas of enlarged pieces (pixels); pieces of a long
 /// page (webtoon) are spread over several canvases.
@@ -192,9 +201,8 @@ Future<ReadingPage> prepareReading(
   if (small.isEmpty) return ReadingPage._(blocks, const [], 1.0, const {});
 
   // Pieces: blocks with a margin, overlapping ones joined.
-  final pieces = mergeOverlapping([
-    for (final b in small) b.xyxy.inflate(readingPieceMargin, readingPieceMargin).clampTo(image.width, image.height),
-  ]).where((r) => !r.isEmpty).toList()..sort((a, b) => a.y1 != b.y1 ? a.y1.compareTo(b.y1) : a.x1.compareTo(b.x1));
+  final pieces = mergeOverlapping([for (final b in small) readingPiece(b, image)]).where((r) => !r.isEmpty).toList()
+    ..sort((a, b) => a.y1 != b.y1 ? a.y1.compareTo(b.y1) : a.x1.compareTo(b.x1));
 
   // Canvases: pieces from the top down while the canvas stays small enough.
   final groups = <List<BBox>>[];
@@ -244,13 +252,7 @@ Future<ReadingPage> prepareReading(
       }
       final inside = [
         for (final b in small)
-          if (!placed.contains(b) &&
-              group.any(
-                (r) => r.containsBox(
-                  b.xyxy.inflate(readingPieceMargin, readingPieceMargin).clampTo(image.width, image.height),
-                ),
-              ))
-            b,
+          if (!placed.contains(b) && group.any((r) => r.containsBox(readingPiece(b, image)))) b,
       ];
       placed.addAll(inside);
       final c = ReadingCanvas._(canvas, inside, region, sx, sy, group.length);
