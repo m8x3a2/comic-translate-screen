@@ -115,6 +115,7 @@ class OrtSessionConfig {
     this.cpuArena = true,
     this.logSeverity = 3,
     this.dmlHighPerformance = true,
+    this.denormalsAsZero = false,
   });
 
   /// 0 lets ONNX Runtime choose.
@@ -132,6 +133,11 @@ class OrtSessionConfig {
 
   /// Prefer the high-performance GPU (discrete card on laptops with two GPUs).
   final bool dmlHighPerformance;
+
+  /// `session.set_denormal_as_zero`: tiny floats count as zero on the CPU.
+  /// Some models (comic-text-detector) run 50× slower without it; off by
+  /// default so the other models keep their exact results.
+  final bool denormalsAsZero;
 }
 
 /// Process-wide ONNX Runtime entry point (one per isolate).
@@ -376,6 +382,24 @@ class OrtSession {
       rt._check(
         api.DisableCpuMemArena.asFunction<ffi.Pointer<OrtStatus> Function(ffi.Pointer<OrtSessionOptions>)>()(o),
       );
+    }
+
+    if (c.denormalsAsZero) {
+      using((arena) {
+        rt._check(
+          api.AddSessionConfigEntry.asFunction<
+            ffi.Pointer<OrtStatus> Function(
+              ffi.Pointer<OrtSessionOptions>,
+              ffi.Pointer<ffi.Char>,
+              ffi.Pointer<ffi.Char>,
+            )
+          >()(
+            o,
+            'session.set_denormal_as_zero'.toNativeUtf8(allocator: arena).cast(),
+            '1'.toNativeUtf8(allocator: arena).cast(),
+          ),
+        );
+      });
     }
 
     if (device == OrtDevice.directml) _appendDirectML(rt, o, c);
