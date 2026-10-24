@@ -61,9 +61,72 @@ class BlockStyleEditor extends ConsumerWidget {
       ),
     );
 
+    final presets = settings.render.presets;
+    final names = presets.keys.toList()..sort();
+    final preset = s.preset != null && presets.containsKey(s.preset) ? s.preset : null;
+    void setPresets(Map<String, BlockStyle> next) =>
+        ref.read(settingsProvider.notifier).change((x) => x.render = x.render.copyWith(presets: next));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        row(
+          l.lookPreset,
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButton<String>(
+                  value: preset ?? '',
+                  isExpanded: true,
+                  isDense: true,
+                  items: [
+                    DropdownMenuItem(value: '', child: Text(l.lookPresetNone)),
+                    for (final n in names)
+                      DropdownMenuItem(
+                        value: n,
+                        child: Text(n, overflow: TextOverflow.ellipsis),
+                      ),
+                  ],
+                  onChanged: (v) => set((s) => s.copyWith(preset: v == null || v.isEmpty ? null : v)),
+                ),
+              ),
+              PopupMenuButton<VoidCallback>(
+                tooltip: l.lookPresetHelp,
+                icon: const Icon(Icons.style_outlined, size: 20),
+                onSelected: (action) => action(),
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: () async {
+                      final name = await _askPresetName(context, preset ?? '');
+                      if (name == null) return;
+                      // The look as it is now: the preset's under the bubble's own.
+                      final current = (presets[preset]?.look ?? const BlockStyle()).merge(s.look);
+                      setPresets({...presets, name: current});
+                      set((s) => s.withoutLook.copyWith(preset: name));
+                    },
+                    child: Text(l.lookPresetSave),
+                  ),
+                  if (preset != null) ...[
+                    PopupMenuItem(
+                      value: () {
+                        setPresets({...presets, preset: presets[preset]!.merge(s.look)});
+                        set((s) => s.withoutLook);
+                      },
+                      child: Text(l.lookPresetUpdate(preset)),
+                    ),
+                    PopupMenuItem(
+                      value: () {
+                        setPresets({...presets}..remove(preset));
+                        set((s) => s.copyWith(preset: null));
+                      },
+                      child: Text(l.lookPresetDelete(preset)),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
         row(
           l.font,
           Row(
@@ -397,4 +460,29 @@ class _Swatches extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Asks for the name of a new style; null when cancelled or empty.
+Future<String?> _askPresetName(BuildContext context, String initial) async {
+  final l = context.l10n;
+  final field = TextEditingController(text: initial);
+  final name = await showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(l.lookPresetSave),
+      content: TextField(
+        controller: field,
+        autofocus: true,
+        decoration: InputDecoration(labelText: l.lookPresetName),
+        onSubmitted: (v) => Navigator.pop(context, v),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
+        FilledButton(onPressed: () => Navigator.pop(context, field.text), child: Text(l.save)),
+      ],
+    ),
+  );
+  // Not disposed here: the dialog may still be closing with the field in it.
+  final n = name?.trim() ?? '';
+  return n.isEmpty ? null : n;
 }

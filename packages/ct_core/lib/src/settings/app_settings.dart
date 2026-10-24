@@ -53,6 +53,7 @@ class AppSettings {
     Map<String, String>? shortcuts,
     Set<String>? hiddenPanels,
     Map<String, String>? gpuCpuModels,
+    this.showLookInPanel = true,
     this.testMode = false,
     this.autoBugReport = true,
     this.projectAutosave = true,
@@ -175,6 +176,10 @@ class AppSettings {
   /// Editor panels folded away by the user (`pages`, `tools`, `text`).
   Set<String> hiddenPanels;
 
+  /// The text panel shows the look of styled words (bold, colour, size...);
+  /// off: plain text. Not in the original.
+  bool showLookInPanel;
+
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
@@ -234,6 +239,7 @@ class AppSettings {
       'language': uiLanguage,
       if (shortcuts.isNotEmpty) 'shortcuts': shortcuts,
       if (hiddenPanels.isNotEmpty) 'hidden_panels': [...hiddenPanels],
+      if (!showLookInPanel) 'show_look_in_panel': false,
     },
     'test_mode': testMode,
     'auto_bug_report': autoBugReport,
@@ -326,6 +332,7 @@ class AppSettings {
           if (e.key is String && e.value is String) e.key as String: e.value as String,
       },
       hiddenPanels: {...?(ui['hidden_panels'] as List?)?.whereType<String>()},
+      showLookInPanel: ui['show_look_in_panel'] != false,
       testMode: pick(json, 'test_mode', defaults.testMode),
       autoBugReport: pick(json, 'auto_bug_report', defaults.autoBugReport),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),

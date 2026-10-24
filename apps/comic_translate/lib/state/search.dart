@@ -151,5 +151,17 @@ String? replaceAt(String text, int start, SearchOptions o, String replacement) {
   return (out, count);
 }
 
-/// Applies a replacement result to block [b] for [o]'s field.
-void setField(TextBlock b, SearchOptions o, String value) => o.inSource ? b.text = value : b.translation = value;
+/// Applies a replacement result to block [b] for [o]'s field (the styled
+/// words of the translation move along).
+void setField(TextBlock b, SearchOptions o, String value) {
+  if (o.inSource) {
+    b.text = value;
+    return;
+  }
+  final style = b.style;
+  if (style != null && style.runs.isNotEmpty) {
+    final moved = style.copyWith(runs: shiftRuns(style.runs, b.translation, value));
+    b.style = moved.isEmpty ? null : moved;
+  }
+  b.translation = value;
+}

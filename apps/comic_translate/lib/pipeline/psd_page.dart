@@ -89,7 +89,7 @@ PsdText psdTextOf(TextItem item, TextEngines engines, FontCatalog fonts) {
   final a = item.angle * math.pi / 180, c = math.cos(a), sn = math.sin(a);
   final color = item.color >>> 24 == 0 ? item.color | 0xFF000000 : item.color;
   return PsdText(
-    text: item.text,
+    text: unmarkRuns(item.text),
     font: font,
     fontSize: ptToPx(item.fontSizePt),
     transform: [c, sn, -sn, c, cx + c * dx - sn * dy, cy + sn * dx + c * dy],

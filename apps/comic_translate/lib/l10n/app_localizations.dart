@@ -4615,6 +4615,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fitting'**
   String get textFit;
+
+  /// No description provided for @showLookInPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the look in the panel'**
+  String get showLookInPanel;
+
+  /// No description provided for @runBigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Larger'**
+  String get runBigger;
+
+  /// No description provided for @runSmaller.
+  ///
+  /// In en, this message translates to:
+  /// **'Smaller'**
+  String get runSmaller;
+
+  /// No description provided for @runClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the look of the selection'**
+  String get runClear;
+
+  /// No description provided for @runHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a word or sign of the translation for buttons that give it a look of its own.'**
+  String get runHint;
+
+  /// No description provided for @runAsBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'As the bubble'**
+  String get runAsBubble;
+
+  /// No description provided for @outlineNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No outline'**
+  String get outlineNone;
+
+  /// No description provided for @lookPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Style'**
+  String get lookPreset;
+
+  /// No description provided for @lookPresetNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No style'**
+  String get lookPresetNone;
+
+  /// No description provided for @lookPresetSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save the look as a style…'**
+  String get lookPresetSave;
+
+  /// No description provided for @lookPresetName.
+  ///
+  /// In en, this message translates to:
+  /// **'Style name'**
+  String get lookPresetName;
+
+  /// No description provided for @lookPresetUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the style \"{name}\" from this bubble'**
+  String lookPresetUpdate(String name);
+
+  /// No description provided for @lookPresetDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the style \"{name}\"'**
+  String lookPresetDelete(String name);
+
+  /// No description provided for @lookPresetHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A style is a set of looks (font, colour, outline, bold…) put on a bubble or a word with one click. Change the style and every bubble and word with it changes.'**
+  String get lookPresetHelp;
 }
 
 class _AppLocalizationsDelegate

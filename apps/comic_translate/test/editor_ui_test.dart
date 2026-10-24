@@ -12,6 +12,7 @@ import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:comic_translate/ui/app.dart';
 import 'package:comic_translate/ui/shell_full/page_canvas.dart';
+import 'package:comic_translate/ui/shell_full/run_editor.dart';
 import 'package:comic_translate/ui/shell_full/text_panel.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter/gestures.dart';
@@ -227,6 +228,46 @@ void main() {
     await tester.pump();
     await ctrl(tester, LogicalKeyboardKey.keyZ);
     expect(container.read(workspaceProvider).currentPage!.blocks.single.translation, contains('HELLO'));
+  });
+
+  testWidgets('a selected word gets a look of its own; it moves with the text typed before it', (tester) async {
+    final container = await openTranslatedPage(tester);
+    final ws = container.read(workspaceProvider.notifier);
+    ws.selectBlock(0);
+    await tester.pump();
+    final field = find.widgetWithText(TextField, 'Перевод');
+    final controller = tester.widget<TextField>(field).controller!;
+    final text = controller.text;
+    expect(find.byIcon(Icons.format_bold), findsOneWidget, reason: 'the look of the whole bubble only');
+    controller.selection = const TextSelection(baseOffset: 0, extentOffset: 4);
+    await tester.pump();
+    final bold = find.descendant(of: find.byType(RunBar), matching: find.byTooltip('Жирный'));
+    await tester.ensureVisible(bold);
+    await tester.pump();
+    await tester.tap(bold);
+    await tester.pump();
+    List<StyledRun>? runs() => container.read(workspaceProvider).currentPage!.blocks.single.style?.runs;
+    expect(runs(), [const StyledRun(0, 4, RunStyle(bold: true))]);
+    await tester.enterText(field, 'Ну $text');
+    await tester.pump();
+    expect(runs(), [const StyledRun(3, 7, RunStyle(bold: true))]);
+    // Drawn: the word in bold, the marks never shown as text.
+    expect(container.read(workspaceProvider).currentPage!.blocks.single.translation, 'Ну $text');
+  });
+
+  testWidgets('the look menu: capitals for the page, back to the automatic look', (tester) async {
+    final container = await openTranslatedPage(tester);
+    await tester.tap(find.byTooltip('Оформление текста'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('ЗАГЛАВНЫЕ ↔ обычные'));
+    await tester.pumpAndSettle();
+    final block = container.read(workspaceProvider).currentPage!.blocks.single;
+    expect(block.style?.upperCase, isNotNull);
+    await tester.tap(find.byTooltip('Оформление текста'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Сбросить оформление'));
+    await tester.pumpAndSettle();
+    expect(container.read(workspaceProvider).currentPage!.blocks.single.style, isNull);
   });
 
   testWidgets('glued words are split by the button, very small text is pointed out', (tester) async {

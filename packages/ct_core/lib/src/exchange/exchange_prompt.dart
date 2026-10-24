@@ -7,8 +7,8 @@ import 'exchange_answer.dart';
 import 'exchange_settings.dart';
 
 /// Built-in instructions. `{kind}`, `{source}`, `{target}`, `{labels}`,
-/// `{lines}`, `{context}`, `{pictures}` and `{separator}` are filled in by
-/// [exchangePrompt].
+/// `{lines}`, `{context}`, `{pictures}`, `{stress}` and `{separator}` are
+/// filled in by [exchangePrompt].
 const defaultExchangePrompts = {
   ExchangePrompt.recognize: '''
 The attached pictures show pieces of text cut out of {kind}. Each piece has a label like [01-003] above it.
@@ -21,7 +21,7 @@ Labels: {labels}
   ExchangePrompt.translate: '''
 Translate these lines of {kind} from {source} into {target}.
 {pictures}Keep the tone and the way each character speaks; the translation should read naturally.
-Answer with one line per label and nothing else:
+{stress}Answer with one line per label and nothing else:
 [01-003] translation
 {context}
 {lines}''',
@@ -29,7 +29,7 @@ Answer with one line per label and nothing else:
 The attached pictures show pieces of text cut out of {kind}. Each piece has a label like [01-003] above it.
 {pictures}For every labelled piece write the {source} text exactly as it is written, then " {separator} ", then its translation into {target}.
 Keep the tone and the way each character speaks; the translation should read naturally.
-Answer with one line per label and nothing else:
+{stress}Answer with one line per label and nothing else:
 [01-003] original text {separator} translation
 Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
 Labels: {labels}
@@ -43,7 +43,7 @@ Then a line with only ===
 Then the translation of every piece into {target}, one line per label:
 [01-003] translation
 Keep the tone and the way each character speaks; the translation should read naturally.
-Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
+{stress}Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
 Labels: {labels}
 {context}''',
 };
@@ -74,6 +74,10 @@ String exchangePrompt(
     'context': extraContext.trim().isEmpty
         ? ''
         : 'About the ${screens ? 'screenshots' : 'comic'}: ${extraContext.trim()}',
+    // Stressed words can be seen only on pictures.
+    'stress': kind != ExchangePrompt.recognize && (kind != ExchangePrompt.translate || contextPictures)
+        ? '$stressInstruction\n'
+        : '',
     'pictures': contextPictures
         ? 'Pictures of the whole pages with the same labels on them are attached too, only to show what happens '
               'and who speaks.\n'
@@ -82,5 +86,11 @@ String exchangePrompt(
   final out = base.replaceAllMapped(RegExp(r'\{(\w+)\}'), (m) => values[m[1]] ?? m[0]!);
   return '${out.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim()}\n';
 }
+
+/// How the chat marks the words the source stresses (bold or larger
+/// letters); they become bold words of the translation.
+const stressInstruction =
+    'Where the original stresses a word (bold or larger letters), put the matching word of the translation '
+    'between stars: *word*. Use no other stars.';
 
 String _oneLine(String s) => s.replaceAll(RegExp(r'\s*\n\s*'), ' ').trim();

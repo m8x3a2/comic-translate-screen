@@ -44,13 +44,33 @@ Future<String> resolveFontFamily(String setting) async {
   return s;
 }
 
+/// Whether [family] has a bold face of its own (installed fonts mostly do;
+/// a font file holds one face).
+bool _hasBoldFace(String family) {
+  if (bundledFont(family) case final f?) return f.bold != null || f.variable;
+  return !family.startsWith('cts_');
+}
+
 /// Characters drawn rotated in vertical text (dashes, ellipses, brackets).
 final _rotateInVertical = RegExp('[ー―—–~〜～…‥()（）［］\\[\\]「」『』【】〈〉《》<>-]');
 
-/// Measures and draws text with one set of render settings.
+/// Measures and draws text with one set of render settings; words marked as
+/// runs (see `text_runs.dart`) in their own look.
 class UiTextEngine implements TextMeasurer, LetterMetrics {
-  UiTextEngine(this.settings, {required this.fontFamily, this.rtl = false, this.capHeight = 0.7, this.xHeight = 0.5})
-    : _variable = bundledFont(fontFamily)?.variable ?? false;
+  UiTextEngine(
+    this.settings, {
+    required this.fontFamily,
+    this.rtl = false,
+    this.capHeight = 0.7,
+    this.xHeight = 0.5,
+    Map<String, String> families = const {},
+  }) {
+    _base = _Look.of(settings, fontFamily);
+    _runs = [
+      for (final r in settings.runs)
+        _base.under(r, r.fontFamily == null ? null : families[r.fontFamily!] ?? defaultFontFamily),
+    ];
+  }
 
   final RenderSettings settings;
   final String fontFamily;
@@ -62,9 +82,8 @@ class UiTextEngine implements TextMeasurer, LetterMetrics {
   @override
   final double xHeight;
 
-  /// The font's weight is an axis: bold sets it instead of thickening the
-  /// letters.
-  final bool _variable;
+  late final _Look _base;
+  late final List<_Look> _runs;
   final _cache = <String, ui.Paragraph>{};
   final _naturalRatio = <int, double>{};
 
@@ -74,27 +93,48 @@ class UiTextEngine implements TextMeasurer, LetterMetrics {
     TextAlignment.right => ui.TextAlign.right,
   };
 
-  /// [outline] > 0: the glyph contours stroked that wide on each side, in
-  /// [color], instead of filled.
-  ui.TextStyle _style(int pt, {int? color, double? lineHeight, double outline = 0}) => ui.TextStyle(
-    color: outline > 0 ? null : ui.Color(color ?? settings.color),
-    foreground: outline > 0
-        ? (ui.Paint()
-            ..color = ui.Color(color ?? settings.outlineColor)
-            ..style = ui.PaintingStyle.stroke
-            ..strokeWidth = 2 * outline
-            ..strokeJoin = ui.StrokeJoin.round
-            ..strokeCap = ui.StrokeCap.round)
-        : null,
-    fontFamily: fontFamily,
-    fontFamilyFallback: const ['Segoe UI', 'Yu Gothic UI', 'Microsoft YaHei UI', 'Malgun Gothic', 'Noto Sans'],
-    fontSize: ptToPx(pt),
-    fontWeight: settings.bold && !_variable ? ui.FontWeight.bold : ui.FontWeight.normal,
-    fontVariations: _variable ? [ui.FontVariation('wght', settings.bold ? 700 : 400)] : null,
-    fontStyle: settings.italic ? ui.FontStyle.italic : ui.FontStyle.normal,
-    decoration: settings.underline ? ui.TextDecoration.underline : null,
-    height: lineHeight,
-  );
+  /// The style of [look] in [pass]: filled in [color] (the look's own colour
+  /// first), or its outline or faux-bold edge stroked around the letters
+  /// (transparent where the look has none, so that the lines stay in place).
+  /// [strokeColor] and [strokeWidth] replace the look's for a stroke pass.
+  ui.TextStyle _style(
+    _Look look,
+    int pt,
+    _Pass pass, {
+    int? color,
+    double? lineHeight,
+    int? strokeColor,
+    double? strokeWidth,
+  }) {
+    final px = ptToPx(pt) * look.scale;
+    final fill = look.color ?? color ?? settings.color;
+    ui.Paint stroke(int c, double width) => ui.Paint()
+      ..color = ui.Color(width > 0 ? c : 0)
+      ..style = ui.PaintingStyle.stroke
+      ..strokeWidth = 2 * width
+      ..strokeJoin = ui.StrokeJoin.round
+      ..strokeCap = ui.StrokeCap.round;
+    final bolder = look.fauxBold ? px * _fauxBoldShare : 0.0;
+    return ui.TextStyle(
+      color: pass == _Pass.fill ? ui.Color(fill) : null,
+      foreground: switch (pass) {
+        _Pass.fill => null,
+        _Pass.outline => stroke(
+          strokeColor ?? look.outlineColor,
+          strokeWidth ?? (look.outline ? look.outlineWidth + bolder : 0),
+        ),
+        _Pass.bolder => stroke(strokeColor ?? fill, strokeWidth ?? bolder),
+      },
+      fontFamily: look.family,
+      fontFamilyFallback: const ['Segoe UI', 'Yu Gothic UI', 'Microsoft YaHei UI', 'Malgun Gothic', 'Noto Sans'],
+      fontSize: px,
+      fontWeight: look.bold && !look.variable && !look.fauxBold ? ui.FontWeight.bold : ui.FontWeight.normal,
+      fontVariations: look.variable ? [ui.FontVariation('wght', look.bold ? 700 : 400)] : null,
+      fontStyle: look.italic ? ui.FontStyle.italic : ui.FontStyle.normal,
+      decoration: look.underline ? ui.TextDecoration.underline : null,
+      height: lineHeight,
+    );
+  }
 
   /// Natural line height divided by the font size (Qt's 100% line height).
   double _ratio(int pt) => _naturalRatio.putIfAbsent(pt, () {
@@ -108,16 +148,24 @@ class UiTextEngine implements TextMeasurer, LetterMetrics {
     int? color,
     bool natural = false,
     double width = double.infinity,
-    double outline = 0,
+    _Pass pass = _Pass.fill,
   }) {
     final spacing = settings.lineSpacing;
     final lineHeight = natural || spacing == 1.0 ? null : _ratio(pt) * spacing;
-    final builder =
-        ui.ParagraphBuilder(
-            ui.ParagraphStyle(textAlign: _align, textDirection: rtl ? ui.TextDirection.rtl : ui.TextDirection.ltr),
-          )
-          ..pushStyle(_style(pt, color: color, lineHeight: lineHeight, outline: outline))
-          ..addText(text);
+    final builder = ui.ParagraphBuilder(
+      ui.ParagraphStyle(textAlign: _align, textDirection: rtl ? ui.TextDirection.rtl : ui.TextDirection.ltr),
+    )..pushStyle(_style(_base, pt, pass, color: color, lineHeight: lineHeight));
+    for (final (piece, run) in runPieces(text)) {
+      final look = run != null && run < _runs.length ? _runs[run] : null;
+      if (look == null) {
+        builder.addText(piece);
+        continue;
+      }
+      builder
+        ..pushStyle(_style(look, pt, pass, color: color, lineHeight: lineHeight))
+        ..addText(piece)
+        ..pop();
+    }
     return builder.build()..layout(ui.ParagraphConstraints(width: width));
   }
 
@@ -167,37 +215,49 @@ class UiTextEngine implements TextMeasurer, LetterMetrics {
 
   /// The outline is the glyph contours stroked under the text. (The original
   /// draws the text eight more times, shifted by the width: at wide outlines
-  /// the copies show as smeared letters.)
+  /// the copies show as smeared letters.) Faux bold is a stroke of the
+  /// letters' own colour between the outline and the letters.
   void _draw(ui.Canvas canvas, TextItem item) {
-    final w = settings.outline ? settings.outlineWidth : 0.0;
+    final looks = [_base, ..._runs];
     if (item.vertical) {
-      if (w > 0) _drawVertical(canvas, item, settings.outlineColor, outline: w);
+      final bolder = _base.fauxBold ? ptToPx(item.fontSizePt) * _fauxBoldShare : 0.0;
+      final w = _base.outline ? _base.outlineWidth + bolder : 0.0;
+      if (w > 0) _drawVertical(canvas, item, _base.outlineColor, outline: w);
+      if (bolder > 0) _drawVertical(canvas, item, item.color, outline: bolder);
       _drawVertical(canvas, item, item.color);
       return;
     }
     final layoutWidth = math.max(1.0, item.width - 2 * documentMargin) + 0.5;
     final origin = ui.Offset(item.x + documentMargin, item.y + documentMargin);
-    if (w > 0) {
-      canvas.drawParagraph(
-        _build(item.text, item.fontSizePt, color: settings.outlineColor, width: layoutWidth, outline: w),
-        origin,
-      );
-    }
-    canvas.drawParagraph(_build(item.text, item.fontSizePt, color: item.color, width: layoutWidth), origin);
+    void pass(_Pass p) => canvas.drawParagraph(
+      _build(item.text, item.fontSizePt, color: item.color, width: layoutWidth, pass: p),
+      origin,
+    );
+    if (looks.any((l) => l.outline && l.outlineWidth > 0)) pass(_Pass.outline);
+    if (looks.any((l) => l.fauxBold)) pass(_Pass.bolder);
+    pass(_Pass.fill);
   }
 
-  /// Columns right to left, characters top to bottom.
+  /// Columns right to left, characters top to bottom (in the block's look).
   void _drawVertical(ui.Canvas canvas, TextItem item, int color, {double outline = 0}) {
     final pt = item.fontSizePt;
     final cell = _cell(pt), advance = _columnAdvance(pt);
-    final columns = item.text.split('\n');
+    final columns = unmarkRuns(item.text).split('\n');
     final right = item.x + item.width - documentMargin;
+    final style = outline > 0
+        ? _style(_base, pt, _Pass.outline, strokeColor: color, strokeWidth: outline)
+        : _style(_base, pt, _Pass.fill, color: color);
     for (final (ci, column) in columns.indexed) {
       final cx = right - (ci + 0.5) * advance;
       var y = item.y + documentMargin;
       for (final r in column.runes) {
         final ch = String.fromCharCode(r);
-        final p = _build(ch, pt, color: color, natural: true, outline: outline);
+        final p =
+            (ui.ParagraphBuilder(ui.ParagraphStyle())
+                  ..pushStyle(style)
+                  ..addText(ch))
+                .build()
+              ..layout(const ui.ParagraphConstraints(width: double.infinity));
         final rotate = _rotateInVertical.hasMatch(ch);
         canvas.save();
         canvas.translate(cx, y + cell / 2);
@@ -208,6 +268,69 @@ class UiTextEngine implements TextMeasurer, LetterMetrics {
       }
     }
   }
+}
+
+/// Extra stroke width (on each side) of faux bold, per pixel of font size.
+const _fauxBoldShare = 0.022;
+
+enum _Pass { fill, outline, bolder }
+
+/// The look of the block or of one of its runs, resolved for drawing.
+class _Look {
+  const _Look({
+    required this.family,
+    required this.bold,
+    required this.italic,
+    required this.underline,
+    required this.outline,
+    required this.outlineColor,
+    required this.outlineWidth,
+    this.color,
+    this.scale = 1,
+  });
+
+  factory _Look.of(RenderSettings s, String family) => _Look(
+    family: family,
+    bold: s.bold,
+    italic: s.italic,
+    underline: s.underline,
+    outline: s.outline,
+    outlineColor: s.outlineColor,
+    outlineWidth: s.outlineWidth,
+  );
+
+  final String family;
+  final bool bold;
+  final bool italic;
+  final bool underline;
+  final bool outline;
+  final int outlineColor;
+  final double outlineWidth;
+
+  /// Own colour (runs); null: the item's.
+  final int? color;
+  final double scale;
+
+  /// The font's weight is an axis: bold sets it instead of thickening the
+  /// letters.
+  bool get variable => bundledFont(family)?.variable ?? false;
+
+  /// Bold for a font without a bold face: the letters are thickened by a
+  /// stroke of their own colour (the engine would draw them regular).
+  bool get fauxBold => bold && !_hasBoldFace(family);
+
+  /// [run] over this look ([family] is the run's font, resolved).
+  _Look under(RunStyle run, String? family) => _Look(
+    family: family ?? this.family,
+    bold: run.bold ?? bold,
+    italic: run.italic ?? italic,
+    underline: run.underline ?? underline,
+    outline: run.outline ?? outline,
+    outlineColor: run.outlineColor ?? outlineColor,
+    outlineWidth: run.outlineWidth ?? outlineWidth,
+    color: run.color,
+    scale: run.scale ?? scale,
+  );
 }
 
 /// Text engines of one page: the render settings and every block style's
@@ -225,15 +348,16 @@ class TextEngines {
   final Map<String, (double, double)> _letters;
   final _engines = <String, UiTextEngine>{};
 
-  /// Loads the fonts of [base] and of the styles of [blocks]. A font file
-  /// that cannot be read falls back to the bundled font.
+  /// Loads the fonts of [base] (its presets too) and of the styles of
+  /// [blocks] (their words too). A font file that cannot be read falls back
+  /// to the bundled font.
   static Future<TextEngines> load(
     RenderSettings base, {
     bool rtl = false,
     Iterable<TextBlock> blocks = const [],
   }) async {
     final families = <String, String>{};
-    for (final setting in {base.fontFamily, for (final b in blocks) ?b.style?.fontFamily}) {
+    for (final setting in {base.fontFamily, ..._presetFonts(base), for (final b in blocks) ..._fontsOf(b)}) {
       try {
         families[setting] = await resolveFontFamily(setting);
       } on FileSystemException {
@@ -245,19 +369,34 @@ class TextEngines {
   }
 
   /// Whether the fonts of [blocks] are loaded.
-  bool covers(Iterable<TextBlock> blocks) => blocks.every((b) => _families.containsKey(b.style?.fontFamily ?? ''));
+  bool covers(Iterable<TextBlock> blocks) => blocks.every((b) => _fontsOf(b).every(_families.containsKey));
 
   UiTextEngine get main => of(base);
 
   UiTextEngine of(RenderSettings s) => _engines.putIfAbsent(jsonEncode(s.toJson()), () {
     final family = _families[s.fontFamily] ?? defaultFontFamily;
     final letters = _letters[family];
-    return UiTextEngine(s, fontFamily: family, rtl: rtl, capHeight: letters?.$1 ?? 0.7, xHeight: letters?.$2 ?? 0.5);
+    return UiTextEngine(
+      s,
+      fontFamily: family,
+      rtl: rtl,
+      capHeight: letters?.$1 ?? 0.7,
+      xHeight: letters?.$2 ?? 0.5,
+      families: _families,
+    );
   });
 
   /// Draws [item] with its own settings.
   void draw(ui.Canvas canvas, TextItem item) => of(item.settings ?? base).draw(canvas, item);
 }
+
+/// Font settings a block uses: its own and its words' (empty: the page's).
+Iterable<String> _fontsOf(TextBlock b) => [
+  b.style?.fontFamily ?? '',
+  for (final r in b.style?.runs ?? const <StyledRun>[]) ?r.style.fontFamily,
+];
+
+Iterable<String> _presetFonts(RenderSettings s) => [for (final p in s.presets.values) ?p.fontFamily];
 
 final _letterCache = <String, (double, double)>{};
 

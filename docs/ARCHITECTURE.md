@@ -56,6 +56,20 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   source letter height becomes the largest font size, through the font's
   measured cap/x-height; the page's median size, unless a block's own differs
   by more than 35 %. A tight bubble still gets smaller letters.
+- The look of single words (new, `text_runs.dart`, `style.runs`): runs of the
+  translation with their own font, size (to the block's), colours, outline,
+  bold, italic, underline or preset. For laying out, runs ride in the text as
+  private-use marks (U+E000 + run, U+E0FF ends), so wrapping, hyphenation and
+  case need no changes; the text engine draws marked pieces in their look and
+  the marks never reach text output (layout JSON, PSD text). Vertical text
+  and text whose case changes its length lose the runs. Typing moves runs
+  (text typed at a run's edge is outside it). PSD text layers carry the
+  block's look only (the pixels show the runs).
+- Look presets (new, `render.presets`): named looks a block or a run refers
+  to by name; changing one changes all of them. Made from a bubble's look.
+- Chat exchange: the instructions ask for stressed words between stars
+  (`*НЕ*`) where the chat sees pictures; a reply's starred words become bold
+  runs (the old runs of the block go with the old translation).
 - New translations (the Translate step) drop a block's hand-made look and keep
   only its text box. Fonts: 16 OFL families with Cyrillic come with the
   program (`bundled_fonts.dart`); "Suggest a font" ranks them (and added

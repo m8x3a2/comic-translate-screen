@@ -1704,5 +1704,33 @@
   "hyphenateBlock": "Hyphenation",
   "shapeFitBlock": "Follow the bubble",
   "fromSource": "as in the original",
-  "textFit": "Fitting"
+  "textFit": "Fitting",
+  "showLookInPanel": "Show the look in the panel",
+  "runBigger": "Larger",
+  "runSmaller": "Smaller",
+  "runClear": "Clear the look of the selection",
+  "runHint": "Select a word or sign of the translation for buttons that give it a look of its own.",
+  "runAsBubble": "As the bubble",
+  "outlineNone": "No outline",
+  "lookPreset": "Style",
+  "lookPresetNone": "No style",
+  "lookPresetSave": "Save the look as a style…",
+  "lookPresetName": "Style name",
+  "lookPresetUpdate": "Update the style \"{name}\" from this bubble",
+  "@lookPresetUpdate": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lookPresetDelete": "Delete the style \"{name}\"",
+  "@lookPresetDelete": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "lookPresetHelp": "A style is a set of looks (font, colour, outline, bold…) put on a bubble or a word with one click. Change the style and every bubble and word with it changes."
 }

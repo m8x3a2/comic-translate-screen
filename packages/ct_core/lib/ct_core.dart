@@ -75,6 +75,7 @@ export 'src/render/layout.dart';
 export 'src/render/hyphenation.dart';
 export 'src/render/source_style.dart';
 export 'src/render/text_case.dart';
+export 'src/render/text_runs.dart';
 export 'src/render/upscale.dart';
 export 'src/settings/app_settings.dart';
 export 'src/settings/secret_store.dart';

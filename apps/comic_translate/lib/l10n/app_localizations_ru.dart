@@ -2659,4 +2659,52 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get textFit => 'Вписывание';
+
+  @override
+  String get showLookInPanel => 'Показывать оформление в панели';
+
+  @override
+  String get runBigger => 'Крупнее';
+
+  @override
+  String get runSmaller => 'Мельче';
+
+  @override
+  String get runClear => 'Убрать оформление выделенного';
+
+  @override
+  String get runHint =>
+      'Выделите слово или знак в переводе — появятся кнопки, чтобы оформить его отдельно.';
+
+  @override
+  String get runAsBubble => 'Как у пузыря';
+
+  @override
+  String get outlineNone => 'Без обводки';
+
+  @override
+  String get lookPreset => 'Стиль';
+
+  @override
+  String get lookPresetNone => 'Без стиля';
+
+  @override
+  String get lookPresetSave => 'Сохранить оформление как стиль…';
+
+  @override
+  String get lookPresetName => 'Название стиля';
+
+  @override
+  String lookPresetUpdate(String name) {
+    return 'Обновить стиль «$name» по этому пузырю';
+  }
+
+  @override
+  String lookPresetDelete(String name) {
+    return 'Удалить стиль «$name»';
+  }
+
+  @override
+  String get lookPresetHelp =>
+      'Стиль — набор оформления (шрифт, цвет, обводка, жирный…), который ставится одним щелчком на пузырь или слово. Изменили стиль — изменились все пузыри и слова с ним.';
 }

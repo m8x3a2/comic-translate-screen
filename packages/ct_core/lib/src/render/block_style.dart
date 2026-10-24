@@ -7,6 +7,7 @@ library;
 
 import '../model/geometry.dart';
 import 'layout.dart';
+import 'text_runs.dart';
 
 const Object _keep = Object();
 
@@ -30,6 +31,8 @@ class BlockStyle {
     this.sourceSizePx,
     this.hyphenate,
     this.shapeFit,
+    this.runs = const [],
+    this.preset,
   });
 
   /// Font family or font file (see [RenderSettings.fontFamily]).
@@ -71,6 +74,13 @@ class BlockStyle {
   final bool? hyphenate;
   final bool? shapeFit;
 
+  /// The look of single words or signs of the translation.
+  final List<StyledRun> runs;
+
+  /// Name of a look preset (see [RenderSettings.presets]): its look under
+  /// this style's own fields.
+  final String? preset;
+
   bool get isEmpty =>
       fontFamily == null &&
       fontSizePt == null &&
@@ -89,7 +99,40 @@ class BlockStyle {
       upperCase == null &&
       sourceSizePx == null &&
       hyphenate == null &&
-      shapeFit == null;
+      shapeFit == null &&
+      runs.isEmpty &&
+      preset == null;
+
+  /// The look a preset holds: font, colours, outline, bold, italic,
+  /// underline, spacing, alignment, letter case.
+  BlockStyle get look => BlockStyle(
+    fontFamily: fontFamily,
+    color: color,
+    outline: outline,
+    outlineColor: outlineColor,
+    outlineWidth: outlineWidth,
+    bold: bold,
+    italic: italic,
+    underline: underline,
+    lineSpacing: lineSpacing,
+    alignment: alignment,
+    upperCase: upperCase,
+  );
+
+  /// This style without the fields of [look].
+  BlockStyle get withoutLook => copyWith(
+    fontFamily: null,
+    color: null,
+    outline: null,
+    outlineColor: null,
+    outlineWidth: null,
+    bold: null,
+    italic: null,
+    underline: null,
+    lineSpacing: null,
+    alignment: null,
+    upperCase: null,
+  );
 
   /// Only where the text goes (its own text box), without the look; null
   /// when that is not set either.
@@ -133,6 +176,8 @@ class BlockStyle {
     Object? sourceSizePx = _keep,
     Object? hyphenate = _keep,
     Object? shapeFit = _keep,
+    List<StyledRun>? runs,
+    Object? preset = _keep,
   }) {
     T? pick<T>(Object? v, T? old) => identical(v, _keep) ? old : v as T?;
     return BlockStyle(
@@ -154,6 +199,8 @@ class BlockStyle {
       sourceSizePx: pick(sourceSizePx, this.sourceSizePx),
       hyphenate: pick(hyphenate, this.hyphenate),
       shapeFit: pick(shapeFit, this.shapeFit),
+      runs: runs ?? this.runs,
+      preset: pick(preset, this.preset),
     );
   }
 
@@ -177,6 +224,8 @@ class BlockStyle {
     sourceSizePx: other.sourceSizePx ?? sourceSizePx,
     hyphenate: other.hyphenate ?? hyphenate,
     shapeFit: other.shapeFit ?? shapeFit,
+    runs: other.runs.isEmpty ? runs : other.runs,
+    preset: other.preset ?? preset,
   );
 
   /// The style for a page enlarged by [sx]×[sy] (the text box moves; sizes
@@ -214,6 +263,8 @@ class BlockStyle {
     if (sourceSizePx != null) 'source_size_px': sourceSizePx,
     if (hyphenate != null) 'hyphenate': hyphenate,
     if (shapeFit != null) 'shape_fit': shapeFit,
+    if (runs.isNotEmpty) 'runs': [for (final r in runs) r.toJson()],
+    if (preset != null) 'preset': preset,
   };
 
   factory BlockStyle.fromJson(Map<String, Object?> j) {
@@ -238,6 +289,12 @@ class BlockStyle {
       sourceSizePx: get<num>('source_size_px')?.toDouble(),
       hyphenate: get<bool>('hyphenate'),
       shapeFit: get<bool>('shape_fit'),
+      runs: [
+        if (j['runs'] case final List list)
+          for (final r in list)
+            if (r is Map) StyledRun.fromJson(r.cast()),
+      ],
+      preset: get<String>('preset'),
     );
   }
 
@@ -261,7 +318,9 @@ class BlockStyle {
       other.upperCase == upperCase &&
       other.sourceSizePx == sourceSizePx &&
       other.hyphenate == hyphenate &&
-      other.shapeFit == shapeFit;
+      other.shapeFit == shapeFit &&
+      _sameRuns(other.runs, runs) &&
+      other.preset == preset;
 
   @override
   int get hashCode => Object.hash(
@@ -279,8 +338,16 @@ class BlockStyle {
     vertical,
     angle,
     textBox,
-    Object.hash(upperCase, sourceSizePx, hyphenate, shapeFit),
+    Object.hash(upperCase, sourceSizePx, hyphenate, shapeFit, Object.hashAll(runs), preset),
   );
+}
+
+bool _sameRuns(List<StyledRun> a, List<StyledRun> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }
 
 String _hex(int argb) => '#${(argb & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';

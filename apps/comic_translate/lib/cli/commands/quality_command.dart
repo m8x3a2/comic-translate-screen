@@ -179,7 +179,7 @@ class _GoldenRun extends Command<int> {
             }
         ],
         'items': [
-          for (final i in r.items) {'text': i.text, 'font_size_pt': i.fontSizePt, 'x': i.x.round(), 'y': i.y.round()}
+          for (final i in r.items) {'text': unmarkRuns(i.text), 'font_size_pt': i.fontSizePt, 'x': i.x.round(), 'y': i.y.round()}
         ],
       };
 

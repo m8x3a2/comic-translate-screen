@@ -20,6 +20,7 @@ import '../common/panels.dart';
 import 'batch_dialogs.dart';
 import 'block_style_editor.dart';
 import 'find_replace.dart';
+import 'run_editor.dart';
 
 /// The find panel is open.
 final findOpenProvider = NotifierProvider<_FindOpen, bool>(_FindOpen.new);
@@ -224,7 +225,15 @@ class _BlockEditor extends ConsumerStatefulWidget {
 
 class _BlockEditorState extends ConsumerState<_BlockEditor> {
   late final _source = TextEditingController(text: widget.block.text);
-  late final _translation = TextEditingController(text: widget.block.translation);
+  late final _translation = RunsController(text: widget.block.translation)..addListener(_selectionMoved);
+  var _selection = const TextSelection.collapsed(offset: -1);
+
+  /// The bar for styling words follows the selection.
+  void _selectionMoved() {
+    final s = _translation.selection;
+    if (s != _selection && mounted) setState(() => _selection = s);
+  }
+
   final _translationFocus = FocusNode();
   bool _showStyle = true;
 
@@ -253,6 +262,13 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
     final busy = widget.readOnly || steps.running || ref.watch(batchProvider) is BatchRunning;
     final i = widget.index;
     ref.listen(focusTranslationProvider, (_, _) => _translationFocus.requestFocus());
+    final settings = ref.watch(settingsProvider);
+    _translation
+      ..runs = widget.block.style?.runs ?? const []
+      ..presets = settings.render.presets
+      ..showLook = settings.showLookInPanel;
+    final sel = _selection;
+    final selected = sel.isValid && !sel.isCollapsed && sel.end <= widget.block.translation.length;
     InputDecoration deco(String label) => InputDecoration(
       labelText: label,
       isDense: true,
@@ -320,8 +336,26 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
           minLines: 2,
           maxLines: 8,
           decoration: deco(l.translationText),
-          onChanged: (v) => ws.changeBlock(i, (b) => b.translation = v, mergeKey: 'tr:$i'),
+          onChanged: (v) => ws.changeBlock(i, (b) {
+            // Styled words move with the text typed before them.
+            final style = b.style;
+            if (style != null && style.runs.isNotEmpty) {
+              final moved = style.copyWith(runs: shiftRuns(style.runs, b.translation, v));
+              b.style = moved.isEmpty ? null : moved;
+            }
+            b.translation = v;
+          }, mergeKey: 'tr:$i'),
         ),
+        if (selected && !busy)
+          RunBar(index: i, start: sel.start, end: sel.end)
+        else if (widget.block.translation.isNotEmpty && !busy)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              l.runHint,
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
         const SizedBox(height: 4),
         Align(
           alignment: Alignment.centerLeft,
@@ -370,6 +404,12 @@ class _LookMenu extends ConsumerWidget {
         item(Icons.text_fields, l.caseToggle, () => toggleCapitals(ref)),
         item(Icons.format_size, l.sizeFromSourcePages, () => _sourceSize(context, ref)),
         item(Icons.format_clear, l.styleResetPages, () => resetLooks(ref)),
+        const PopupMenuDivider(),
+        CheckedPopupMenuItem(
+          value: () => ref.read(settingsProvider.notifier).change((s) => s.showLookInPanel = !s.showLookInPanel),
+          checked: ref.read(settingsProvider).showLookInPanel,
+          child: Text(l.showLookInPanel),
+        ),
       ],
     );
   }

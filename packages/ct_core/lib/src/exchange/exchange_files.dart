@@ -20,6 +20,8 @@ import 'package:path/path.dart' as p;
 import '../image/cv_bridge.dart';
 import '../image/raster.dart';
 import '../model/text_block.dart';
+import '../render/block_style.dart';
+import '../render/text_runs.dart';
 import '../translation/llm_protocol.dart';
 import 'exchange_answer.dart';
 import 'exchange_prompt.dart';
@@ -511,9 +513,11 @@ int? findExchangeBlock(List<TextBlock> blocks, ExchangeItem item) {
 }
 
 /// Writes [reply] into [block] (a missing reply puts [placeholder] when it
-/// is not empty). Returns whether the block changed.
+/// is not empty). Returns whether the block changed. Words of a new
+/// translation between stars (`*НЕ*`) become bold words of the block; the
+/// words styled for the old translation go.
 bool applyExchangeReply(TextBlock block, ExchangeReply? reply, ExchangeMode mode, {String placeholder = ''}) {
-  final oldText = block.text, oldTranslation = block.translation;
+  final oldText = block.text, oldTranslation = block.translation, oldStyle = block.style;
   if (reply == null) {
     if (placeholder.isEmpty) return false;
     if (mode == ExchangeMode.recognize) {
@@ -534,5 +538,11 @@ bool applyExchangeReply(TextBlock block, ExchangeReply? reply, ExchangeMode mode
         if (reply.translation != null || reply.isEmpty) block.translation = reply.translation ?? '';
     }
   }
-  return block.text != oldText || block.translation != oldTranslation;
+  if (block.translation != oldTranslation) {
+    final (text, runs) = boldFromStars(block.translation);
+    block.translation = text;
+    final style = (block.style ?? const BlockStyle()).copyWith(runs: runs);
+    block.style = style.isEmpty ? null : style;
+  }
+  return block.text != oldText || block.translation != oldTranslation || block.style != oldStyle;
 }

@@ -2658,4 +2658,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textFit => 'Fitting';
+
+  @override
+  String get showLookInPanel => 'Show the look in the panel';
+
+  @override
+  String get runBigger => 'Larger';
+
+  @override
+  String get runSmaller => 'Smaller';
+
+  @override
+  String get runClear => 'Clear the look of the selection';
+
+  @override
+  String get runHint =>
+      'Select a word or sign of the translation for buttons that give it a look of its own.';
+
+  @override
+  String get runAsBubble => 'As the bubble';
+
+  @override
+  String get outlineNone => 'No outline';
+
+  @override
+  String get lookPreset => 'Style';
+
+  @override
+  String get lookPresetNone => 'No style';
+
+  @override
+  String get lookPresetSave => 'Save the look as a style…';
+
+  @override
+  String get lookPresetName => 'Style name';
+
+  @override
+  String lookPresetUpdate(String name) {
+    return 'Update the style \"$name\" from this bubble';
+  }
+
+  @override
+  String lookPresetDelete(String name) {
+    return 'Delete the style \"$name\"';
+  }
+
+  @override
+  String get lookPresetHelp =>
+      'A style is a set of looks (font, colour, outline, bold…) put on a bubble or a word with one click. Change the style and every bubble and word with it changes.';
 }
