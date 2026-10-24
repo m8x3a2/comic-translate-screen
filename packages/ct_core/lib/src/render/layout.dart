@@ -395,7 +395,7 @@ String wrapNoSpaceTextGreedily(String text, double Function(String) measure, dou
 
 /// Result of [fitText].
 class FittedText {
-  FittedText(this.text, this.fontSizePt, this.width, this.height, {this.fits = true});
+  FittedText(this.text, this.fontSizePt, this.width, this.height, {this.fits = true, this.inOval = false});
 
   final String text;
   final int fontSizePt;
@@ -406,6 +406,9 @@ class FittedText {
 
   /// False: the text does not fit even at the smallest size.
   final bool fits;
+
+  /// The lines follow the oval given to [fitText] (centred on it).
+  final bool inOval;
 }
 
 /// How much larger hyphenated text must get to be chosen over unbroken
@@ -415,6 +418,9 @@ const _hyphenGain = 1.12;
 /// How much larger breaking any word must make the text than breaking long
 /// words only.
 const _anyWordGain = 1.2;
+
+/// Share of the size in the box that lines along the oval must keep.
+const _ovalKeep = 0.9;
 
 /// Share of the largest size from which text is large enough without
 /// hyphenation.
@@ -427,7 +433,7 @@ const _largeEnough = 0.8;
 /// With [RenderSettings.hyphenate], Russian words may be broken by syllables
 /// when that makes the text clearly larger (or lets it fit at all). With
 /// [ellipse] (semi-axes, in pixels) the lines follow that oval instead of
-/// the box.
+/// the box, unless the letters would get much smaller there.
 FittedText fitText(
   String text,
   TextMeasurer measurer,
@@ -439,11 +445,7 @@ FittedText fitText(
   ({double a, double b})? ellipse,
 }) {
   FittedText fit(_Breaks breaks) {
-    if (ellipse != null && !vertical && !noSpaceLanguage && !text.contains('\n')) {
-      final oval = _fitInEllipse(text, measurer, ellipse.a, ellipse.b, settings, breaks: breaks);
-      if (oval != null) return oval;
-    }
-    return _fitInBox(
+    final box = _fitInBox(
       text,
       measurer,
       roiWidth,
@@ -453,6 +455,13 @@ FittedText fitText(
       noSpaceLanguage: noSpaceLanguage,
       breaks: breaks,
     );
+    // The oval only when it costs little size: a long first word in its
+    // narrow top line can make all the text much smaller.
+    if (ellipse != null && !vertical && !noSpaceLanguage && !text.contains('\n')) {
+      final oval = _fitInEllipse(text, measurer, ellipse.a, ellipse.b, settings, breaks: breaks);
+      if (oval != null && (!box.fits || oval.fontSizePt >= box.fontSizePt * _ovalKeep)) return oval;
+    }
+    return box;
   }
 
   final plain = fit(_Breaks.none);
@@ -594,7 +603,7 @@ FittedText? _fitInEllipse(
   }
   if (best == null) return null;
   final m = _metrics(measurer, settings, best, bestSize, withOutline: false);
-  return FittedText(best, bestSize, m.width, m.height);
+  return FittedText(best, bestSize, m.width, m.height, inOval: true);
 }
 
 /// `get_best_render_area`: blocks shrink by 5% (except Korean and Chinese
@@ -713,7 +722,7 @@ List<TextItem> layoutPage(
       ellipse: oval == null ? null : (a: oval.a, b: oval.b),
     );
     var x = area.x1.toDouble(), y = area.y1.toDouble();
-    if (oval != null && fit.fits) {
+    if (oval != null && fit.inOval) {
       x = oval.cx - fit.width / 2;
       y = oval.cy - fit.height / 2;
     } else if (s.placeInBlock) {
@@ -800,18 +809,24 @@ int sourceSizePt(double px, TextBlock block, TextMeasurer measurer) {
   return (fontPx * 72 / 96).round().clamp(4, 200);
 }
 
-/// Share of the speech bubble's half-sizes that the lines may use.
-const _ovalShare = 0.86;
+/// Share of the speech bubble's half-sizes that the lines may use at most.
+const _ovalShare = 0.9;
 
-/// The oval of [block]'s speech bubble (centre and semi-axes) when the
-/// bubble is around [area]'s centre: a bubble holding several blocks is
-/// left to their boxes.
+/// The oval the lines of [block] follow (centre and semi-axes): the one
+/// around its text [area] (the letterer fitted that box into the bubble),
+/// kept inside its speech bubble. The bubble box of the detector is too
+/// rough to be the oval itself. Text outside bubbles keeps its box.
 ({double cx, double cy, double a, double b})? _bubbleOval(TextBlock block, BBox area) {
   final bubble = block.bubbleXyxy;
-  if (bubble == null || bubble.width < 8 || bubble.height < 8) return null;
-  final c = bubble.center, t = area.center;
-  if ((c.x - t.x).abs() > bubble.width * 0.15 || (c.y - t.y).abs() > bubble.height * 0.15) return null;
-  return (cx: c.x, cy: c.y, a: bubble.width / 2 * _ovalShare, b: bubble.height / 2 * _ovalShare);
+  if (bubble == null || area.width < 8 || area.height < 8) return null;
+  final c = area.center;
+  if (c.x < bubble.x1 || c.x > bubble.x2 || c.y < bubble.y1 || c.y > bubble.y2) return null;
+  return (
+    cx: c.x,
+    cy: c.y,
+    a: math.min(area.width / 2 * math.sqrt2, bubble.width / 2 * _ovalShare),
+    b: math.min(area.height / 2 * math.sqrt2, bubble.height / 2 * _ovalShare),
+  );
 }
 
 bool _isNoSpace(String code) {

@@ -230,7 +230,8 @@ class BlockStyleEditor extends ConsumerWidget {
         row(
           l.textColor,
           _Swatches(
-            value: s.color,
+            // A style's colour shows as chosen too.
+            value: s.color ?? presets[preset]?.color,
             auto: l.colorAuto,
             onChanged: (c) => set((s) => s.copyWith(color: c)),
           ),

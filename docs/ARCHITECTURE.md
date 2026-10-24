@@ -49,9 +49,12 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   least). It is used only when unbroken text does not fit or is under 80 % of
   the largest size and breaking makes it 12 % larger.
 - Lines along the bubble (new, `render.shape_fit`, off; per block): the lines
-  fill the oval of the block's speech bubble (86 % of its half-sizes), each as
-  wide as the oval at its height, centred on the bubble. Bubbles holding more
-  than one block (the block's centre off the bubble's) keep the box.
+  fill the oval around the block's text box (half-sizes ×√2, at most 90 % of
+  the detected bubble's: its box is too rough to be the oval), each as wide as
+  the oval at its height, centred on the text. Used only where the letters
+  keep 90 % of their size in the box (a long first word in the narrow top line
+  would shrink everything); text outside bubbles keeps the box. Such lines are
+  checked against the bubble, not the text box, before the page is enlarged.
 - "Size as in the original" (new, a button; `style.source_size_px`): the
   source letter height becomes the largest font size, through the font's
   measured cap/x-height; the page's median size, unless a block's own differs

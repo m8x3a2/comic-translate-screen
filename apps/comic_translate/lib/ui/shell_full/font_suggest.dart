@@ -90,7 +90,10 @@ Future<void> showFontSuggestions(BuildContext context, WidgetRef ref, {int? bloc
     builder: (context) => _SuggestDialog(
       crop: crop,
       ranked: ranked,
-      preview: shown.translation.trim().isEmpty ? shown.text : shown.translation,
+      // As drawn: capitals where the page has them.
+      preview: shown.translation.trim().isEmpty
+          ? shown.text
+          : casedTranslation(shown, ref.read(settingsProvider).textCase, upperCase: shown.style?.upperCase),
       block: block,
     ),
   );

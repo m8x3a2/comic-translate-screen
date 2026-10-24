@@ -34,9 +34,15 @@ class RenderedPage {
 const _overflowShare = 0.2;
 
 /// A bubble styled by hand that does not fit is the user's choice: it does
-/// not enlarge the page, which would resize every other bubble.
-bool _overflows(TextItem i) =>
-    i.block.style == null && (i.width > i.block.xyxy.width + 0.5 || i.height > i.block.xyxy.height + 0.5);
+/// not enlarge the page, which would resize every other bubble. Lines along
+/// the bubble's oval may be wider than the text box: they are measured
+/// against the bubble.
+bool _overflows(TextItem i, RenderSettings base) {
+  if (i.block.style != null) return false;
+  final bubble = i.block.bubbleXyxy;
+  final box = (i.settings ?? base).shapeFit && bubble != null ? bubble : i.block.xyxy;
+  return i.width > box.width + 0.5 || i.height > box.height + 0.5;
+}
 
 /// Where the translations go on a page and how much it is enlarged first.
 class RenderLayout {
@@ -129,7 +135,7 @@ RenderLayout layoutRender(
   if (!fixed && upscale.mode == UpscaleMode.auto && items.isNotEmpty) {
     final limit = (items.length * _overflowShare).ceil();
     for (final more in const [1.5, 2.0]) {
-      if (items.where(_overflows).length < limit) break;
+      if (items.where((i) => _overflows(i, settings.render)).length < limit) break;
       final next = limitUpscaleFactor(f * more, w0, h0);
       if (next <= f) break;
       f = next;

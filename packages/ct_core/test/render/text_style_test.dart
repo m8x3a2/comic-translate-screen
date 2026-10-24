@@ -235,7 +235,16 @@ void main() {
       expect(short.text.contains('-'), isFalse);
     });
 
-    test('lines along the oval: centred on the bubble, middle lines widest', () {
+    test('lines along the oval never make the letters much smaller than in the box', () {
+      const text = 'превосходительство, вы правы';
+      const off = RenderSettings(hyphenate: false);
+      const on = RenderSettings(hyphenate: false, shapeFit: true);
+      final box = lay(block(text), settings: off).single;
+      final oval = lay(block(text), settings: on).single;
+      expect(oval.fontSizePt, greaterThanOrEqualTo((box.fontSizePt * 0.9).floor()));
+    });
+
+    test('lines along the oval around the text, middle lines widest', () {
       const text = 'раз два три четыре пять шесть семь восемь девять десять';
       final item = lay(block(text), settings: const RenderSettings(shapeFit: true, hyphenate: false)).single;
       final lines = item.text.split('\n');
