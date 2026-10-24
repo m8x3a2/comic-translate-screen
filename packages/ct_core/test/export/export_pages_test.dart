@@ -41,8 +41,11 @@ void main() {
     final out = p.join(dir.path, 'out');
     final r = await exportPages(pages, const ExportOptions(), out);
     expect(r.pages, 3);
-    expect(filesIn(out), ['001_page10.jpg', '002_page2.jpg', '003_page2_02.jpg'],
-        reason: 'page10 would sort after page2, so numbers keep the order');
+    expect(filesIn(out), [
+      '001_page10.jpg',
+      '002_page2.jpg',
+      '003_page2_02.jpg',
+    ], reason: 'page10 would sort after page2, so numbers keep the order');
 
     final inOrder = await exportPages(
       await chapter('', ['001', '002']),
@@ -50,6 +53,32 @@ void main() {
       p.join(dir.path, 'ordered'),
     );
     expect(filesIn(inOrder.outputs.single), ['001.png', '002.png']);
+  });
+
+  test('names from a template: text and a number from the chosen start', () async {
+    final pages = await chapter('', ['page10', 'page2', 'x']);
+    final out = p.join(dir.path, 'named');
+    await exportPages(
+      pages,
+      const ExportOptions(imageFormat: 'jpg', translatedText: true, names: NameTemplate('spider man ', '009')),
+      out,
+    );
+    expect(filesIn(out), [
+      'translated/spider man 009.jpg',
+      'translated/spider man 010.jpg',
+      'translated/spider man 011.jpg',
+      'translated_texts/spider man 009_translated.json',
+      'translated_texts/spider man 010_translated.json',
+      'translated_texts/spider man 011_translated.json',
+    ]);
+    expect(
+      [
+        for (final s in ['1', '0', '0007']) const NameTemplate('p', '').nameOf(0) + NameTemplate('', s).nameOf(2),
+      ],
+      ['p13', 'p12', 'p10009'],
+    );
+    expect(const NameTemplate('  ', '01').nameOf(0), '01', reason: 'spaces alone: just the number');
+    expect(NameTemplate.validStart('12a'), isFalse);
   });
 
   test('several kinds go into their own folders, texts as JSON like the original', () async {
@@ -90,7 +119,10 @@ void main() {
   });
 
   test('one file per chapter; chapter names become file names', () async {
-    final pages = [...await chapter('Vol 1: Start', ['01', '02']), ...await chapter('Vol 2', ['01'])];
+    final pages = [
+      ...await chapter('Vol 1: Start', ['01', '02']),
+      ...await chapter('Vol 2', ['01']),
+    ];
     final out = p.join(dir.path, 'chapters');
     final r = await exportPages(pages, const ExportOptions(container: ExportContainer.zip, byChapter: true), out);
     expect(r.outputs.map(p.basename), ['Vol 1_ Start.zip', 'Vol 2.zip']);

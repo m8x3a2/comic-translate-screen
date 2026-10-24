@@ -1856,5 +1856,19 @@
         "type": "String"
       }
     }
+  },
+  "exportNames": "File names",
+  "exportNamesPages": "As the pages",
+  "exportNamesTemplate": "Name + number",
+  "exportNamePrefix": "Name (text before the number)",
+  "exportNameStart": "Start at",
+  "exportNameStartWrong": "Digits only",
+  "exportNamesExample": "You get: {example}  (as many digits as written in \"Start at\")",
+  "@exportNamesExample": {
+    "placeholders": {
+      "example": {
+        "type": "String"
+      }
+    }
   }
 }

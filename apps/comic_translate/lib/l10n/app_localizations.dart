@@ -4927,6 +4927,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Translated among them: {done} of {count}; only these are saved'**
   String exportNumbersReady(String done, String count);
+
+  /// No description provided for @exportNames.
+  ///
+  /// In en, this message translates to:
+  /// **'File names'**
+  String get exportNames;
+
+  /// No description provided for @exportNamesPages.
+  ///
+  /// In en, this message translates to:
+  /// **'As the pages'**
+  String get exportNamesPages;
+
+  /// No description provided for @exportNamesTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Name + number'**
+  String get exportNamesTemplate;
+
+  /// No description provided for @exportNamePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (text before the number)'**
+  String get exportNamePrefix;
+
+  /// No description provided for @exportNameStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start at'**
+  String get exportNameStart;
+
+  /// No description provided for @exportNameStartWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Digits only'**
+  String get exportNameStartWrong;
+
+  /// No description provided for @exportNamesExample.
+  ///
+  /// In en, this message translates to:
+  /// **'You get: {example}  (as many digits as written in \"Start at\")'**
+  String exportNamesExample(String example);
 }
 
 class _AppLocalizationsDelegate

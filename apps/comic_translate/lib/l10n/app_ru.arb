@@ -804,5 +804,12 @@
   "translateAllPages": "Перевести всё",
   "translateSelectedHint": "Выберите страницы: Ctrl+щелчок в списке, номера вроде 1,5-8 или галочки в сетке",
   "exportNumbers": "Номера",
-  "exportNumbersReady": "Переведённых среди них: {done} из {count} — сохранятся только они"
+  "exportNumbersReady": "Переведённых среди них: {done} из {count} — сохранятся только они",
+  "exportNames": "Имена файлов",
+  "exportNamesPages": "Как у страниц",
+  "exportNamesTemplate": "Имя + номер",
+  "exportNamePrefix": "Имя (текст перед номером)",
+  "exportNameStart": "Начать с",
+  "exportNameStartWrong": "Только цифры",
+  "exportNamesExample": "Получится: {example}  (цифр в номере столько, сколько написано в «Начать с»)"
 }

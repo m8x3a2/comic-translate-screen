@@ -77,6 +77,7 @@ class ExportOptions {
     this.strip = StripExport.pages,
     this.sliceHeight = 1280,
     this.extraFiles = const {},
+    this.names,
   });
 
   final ExportContainer container;
@@ -103,6 +104,9 @@ class ExportOptions {
   /// inside it → file (fonts the PSD files use).
   final Map<String, String> extraFiles;
 
+  /// File names from a text and a number instead of the page names.
+  final NameTemplate? names;
+
   ExportOptions withExtraFiles(Map<String, String> files) => ExportOptions(
     container: container,
     imageFormat: imageFormat,
@@ -114,7 +118,31 @@ class ExportOptions {
     strip: strip,
     sliceHeight: sliceHeight,
     extraFiles: {...extraFiles, ...files},
+    names: names,
   );
+}
+
+/// File names from a text and a number (the owner's idea): `spider man ` and
+/// `001` give `spider man 001`, `spider man 002`… The start is written as the
+/// numbers should look: its length sets the digits (`1` → 1, 2…; `001` →
+/// 001, 002…). Each chapter's file or folder counts from the start again.
+class NameTemplate {
+  const NameTemplate(this.prefix, this.start);
+
+  final String prefix;
+  final String start;
+
+  /// The start is a whole number of up to 9 digits.
+  static bool validStart(String start) => RegExp(r'^\d{1,9}$').hasMatch(start);
+
+  /// The name of the page at [index] (0-based).
+  String nameOf(int index) {
+    final first = validStart(start) ? int.parse(start) : 1;
+    final width = validStart(start) ? start.length : 1;
+    final number = '${first + index}'.padLeft(width, '0');
+    // A prefix of spaces alone still gives a name: the number.
+    return safeFileStem('$prefix$number', fallback: number);
+  }
 }
 
 class ExportResult {
@@ -186,8 +214,8 @@ Future<ExportResult> exportPages(
       final pictures = strips == null
           ? group
           : await _joined(group, o, p.join(strips.path, '${groups.keys.toList().indexOf(chapter)}'), title);
-      final names = _pageNames(group);
-      final pictureNames = identical(pictures, group) ? names : _pageNames(pictures);
+      final names = _pageNames(group, o.names);
+      final pictureNames = identical(pictures, group) ? names : _pageNames(pictures, o.names);
       if (o.container == ExportContainer.pdf) {
         final file = split ? p.join(output, _unique('$title.pdf', usedNames)) : output;
         Directory(p.dirname(file)).createSync(recursive: true);
@@ -355,7 +383,9 @@ Future<List<ExportPage>> _joined(List<ExportPage> group, ExportOptions o, String
 
 /// Unique file names for the pages, in their order: readers sort pages by
 /// name, so when the names would sort differently, they get a number first.
-List<String> _pageNames(List<ExportPage> pages) {
+/// With a [template], the names are made from it.
+List<String> _pageNames(List<ExportPage> pages, NameTemplate? template) {
+  if (template != null) return [for (var i = 0; i < pages.length; i++) template.nameOf(i)];
   final used = <String>{};
   final names = [for (final page in pages) _unique(safeFileStem(page.name, fallback: 'page'), used, lower: true)];
   final sorted = [...names]..sort(naturalCompare);

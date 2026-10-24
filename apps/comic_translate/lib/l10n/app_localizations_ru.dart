@@ -2848,4 +2848,27 @@ class AppLocalizationsRu extends AppLocalizations {
   String exportNumbersReady(String done, String count) {
     return 'Переведённых среди них: $done из $count — сохранятся только они';
   }
+
+  @override
+  String get exportNames => 'Имена файлов';
+
+  @override
+  String get exportNamesPages => 'Как у страниц';
+
+  @override
+  String get exportNamesTemplate => 'Имя + номер';
+
+  @override
+  String get exportNamePrefix => 'Имя (текст перед номером)';
+
+  @override
+  String get exportNameStart => 'Начать с';
+
+  @override
+  String get exportNameStartWrong => 'Только цифры';
+
+  @override
+  String exportNamesExample(String example) {
+    return 'Получится: $example  (цифр в номере столько, сколько написано в «Начать с»)';
+  }
 }

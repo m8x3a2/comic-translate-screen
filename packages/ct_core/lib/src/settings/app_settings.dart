@@ -382,6 +382,9 @@ class ExportSettings {
     this.byChapter = true,
     this.strip = StripExport.pages,
     this.sliceHeight = 1280,
+    this.namesByTemplate = false,
+    this.namePrefix = '',
+    this.nameStart = '001',
   });
 
   static const formats = ['source', 'png', 'jpg', 'webp', 'psd'];
@@ -407,6 +410,11 @@ class ExportSettings {
   final StripExport strip;
   final int sliceHeight;
 
+  /// File names "text + number" instead of the page names ([NameTemplate]).
+  final bool namesByTemplate;
+  final String namePrefix;
+  final String nameStart;
+
   bool get anyAutomatic => rawText || translatedText || cleanedImage;
 
   /// The Export window's choices.
@@ -420,6 +428,7 @@ class ExportSettings {
     byChapter: byChapter,
     strip: strip,
     sliceHeight: sliceHeight,
+    names: namesByTemplate ? NameTemplate(namePrefix, nameStart) : null,
   );
 
   ExportSettings copyWith({
@@ -435,6 +444,9 @@ class ExportSettings {
     bool? byChapter,
     StripExport? strip,
     int? sliceHeight,
+    bool? namesByTemplate,
+    String? namePrefix,
+    String? nameStart,
   }) => ExportSettings(
     imageFormat: imageFormat ?? this.imageFormat,
     rawText: rawText ?? this.rawText,
@@ -448,6 +460,9 @@ class ExportSettings {
     byChapter: byChapter ?? this.byChapter,
     strip: strip ?? this.strip,
     sliceHeight: sliceHeight ?? this.sliceHeight,
+    namesByTemplate: namesByTemplate ?? this.namesByTemplate,
+    namePrefix: namePrefix ?? this.namePrefix,
+    nameStart: nameStart ?? this.nameStart,
   );
 
   Map<String, Object?> toJson() => {
@@ -463,6 +478,9 @@ class ExportSettings {
     'by_chapter': byChapter,
     'strip': strip.name,
     'slice_height': sliceHeight,
+    'names_by_template': namesByTemplate,
+    'name_prefix': namePrefix,
+    'name_start': nameStart,
   };
 
   factory ExportSettings.fromJson(Map<String, Object?> json) {
@@ -482,6 +500,11 @@ class ExportSettings {
       byChapter: flag('by_chapter', d.byChapter),
       strip: StripExport.parse(json['strip'] as String?),
       sliceHeight: (json['slice_height'] as num?)?.toInt().clamp(minSliceHeight, maxSliceHeight) ?? d.sliceHeight,
+      namesByTemplate: flag('names_by_template', d.namesByTemplate),
+      namePrefix: json['name_prefix'] is String ? json['name_prefix'] as String : d.namePrefix,
+      nameStart: json['name_start'] is String && NameTemplate.validStart(json['name_start'] as String)
+          ? json['name_start'] as String
+          : d.nameStart,
     );
   }
 }

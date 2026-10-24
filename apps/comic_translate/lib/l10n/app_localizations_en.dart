@@ -2847,4 +2847,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String exportNumbersReady(String done, String count) {
     return 'Translated among them: $done of $count; only these are saved';
   }
+
+  @override
+  String get exportNames => 'File names';
+
+  @override
+  String get exportNamesPages => 'As the pages';
+
+  @override
+  String get exportNamesTemplate => 'Name + number';
+
+  @override
+  String get exportNamePrefix => 'Name (text before the number)';
+
+  @override
+  String get exportNameStart => 'Start at';
+
+  @override
+  String get exportNameStartWrong => 'Digits only';
+
+  @override
+  String exportNamesExample(String example) {
+    return 'You get: $example  (as many digits as written in \"Start at\")';
+  }
 }

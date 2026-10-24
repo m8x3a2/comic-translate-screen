@@ -95,6 +95,19 @@ class _ExportDialogState extends State<_ExportDialog> {
   late _Which _which = widget.picked.isEmpty ? _Which.all : _Which.numbers;
   late final _numbers = TextEditingController(text: widget.picked);
   late final _slice = TextEditingController(text: '${widget.initial.sliceHeight}');
+  late final _prefix = TextEditingController(text: widget.initial.namePrefix);
+  late final _start = TextEditingController(text: widget.initial.nameStart);
+
+  /// The first names the template gives, as files.
+  String get _example {
+    final ext = switch (_s.imageFormat) {
+      'source' => '',
+      final f => '.$f',
+    };
+    final t = NameTemplate(_s.namePrefix, _s.nameStart);
+    return '${t.nameOf(0)}$ext, ${t.nameOf(1)}$ext, ${t.nameOf(2)}$ext…';
+  }
+
   final _scroll = ScrollController();
 
   /// The pages in the numbers field, or the part that is not a page.
@@ -131,6 +144,8 @@ class _ExportDialogState extends State<_ExportDialog> {
   void dispose() {
     _numbers.dispose();
     _slice.dispose();
+    _prefix.dispose();
+    _start.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -234,6 +249,65 @@ class _ExportDialogState extends State<_ExportDialog> {
                 onChanged: (v) =>
                     setState(() => _s = _s.copyWith(imageFormat: v, strip: v == 'psd' ? StripExport.pages : null)),
               ),
+              if (_s.container != ExportContainer.pdf) ...[
+                heading(l.exportNames),
+                SegmentedButton<bool>(
+                  segments: [
+                    ButtonSegment(value: false, label: Text(l.exportNamesPages)),
+                    ButtonSegment(value: true, label: Text(l.exportNamesTemplate)),
+                  ],
+                  selected: {_s.namesByTemplate},
+                  onSelectionChanged: (v) {
+                    setState(() => _s = _s.copyWith(namesByTemplate: v.first));
+                    if (v.first) _scrollDown();
+                  },
+                ),
+                if (_s.namesByTemplate) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _prefix,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            border: const OutlineInputBorder(),
+                            labelText: l.exportNamePrefix,
+                            hintText: 'spider man ',
+                          ),
+                          onChanged: (v) => setState(() => _s = _s.copyWith(namePrefix: v)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width: 150,
+                        child: TextField(
+                          controller: _start,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(9),
+                          ],
+                          decoration: InputDecoration(
+                            isDense: true,
+                            border: const OutlineInputBorder(),
+                            labelText: l.exportNameStart,
+                            errorText: NameTemplate.validStart(_start.text) ? null : l.exportNameStartWrong,
+                          ),
+                          onChanged: (v) => setState(() {
+                            if (NameTemplate.validStart(v)) _s = _s.copyWith(nameStart: v);
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(l.exportNamesExample(_example), style: theme.textTheme.bodySmall),
+                  ),
+                ],
+              ],
               if (widget.webtoon) ...[
                 heading(l.exportStrip),
                 SegmentedButton<StripExport>(
