@@ -20,6 +20,7 @@ import '../common/content_kind_switch.dart';
 import '../common/key_bindings.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
+import '../settings/settings_place.dart';
 import 'batch_dialogs.dart';
 import 'page_canvas.dart';
 import 'page_navigator.dart';
@@ -153,12 +154,15 @@ class _PageViewerState extends ConsumerState<PageViewer> {
       _shownPath = null;
       _imageSize = null;
     });
-    // A panel folded or opened: the page fitted into the new room (after
-    // the next layout, which measures it).
-    ref.listen(settingsProvider.select((s) => (List.of(s.hiddenPanels)..sort()).join(',')), (_, _) {
+    // A panel folded or opened, the settings panel among them: the page
+    // fitted into the new room (after the next layout, which measures it).
+    void refit(Object? _, Object? _) {
       if (ref.read(workspaceProvider).webtoon) return;
       WidgetsBinding.instance.addPostFrameCallback((_) => WidgetsBinding.instance.addPostFrameCallback((_) => _fit()));
-    });
+    }
+
+    ref.listen(settingsProvider.select((s) => (List.of(s.hiddenPanels)..sort()).join(',')), refit);
+    ref.listen(settingsPanelProvider.select((s) => s != null), refit);
     if (!ws.webtoon) _watchImage(page.path);
     final editor = ref.watch(editorProvider);
     final steps = ref.watch(stepsProvider);

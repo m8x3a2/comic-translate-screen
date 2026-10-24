@@ -24,20 +24,25 @@ import '../shell_full/main_screen.dart' show showInExplorer;
 import 'gpu_section.dart';
 import 'keys_section.dart';
 import 'models_section.dart';
+import 'settings_place.dart';
 import 'usage_section.dart';
 
 enum SettingsSection { general, translator, exchange, tools, text, upscale, export, keys, models, about }
 
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, this.initial = SettingsSection.general});
+class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({super.key, this.initial = SettingsSection.general, this.panel = false});
 
   final SettingsSection initial;
 
+  /// Shown as a panel beside the page (see `settings_place.dart`), not over
+  /// the whole window.
+  final bool panel;
+
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   late var _section = widget.initial;
 
   /// Changes after a reset, so every field shows the default again.
@@ -59,6 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final theme = Theme.of(context);
     final titles = {
       SettingsSection.general: (Icons.tune, l.settingsGeneral),
       SettingsSection.translator: (Icons.translate, l.settingsTranslator),
@@ -71,8 +77,117 @@ class _SettingsScreenState extends State<SettingsScreen> {
       SettingsSection.models: (Icons.memory, l.settingsModels),
       SettingsSection.about: (Icons.info_outline, l.settingsAbout),
     };
+    final content = SingleChildScrollView(
+      padding: widget.panel ? const EdgeInsets.fromLTRB(16, 16, 16, 24) : const EdgeInsets.fromLTRB(32, 24, 32, 32),
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                titles[_section]!.$2,
+                style: widget.panel ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 16),
+              KeyedSubtree(
+                key: ValueKey('$_section/$_resets'),
+                child: switch (_section) {
+                  SettingsSection.general => const _GeneralSection(),
+                  SettingsSection.translator => const _TranslatorSection(),
+                  SettingsSection.exchange => const _ExchangeSection(),
+                  SettingsSection.tools => const _ToolsSection(),
+                  SettingsSection.text => const _TextSection(),
+                  SettingsSection.upscale => const _UpscaleSection(),
+                  SettingsSection.export => const _ExportSection(),
+                  SettingsSection.keys => const KeysSection(),
+                  SettingsSection.models => const ModelsSection(),
+                  SettingsSection.about => const _AboutSection(),
+                },
+              ),
+              if (_partOf(_section) case final part?)
+                _ResetButtons(
+                  section: titles[_section]!.$2,
+                  part: part,
+                  all: _section == SettingsSection.general,
+                  onReset: () => setState(() => _resets++),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (widget.panel) {
+      // Narrow: the sections as icons, the names in tooltips.
+      return Material(
+        color: theme.colorScheme.surface,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.settings_outlined, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(l.settings, style: theme.textTheme.titleMedium)),
+                  IconButton(
+                    tooltip: l.settingsFullWindow,
+                    onPressed: () => switchSettingsView(context, ref, toPanel: false, section: _section),
+                    icon: const Icon(Icons.open_in_full),
+                  ),
+                  IconButton(
+                    tooltip: l.close,
+                    onPressed: () => ref.read(settingsPanelProvider.notifier).close(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 52,
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      children: [
+                        for (final e in titles.entries)
+                          IconButton(
+                            tooltip: e.value.$2,
+                            isSelected: e.key == _section,
+                            style: IconButton.styleFrom(
+                              backgroundColor: e.key == _section ? theme.colorScheme.secondaryContainer : null,
+                            ),
+                            onPressed: () => setState(() => _section = e.key),
+                            icon: Icon(e.value.$1),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const VerticalDivider(width: 1),
+                  Expanded(child: content),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Scaffold(
-      appBar: AppBar(title: Text(l.settings)),
+      appBar: AppBar(
+        title: Text(l.settings),
+        actions: [
+          IconButton(
+            tooltip: l.settingsAsPanel,
+            onPressed: () => switchSettingsView(context, ref, toPanel: true, section: _section),
+            icon: const Icon(Icons.vertical_split_outlined),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: Row(
         children: [
           SizedBox(
@@ -92,46 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const VerticalDivider(width: 1),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(titles[_section]!.$2, style: Theme.of(context).textTheme.headlineSmall),
-                      const SizedBox(height: 16),
-                      KeyedSubtree(
-                        key: ValueKey('$_section/$_resets'),
-                        child: switch (_section) {
-                          SettingsSection.general => const _GeneralSection(),
-                          SettingsSection.translator => const _TranslatorSection(),
-                          SettingsSection.exchange => const _ExchangeSection(),
-                          SettingsSection.tools => const _ToolsSection(),
-                          SettingsSection.text => const _TextSection(),
-                          SettingsSection.upscale => const _UpscaleSection(),
-                          SettingsSection.export => const _ExportSection(),
-                          SettingsSection.keys => const KeysSection(),
-                          SettingsSection.models => const ModelsSection(),
-                          SettingsSection.about => const _AboutSection(),
-                        },
-                      ),
-                      if (_partOf(_section) case final part?)
-                        _ResetButtons(
-                          section: titles[_section]!.$2,
-                          part: part,
-                          all: _section == SettingsSection.general,
-                          onReset: () => setState(() => _resets++),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+          Expanded(child: content),
         ],
       ),
     );
@@ -399,6 +475,13 @@ class _GeneralSection extends ConsumerWidget {
               value: s.theme,
               options: {'system': l.themeSystem, 'light': l.themeLight, 'dark': l.themeDark},
               onChanged: (v) => _change(ref, (s) => s.theme = v),
+            ),
+            _Dropdown(
+              label: l.settingsView,
+              value: s.settingsView,
+              options: {'full': l.settingsViewFull, 'panel': l.settingsViewPanel, 'last': l.settingsViewLast},
+              help: l.settingsViewHelp,
+              onChanged: (v) => _change(ref, (s) => s.settingsView = v),
             ),
             const GpuSwitch(),
           ],

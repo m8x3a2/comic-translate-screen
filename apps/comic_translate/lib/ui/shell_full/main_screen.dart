@@ -32,6 +32,7 @@ import '../common/key_bindings.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
 import '../common/plugin_strings.dart';
+import '../settings/settings_place.dart';
 import '../settings/settings_screen.dart';
 import 'batch_dialogs.dart';
 import 'exchange_dialog.dart';
@@ -602,8 +603,25 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     if (await _settleUnsaved()) ref.read(workspaceProvider.notifier).clear();
   }
 
-  void _openSettings([SettingsSection section = SettingsSection.general]) =>
-      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SettingsScreen(initial: section)));
+  /// [body] with the settings panel on the right while it is open.
+  Widget _withSettingsPanel(Widget body) {
+    final section = ref.watch(settingsPanelProvider);
+    if (section == null) return body;
+    return LayoutBuilder(
+      builder: (context, c) => Row(
+        children: [
+          Expanded(child: body),
+          const VerticalDivider(width: 1),
+          SizedBox(
+            width: (c.maxWidth * 0.36).clamp(420.0, 600.0),
+            child: SettingsScreen(key: ValueKey(section), initial: section, panel: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openSettings([SettingsSection section = SettingsSection.general]) => openSettings(context, ref, section);
 
   @override
   Widget build(BuildContext context) {
@@ -647,42 +665,50 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                   ),
                   const Divider(height: 1),
                   Expanded(
-                    child: ws.pages.isEmpty
-                        ? HomeView(
-                            onOpenFiles: _pickFiles,
-                            onOpenFolder: _pickFolder,
-                            onOpenProject: _openProject,
-                            busy: ws.importing,
-                          )
-                        : ref.watch(pageGridOpenProvider)
-                        ? PageGrid(
-                            onAddAt: running ? null : (i) => _pickFiles(at: i),
-                            onPasteAt: running ? null : (i) => _paste(at: i),
-                          )
-                        : LayoutBuilder(
-                            builder: (context, c) => Row(
-                              children: [
-                                if (panelHidden(ref, Panels.pages))
-                                  FoldedSidePanel(Panels.pages, label: l.panelPages)
-                                else
-                                  SizedBox(
-                                    width: c.maxWidth < 1200 ? 200 : 230,
-                                    child: PageList(
-                                      onAdd: running ? null : _pickFiles,
-                                      onAddAt: running ? null : (i) => _pickFiles(at: i),
-                                      onPasteAt: running ? null : (i) => _paste(at: i),
+                    child: _withSettingsPanel(
+                      ws.pages.isEmpty
+                          ? HomeView(
+                              onOpenFiles: _pickFiles,
+                              onOpenFolder: _pickFolder,
+                              onOpenProject: _openProject,
+                              busy: ws.importing,
+                            )
+                          : ref.watch(pageGridOpenProvider)
+                          ? PageGrid(
+                              onAddAt: running ? null : (i) => _pickFiles(at: i),
+                              onPasteAt: running ? null : (i) => _paste(at: i),
+                            )
+                          : LayoutBuilder(
+                              builder: (context, c) => Row(
+                                children: [
+                                  if (panelHidden(ref, Panels.pages))
+                                    FoldedSidePanel(Panels.pages, label: l.panelPages)
+                                  else
+                                    SizedBox(
+                                      width: c.maxWidth < 1200 ? 200 : 230,
+                                      child: PageList(
+                                        onAdd: running ? null : _pickFiles,
+                                        onAddAt: running ? null : (i) => _pickFiles(at: i),
+                                        onPasteAt: running ? null : (i) => _paste(at: i),
+                                      ),
                                     ),
-                                  ),
-                                const VerticalDivider(width: 1),
-                                const Expanded(child: PageViewer()),
-                                const VerticalDivider(width: 1),
-                                if (panelHidden(ref, Panels.text))
-                                  FoldedSidePanel(Panels.text, label: l.textPanel)
-                                else
-                                  SizedBox(width: (c.maxWidth * 0.22).clamp(240.0, 340.0), child: const TextPanel()),
-                              ],
+                                  const VerticalDivider(width: 1),
+                                  const Expanded(child: PageViewer()),
+                                  // The settings panel takes the place of the text.
+                                  if (ref.watch(settingsPanelProvider) == null) ...[
+                                    const VerticalDivider(width: 1),
+                                    if (panelHidden(ref, Panels.text))
+                                      FoldedSidePanel(Panels.text, label: l.textPanel)
+                                    else
+                                      SizedBox(
+                                        width: (c.maxWidth * 0.22).clamp(240.0, 340.0),
+                                        child: const TextPanel(),
+                                      ),
+                                  ],
+                                ],
+                              ),
                             ),
-                          ),
+                    ),
                   ),
                   const Divider(height: 1),
                   const _StatusBar(),

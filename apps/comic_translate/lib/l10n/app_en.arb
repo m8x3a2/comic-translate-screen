@@ -1879,5 +1879,12 @@
         "type": "String"
       }
     }
-  }
+  },
+  "settingsAsPanel": "Settings as a panel beside the page: the page stays in sight",
+  "settingsFullWindow": "Settings over the whole window",
+  "settingsView": "Open the settings",
+  "settingsViewFull": "Over the whole window",
+  "settingsViewPanel": "As a panel beside the page",
+  "settingsViewLast": "As the last time",
+  "settingsViewHelp": "While the app runs, the settings open as you left them (the button in their title). This is how they open after the app starts."
 }

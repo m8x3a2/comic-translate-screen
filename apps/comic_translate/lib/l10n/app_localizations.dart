@@ -4981,6 +4981,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mini view: the whole page with a frame around what is shown; a click or a drag in it moves the view ({key})'**
   String navigatorToggle(String key);
+
+  /// No description provided for @settingsAsPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings as a panel beside the page: the page stays in sight'**
+  String get settingsAsPanel;
+
+  /// No description provided for @settingsFullWindow.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings over the whole window'**
+  String get settingsFullWindow;
+
+  /// No description provided for @settingsView.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the settings'**
+  String get settingsView;
+
+  /// No description provided for @settingsViewFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Over the whole window'**
+  String get settingsViewFull;
+
+  /// No description provided for @settingsViewPanel.
+  ///
+  /// In en, this message translates to:
+  /// **'As a panel beside the page'**
+  String get settingsViewPanel;
+
+  /// No description provided for @settingsViewLast.
+  ///
+  /// In en, this message translates to:
+  /// **'As the last time'**
+  String get settingsViewLast;
+
+  /// No description provided for @settingsViewHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'While the app runs, the settings open as you left them (the button in their title). This is how they open after the app starts.'**
+  String get settingsViewHelp;
 }
 
 class _AppLocalizationsDelegate

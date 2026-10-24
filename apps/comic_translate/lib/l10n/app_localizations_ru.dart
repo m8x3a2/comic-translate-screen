@@ -2879,4 +2879,27 @@ class AppLocalizationsRu extends AppLocalizations {
   String navigatorToggle(String key) {
     return 'Мини-вид — вся страница с рамкой того, что видно; щелчок или перетаскивание в нём переносит вид ($key)';
   }
+
+  @override
+  String get settingsAsPanel =>
+      'Настройки панелью рядом со страницей: страница остаётся видна';
+
+  @override
+  String get settingsFullWindow => 'Настройки на всё окно';
+
+  @override
+  String get settingsView => 'Открывать настройки';
+
+  @override
+  String get settingsViewFull => 'На всё окно';
+
+  @override
+  String get settingsViewPanel => 'Панелью рядом со страницей';
+
+  @override
+  String get settingsViewLast => 'Как в прошлый раз';
+
+  @override
+  String get settingsViewHelp =>
+      'Пока программа открыта, настройки открываются так, как вы их оставили (кнопка в заголовке настроек). Здесь — как открывать после запуска программы.';
 }

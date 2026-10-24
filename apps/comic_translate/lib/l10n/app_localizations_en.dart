@@ -2878,4 +2878,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String navigatorToggle(String key) {
     return 'Mini view: the whole page with a frame around what is shown; a click or a drag in it moves the view ($key)';
   }
+
+  @override
+  String get settingsAsPanel =>
+      'Settings as a panel beside the page: the page stays in sight';
+
+  @override
+  String get settingsFullWindow => 'Settings over the whole window';
+
+  @override
+  String get settingsView => 'Open the settings';
+
+  @override
+  String get settingsViewFull => 'Over the whole window';
+
+  @override
+  String get settingsViewPanel => 'As a panel beside the page';
+
+  @override
+  String get settingsViewLast => 'As the last time';
+
+  @override
+  String get settingsViewHelp =>
+      'While the app runs, the settings open as you left them (the button in their title). This is how they open after the app starts.';
 }

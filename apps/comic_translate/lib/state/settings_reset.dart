@@ -22,6 +22,11 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..projectAutosave = d.projectAutosave
           ..testMode = d.testMode
           ..autoBugReport = d.autoBugReport
+          ..gridTileSize = d.gridTileSize
+          ..translateSelected = d.translateSelected
+          ..showNavigator = d.showNavigator
+          ..settingsView = d.settingsView
+          ..settingsLastView = d.settingsLastView
           ..hiddenPanels.clear();
       case SettingsPart.translator:
         s

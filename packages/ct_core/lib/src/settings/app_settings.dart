@@ -57,6 +57,8 @@ class AppSettings {
     this.gridTileSize = 190,
     this.translateSelected = false,
     this.showNavigator = false,
+    this.settingsView = 'full',
+    this.settingsLastView = 'full',
     this.testMode = false,
     this.autoBugReport = true,
     this.projectAutosave = true,
@@ -193,6 +195,11 @@ class AppSettings {
   /// The mini view of the page (or the webtoon strip) is shown.
   bool showNavigator;
 
+  /// How the settings open: `full` (over the whole window), `panel` (beside
+  /// the page) or `last` (as the last time, [settingsLastView]).
+  String settingsView;
+  String settingsLastView;
+
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
@@ -256,6 +263,8 @@ class AppSettings {
       if (gridTileSize != 190) 'grid_tile_size': gridTileSize,
       if (translateSelected) 'translate_selected': true,
       if (showNavigator) 'show_navigator': true,
+      if (settingsView != 'full') 'settings_view': settingsView,
+      if (settingsLastView != 'full') 'settings_last_view': settingsLastView,
     },
     'test_mode': testMode,
     'auto_bug_report': autoBugReport,
@@ -352,6 +361,8 @@ class AppSettings {
       gridTileSize: ((ui['grid_tile_size'] as num?)?.toInt() ?? 190).clamp(100, 400),
       translateSelected: ui['translate_selected'] == true,
       showNavigator: ui['show_navigator'] == true,
+      settingsView: const {'panel', 'last'}.contains(ui['settings_view']) ? ui['settings_view'] as String : 'full',
+      settingsLastView: ui['settings_last_view'] == 'panel' ? 'panel' : 'full',
       testMode: pick(json, 'test_mode', defaults.testMode),
       autoBugReport: pick(json, 'auto_bug_report', defaults.autoBugReport),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),
