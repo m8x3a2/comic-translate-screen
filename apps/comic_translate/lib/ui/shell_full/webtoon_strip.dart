@@ -123,6 +123,13 @@ class WebtoonStripState extends ConsumerState<WebtoonStrip> {
       ..scaleByDouble(scale, scale, 1, 1);
   }
 
+  /// Where the pages are (null before the first layout).
+  StripLayout? get layout => _layout;
+
+  /// The view centred on strip point [point], the zoom kept (the mini view).
+  void centerOn(Offset point) =>
+      _set(_scale, _viewport.width / 2 - point.dx * _scale, _viewport.height / 2 - point.dy * _scale);
+
   /// The strip as wide as the screen, the current page at the top.
   void fit() {
     final layout = _layout;

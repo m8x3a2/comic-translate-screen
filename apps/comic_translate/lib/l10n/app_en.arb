@@ -1870,5 +1870,14 @@
         "type": "String"
       }
     }
+  },
+  "keyNavigator": "Mini view: show or hide",
+  "navigatorToggle": "Mini view: the whole page with a frame around what is shown; a click or a drag in it moves the view ({key})",
+  "@navigatorToggle": {
+    "placeholders": {
+      "key": {
+        "type": "String"
+      }
+    }
   }
 }

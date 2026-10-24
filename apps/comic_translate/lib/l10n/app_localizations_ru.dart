@@ -2871,4 +2871,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String exportNamesExample(String example) {
     return 'Получится: $example  (цифр в номере столько, сколько написано в «Начать с»)';
   }
+
+  @override
+  String get keyNavigator => 'Мини-вид: показать или скрыть';
+
+  @override
+  String navigatorToggle(String key) {
+    return 'Мини-вид — вся страница с рамкой того, что видно; щелчок или перетаскивание в нём переносит вид ($key)';
+  }
 }

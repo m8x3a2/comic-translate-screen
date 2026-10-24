@@ -775,6 +775,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         final i = state.selectedBlock;
         if (busy || i == null) return false;
         ws.deleteBlock(i);
+      case ShortcutAction.navigator:
+        if (state.pages.isEmpty) return false;
+        ref.read(settingsProvider.notifier).change((s) => s.showNavigator = !s.showNavigator);
       // On every screen: see ComicTranslateApp.
       case ShortcutAction.fullScreen:
         return false;

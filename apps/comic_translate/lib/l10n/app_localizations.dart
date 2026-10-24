@@ -4969,6 +4969,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You get: {example}  (as many digits as written in \"Start at\")'**
   String exportNamesExample(String example);
+
+  /// No description provided for @keyNavigator.
+  ///
+  /// In en, this message translates to:
+  /// **'Mini view: show or hide'**
+  String get keyNavigator;
+
+  /// No description provided for @navigatorToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mini view: the whole page with a frame around what is shown; a click or a drag in it moves the view ({key})'**
+  String navigatorToggle(String key);
 }
 
 class _AppLocalizationsDelegate

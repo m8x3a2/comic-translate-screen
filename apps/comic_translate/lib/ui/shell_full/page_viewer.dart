@@ -17,10 +17,12 @@ import '../../state/steps.dart';
 import '../../state/page_layout.dart';
 import '../../state/workspace.dart';
 import '../common/content_kind_switch.dart';
+import '../common/key_bindings.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
 import 'batch_dialogs.dart';
 import 'page_canvas.dart';
+import 'page_navigator.dart';
 import 'shortcuts_dialog.dart';
 import 'webtoon_strip.dart';
 
@@ -93,6 +95,44 @@ class _PageViewerState extends ConsumerState<PageViewer> {
   /// Screen pixels per page pixel, in percent.
   double _percent(double dpr) => _transform.value.entry(0, 0) * dpr * 100;
 
+  /// The view centred on page point [point], the zoom kept.
+  void _centerOn(Offset point) {
+    final s = _transform.value.entry(0, 0);
+    _transform.value = Matrix4.identity()
+      ..translateByDouble(_viewport.width / 2 - point.dx * s, _viewport.height / 2 - point.dy * s, 0, 1)
+      ..scaleByDouble(s, s, 1, 1);
+    setState(() {});
+  }
+
+  /// The mini view of the page, or of the webtoon strip (null until the
+  /// page or the strip is measured).
+  Widget? _navigator(WorkspaceState ws, Size viewport) {
+    String picture(PageEntry p) => p.translatedPath ?? p.cleanPath ?? p.path;
+    if (ws.webtoon) {
+      final strip = _strip.currentState, layout = strip?.layout;
+      if (strip == null || layout == null || layout.rects.length != ws.pages.length) return null;
+      return PageNavigator(
+        pictures: [for (final (i, p) in ws.pages.indexed) (path: picture(p), rect: layout.rects[i])],
+        scene: Size(layout.width, layout.height),
+        transform: _transform,
+        viewport: viewport,
+        onJump: strip.centerOn,
+        // The zoom buttons stay free below.
+        maxHeight: math.max(120, viewport.height - 100),
+      );
+    }
+    final size = _imageSize, page = ws.currentPage;
+    if (size == null || page == null) return null;
+    return PageNavigator(
+      pictures: [(path: picture(page), rect: Offset.zero & size)],
+      scene: size,
+      transform: _transform,
+      viewport: viewport,
+      onJump: _centerOn,
+      maxHeight: math.max(120, viewport.height * 0.6),
+    );
+  }
+
   /// One page pixel per screen pixel.
   void _actualSize() => _zoom(100 / _percent(MediaQuery.devicePixelRatioOf(context)));
 
@@ -128,6 +168,7 @@ class _PageViewerState extends ConsumerState<PageViewer> {
     bool readOnlyPage(PageEntry p) =>
         batchRunning || (steps.running && steps.pageId == p.id) || p.status == PageStatus.running;
     final theme = Theme.of(context);
+    final showNavigator = ref.watch(settingsProvider.select((s) => s.showNavigator));
     return Column(
       children: [
         if (panelHidden(ref, Panels.tools))
@@ -177,6 +218,15 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                                   ),
                                 ),
                         ),
+                      if (showNavigator)
+                        Positioned(
+                          right: 12,
+                          top: 12,
+                          child: ListenableBuilder(
+                            listenable: _transform,
+                            builder: (context, _) => _navigator(ws, viewport) ?? const SizedBox.shrink(),
+                          ),
+                        ),
                       Positioned(
                         right: 12,
                         bottom: 12,
@@ -185,6 +235,17 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const _EnlargedBadge(),
+                              IconButton(
+                                tooltip: l.navigatorToggle(
+                                  KeyBindings.of(ref.read(settingsProvider)).labelOf(ShortcutAction.navigator),
+                                ),
+                                isSelected: showNavigator,
+                                onPressed: () => ref
+                                    .read(settingsProvider.notifier)
+                                    .change((s) => s.showNavigator = !s.showNavigator),
+                                icon: const Icon(Icons.picture_in_picture_outlined),
+                                selectedIcon: const Icon(Icons.picture_in_picture),
+                              ),
                               IconButton(
                                 tooltip: l.zoomOut,
                                 onPressed: () => _zoom(1 / 1.25),

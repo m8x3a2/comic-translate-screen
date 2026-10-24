@@ -153,6 +153,7 @@ enum ShortcutAction {
   deselect('deselect', ShortcutGroup.edit),
   find('find', ShortcutGroup.edit),
   help('help', ShortcutGroup.window),
+  navigator('navigator', ShortcutGroup.window),
   fullScreen('full_screen', ShortcutGroup.window);
 
   const ShortcutAction(this.id, this.group);
@@ -190,6 +191,7 @@ final defaultShortcuts = <ShortcutAction, List<KeyCombo>>{
   ShortcutAction.deselect: [const KeyCombo(LogicalKeyboardKey.escape)],
   ShortcutAction.find: [_ctrl(LogicalKeyboardKey.keyF), _ctrl(LogicalKeyboardKey.keyH)],
   ShortcutAction.help: [const KeyCombo(LogicalKeyboardKey.f1)],
+  ShortcutAction.navigator: [const KeyCombo(LogicalKeyboardKey.keyN)],
   ShortcutAction.fullScreen: [const KeyCombo(LogicalKeyboardKey.f11)],
 };
 

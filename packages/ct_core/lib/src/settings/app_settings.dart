@@ -56,6 +56,7 @@ class AppSettings {
     this.showLookInPanel = true,
     this.gridTileSize = 190,
     this.translateSelected = false,
+    this.showNavigator = false,
     this.testMode = false,
     this.autoBugReport = true,
     this.projectAutosave = true,
@@ -189,6 +190,9 @@ class AppSettings {
   /// (the choice under its arrow).
   bool translateSelected;
 
+  /// The mini view of the page (or the webtoon strip) is shown.
+  bool showNavigator;
+
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
@@ -251,6 +255,7 @@ class AppSettings {
       if (!showLookInPanel) 'show_look_in_panel': false,
       if (gridTileSize != 190) 'grid_tile_size': gridTileSize,
       if (translateSelected) 'translate_selected': true,
+      if (showNavigator) 'show_navigator': true,
     },
     'test_mode': testMode,
     'auto_bug_report': autoBugReport,
@@ -346,6 +351,7 @@ class AppSettings {
       showLookInPanel: ui['show_look_in_panel'] != false,
       gridTileSize: ((ui['grid_tile_size'] as num?)?.toInt() ?? 190).clamp(100, 400),
       translateSelected: ui['translate_selected'] == true,
+      showNavigator: ui['show_navigator'] == true,
       testMode: pick(json, 'test_mode', defaults.testMode),
       autoBugReport: pick(json, 'auto_bug_report', defaults.autoBugReport),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),

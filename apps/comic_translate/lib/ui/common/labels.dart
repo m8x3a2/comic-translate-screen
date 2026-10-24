@@ -216,6 +216,7 @@ String shortcutLabel(AppLocalizations l, ShortcutAction a) => switch (a) {
   ShortcutAction.deselect => l.keyDeselect,
   ShortcutAction.find => l.keyFind,
   ShortcutAction.help => l.keyHelp,
+  ShortcutAction.navigator => l.keyNavigator,
   ShortcutAction.fullScreen => l.keyFullScreen,
 };
 

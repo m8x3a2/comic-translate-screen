@@ -2870,4 +2870,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String exportNamesExample(String example) {
     return 'You get: $example  (as many digits as written in \"Start at\")';
   }
+
+  @override
+  String get keyNavigator => 'Mini view: show or hide';
+
+  @override
+  String navigatorToggle(String key) {
+    return 'Mini view: the whole page with a frame around what is shown; a click or a drag in it moves the view ($key)';
+  }
 }
