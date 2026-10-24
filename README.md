@@ -87,6 +87,12 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 - **Text removal levels** Simple / Medium / High: Medium and High find the letters themselves
   (comic-text-detector, GPL-3.0, separate download), so the network repaints the letters and not the
   drawing around them; High repaints with LaMa (the default).
+- **The look of the original**: the translation takes the letter case, bold, italic and outline of
+  the source lettering; long Russian words break by syllables where that keeps the letters larger;
+  optional lines along the bubble's oval and "size as in the original". 16 free fonts with Cyrillic
+  come with the program, and "Suggest a font" names the ones closest to the page's lettering.
+- **The look of single words**: a selected word or sign gets its own font, size, colour, outline and
+  style; named styles change every bubble that uses them; words a chat marks with stars become bold.
 - Each step shows how long it took, and the report of "Translate all" gives the time of every step.
 - An unexpected error builds a bug report by itself (kept on this computer).
 
