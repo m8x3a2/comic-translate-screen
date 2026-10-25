@@ -675,6 +675,7 @@
   "chatNewTermsAdded": "Добавлено в словарь: {count}",
   "chatStyles": "Стиль перевода:",
   "chatStylesOwn": "Свои стили и инструкции",
+  "styleNone": "Без стиля",
   "styleLiteral": "Дословно",
   "styleLively": "Живо, разговорно",
   "styleSoften": "Смягчить грубости",

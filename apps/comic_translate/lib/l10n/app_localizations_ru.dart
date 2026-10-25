@@ -2396,6 +2396,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatStylesOwn => 'Свои стили и инструкции';
 
   @override
+  String get styleNone => 'Без стиля';
+
+  @override
   String get styleLiteral => 'Дословно';
 
   @override

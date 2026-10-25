@@ -696,7 +696,25 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
           onPressed: _editGlossary,
         ),
         const SizedBox(width: 8),
-        Text(l.chatStyles, style: theme.textTheme.bodyMedium),
+        // Before the chips: a lone icon on a line of its own would look lost.
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l.chatStyles, style: theme.textTheme.bodyMedium),
+            IconButton(
+              tooltip: l.chatStylesOwn,
+              visualDensity: VisualDensity.compact,
+              onPressed: _editTemplate,
+              icon: const Icon(Icons.edit_note),
+            ),
+          ],
+        ),
+        // No style: the instructions as they are built in.
+        FilterChip(
+          label: Text(l.styleNone),
+          selected: s.chosenStyles.isEmpty,
+          onSelected: (_) => _changeOptions((e) => e.copyWith(activeStyles: const [])),
+        ),
         for (final style in s.allStyles)
           FilterChip(
             label: Text(promptStyleName(l, style)),
@@ -712,12 +730,6 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
               ),
             ),
           ),
-        IconButton(
-          tooltip: l.chatStylesOwn,
-          visualDensity: VisualDensity.compact,
-          onPressed: _editTemplate,
-          icon: const Icon(Icons.edit_note),
-        ),
       ],
     );
   }

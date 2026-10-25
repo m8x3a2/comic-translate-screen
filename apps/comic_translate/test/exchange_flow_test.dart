@@ -565,6 +565,12 @@ void main() {
     }
     expect(promptFile(), contains('Style of the translation: Soften rude words and swearing.'));
     expect(container.read(settingsProvider).exchange.activeStyles, ['soften']);
+    // "No style": the built-in instructions as they are.
+    await tester.tap(find.text('Без стиля'));
+    await tester.pump();
+    expect(container.read(settingsProvider).exchange.activeStyles, isEmpty);
+    await tester.tap(find.text('Смягчить грубости'));
+    await tester.pump();
 
     // The chat suggests a word: added with one button.
     await tester.enterText(

@@ -4148,6 +4148,12 @@ abstract class AppLocalizations {
   /// **'Own styles and instructions'**
   String get chatStylesOwn;
 
+  /// No description provided for @styleNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No style'**
+  String get styleNone;
+
   /// No description provided for @styleLiteral.
   ///
   /// In en, this message translates to:

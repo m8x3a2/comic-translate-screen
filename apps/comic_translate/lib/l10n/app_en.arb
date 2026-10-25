@@ -1582,6 +1582,7 @@
   },
   "chatStyles": "Style of the translation:",
   "chatStylesOwn": "Own styles and instructions",
+  "styleNone": "No style",
   "styleLiteral": "Close to the original",
   "styleLively": "Lively, spoken",
   "styleSoften": "Soften rude words",

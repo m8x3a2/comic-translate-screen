@@ -2394,6 +2394,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatStylesOwn => 'Own styles and instructions';
 
   @override
+  String get styleNone => 'No style';
+
+  @override
   String get styleLiteral => 'Close to the original';
 
   @override
