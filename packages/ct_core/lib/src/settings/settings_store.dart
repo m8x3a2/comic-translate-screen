@@ -11,6 +11,10 @@ class SettingsStore {
   final File file;
   final EventLog _log;
 
+  /// The version a [load] moved the settings file from (it is saved as the
+  /// current one); null: it was current.
+  int? upgradedFrom;
+
   /// Missing file → defaults. Unreadable file → it is kept as
   /// `settings.json.bad-<timestamp>` for inspection and defaults are used.
   Future<AppSettings> load() async {
@@ -18,7 +22,15 @@ class SettingsStore {
     try {
       final json = jsonDecode(await file.readAsString());
       if (json is! Map) throw const FormatException('settings root is not an object');
-      return AppSettings.fromJson(json.cast<String, Object?>());
+      final settings = AppSettings.fromJson(json.cast<String, Object?>());
+      // Moved to the current version once: saved so.
+      final version = json['schema_version'];
+      if (version is! num || version < AppSettings.schemaVersion) {
+        upgradedFrom = version is num ? version.toInt() : 1;
+        await save(settings);
+        _log.info('settings_upgraded', {'from': version, 'to': AppSettings.schemaVersion});
+      }
+      return settings;
     } catch (e) {
       final backup = File('${file.path}.bad-${DateTime.now().millisecondsSinceEpoch}');
       await file.copy(backup.path);

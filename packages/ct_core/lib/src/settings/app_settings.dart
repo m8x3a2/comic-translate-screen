@@ -29,7 +29,7 @@ class AppSettings {
     this.contentKind = ContentKind.comics,
     this.screenDetector = 'ppocr_lines',
     this.ocr = 'default',
-    this.translator = 'openai_compatible',
+    this.translator = 'openrouter',
     this.inpainter = 'lama',
     this.textMask = comicTextDetectorId,
     this.useGpu = false,
@@ -77,7 +77,8 @@ class AppSettings {
        approvedNetworkPlugins = approvedNetworkPlugins ?? {},
        extra = extra ?? {};
 
-  static const schemaVersion = 1;
+  /// 2: OpenRouter got a translator of its own (see [moveOwnServerToOpenRouter]).
+  static const schemaVersion = 2;
 
   /// Selected plugin ids.
   String detector;
@@ -237,6 +238,13 @@ class AppSettings {
 
   Map<String, Object?> pluginValues(String id) => plugins[id] ?? const {};
 
+  /// The "Own server" translator's [values] point at OpenRouter: its address,
+  /// or none (which meant OpenRouter before it had a translator of its own).
+  static bool ownServerIsOpenRouter(Map<String, Object?> values) {
+    final url = (values['api_url'] as String? ?? '').trim();
+    return url.isEmpty || Uri.tryParse(url)?.host.toLowerCase() == 'openrouter.ai';
+  }
+
   Map<String, Object?> toJson() => {
     ...extra,
     'schema_version': schemaVersion,
@@ -325,7 +333,7 @@ class AppSettings {
     // Before step 2.1 a switch turned the enlarging of small text off.
     final oldOff = tools['upscale_small_text'] == false;
     final strategyName = pick<String>(inpaint, 'strategy', defaults.inpaint.strategy.name);
-    return AppSettings(
+    final settings = AppSettings(
       detector: pick(tools, 'detector', defaults.detector),
       contentKind: ContentKind.values.asNameMap()[tools['content']] ?? defaults.contentKind,
       screenDetector: pick(tools, 'screen_detector', defaults.screenDetector),
@@ -392,6 +400,28 @@ class AppSettings {
           if (!known.contains(e.key)) e.key: e.value,
       },
     );
+    if (((json['schema_version'] as num?) ?? 1) < 2) settings.moveOwnServerToOpenRouter();
+    return settings;
+  }
+
+  /// Once, for settings from before OpenRouter had a translator of its own:
+  /// the "Own server" translator pointed at OpenRouter (or at nothing, which
+  /// meant it) moves there with its model and the rest. The key moves in the
+  /// secure storage at start (`AppServices.init`).
+  void moveOwnServerToOpenRouter() {
+    final own = plugins['openai_compatible'];
+    if (!ownServerIsOpenRouter(own ?? const {})) return;
+    if (own != null) {
+      plugins['openrouter'] = {
+        for (final e in own.entries)
+          if (e.key != 'api_url' && e.key != 'token_limit_param') e.key: e.value,
+        ...?plugins['openrouter'],
+      };
+    }
+    if (translator == 'openai_compatible') translator = 'openrouter';
+    if (approvedNetworkPlugins.contains('openai_compatible@openrouter.ai')) {
+      approvedNetworkPlugins.add('openrouter@openrouter.ai');
+    }
   }
 }
 

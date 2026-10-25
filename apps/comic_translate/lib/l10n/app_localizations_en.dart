@@ -2066,6 +2066,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get secretCopy => 'Copy';
 
   @override
+  String get secretGetKey => 'Get a key';
+
+  @override
+  String get pluginMoreSettings => 'More settings';
+
+  @override
   String get secretCopied => 'Key copied';
 
   @override

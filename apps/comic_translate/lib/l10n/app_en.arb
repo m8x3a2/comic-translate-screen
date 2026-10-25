@@ -1369,6 +1369,8 @@
   "secretShowSaved": "Show key",
   "secretHideSaved": "Hide key",
   "secretCopy": "Copy",
+  "secretGetKey": "Get a key",
+  "pluginMoreSettings": "More settings",
   "secretCopied": "Key copied",
   "formatPsd": "PSD (layers for Photoshop)",
   "exportPsdHelp": "Each page becomes a Photoshop file: the page as it was, the cleaned places, and the translation as editable text layers. Cleaned pages are saved as PNG.",

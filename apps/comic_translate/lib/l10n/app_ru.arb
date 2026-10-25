@@ -584,6 +584,8 @@
   "secretShowSaved": "Показать ключ",
   "secretHideSaved": "Скрыть ключ",
   "secretCopy": "Копировать",
+  "secretGetKey": "Получить ключ",
+  "pluginMoreSettings": "Дополнительно",
   "secretCopied": "Ключ скопирован",
   "formatPsd": "PSD (слои для Photoshop)",
   "exportPsdHelp": "Каждая страница — файл Photoshop: страница как была, очищенные места и перевод редактируемыми текстовыми слоями. Очищенные страницы сохраняются в PNG.",

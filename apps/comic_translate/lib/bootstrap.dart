@@ -153,6 +153,26 @@ class AppServices {
     final settings = await settingsStore.load();
     useModelsDir(settings.modelsDir);
     OrtSession.cpuOnlyModels = settings.gpuCpuModels.keys.toSet();
+    await _moveKeyToOpenRouter(settings);
+  }
+
+  /// The key of the "Own server" translator that pointed at OpenRouter goes
+  /// to the OpenRouter translator, once: when the settings move to version 2
+  /// and it has none yet. The old one stays where it was.
+  Future<void> _moveKeyToOpenRouter(AppSettings settings) async {
+    final from = settingsStore.upgradedFrom;
+    if (from == null || from >= 2) return;
+    if (!AppSettings.ownServerIsOpenRouter(settings.pluginValues('openai_compatible'))) return;
+    try {
+      final to = pluginSecretKey('openrouter', 'api_key');
+      if ((await secrets.read(to) ?? '').isNotEmpty) return;
+      final key = await secrets.read(pluginSecretKey('openai_compatible', 'api_key'));
+      if (key == null || key.isEmpty) return;
+      await secrets.write(to, key);
+      appLog.info('key_moved', {'from': 'openai_compatible', 'to': 'openrouter'});
+    } catch (e, st) {
+      appLog.error('key_move_failed', e, st);
+    }
   }
 
   /// Remembers in the settings that [model] failed on the graphics card, so

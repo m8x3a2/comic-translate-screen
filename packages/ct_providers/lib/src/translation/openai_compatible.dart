@@ -9,42 +9,60 @@ import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
 
+/// The settings of a language model both translators have, folded under
+/// "More settings".
+const llmTemperatureSetting = DoubleSetting(
+  key: 'temperature',
+  label: 'Temperature',
+  info: 'How freely the model picks words. Lower is more exact and repeatable, higher more varied but with '
+      'more mistakes. For translation usually 0 to 1.',
+  defaultValue: llmDefaultTemperature,
+  min: 0,
+  max: 2,
+  advanced: true,
+);
+const llmMaxTokensSetting = IntSetting(
+  key: 'max_tokens',
+  label: 'Maximum answer length (tokens)',
+  info: 'The longest answer the model may give. Raise it if a page translation is cut off. '
+      'A token is about 3-4 letters.',
+  defaultValue: llmDefaultMaxTokens,
+  min: 64,
+  max: 200000,
+  advanced: true,
+);
+const llmTimeoutSetting = IntSetting(
+  key: 'timeout',
+  label: 'Timeout (seconds)',
+  info: 'How long to wait for the server. Slow free models and local servers on a weak computer can take long.',
+  defaultValue: 120,
+  min: 5,
+  max: 3600,
+  advanced: true,
+);
+
+/// Any OpenAI-compatible server the user names ("Own server"): local ones
+/// (Ollama, LM Studio, llama.cpp) or services (OpenAI, DeepSeek...).
+/// OpenRouter has a translator of its own ([openRouterInfo]).
 const openAiCompatibleInfo = PluginInfo(
   id: 'openai_compatible',
-  displayName: 'OpenAI-compatible API',
-  description: 'Translates with a large language model through any OpenAI-compatible server: '
-      'OpenRouter, OpenAI, DeepSeek, or a local LM Studio / Ollama / llama.cpp server.',
+  displayName: 'Own server (OpenAI-compatible)',
+  description: 'Translates with a large language model through any OpenAI-compatible server you name: '
+      'a local LM Studio / Ollama / llama.cpp server, OpenAI, DeepSeek and others.',
   kind: PluginKind.translator,
   privacy: Privacy.cloud,
   settings: [
     TextSetting(
       key: 'api_url',
       label: 'API URL',
-      help: 'Base URL ending in /v1, e.g. http://localhost:11434/v1 (Ollama). Empty: OpenRouter '
-          '(https://openrouter.ai/api/v1).',
-      placeholder: 'https://openrouter.ai/api/v1',
+      help: 'Base URL ending in /v1, e.g. http://localhost:11434/v1 (Ollama) or https://api.deepseek.com/v1.',
+      placeholder: 'http://localhost:11434/v1',
       isUrl: true,
     ),
-    TextSetting(key: 'model', label: 'Model', placeholder: 'openai/gpt-4.1-mini'),
+    TextSetting(key: 'model', label: 'Model', placeholder: 'qwen2.5:7b'),
     SecretSetting(key: 'api_key', label: 'API key', help: 'Not needed for most local servers.', optional: true),
-    DoubleSetting(
-      key: 'temperature',
-      label: 'Temperature',
-      info: 'How freely the model picks words. Lower is more exact and repeatable, higher more varied but with '
-          'more mistakes. For translation usually 0 to 1.',
-      defaultValue: llmDefaultTemperature,
-      min: 0,
-      max: 2,
-    ),
-    IntSetting(
-      key: 'max_tokens',
-      label: 'Maximum answer length (tokens)',
-      info: 'The longest answer the model may give. Raise it if a page translation is cut off. '
-          'A token is about 3-4 letters.',
-      defaultValue: llmDefaultMaxTokens,
-      min: 64,
-      max: 200000,
-    ),
+    llmTemperatureSetting,
+    llmMaxTokensSetting,
     ChoiceSetting(
       key: 'token_limit_param',
       label: 'Length limit parameter',
@@ -55,15 +73,9 @@ const openAiCompatibleInfo = PluginInfo(
           'out. Change it only when the server answers with an error about this parameter.',
       options: {'max_completion_tokens': 'max_completion_tokens', 'max_tokens': 'max_tokens', 'none': 'none'},
       defaultValue: 'max_completion_tokens',
+      advanced: true,
     ),
-    IntSetting(
-      key: 'timeout',
-      label: 'Timeout (seconds)',
-      info: 'How long to wait for the server. Slow free models and local servers on a weak computer can take long.',
-      defaultValue: 120,
-      min: 5,
-      max: 3600,
-    ),
+    llmTimeoutSetting,
   ],
   endpoint: openAiCompatibleEndpoint,
   keyStatus: openAiCompatibleKeyStatus,
@@ -82,14 +94,9 @@ final openAiCompatibleFactory = PluginFactory<Translator>(openAiCompatibleInfo, 
   );
 });
 
-/// The server most people use; an empty API URL means it.
-const openRouterApiUrl = 'https://openrouter.ai/api/v1';
-
-/// The API URL of [config] without the slashes at the end; empty: OpenRouter.
-String openAiCompatibleUrl(PluginConfig config) {
-  final url = config.value<String>('api_url').trim().replaceAll(RegExp(r'/+$'), '');
-  return url.isEmpty ? openRouterApiUrl : url;
-}
+/// The API URL of [config] without the slashes at the end.
+String openAiCompatibleUrl(PluginConfig config) =>
+    config.value<String>('api_url').trim().replaceAll(RegExp(r'/+$'), '');
 
 /// Where a configuration sends data: on this computer for `localhost`, the
 /// local network for private addresses and `.local` names, otherwise the
@@ -405,15 +412,18 @@ class _RetryAfter extends TranslationException {
 /// such request.
 KeyStatusQuery? openAiCompatibleKeyStatus(PluginConfig config) {
   final base = openAiCompatibleUrl(config);
-  final uri = Uri.tryParse(base);
-  if (uri == null || uri.host.toLowerCase() != 'openrouter.ai') return null;
-  final key = config.secret('api_key') ?? '';
-  return KeyStatusQuery(
-    host: uri.host,
-    hasKey: key.isNotEmpty,
-    run: () => fetchOpenRouterKeyStatus(Uri.parse('$base/key'), key),
-  );
+  return isOpenRouterUrl(base) ? openRouterKeyQuery(base, config.secret('api_key') ?? '') : null;
 }
+
+/// The API of OpenRouter at [base] (`https://openrouter.ai/api/v1`).
+bool isOpenRouterUrl(String base) => Uri.tryParse(base)?.host.toLowerCase() == 'openrouter.ai';
+
+/// Asking OpenRouter at [base] about [key].
+KeyStatusQuery openRouterKeyQuery(String base, String key) => KeyStatusQuery(
+  host: Uri.parse(base).host,
+  hasKey: key.isNotEmpty,
+  run: () => fetchOpenRouterKeyStatus(Uri.parse('$base/key'), key),
+);
 
 /// `GET /api/v1/key` of OpenRouter: the key's limit, spending and the free
 /// model requests of the day.
@@ -435,14 +445,15 @@ Future<KeyStatus> fetchOpenRouterKeyStatus(
 /// servers are not asked.
 ModelCatalogQuery? openAiCompatibleModelCatalog(PluginConfig config) {
   final base = openAiCompatibleUrl(config);
-  final uri = Uri.tryParse(base);
-  if (uri == null || uri.host.toLowerCase() != 'openrouter.ai') return null;
-  return ModelCatalogQuery(
-    host: uri.host,
-    settingKey: 'model',
-    run: () => fetchOpenRouterModels(Uri.parse('$base/models')),
-  );
+  return isOpenRouterUrl(base) ? openRouterModelQuery(base) : null;
 }
+
+/// The model list of OpenRouter at [base].
+ModelCatalogQuery openRouterModelQuery(String base) => ModelCatalogQuery(
+  host: Uri.parse(base).host,
+  settingKey: 'model',
+  run: () => fetchOpenRouterModels(Uri.parse('$base/models')),
+);
 
 /// `GET /api/v1/models` of OpenRouter: every model with its prices.
 Future<List<CatalogModel>> fetchOpenRouterModels(

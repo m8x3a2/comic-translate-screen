@@ -417,10 +417,15 @@ void main() {
     expect(openAiCompatibleInfo.modelCatalog!(config('http://localhost:11434/v1')), isNull);
     final query = openAiCompatibleInfo.modelCatalog!(config('https://openrouter.ai/api/v1/'))!;
     expect((query.host, query.settingKey), ('openrouter.ai', 'model'));
-    // An empty API URL is OpenRouter: the list, the key details and where the text goes.
-    expect(openAiCompatibleInfo.modelCatalog!(config(' '))!.host, 'openrouter.ai');
-    expect(openAiCompatibleInfo.keyStatus!(config(''))!.host, 'openrouter.ai');
-    expect(openAiCompatibleInfo.endpointFor(config(''))!.host, 'openrouter.ai');
+    expect(openAiCompatibleInfo.modelCatalog!(config(' ')), isNull, reason: 'own server with no address');
+    // The OpenRouter translator: no address to set, the list, the key details and the key page.
+    final own = PluginConfig.resolve(openRouterInfo.settings, {}, secrets: {'api_key': 'sk-or-1'});
+    expect(openRouterInfo.settings.map((f) => f.key), ['model', 'api_key', 'temperature', 'max_tokens', 'timeout']);
+    expect([for (final f in openRouterInfo.settings) if (f.advanced) f.key], ['temperature', 'max_tokens', 'timeout']);
+    expect(openRouterInfo.modelCatalog!(own)!.host, 'openrouter.ai');
+    expect((openRouterInfo.keyStatus!(own)!.host, openRouterInfo.keyStatus!(own)!.hasKey), ('openrouter.ai', true));
+    expect(openRouterInfo.endpointFor(own)!.approvalKey('openrouter'), 'openrouter@openrouter.ai');
+    expect(openRouterInfo.keyUrl, startsWith('https://openrouter.ai/'));
 
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     addTearDown(() => server.close(force: true));

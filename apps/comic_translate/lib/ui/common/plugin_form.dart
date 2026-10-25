@@ -8,6 +8,7 @@ import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../state/app_state.dart';
 import 'info_hint.dart';
@@ -27,74 +28,91 @@ class PluginSettingsForm extends ConsumerWidget {
     void set(String key, Object? value) => ref
         .read(settingsProvider.notifier)
         .change((s) => s.plugins[info.id] = {...s.pluginValues(info.id), key: value});
+    Widget row(SettingField field) =>
+        Padding(padding: const EdgeInsets.only(bottom: 12), child: _field(context, ref, config, field, set));
+    final advanced = [
+      for (final field in info.settings)
+        if (field.advanced) field,
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final field in info.settings)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: switch (field) {
-              SecretSetting() => _SecretField(info, field),
-              BoolSetting() => SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: titleWithInfo(fieldLabel(context, info, field), fieldInfo(context, info, field)),
-                subtitle: _help(context, field),
-                value: config.value<bool>(field.key),
-                onChanged: (v) => set(field.key, v),
-              ),
-              ChoiceSetting(:final options) => withInfo(
-                DropdownButtonFormField<String>(
-                  initialValue: config.value<String>(field.key),
-                  decoration: InputDecoration(
-                    labelText: fieldLabel(context, info, field),
-                    helperText: _helpText(context, field),
-                  ),
-                  items: [
-                    for (final e in options.entries)
-                      DropdownMenuItem(value: e.key, child: Text(optionLabel(context, info, field, e.key, e.value))),
-                  ],
-                  onChanged: (v) => set(field.key, v),
-                ),
-                fieldInfo(context, info, field),
-              ),
-              TextSetting(:final placeholder, :final multiline) => _withCatalog(
-                context,
-                ref,
-                config,
-                field,
-                withInfo(
-                  DebouncedTextField(
-                    key: ValueKey('${info.id}.${field.key}'),
-                    value: config.value<String>(field.key),
-                    label: fieldLabel(context, info, field),
-                    help: _helpText(context, field),
-                    hint: placeholder,
-                    multiline: multiline,
-                    onChanged: (v) => set(field.key, v),
-                  ),
-                  fieldInfo(context, info, field),
-                ),
-                (id) => set(field.key, id),
-              ),
-              IntSetting() || DoubleSetting() => withInfo(
-                DebouncedTextField(
-                  key: ValueKey('${info.id}.${field.key}'),
-                  value: '${config.values[field.key]}',
-                  label: fieldLabel(context, info, field),
-                  help: _helpText(context, field),
-                  numeric: true,
-                  onChanged: (v) {
-                    final parsed = num.tryParse(v.replaceAll(',', '.'));
-                    if (parsed != null) set(field.key, field.coerce(parsed));
-                  },
-                ),
-                fieldInfo(context, info, field),
-              ),
-            },
+          if (!field.advanced) row(field),
+        // Rarely changed: folded.
+        if (advanced.isNotEmpty)
+          ExpansionTile(
+            key: ValueKey('${info.id}.more'),
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.zero,
+            title: Text(context.l10n.pluginMoreSettings),
+            children: [for (final field in advanced) row(field)],
           ),
       ],
     );
   }
+
+  Widget _field(
+    BuildContext context,
+    WidgetRef ref,
+    PluginConfig config,
+    SettingField field,
+    void Function(String key, Object? value) set,
+  ) => switch (field) {
+    SecretSetting() => _SecretField(info, field),
+    BoolSetting() => SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: titleWithInfo(fieldLabel(context, info, field), fieldInfo(context, info, field)),
+      subtitle: _help(context, field),
+      value: config.value<bool>(field.key),
+      onChanged: (v) => set(field.key, v),
+    ),
+    ChoiceSetting(:final options) => withInfo(
+      DropdownButtonFormField<String>(
+        initialValue: config.value<String>(field.key),
+        decoration: InputDecoration(labelText: fieldLabel(context, info, field), helperText: _helpText(context, field)),
+        items: [
+          for (final e in options.entries)
+            DropdownMenuItem(value: e.key, child: Text(optionLabel(context, info, field, e.key, e.value))),
+        ],
+        onChanged: (v) => set(field.key, v),
+      ),
+      fieldInfo(context, info, field),
+    ),
+    TextSetting(:final placeholder, :final multiline) => _withCatalog(
+      context,
+      ref,
+      config,
+      field,
+      withInfo(
+        DebouncedTextField(
+          key: ValueKey('${info.id}.${field.key}'),
+          value: config.value<String>(field.key),
+          label: fieldLabel(context, info, field),
+          help: _helpText(context, field),
+          hint: placeholder,
+          multiline: multiline,
+          onChanged: (v) => set(field.key, v),
+        ),
+        fieldInfo(context, info, field),
+      ),
+      (id) => set(field.key, id),
+    ),
+    IntSetting() || DoubleSetting() => withInfo(
+      DebouncedTextField(
+        key: ValueKey('${info.id}.${field.key}'),
+        value: '${config.values[field.key]}',
+        label: fieldLabel(context, info, field),
+        help: _helpText(context, field),
+        numeric: true,
+        onChanged: (v) {
+          final parsed = num.tryParse(v.replaceAll(',', '.'));
+          if (parsed != null) set(field.key, field.coerce(parsed));
+        },
+      ),
+      fieldInfo(context, info, field),
+    ),
+  };
 
   /// The model field of a service with a list of models: "Choose…" beside it.
   Widget _withCatalog(
@@ -380,18 +398,30 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
               ),
           ],
         ),
-        if (saved)
+        if (saved || widget.info.keyUrl.isNotEmpty)
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
             spacing: 4,
             children: [
-              TextButton.icon(
-                onPressed: _reveal,
-                icon: Icon(_revealed == null ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 18),
-                label: Text(_revealed == null ? l.secretShowSaved : l.secretHideSaved),
-              ),
-              TextButton.icon(onPressed: _copy, icon: const Icon(Icons.copy, size: 18), label: Text(l.secretCopy)),
-              if (_revealed != null) SelectableText(_revealed!, style: const TextStyle(fontFamily: 'monospace')),
+              // The service's page where keys are made, in the browser.
+              if (widget.info.keyUrl.isNotEmpty)
+                Tooltip(
+                  message: widget.info.keyUrl,
+                  child: TextButton.icon(
+                    onPressed: () => launchUrl(Uri.parse(widget.info.keyUrl)),
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: Text(l.secretGetKey),
+                  ),
+                ),
+              if (saved) ...[
+                TextButton.icon(
+                  onPressed: _reveal,
+                  icon: Icon(_revealed == null ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 18),
+                  label: Text(_revealed == null ? l.secretShowSaved : l.secretHideSaved),
+                ),
+                TextButton.icon(onPressed: _copy, icon: const Icon(Icons.copy, size: 18), label: Text(l.secretCopy)),
+                if (_revealed != null) SelectableText(_revealed!, style: const TextStyle(fontFamily: 'monospace')),
+              ],
             ],
           ),
       ],

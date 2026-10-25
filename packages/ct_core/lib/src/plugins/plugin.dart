@@ -72,6 +72,7 @@ class PluginInfo {
     this.endpoint,
     this.keyStatus,
     this.modelCatalog,
+    this.keyUrl = '',
   });
 
   /// Stable identifier stored in settings and logs, e.g. `openai_compatible`.
@@ -120,6 +121,10 @@ class PluginInfo {
   /// For services with a list of models: how to get it for a configuration,
   /// or null when its server has none.
   final ModelCatalogQuery? Function(PluginConfig config)? modelCatalog;
+
+  /// The page of the service where the user makes an API key ("Get a key");
+  /// empty: none.
+  final String keyUrl;
 
   SettingField? field(String key) {
     for (final f in settings) {

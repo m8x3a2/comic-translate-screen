@@ -1,7 +1,13 @@
 /// Declarative settings of a plugin. The settings page is generated from this
 /// schema; values are validated and defaulted through it.
 sealed class SettingField {
-  const SettingField({required this.key, required this.label, this.help = '', this.info = ''});
+  const SettingField({
+    required this.key,
+    required this.label,
+    this.help = '',
+    this.info = '',
+    this.advanced = false,
+  });
 
   final String key;
   final String label;
@@ -9,6 +15,9 @@ sealed class SettingField {
 
   /// A longer explanation, shown behind an "i" next to the field.
   final String info;
+
+  /// Rarely changed: under "More settings", folded.
+  final bool advanced;
 
   /// Default value, or null when the field has none (secrets).
   Object? get defaultValue;
@@ -22,7 +31,7 @@ class TextSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
-    super.info,
+    super.info, super.advanced,
     this.defaultValue = '',
     this.placeholder = '',
     this.multiline = false,
@@ -42,7 +51,7 @@ class TextSetting extends SettingField {
 /// A secret (API key, token). Never stored in settings.json: values live in
 /// the OS secure storage under `plugin.<pluginId>.<key>`.
 class SecretSetting extends SettingField {
-  const SecretSetting({required super.key, required super.label, super.help, super.info, this.optional = false});
+  const SecretSetting({required super.key, required super.label, super.help, super.info, super.advanced, this.optional = false});
 
   final bool optional;
 
@@ -58,7 +67,7 @@ class ChoiceSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
-    super.info,
+    super.info, super.advanced,
     required this.options,
     required this.defaultValue,
   });
@@ -78,7 +87,7 @@ class IntSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
-    super.info,
+    super.info, super.advanced,
     required this.defaultValue,
     this.min,
     this.max,
@@ -104,7 +113,7 @@ class DoubleSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
-    super.info,
+    super.info, super.advanced,
     required this.defaultValue,
     this.min,
     this.max,
@@ -126,7 +135,7 @@ class DoubleSetting extends SettingField {
 }
 
 class BoolSetting extends SettingField {
-  const BoolSetting({required super.key, required super.label, super.help, super.info, this.defaultValue = false});
+  const BoolSetting({required super.key, required super.label, super.help, super.info, super.advanced, this.defaultValue = false});
 
   @override
   final bool defaultValue;

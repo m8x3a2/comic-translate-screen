@@ -53,7 +53,7 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
   and manga-ocr for Japanese. New: the OCR built into Windows (Windows.Media.Ocr;
   ML Kit on Android later) as a light alternative that needs no model download.
   Paid cloud OCR is removed.
-- Translation: an offline test translator and one OpenAI-compatible provider
+- Translation: an offline test translator, OpenRouter (its own translator: pick a model from the list, key details) and any other OpenAI-compatible server ("Own server")
   (works with OpenRouter, OpenAI, DeepSeek, LM Studio, Ollama, llama.cpp server)
   with the original's prompt. Other providers will return one by one. A server
   on `localhost` counts as local; anything else is marked and needs approval.

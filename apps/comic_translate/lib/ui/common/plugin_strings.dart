@@ -77,14 +77,31 @@ const _ru = <String, String>{
   'opus_mt.quality.info':
       'Быстро: около 0,4 с на пузырь на слабом ноутбуке. Лучше: модель взвешивает четыре варианта каждой фразы '
       'и берёт лучший; примерно в 1,7 раза медленнее, заметно меньше странных фраз.',
-  'openai_compatible': 'OpenAI-совместимый API',
+  'openrouter': 'OpenRouter',
+  'openrouter.desc':
+      'Перевод большой языковой моделью через OpenRouter (openrouter.ai): один ключ на сотни моделей '
+      'разных компаний, часть из них бесплатные.',
+  'openrouter.model': 'Модель',
+  'openrouter.model.help': 'Выберите из списка («Выбрать…») или впишите её id.',
+  'openrouter.api_key': 'Ключ API',
+  'openrouter.api_key.help': 'Делается на openrouter.ai: «Получить ключ».',
+  'openrouter.temperature': 'Температура',
+  'openrouter.temperature.info':
+      'Насколько свободно модель подбирает слова. Ниже — точнее и одинаковее, выше — разнообразнее, '
+      'но больше ошибок. Для перевода обычно от 0 до 1.',
+  'openrouter.max_tokens': 'Наибольшая длина ответа (токены)',
+  'openrouter.max_tokens.info':
+      'Самый длинный ответ, который может дать модель. Если перевод страницы обрывается, увеличьте. '
+      'Токен — примерно 3–4 буквы.',
+  'openrouter.timeout': 'Время ожидания (секунды)',
+  'openrouter.timeout.info': 'Сколько ждать ответа сервера. Медленные бесплатные модели могут отвечать долго.',
+  'openai_compatible': 'Свой сервер (OpenAI-совместимый)',
   'openai_compatible.desc':
-      'Перевод большой языковой моделью через любой OpenAI-совместимый сервер: OpenRouter, '
-      'OpenAI, DeepSeek или локальный LM Studio / Ollama / llama.cpp.',
+      'Перевод большой языковой моделью через любой OpenAI-совместимый сервер, адрес которого вы укажете: '
+      'локальный LM Studio / Ollama / llama.cpp, OpenAI, DeepSeek и другие. Для OpenRouter есть свой переводчик.',
   'openai_compatible.api_url': 'Адрес API',
   'openai_compatible.api_url.help':
-      'Адрес, оканчивающийся на /v1, например http://localhost:11434/v1 (Ollama). '
-      'Пусто — OpenRouter (https://openrouter.ai/api/v1).',
+      'Адрес, оканчивающийся на /v1, например http://localhost:11434/v1 (Ollama) или https://api.deepseek.com/v1.',
   'openai_compatible.model': 'Модель',
   'openai_compatible.api_key': 'Ключ API',
   'openai_compatible.api_key.help': 'Для большинства локальных серверов не нужен.',

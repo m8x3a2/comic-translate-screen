@@ -2066,6 +2066,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get secretCopy => 'Копировать';
 
   @override
+  String get secretGetKey => 'Получить ключ';
+
+  @override
+  String get pluginMoreSettings => 'Дополнительно';
+
+  @override
   String get secretCopied => 'Ключ скопирован';
 
   @override

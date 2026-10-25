@@ -114,6 +114,54 @@ void main() {
     expect((custom.inpainter, custom.textMask), ('aot', ''));
   });
 
+  test('OpenRouter got a translator of its own: the "Own server" pointed at it moves there once', () async {
+    final file = File(p.join(tmp.path, 'settings.json'));
+    Future<(AppSettings, int?)> load(Map<String, Object?> json) async {
+      file.writeAsStringSync(jsonEncode(json));
+      final store = SettingsStore(file);
+      return (await store.load(), store.upgradedFrom);
+    }
+
+    final (moved, from) = await load({
+      'tools': {'translator': 'openai_compatible'},
+      'plugins': {
+        'openai_compatible': {
+          'api_url': 'https://openrouter.ai/api/v1/',
+          'model': 'deepseek/deepseek-chat-v3.1',
+          'token_limit_param': 'max_tokens',
+          'timeout': 300,
+        },
+      },
+      'approved_network_plugins': ['openai_compatible@openrouter.ai'],
+    });
+    expect(from, 1);
+    expect(moved.translator, 'openrouter');
+    expect(moved.pluginValues('openrouter'), {'model': 'deepseek/deepseek-chat-v3.1', 'timeout': 300});
+    expect(moved.approvedNetworkPlugins, contains('openrouter@openrouter.ai'));
+    // Saved as version 2: loaded again, nothing moves.
+    final again = SettingsStore(file);
+    expect((await again.load()).translator, 'openrouter');
+    expect(again.upgradedFrom, isNull);
+
+    // No address meant OpenRouter too; a local server stays where it is.
+    expect((await load({'tools': {'translator': 'openai_compatible'}})).$1.translator, 'openrouter');
+    final (local, _) = await load({
+      'tools': {'translator': 'openai_compatible'},
+      'plugins': {
+        'openai_compatible': {'api_url': 'http://localhost:11434/v1', 'model': 'qwen'},
+      },
+    });
+    expect((local.translator, local.plugins.containsKey('openrouter')), ('openai_compatible', false));
+
+    // Version 2 with the own server chosen on purpose and no address yet: it stays.
+    final (chosen, _) = await load({
+      'schema_version': 2,
+      'tools': {'translator': 'openai_compatible'},
+    });
+    expect(chosen.translator, 'openai_compatible');
+    expect(AppSettings().translator, 'openrouter');
+  });
+
   test('RedactingSecretStore masks secrets as soon as they are read or written', () async {
     final redactor = Redactor();
     final store = RedactingSecretStore(MemorySecretStore({'plugin.x.api_key': 'stored-secret-1'}), redactor);

@@ -1,5 +1,6 @@
 // API keys, the balance check, the usage counter and full screen (M8.1).
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:comic_translate/bootstrap.dart';
@@ -15,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 import 'support/fake_plugins.dart';
 
@@ -29,7 +31,9 @@ void main() {
     services = AppServices.create(
       dataDirOverride: dir.path,
       secretStore: secrets,
-      registry: fakeRegistry()..register(openAiCompatibleFactory),
+      registry: fakeRegistry()
+        ..register(openAiCompatibleFactory)
+        ..register(openRouterFactory),
     );
     // The log file is opened outside the test clock (else tearDown waits for it).
     services.appLog.info('test_start');
@@ -157,6 +161,52 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Сведения о ключе'), findsNothing);
     expect(find.text('Выбрать…'), findsNothing);
+  });
+
+  testWidgets('OpenRouter: no address, the model list, a key page, the rare settings folded', (tester) async {
+    await openTranslatorSettings(tester, fakeSettings()..translator = 'openrouter');
+    expect(find.text('OpenRouter'), findsWidgets);
+    expect(find.text('Адрес API'), findsNothing);
+    expect(find.text('Выбрать…'), findsOneWidget);
+    expect(find.text('Получить ключ'), findsOneWidget);
+    expect(find.text('Параметр ограничения длины'), findsNothing);
+    expect(find.text('Температура'), findsNothing, reason: 'folded under "More settings"');
+    await tester.ensureVisible(find.text('Дополнительно'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Дополнительно'));
+    await tester.pumpAndSettle();
+    expect(find.text('Температура'), findsOneWidget);
+    expect(find.text('Сведения о ключе'), findsOneWidget);
+  });
+
+  test('the key of the own server pointed at OpenRouter moves to the OpenRouter translator once', () async {
+    final keyDir = Directory.systemTemp.createTempSync('cts_key_move_');
+    addTearDown(() => keyDir.deleteSync(recursive: true));
+    final store = MemorySecretStore({pluginSecretKey('openai_compatible', 'api_key'): 'sk-or-old-1234567890'});
+    Future<AppServices> start() async {
+      final s = AppServices.create(dataDirOverride: keyDir.path, secretStore: store, registry: fakeRegistry());
+      await s.init();
+      return s;
+    }
+
+    File(p.join(keyDir.path, 'settings.json')).writeAsStringSync(
+      jsonEncode({
+        'tools': {'translator': 'openai_compatible'},
+        'plugins': {
+          'openai_compatible': {'api_url': 'https://openrouter.ai/api/v1', 'model': 'x'},
+        },
+      }),
+    );
+    final first = await start();
+    expect(await store.read(pluginSecretKey('openrouter', 'api_key')), 'sk-or-old-1234567890');
+    expect((await first.settingsStore.load()).translator, 'openrouter');
+    await first.dispose();
+
+    // Removed by the user later: it does not come back.
+    await store.delete(pluginSecretKey('openrouter', 'api_key'));
+    final second = await start();
+    expect(await store.read(pluginSecretKey('openrouter', 'api_key')), isNull);
+    await second.dispose();
   });
 
   testWidgets('the list of models: search, free ones, ones that take pictures, the picked one goes back',

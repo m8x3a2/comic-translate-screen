@@ -3602,6 +3602,18 @@ abstract class AppLocalizations {
   /// **'Copy'**
   String get secretCopy;
 
+  /// No description provided for @secretGetKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a key'**
+  String get secretGetKey;
+
+  /// No description provided for @pluginMoreSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'More settings'**
+  String get pluginMoreSettings;
+
   /// No description provided for @secretCopied.
   ///
   /// In en, this message translates to:
