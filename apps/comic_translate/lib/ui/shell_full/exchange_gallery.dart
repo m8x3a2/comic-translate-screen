@@ -48,6 +48,22 @@ String pieceRange(ExchangeExport export, String sheet) {
       : numbers.join(', ');
 }
 
+/// The pages (their numbers in the labels) with pieces on [picture]: one for
+/// a picture of a page or a single cut-out, more for a sheet across pages.
+Set<int> picturePages(ExchangeExport export, String picture) {
+  final name = p.basename(picture);
+  if (RegExp(r'^page_(\d+)_context\.jpg$').firstMatch(name) case final m?) return {int.parse(m[1]!)};
+  final codes = export.sheetLabels[picture] ?? [p.basenameWithoutExtension(name)];
+  return {for (final c in codes) ?ExchangeLabel.tryParse(c)?.page};
+}
+
+/// [pages] in short: `1`, `1–3`, `1, 4`.
+String pagesText(Set<int> pages) {
+  final sorted = pages.toList()..sort();
+  if (sorted.length > 1 && sorted.last - sorted.first + 1 == sorted.length) return '${sorted.first}–${sorted.last}';
+  return sorted.join(', ');
+}
+
 /// Own sheets from where new sheets start (0-based piece indexes, without
 /// 0): `1-4, 5-6, 7-19`; empty without breaks.
 String groupsFromBreaks(Set<int> breaks, int count) {

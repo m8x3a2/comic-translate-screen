@@ -63,7 +63,7 @@ String exchangePrompt(
   String separator = defaultExchangeSeparator,
 }) {
   final base = template.trim().isEmpty ? defaultExchangePrompts[kind]! : template;
-  final lines = [for (final i in items) '${i.label} ${_oneLine(i.text)}'].join('\n');
+  final lines = exchangeTextLines(items);
   final values = {
     'separator': separator,
     'kind': screens ? 'screenshots of a site or a game' : 'a comic',
@@ -92,5 +92,10 @@ String exchangePrompt(
 const stressInstruction =
     'Where the original stresses a word (bold or larger letters), put the matching word of the translation '
     'between stars: *word*. Use no other stars.';
+
+/// The text of [items], one line per label: `[01-003] I'M LATE!` (the
+/// `{lines}` of the instructions, and what "Copy the text" copies).
+String exchangeTextLines(List<ExchangeItem> items) =>
+    [for (final i in items) '${i.label} ${_oneLine(i.text)}'].join('\n');
 
 String _oneLine(String s) => s.replaceAll(RegExp(r'\s*\n\s*'), ' ').trim();

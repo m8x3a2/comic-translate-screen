@@ -139,7 +139,11 @@ void main() {
         dir,
         pages(),
         ExchangeMode.both,
-        const ExchangeSettings(textFiles: ExchangeTextFiles.both, contextImage: ContextImage.separate),
+        const ExchangeSettings(
+          textFiles: ExchangeTextFiles.both,
+          contextImage: ContextImage.separate,
+          splitFiles: false,
+        ),
         sourceLanguage: 'English',
         targetLanguage: 'Russian',
       );
@@ -174,7 +178,8 @@ void main() {
         sourceLanguage: 'English',
         targetLanguage: 'Russian',
       );
-      expect(filesIn(dir.path), ['ALL.txt', 'exchange.json', 'prompt.txt']);
+      expect(filesIn(dir.path), ['ALL.txt', 'ALL_original.txt', 'ALL_translation.txt', 'exchange.json', 'prompt.txt']);
+      expect(File(p.join(dir.path, 'ALL_translation.txt')).readAsStringSync(), '[01-001] \n[02-001] \n');
       expect([for (final i in out.items) i.label.code], ['01-001', '02-001']);
       expect(out.prompt, contains('[01-001] Hello\n[02-001] Bye'));
       expect(File(p.join(dir.path, 'ALL.txt')).readAsStringSync(), '[01-001] Hello\n[02-001] Bye\n');
@@ -239,6 +244,7 @@ void main() {
         targetLanguage: 'Russian',
       );
       expect(filesIn(dir.path).where((f) => f.endsWith('.txt')), [
+        'ALL.txt',
         'ALL_original.txt',
         'ALL_translation.txt',
         'prompt.txt',
@@ -251,6 +257,47 @@ void main() {
       expect(m.replies[const ExchangeLabel(2, 1)]!.translation, 'Пока');
       expect(m.missing, [const ExchangeLabel(1, 2)]);
       expect(m.sources[const ExchangeLabel(1, 1)], 'ALL_original.txt + ALL_translation.txt');
+    });
+
+    test('each piece takes what was filled in, in whichever file', () async {
+      await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.both,
+        const ExchangeSettings(),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      // 01-001 in ALL.txt only, 02-001 half in each, 01-002 nowhere.
+      File(p.join(dir.path, 'ALL.txt')).writeAsStringSync('[01-001] Hello --> Привет\n[01-002]\n[02-001] Пока\n');
+      File(p.join(dir.path, 'ALL_original.txt')).writeAsStringSync('[01-001]\n[01-002]\n[02-001] Bye\n');
+      final m = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
+      expect(m.replies[const ExchangeLabel(1, 1)]!.translation, 'Привет');
+      expect(m.replies[const ExchangeLabel(2, 1)]!.original, 'Bye');
+      expect(m.replies[const ExchangeLabel(2, 1)]!.translation, 'Пока');
+      expect(m.missingArrow, isEmpty);
+      expect(m.missing, [const ExchangeLabel(1, 2)]);
+      expect(m.sources[const ExchangeLabel(1, 1)], 'ALL.txt');
+      expect(m.sources[const ExchangeLabel(2, 1)], 'ALL_original.txt, ALL.txt');
+    });
+
+    test('translate: the template filled in, the apart files left as they are', () async {
+      await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.translate,
+        const ExchangeSettings(),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      expect(
+        File(p.join(dir.path, 'ALL_original.txt')).readAsStringSync(),
+        File(p.join(dir.path, 'ALL.txt')).readAsStringSync(),
+      );
+      File(p.join(dir.path, 'ALL.txt')).writeAsStringSync('[01-001] Привет\n');
+      final m = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
+      expect(m.replies.keys, [const ExchangeLabel(1, 1)]);
+      expect(m.sources[const ExchangeLabel(1, 1)], 'ALL.txt');
     });
 
     test('pictures made again keep what the user wrote into the text files', () async {
@@ -322,7 +369,7 @@ void main() {
       textFiles: ExchangeTextFiles.pages,
       placeholder: '⟦пусто⟧',
       apart: true,
-      splitFiles: true,
+      splitFiles: false,
       separator: '|',
       prompts: {ExchangePrompt.both: 'mine'},
     );

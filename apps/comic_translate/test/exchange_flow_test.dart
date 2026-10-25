@@ -14,6 +14,7 @@ import 'package:comic_translate/ui/shell_full/exchange_dialog.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -300,5 +301,116 @@ void main() {
     await tester.tap(find.text('Применить'));
     await tester.pumpAndSettle();
     expect([for (final b in pages().first.blocks) (b.text, b.translation)], [('Hi', 'Привет'), ('Bye', '')]);
+  });
+
+  /// Puts [blocks] on each page and opens the exchange window for
+  /// [request]; waits until [ready] shows.
+  Future<void> openWindow(WidgetTester tester, ExchangeRequest request, String ready, List<String> texts) async {
+    // A window of a computer screen: the buttons are all in sight.
+    tester.view
+      ..physicalSize = const Size(1600, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    for (final page in pages()) {
+      container
+          .read(workspaceProvider.notifier)
+          .edit(
+            page.id,
+            (p) => p.copyWith(
+              blocks: [
+                for (final (i, t) in texts.indexed) TextBlock(xyxy: BBox(10, 5 + i * 25, 50, 25 + i * 25), text: t),
+              ],
+            ),
+          );
+    }
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) =>
+                  TextButton(onPressed: () => showExchangeDialog(context, request), child: const Text('open')),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    for (var i = 0; i < 80 && find.text(ready).evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+    }
+    expect(find.text(ready), findsOneWidget);
+  }
+
+  testWidgets('"Copy the text" copies the lines alone; an answer in the clipboard is offered on coming back', (
+    tester,
+  ) async {
+    String? clipboard;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') clipboard = (call.arguments as Map)['text'] as String?;
+      if (call.method == 'Clipboard.getData') return {'text': clipboard};
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final settings = fakeSettings();
+    settings.exchange = settings.exchange.copyWith(answerFromClipboard: true);
+    await tester.runAsync(() => start(settings));
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [pages().first.id], mode: ExchangeMode.translate),
+      'Копировать текст',
+      ['Hello', 'Bye'],
+    );
+    await tester.tap(find.text('Копировать текст'));
+    await tester.pump();
+    expect(clipboard, '[01-001] Hello\n[01-002] Bye');
+
+    Future<void> comeBack() async {
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    // What the window copied itself is no answer.
+    await comeBack();
+    expect(find.text('Вставить'), findsNothing);
+
+    clipboard = 'Here you go:\n[01-001] Привет\n[01-002] Пока';
+    await comeBack();
+    expect(find.text('В буфере ответ чата: 2 из 2. Вставить?'), findsOneWidget);
+    await tester.tap(find.text('Вставить'));
+    await tester.pump();
+    expect(find.text('Найдено ответов: 2 из 2'), findsOneWidget);
+    // Offered once.
+    await comeBack();
+    expect(find.text('Вставить'), findsNothing);
+  });
+
+  testWidgets('the pictures of one page: the list of pages over the pictures', (tester) async {
+    final settings = fakeSettings();
+    settings.exchange = settings.exchange.copyWith(sheetPerPage: true);
+    await tester.runAsync(() => start(settings));
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [for (final p in pages()) p.id], mode: ExchangeMode.both),
+      'Копировать картинки (2)',
+      ['Hello'],
+    );
+    expect(find.text('стр. 1 · 1'), findsOneWidget);
+    expect(find.text('стр. 2 · 2'), findsOneWidget);
+    await tester.tap(find.text('Все страницы (2)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Страница 2 (1)').last);
+    await tester.pumpAndSettle();
+    expect(find.text('Копировать картинки (1)'), findsOneWidget);
+    expect(find.text('стр. 1 · 1'), findsNothing);
+    expect(find.text('стр. 2 · 2'), findsOneWidget);
   });
 }

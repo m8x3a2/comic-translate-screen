@@ -2311,6 +2311,43 @@ class AppLocalizationsRu extends AppLocalizations {
       'Инструкция скопирована. Вставьте её в чат: Ctrl+V.';
 
   @override
+  String get chatCopyText => 'Копировать текст';
+
+  @override
+  String get chatCopiedText =>
+      'Текст скопирован (только строки с метками). Вставьте его в чат: Ctrl+V.';
+
+  @override
+  String chatPagesAll(int count) {
+    return 'Все страницы ($count)';
+  }
+
+  @override
+  String chatPageOnly(int page, int count) {
+    return 'Страница $page ($count)';
+  }
+
+  @override
+  String chatPicturePages(String pages) {
+    return 'стр. $pages';
+  }
+
+  @override
+  String chatClipboardOffer(int found, int total) {
+    return 'В буфере ответ чата: $found из $total. Вставить?';
+  }
+
+  @override
+  String get chatClipboardPaste => 'Вставить';
+
+  @override
+  String get chatAnswerFromClipboard => 'Предлагать ответ из буфера';
+
+  @override
+  String get chatAnswerFromClipboardHelp =>
+      'Вернулись в окно обмена, а в буфере ответ чата (строки с метками) — программа предложит вставить его.';
+
+  @override
   String get chatCopyFailed =>
       'Не удалось скопировать: буфер обмена занят другой программой. Попробуйте ещё раз или откройте папку и перетащите файлы в чат.';
 
@@ -2331,7 +2368,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String chatFromFilesInfoTranslate(String separator) {
-    return 'Берёт ответ из txt-файлов в папке обмена (кнопка «Открыть папку» внизу): сначала ALL.txt, потом page_01.txt, page_02.txt… для строк, которых в ALL.txt нет.\n\nВ режиме «Перевести» программа заранее пишет в файл исходный текст с метками — это заготовка. Ждёт она перевод: допишите его в каждую строку и сохраните файл:\n[01-001] Morning, guys $separator Доброе утро, ребята\nили только перевод:\n[01-001] Доброе утро, ребята\nСтроки, оставшиеся как в заготовке, считаются без ответа. Можно и заменить всё содержимое файла ответом чата. Если оригинал и перевод пишутся в отдельные файлы (ALL_original.txt и ALL_translation.txt), перевод впишите во второй.';
+    return 'Берёт ответ из txt-файлов в папке обмена (кнопка «Открыть папку» внизу): сначала ALL.txt, потом page_01.txt, page_02.txt… для строк, которых в ALL.txt нет.\n\nВ режиме «Перевести» программа заранее пишет в файл исходный текст с метками — это заготовка. Ждёт она перевод: допишите его в каждую строку и сохраните файл:\n[01-001] Morning, guys $separator Доброе утро, ребята\nили только перевод:\n[01-001] Доброе утро, ребята\nСтроки, оставшиеся как в заготовке, считаются без ответа. Можно и заменить всё содержимое файла ответом чата. Рядом лежат ALL_original.txt (тот же исходный текст) и пустой ALL_translation.txt — перевод можно вписать и туда: программа возьмёт его из того файла, который заполнен.';
   }
 
   @override
@@ -2340,7 +2377,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String chatFromFilesInfoBoth(String separator) {
-    return 'Берёт ответ из txt-файлов в папке обмена (кнопка «Открыть папку» внизу): сначала ALL.txt, потом page_01.txt, page_02.txt… для строк, которых в ALL.txt нет.\n\nВ режиме «Распознать и перевести» в файле только метки. После каждой нужны текст с картинки, «$separator» и перевод (или вставьте ответ чата), затем сохраните файл:\n[01-001] Morning, guys $separator Доброе утро, ребята\nПустые строки считаются без ответа. Если оригинал и перевод пишутся в отдельные файлы (ALL_original.txt и ALL_translation.txt), текст с картинки впишите в первый, перевод — во второй.';
+    return 'Берёт ответ из txt-файлов в папке обмена (кнопка «Открыть папку» внизу): сначала ALL.txt, потом page_01.txt, page_02.txt… для строк, которых в ALL.txt нет.\n\nВ режиме «Распознать и перевести» в файле только метки. После каждой нужны текст с картинки, «$separator» и перевод (или вставьте ответ чата), затем сохраните файл:\n[01-001] Morning, guys $separator Доброе утро, ребята\nПустые строки считаются без ответа. Рядом лежат ALL_original.txt и ALL_translation.txt — можно вписать текст с картинки в первый, а перевод во второй: программа возьмёт ответ из любого заполненного файла.';
   }
 
   @override
@@ -2584,11 +2621,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatPromptBothApart => 'Распознать и перевести двумя списками';
 
   @override
-  String get chatSplitFiles => 'Оригинал и перевод в разных файлах';
+  String get chatSplitFiles => 'Ещё и оригинал с переводом в отдельных файлах';
 
   @override
   String get chatSplitFilesHelp =>
-      'ALL_original.txt — текст оригинала, ALL_translation.txt — только перевод (так же для файлов страниц).';
+      'Кроме ALL.txt пишутся ALL_original.txt (оригинал) и ALL_translation.txt (только перевод), так же для файлов страниц. Ответ берётся из того файла, который заполнен.';
 
   @override
   String get chatSeparator => 'Между оригиналом и переводом';

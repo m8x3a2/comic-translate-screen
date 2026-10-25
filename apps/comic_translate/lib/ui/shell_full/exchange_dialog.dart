@@ -46,7 +46,7 @@ class ExchangeDialog extends ConsumerStatefulWidget {
   ConsumerState<ExchangeDialog> createState() => _ExchangeDialogState();
 }
 
-class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
+class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBindingObserver {
   late ExchangeMode _mode = widget.existing?.mode ?? widget.request.mode;
   ExchangeExport? _export;
   Object? _exportError;
@@ -85,6 +85,18 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
   /// What the last copy did.
   String? _note;
 
+  /// The pictures of one page only (its number in the labels); null: all.
+  int? _page;
+
+  /// What this window put into the clipboard (not an answer to offer).
+  String? _copied;
+
+  /// An answer of the chat found in the clipboard and how many pieces it
+  /// has; [_seen]: offered already (pasted or closed).
+  String? _offer;
+  var _offerFound = 0;
+  String? _seen;
+
   ExchangeSettings get _options => ref.read(settingsProvider).exchange;
 
   /// Two answer fields: reading and translating in one message, as two lists.
@@ -105,10 +117,12 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
     }
     _answer.addListener(_parse);
     _answer2.addListener(_parse);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _debounce?.cancel();
     _groups.dispose();
     _prompt.dispose();
@@ -262,6 +276,53 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
     if (data?.text case final text?) _setAnswer(text);
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_checkClipboard());
+  }
+
+  /// Back in the window (from the chat): an answer with labels in the
+  /// clipboard is offered for pasting, when the user asked for it.
+  Future<void> _checkClipboard() async {
+    final export = _export;
+    if (export == null || !_options.answerFromClipboard) return;
+    final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text ?? '';
+    if (!mounted || text.trim().isEmpty || text == _seen || text == _copied || text == _answer.text) return;
+    final sep = _separator;
+    final lists = splitExchangeLists(text);
+    final answer = lists == null
+        ? parseExchangeAnswer(text, export.mode, separator: sep)
+        : mergeExchangeAnswers(
+            parseExchangeAnswer(lists.$1, ExchangeMode.recognize, separator: sep),
+            parseExchangeAnswer(lists.$2, ExchangeMode.translate, separator: sep),
+          );
+    // Lines still as they were sent (the text to translate) are no answer.
+    final found = matchExchangeAnswer(export.items, answer, export.mode, ignoreUnchanged: true).replies.length;
+    setState(() {
+      _offer = found == 0 ? null : text;
+      _offerFound = found;
+    });
+  }
+
+  void _takeOffer({required bool paste}) {
+    final text = _offer;
+    if (text == null) return;
+    setState(() {
+      _seen = text;
+      _offer = null;
+    });
+    if (paste) _setAnswer(text);
+  }
+
+  Future<void> _copyText() async {
+    final export = _export;
+    if (export == null) return;
+    final text = exchangeTextLines(export.items);
+    await Clipboard.setData(ClipboardData(text: text));
+    _copied = text;
+    if (mounted) setState(() => _note = context.l10n.chatCopiedText);
+  }
+
   /// Copies [files] (names in the folder); returns what happened.
   String _copy(List<String> files) {
     final export = _export;
@@ -277,6 +338,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
 
   Future<void> _copyPrompt() async {
     await Clipboard.setData(ClipboardData(text: _prompt.text));
+    _copied = _prompt.text;
     if (mounted) setState(() => _note = context.l10n.chatCopiedPrompt);
   }
 
@@ -454,8 +516,16 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
       child: DropdownButtonFormField<T>(
         initialValue: value,
         isDense: true,
+        // Long names (other languages) end with "…" instead of spilling over.
+        isExpanded: true,
         decoration: InputDecoration(labelText: label, isDense: true, border: const OutlineInputBorder()),
-        items: [for (final e in options.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+        items: [
+          for (final e in options.entries)
+            DropdownMenuItem(
+              value: e.key,
+              child: Text(e.value, overflow: TextOverflow.ellipsis),
+            ),
+        ],
         onChanged: (v) {
           if (v != null) onChanged(v);
         },
@@ -521,9 +591,17 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
 
   Widget _sendCard(AppLocalizations l, ThemeData theme) {
     final export = _export;
-    final pictures = export?.pictures ?? const <String>[];
+    final all = export?.pictures ?? const <String>[];
+    // Which pages each picture shows: with many pages, the pictures of one.
+    final pagesOf = {for (final f in all) f: picturePages(export!, f)};
+    final pageNumbers = {for (final ps in pagesOf.values) ...ps}.toList()..sort();
+    final page = pageNumbers.contains(_page) ? _page : null;
+    final pictures = [
+      for (final f in all)
+        if (page == null || pagesOf[f]!.contains(page)) f,
+    ];
     final picked = [
-      for (final f in pictures)
+      for (final f in all)
         if (_selected.contains(f)) f,
     ];
     return Card.outlined(
@@ -567,7 +645,28 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
                     icon: const Icon(Icons.content_copy),
                     label: Text(l.chatCopyPrompt),
                   ),
-                  if (pictures.isNotEmpty)
+                  // The text alone, for instructions of the user's own.
+                  if (_mode == ExchangeMode.translate)
+                    FilledButton.tonalIcon(
+                      onPressed: _copyText,
+                      icon: const Icon(Icons.notes),
+                      label: Text(l.chatCopyText),
+                    ),
+                  if (pageNumbers.length > 1)
+                    DropdownButton<int?>(
+                      value: page,
+                      isDense: true,
+                      items: [
+                        DropdownMenuItem(value: null, child: Text(l.chatPagesAll(all.length))),
+                        for (final n in pageNumbers)
+                          DropdownMenuItem(
+                            value: n,
+                            child: Text(l.chatPageOnly(n, pagesOf.values.where((ps) => ps.contains(n)).length)),
+                          ),
+                      ],
+                      onChanged: (v) => setState(() => _page = v),
+                    ),
+                  if (all.isNotEmpty)
                     IconButton(
                       tooltip: l.chatGalleryOpen,
                       onPressed: _openGallery,
@@ -584,7 +683,10 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
                 const SizedBox(height: 8),
                 Text(_note!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
               ],
-              if (pictures.isNotEmpty) ...[const SizedBox(height: 12), _pictureStrip(l, export, pictures)],
+              if (pictures.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _pictureStrip(l, export, pictures, pagesOf, pages: pageNumbers.length > 1),
+              ],
               const SizedBox(height: 4),
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
@@ -633,7 +735,13 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
 
   /// The pictures in a row: the wheel scrolls it sideways, arrows at the
   /// ends, a tick on each to pick it for copying.
-  Widget _pictureStrip(AppLocalizations l, ExchangeExport export, List<String> pictures) {
+  Widget _pictureStrip(
+    AppLocalizations l,
+    ExchangeExport export,
+    List<String> pictures,
+    Map<String, Set<int>> pagesOf, {
+    required bool pages,
+  }) {
     void by(double dx) {
       if (!_strip.hasClients) return;
       final to = (_strip.offset + dx).clamp(0.0, _strip.position.maxScrollExtent);
@@ -664,10 +772,14 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
                   separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, i) {
                     final f = pictures[i];
+                    final range = pieceRange(export, f);
                     return _Thumb(
                       file: p.join(export.dir, f),
                       name: f,
-                      range: pieceRange(export, f),
+                      // With several pages, which page it is: "p. 2 · 5–7".
+                      range: pages && range.isNotEmpty
+                          ? '${l.chatPicturePages(pagesText(pagesOf[f]!))} · $range'
+                          : range,
                       selected: _selected.contains(f),
                       onToggle: () => setState(() => _selected.contains(f) ? _selected.remove(f) : _selected.add(f)),
                       onCopy: () => _copyPictures([f]),
@@ -723,6 +835,34 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> {
               ],
             ),
             const SizedBox(height: 8),
+            if (_offer != null) ...[
+              Container(
+                padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.content_paste_go, color: theme.colorScheme.onPrimaryContainer),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        l.chatClipboardOffer(_offerFound, total),
+                        style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+                      ),
+                    ),
+                    TextButton(onPressed: () => _takeOffer(paste: true), child: Text(l.chatClipboardPaste)),
+                    IconButton(
+                      tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                      onPressed: () => _takeOffer(paste: false),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
             if (match != null) ...[
               Text(
                 l.chatFound(match.replies.length, total),

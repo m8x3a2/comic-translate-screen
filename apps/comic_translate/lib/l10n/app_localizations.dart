@@ -4016,6 +4016,60 @@ abstract class AppLocalizations {
   /// **'Instructions copied. Paste them into the chat: Ctrl+V.'**
   String get chatCopiedPrompt;
 
+  /// No description provided for @chatCopyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the text'**
+  String get chatCopyText;
+
+  /// No description provided for @chatCopiedText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text copied (only the lines with labels). Paste it into the chat: Ctrl+V.'**
+  String get chatCopiedText;
+
+  /// No description provided for @chatPagesAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All pages ({count})'**
+  String chatPagesAll(int count);
+
+  /// No description provided for @chatPageOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} ({count})'**
+  String chatPageOnly(int page, int count);
+
+  /// No description provided for @chatPicturePages.
+  ///
+  /// In en, this message translates to:
+  /// **'p. {pages}'**
+  String chatPicturePages(String pages);
+
+  /// No description provided for @chatClipboardOffer.
+  ///
+  /// In en, this message translates to:
+  /// **'The clipboard has a chat answer: {found} of {total}. Paste it?'**
+  String chatClipboardOffer(int found, int total);
+
+  /// No description provided for @chatClipboardPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get chatClipboardPaste;
+
+  /// No description provided for @chatAnswerFromClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Offer the answer from the clipboard'**
+  String get chatAnswerFromClipboard;
+
+  /// No description provided for @chatAnswerFromClipboardHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Back in the exchange window with a chat answer (lines with labels) in the clipboard, the program offers to paste it.'**
+  String get chatAnswerFromClipboardHelp;
+
   /// No description provided for @chatCopyFailed.
   ///
   /// In en, this message translates to:
@@ -4055,7 +4109,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatFromFilesInfoTranslate.
   ///
   /// In en, this message translates to:
-  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Translate\" the program writes the original text with its labels into the file beforehand: a template. It waits for the translation: add it to every line and save the file:\n[01-001] Morning, guys {separator} Доброе утро, ребята\nor the translation alone:\n[01-001] Доброе утро, ребята\nLines left as in the template count as not answered. You can also replace the whole file with the chat\'s answer. When the original and the translation go to separate files (ALL_original.txt and ALL_translation.txt), write the translation into the second one.'**
+  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Translate\" the program writes the original text with its labels into the file beforehand: a template. It waits for the translation: add it to every line and save the file:\n[01-001] Morning, guys {separator} Доброе утро, ребята\nor the translation alone:\n[01-001] Доброе утро, ребята\nLines left as in the template count as not answered. You can also replace the whole file with the chat\'s answer. Next to it are ALL_original.txt (the same original text) and an empty ALL_translation.txt: the translation can go there too; the program takes it from whichever file is filled in.'**
   String chatFromFilesInfoTranslate(String separator);
 
   /// No description provided for @chatFromFilesInfoRecognize.
@@ -4067,7 +4121,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatFromFilesInfoBoth.
   ///
   /// In en, this message translates to:
-  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Recognize and translate\" the file has only the labels. Each needs the text from the picture, \"{separator}\" and the translation (or paste the chat\'s answer); then save the file:\n[01-001] Morning, guys {separator} Доброе утро, ребята\nEmpty lines count as not answered. When the original and the translation go to separate files (ALL_original.txt and ALL_translation.txt), write the text from the picture into the first one and the translation into the second.'**
+  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Recognize and translate\" the file has only the labels. Each needs the text from the picture, \"{separator}\" and the translation (or paste the chat\'s answer); then save the file:\n[01-001] Morning, guys {separator} Доброе утро, ребята\nEmpty lines count as not answered. Next to it are ALL_original.txt and ALL_translation.txt: the text from the picture can go into the first and the translation into the second; the program takes the answer from whichever file is filled in.'**
   String chatFromFilesInfoBoth(String separator);
 
   /// No description provided for @chatOpenTxt.
@@ -4481,13 +4535,13 @@ abstract class AppLocalizations {
   /// No description provided for @chatSplitFiles.
   ///
   /// In en, this message translates to:
-  /// **'Original and translation in separate files'**
+  /// **'Also the original and the translation in files of their own'**
   String get chatSplitFiles;
 
   /// No description provided for @chatSplitFilesHelp.
   ///
   /// In en, this message translates to:
-  /// **'ALL_original.txt for the original text and ALL_translation.txt for the translation only (the same for the page files).'**
+  /// **'Besides ALL.txt, ALL_original.txt (the original) and ALL_translation.txt (the translation only) are written, the same for the page files. The answer is taken from whichever file is filled in.'**
   String get chatSplitFilesHelp;
 
   /// No description provided for @chatSeparator.

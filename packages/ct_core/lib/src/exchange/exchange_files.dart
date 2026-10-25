@@ -255,17 +255,20 @@ Future<ExchangeExport> writeExchange(
       );
   await File(p.join(dir.path, exchangePromptName)).writeAsString(prompt);
 
-  // Templates to fill: the text to translate, or empty lines. Apart, the
-  // original goes in `_original.txt` and the translation in
-  // `_translation.txt` (reading alone needs no translation file).
+  // Templates to fill: the text to translate, or empty lines. With the
+  // apart files too, the original goes in `_original.txt` and the
+  // translation in `_translation.txt` besides the one file (reading alone
+  // needs no translation file); the answer is taken from whichever is
+  // filled in.
   final split = settings.splitFiles && mode != ExchangeMode.recognize;
   Future<void> writeTexts(String base, Iterable<ExchangeItem> list) async {
     String lines(String Function(ExchangeItem it) text) =>
         '${[for (final it in list) '${it.label} ${text(it)}'].join('\n')}\n';
     String source(ExchangeItem it) => mode == ExchangeMode.translate ? it.text.replaceAll('\n', ' ') : '';
-    final files = split
-        ? {'${base}_original.txt': lines(source), '${base}_translation.txt': lines((_) => '')}
-        : {'$base.txt': lines(source)};
+    final files = {
+      '$base.txt': lines(source),
+      if (split) ...{'${base}_original.txt': lines(source), '${base}_translation.txt': lines((_) => '')},
+    };
     for (final MapEntry(key: name, value: text) in files.entries) {
       final file = File(p.join(dir.path, name));
       // Filled in by the user already: kept when only the pictures change.
@@ -456,30 +459,46 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
   }
 
   Future<void> take(String base) async {
-    // The original and the translation apart, or one file.
+    // The original and the translation apart, then the one file: each piece
+    // takes what was filled in, wherever it is.
     final translations = await parse('${base}_translation.txt', ExchangeMode.translate);
     final originals = mode == ExchangeMode.translate
         ? null
         : await parse('${base}_original.txt', ExchangeMode.recognize);
-    final ExchangeAnswer? answer;
-    final String name;
-    if (translations != null || originals != null) {
-      answer = mergeExchangeAnswers(originals ?? const ExchangeAnswer({}), translations ?? const ExchangeAnswer({}));
-      name = [
-        if (originals != null) '${base}_original.txt',
-        if (translations != null) '${base}_translation.txt',
-      ].join(' + ');
-    } else {
-      answer = await parse('$base.txt', mode);
-      name = '$base.txt';
-    }
-    if (answer == null) return;
-    repeated.addAll(answer.repeated);
-    final match = matchExchangeAnswer(manifest.items, answer, mode, ignoreUnchanged: true);
-    for (final e in match.replies.entries) {
-      if (merged.containsKey(e.key)) continue;
-      merged[e.key] = e.value;
-      sources[e.key] = name;
+    final single = await parse('$base.txt', mode);
+    bool filled(String? s) => s != null && s.trim().isNotEmpty;
+    final answers = [
+      if (translations != null || originals != null)
+        (
+          mergeExchangeAnswers(originals ?? const ExchangeAnswer({}), translations ?? const ExchangeAnswer({})),
+          (ExchangeLabel label) => [
+            if (filled(originals?.replies[label]?.original)) '${base}_original.txt',
+            if (filled(translations?.replies[label]?.translation)) '${base}_translation.txt',
+          ].join(' + '),
+        ),
+      if (single != null) (single, (ExchangeLabel _) => '$base.txt'),
+    ];
+    for (final (answer, nameOf) in answers) {
+      repeated.addAll(answer.repeated);
+      final match = matchExchangeAnswer(manifest.items, answer, mode, ignoreUnchanged: true);
+      for (final MapEntry(key: label, value: reply) in match.replies.entries) {
+        final name = nameOf(label);
+        final had = merged[label];
+        if (had == null) {
+          merged[label] = reply;
+          sources[label] = name;
+        } else if (mode == ExchangeMode.both && (had.original == null || had.translation == null)) {
+          // Half of it in one file (the original), the rest in another.
+          final original = had.original ?? reply.original, translation = had.translation ?? reply.translation;
+          if (original == had.original && translation == had.translation) continue;
+          merged[label] = ExchangeReply(
+            original: original,
+            translation: translation,
+            missingArrow: had.missingArrow && reply.original == null,
+          );
+          sources[label] = '${sources[label]}, $name';
+        }
+      }
     }
   }
 

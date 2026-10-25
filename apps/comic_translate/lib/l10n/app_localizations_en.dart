@@ -2309,6 +2309,43 @@ class AppLocalizationsEn extends AppLocalizations {
       'Instructions copied. Paste them into the chat: Ctrl+V.';
 
   @override
+  String get chatCopyText => 'Copy the text';
+
+  @override
+  String get chatCopiedText =>
+      'Text copied (only the lines with labels). Paste it into the chat: Ctrl+V.';
+
+  @override
+  String chatPagesAll(int count) {
+    return 'All pages ($count)';
+  }
+
+  @override
+  String chatPageOnly(int page, int count) {
+    return 'Page $page ($count)';
+  }
+
+  @override
+  String chatPicturePages(String pages) {
+    return 'p. $pages';
+  }
+
+  @override
+  String chatClipboardOffer(int found, int total) {
+    return 'The clipboard has a chat answer: $found of $total. Paste it?';
+  }
+
+  @override
+  String get chatClipboardPaste => 'Paste';
+
+  @override
+  String get chatAnswerFromClipboard => 'Offer the answer from the clipboard';
+
+  @override
+  String get chatAnswerFromClipboardHelp =>
+      'Back in the exchange window with a chat answer (lines with labels) in the clipboard, the program offers to paste it.';
+
+  @override
   String get chatCopyFailed =>
       'Could not copy: another program holds the clipboard. Try again, or open the folder and drag the files into the chat.';
 
@@ -2329,7 +2366,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String chatFromFilesInfoTranslate(String separator) {
-    return 'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Translate\" the program writes the original text with its labels into the file beforehand: a template. It waits for the translation: add it to every line and save the file:\n[01-001] Morning, guys $separator Доброе утро, ребята\nor the translation alone:\n[01-001] Доброе утро, ребята\nLines left as in the template count as not answered. You can also replace the whole file with the chat\'s answer. When the original and the translation go to separate files (ALL_original.txt and ALL_translation.txt), write the translation into the second one.';
+    return 'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Translate\" the program writes the original text with its labels into the file beforehand: a template. It waits for the translation: add it to every line and save the file:\n[01-001] Morning, guys $separator Доброе утро, ребята\nor the translation alone:\n[01-001] Доброе утро, ребята\nLines left as in the template count as not answered. You can also replace the whole file with the chat\'s answer. Next to it are ALL_original.txt (the same original text) and an empty ALL_translation.txt: the translation can go there too; the program takes it from whichever file is filled in.';
   }
 
   @override
@@ -2338,7 +2375,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String chatFromFilesInfoBoth(String separator) {
-    return 'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Recognize and translate\" the file has only the labels. Each needs the text from the picture, \"$separator\" and the translation (or paste the chat\'s answer); then save the file:\n[01-001] Morning, guys $separator Доброе утро, ребята\nEmpty lines count as not answered. When the original and the translation go to separate files (ALL_original.txt and ALL_translation.txt), write the text from the picture into the first one and the translation into the second.';
+    return 'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Recognize and translate\" the file has only the labels. Each needs the text from the picture, \"$separator\" and the translation (or paste the chat\'s answer); then save the file:\n[01-001] Morning, guys $separator Доброе утро, ребята\nEmpty lines count as not answered. Next to it are ALL_original.txt and ALL_translation.txt: the text from the picture can go into the first and the translation into the second; the program takes the answer from whichever file is filled in.';
   }
 
   @override
@@ -2583,11 +2620,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatPromptBothApart => 'Read and translate, two lists';
 
   @override
-  String get chatSplitFiles => 'Original and translation in separate files';
+  String get chatSplitFiles =>
+      'Also the original and the translation in files of their own';
 
   @override
   String get chatSplitFilesHelp =>
-      'ALL_original.txt for the original text and ALL_translation.txt for the translation only (the same for the page files).';
+      'Besides ALL.txt, ALL_original.txt (the original) and ALL_translation.txt (the translation only) are written, the same for the page files. The answer is taken from whichever file is filled in.';
 
   @override
   String get chatSeparator => 'Between the original and the translation';

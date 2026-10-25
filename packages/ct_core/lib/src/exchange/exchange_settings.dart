@@ -88,10 +88,11 @@ class ExchangeSettings {
     this.images = ExchangeImages.sheets,
     this.cropsPerFolder = 10,
     this.textFiles = ExchangeTextFiles.all,
-    this.splitFiles = false,
+    this.splitFiles = true,
     this.separator = defaultExchangeSeparator,
     this.placeholder = '',
     this.prompts = const {},
+    this.answerFromClipboard = false,
   });
 
   static const minSheetPx = 600;
@@ -119,8 +120,8 @@ class ExchangeSettings {
   final int cropsPerFolder;
   final ExchangeTextFiles textFiles;
 
-  /// The original and the translation in two files (`ALL_original.txt`,
-  /// `ALL_translation.txt`) instead of one.
+  /// The original and the translation in two more files
+  /// (`ALL_original.txt`, `ALL_translation.txt`) besides `ALL.txt`.
   final bool splitFiles;
 
   /// Between the original and the translation in the chat's answer.
@@ -133,6 +134,10 @@ class ExchangeSettings {
   /// The user's own instructions for the chat; missing or empty = the
   /// built-in ones.
   final Map<ExchangePrompt, String> prompts;
+
+  /// Back in the exchange window with an answer of the chat in the clipboard
+  /// (lines with labels): offer to paste it.
+  final bool answerFromClipboard;
 
   /// The instructions [mode] uses with these settings.
   ExchangePrompt promptKind(ExchangeMode mode) => ExchangePrompt.of(mode, apart: apart);
@@ -155,6 +160,7 @@ class ExchangeSettings {
     String? separator,
     String? placeholder,
     Map<ExchangePrompt, String>? prompts,
+    bool? answerFromClipboard,
   }) => ExchangeSettings(
     together: together ?? this.together,
     apart: apart ?? this.apart,
@@ -170,6 +176,7 @@ class ExchangeSettings {
     separator: separator ?? this.separator,
     placeholder: placeholder ?? this.placeholder,
     prompts: prompts ?? this.prompts,
+    answerFromClipboard: answerFromClipboard ?? this.answerFromClipboard,
   );
 
   /// [copyWith] for the user's own instructions of [kind] ('' = back to the
@@ -193,10 +200,11 @@ class ExchangeSettings {
     'images': images.name,
     'crops_per_folder': cropsPerFolder,
     'text_files': textFiles.name,
-    'split_files': splitFiles,
+    'split_files_too': splitFiles,
     'separator': separator,
     'placeholder': placeholder,
     for (final kind in ExchangePrompt.values) kind.key: promptFor(kind),
+    'answer_from_clipboard': answerFromClipboard,
   };
 
   factory ExchangeSettings.fromJson(Map<String, Object?> json) {
@@ -219,9 +227,10 @@ class ExchangeSettings {
       images: ExchangeImages.parse(json['images'] as String?),
       cropsPerFolder: number('crops_per_folder', d.cropsPerFolder, 1, 1000),
       textFiles: ExchangeTextFiles.parse(json['text_files'] as String?),
-      splitFiles: flag('split_files', d.splitFiles),
+      splitFiles: flag('split_files_too', d.splitFiles),
       separator: text('separator').trim().isEmpty ? d.separator : text('separator').trim(),
       placeholder: text('placeholder'),
+      answerFromClipboard: flag('answer_from_clipboard', d.answerFromClipboard),
       prompts: {
         for (final kind in ExchangePrompt.values)
           if (text(kind.key).trim().isNotEmpty) kind: text(kind.key),
