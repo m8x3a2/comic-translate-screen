@@ -41,6 +41,16 @@ const llmTimeoutSetting = IntSetting(
   advanced: true,
 );
 
+const llmResendSetting = BoolSetting(
+  key: 'resend_missing',
+  label: 'Send the missing ones',
+  help: 'When the answer has nothing for some bubbles, ask once more for them alone.',
+  info: 'Models sometimes skip bubbles, especially on long pages. Then the program sends one more short '
+      'request with only the skipped bubbles. A bubble still without a translation keeps its original lettering '
+      '(it is not cleaned) and is marked "no translation" in the text panel and the report.',
+  defaultValue: true,
+);
+
 /// Any OpenAI-compatible server the user names ("Own server"): local ones
 /// (Ollama, LM Studio, llama.cpp) or services (OpenAI, DeepSeek...).
 /// OpenRouter has a translator of its own ([openRouterInfo]).
@@ -61,6 +71,7 @@ const openAiCompatibleInfo = PluginInfo(
     ),
     TextSetting(key: 'model', label: 'Model', placeholder: 'qwen2.5:7b'),
     SecretSetting(key: 'api_key', label: 'API key', help: 'Not needed for most local servers.', optional: true),
+    llmResendSetting,
     llmTemperatureSetting,
     llmMaxTokensSetting,
     ChoiceSetting(
@@ -90,6 +101,7 @@ final openAiCompatibleFactory = PluginFactory<Translator>(openAiCompatibleInfo, 
     temperature: config.value<double>('temperature'),
     maxTokens: config.value<int>('max_tokens'),
     tokenLimitParam: config.value<String>('token_limit_param'),
+    resendMissing: config.value<bool>('resend_missing'),
     timeout: Duration(seconds: config.value<int>('timeout')),
   );
 });
@@ -140,12 +152,16 @@ class OpenAiCompatibleTranslator implements Translator {
     this.timeout = const Duration(seconds: 120),
     this.retryDelays = const [Duration(seconds: 2), Duration(seconds: 6)],
     this.info = openAiCompatibleInfo,
+    this.resendMissing = true,
     HttpClient Function()? httpClientFactory,
   }) : _httpClientFactory = httpClientFactory ?? _defaultClient;
 
   final String apiUrl;
   final String model;
   final String apiKey;
+
+  /// Bubbles the answer had nothing for are asked once more on their own.
+  final bool resendMissing;
   final double temperature;
   final int maxTokens;
   final String tokenLimitParam;
@@ -204,6 +220,48 @@ class OpenAiCompatibleTranslator implements Translator {
       throw TranslationException('set the model name of the OpenAI-compatible translator', kind: TranslationErrorKind.config);
     }
 
+    final reply = await _ask(request, context, uri);
+    // Bubbles the answer had nothing for: asked once more, on their own. A
+    // failed second request keeps what the first one gave.
+    final missing = [
+      for (final b in request.blocks)
+        if (b.untranslated) b,
+    ];
+    if (resendMissing && missing.isNotEmpty) {
+      context.log.child(stage: 'translate').info('translate_resend', {
+        'blocks': missing.length,
+        'of': request.blocks.length,
+      });
+      try {
+        await _ask(
+          TranslationRequest(
+            blocks: missing,
+            sourceLanguage: request.sourceLanguage,
+            targetLanguage: request.targetLanguage,
+            pageImage: request.pageImage,
+            extraContext: request.extraContext,
+          ),
+          context,
+          uri,
+          again: true,
+        );
+      } on TranslationException catch (e) {
+        context.log.child(stage: 'translate').warn('translate_resend_failed', {'error': e.message});
+      }
+    }
+    // The original only warns; a page with no translation at all would look
+    // done but keep its text, so it is reported instead.
+    if (request.blocks.isNotEmpty && request.blocks.every((b) => b.untranslated)) {
+      throw TranslationException('the model reply has no translations: ${_clip(reply)}',
+          kind: TranslationErrorKind.badReply);
+    }
+  }
+
+  /// One request for [request]'s blocks: the answer goes into them (blocks it
+  /// left out are marked untranslated), and into the history. [again]: the
+  /// second request for the ones the first answer left out. Returns the
+  /// answer.
+  Future<String> _ask(TranslationRequest request, PluginContext context, Uri uri, {bool again = false}) async {
     final payload = buildPayload(request);
     final log = context.log.child(stage: 'translate');
     log.info('translate_request', {
@@ -211,8 +269,10 @@ class OpenAiCompatibleTranslator implements Translator {
       'model': model,
       'blocks': request.blocks.length,
       'image': request.pageImage != null,
+      if (again) 'again': true,
     });
-    await context.recorder?.writeJsonArtifact('03_translate', 'request.redacted.json', _forArtifact(payload, uri),
+    final artifact = again ? 'request_again' : 'request';
+    await context.recorder?.writeJsonArtifact('03_translate', '$artifact.redacted.json', _forArtifact(payload, uri),
         page: context.page);
 
     final sw = Stopwatch()..start();
@@ -226,6 +286,7 @@ class OpenAiCompatibleTranslator implements Translator {
           host: uri.host,
           model: model,
           page: context.page ?? '',
+          again: again,
           ms: sw.elapsedMilliseconds,
           sent: sentText(payload),
           image: request.pageImage != null,
@@ -250,7 +311,8 @@ class OpenAiCompatibleTranslator implements Translator {
         if (used.estimated) 'tokens_estimated': true,
       });
       await context.reportUsage(used);
-      await context.recorder?.writeJsonArtifact('03_translate', 'response.json', {'content': reply}, page: context.page);
+      await context.recorder?.writeJsonArtifact('03_translate', again ? 'response_again.json' : 'response.json',
+          {'content': reply}, page: context.page);
 
       try {
         warnings = applyTranslationsJson(request.blocks, reply);
@@ -261,19 +323,14 @@ class OpenAiCompatibleTranslator implements Translator {
       for (final w in warnings) {
         log.warn('translate_reply_warning', {'warning': w});
       }
-      // The original only warns; a page with no translation at all would look
-      // done but keep its text removed, so it is reported instead.
-      final nothing = warnings.length >= request.blocks.length || warnings.contains(noJsonWarning);
-      if (request.blocks.isNotEmpty && nothing) {
-        throw TranslationException('the model reply has no translations: ${_clip(reply)}',
-            kind: TranslationErrorKind.badReply);
-      }
       await keep();
+      return reply;
     } on TranslationException catch (e) {
       await keep(e.message);
       rethrow;
     }
   }
+
 
   /// The messages of [payload] as text, for the history: each with its role,
   /// a picture as a note (the picture itself is not kept).

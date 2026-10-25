@@ -6,6 +6,11 @@ library;
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter/widgets.dart';
 
+const _resendInfo =
+    'Модели иногда пропускают пузыри, особенно на длинных страницах. Тогда программа отправляет ещё один '
+    'короткий запрос только с пропущенными. Пузырь, который и после этого остался без перевода, сохраняет '
+    'оригинальный текст на картинке (его не стирают) и помечен «нет перевода» в панели «Текст» и в отчёте.';
+
 const _ru = <String, String>{
   'rtdetr_v2': 'RT-DETR-v2 (текст и пузыри комиксов)',
   'rtdetr_v2.desc': 'Находит пузыри и области с текстом; работает на компьютере.',
@@ -85,6 +90,9 @@ const _ru = <String, String>{
   'openrouter.model.help': 'Выберите из списка («Выбрать…») или впишите её id.',
   'openrouter.api_key': 'Ключ API',
   'openrouter.api_key.help': 'Делается на openrouter.ai: «Получить ключ».',
+  'openrouter.resend_missing': 'Досылать недостающее',
+  'openrouter.resend_missing.help': 'Если в ответе нет перевода части пузырей — один раз спросить только про них.',
+  'openrouter.resend_missing.info': _resendInfo,
   'openrouter.temperature': 'Температура',
   'openrouter.temperature.info':
       'Насколько свободно модель подбирает слова. Ниже — точнее и одинаковее, выше — разнообразнее, '
@@ -105,6 +113,9 @@ const _ru = <String, String>{
   'openai_compatible.model': 'Модель',
   'openai_compatible.api_key': 'Ключ API',
   'openai_compatible.api_key.help': 'Для большинства локальных серверов не нужен.',
+  'openai_compatible.resend_missing': 'Досылать недостающее',
+  'openai_compatible.resend_missing.help': 'Если в ответе нет перевода части пузырей — один раз спросить только про них.',
+  'openai_compatible.resend_missing.info': _resendInfo,
   'openai_compatible.temperature': 'Температура',
   'openai_compatible.temperature.info':
       'Насколько свободно модель подбирает слова. Ниже — точнее и одинаковее, выше — разнообразнее, '

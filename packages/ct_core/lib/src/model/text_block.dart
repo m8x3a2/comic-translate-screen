@@ -98,6 +98,7 @@ class TextBlock {
     this.fixedLines = false,
     this.sourceStyle,
     this.speaker,
+    this.untranslated = false,
   })  : lines = lines ?? [],
         texts = texts ?? [],
         skippedSmallTexts = skippedSmallTexts ?? [],
@@ -163,6 +164,10 @@ class TextBlock {
   /// Who says it, when the user told; null: not told.
   Speaker? speaker;
 
+  /// The translator was asked and its answer had nothing for this block:
+  /// it keeps its original lettering (not cleaned) until translated.
+  bool untranslated;
+
   BBox get bbox => xyxy;
   Point2 get center => xyxy.center;
 
@@ -220,6 +225,7 @@ class TextBlock {
         fixedLines: fixedLines,
         sourceStyle: sourceStyle,
         speaker: speaker,
+        untranslated: untranslated,
       )..text = text;
 
   /// JSON with the original attribute names, so artifacts can be compared
@@ -251,6 +257,7 @@ class TextBlock {
         if (fixedLines) 'fixed_lines': true,
         if (sourceStyle != null) 'source_style': sourceStyle!.toJson(),
         if (speaker != null) 'speaker': speaker!.tag,
+        if (untranslated) 'untranslated': true,
       };
 
   factory TextBlock.fromJson(Map<String, Object?> json) {
@@ -285,6 +292,7 @@ class TextBlock {
           ? SourceStyle.fromJson((json['source_style'] as Map).cast<String, Object?>())
           : null,
       speaker: Speaker.parse(json['speaker'] as String?),
+      untranslated: json['untranslated'] == true,
     );
     // `text` is stored explicitly; it may differ from texts.join(' ').
     block.text = json['text'] as String? ?? block.text;

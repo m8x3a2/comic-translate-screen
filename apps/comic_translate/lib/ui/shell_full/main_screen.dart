@@ -1101,7 +1101,9 @@ class _TopBar extends ConsumerWidget {
                 const SizedBox(width: 8),
                 _ToolButton(
                   compact: compact,
-                  icon: last.skipped.isEmpty ? Icons.fact_check_outlined : Icons.warning_amber,
+                  icon: last.skipped.isEmpty && last.untranslated.isEmpty
+                      ? Icons.fact_check_outlined
+                      : Icons.warning_amber,
                   label: l.report,
                   onPressed: () => showBatchReport(context, last),
                 ),

@@ -279,6 +279,26 @@ void main() {
     expect(speaker(), isNull);
   });
 
+  testWidgets('a bubble without a translation is marked until one is typed', (tester) async {
+    final container = await openTranslatedPage(tester);
+    final ws = container.read(workspaceProvider.notifier);
+    ws.changeBlock(0, (b) {
+      b.translation = '';
+      b.untranslated = true;
+    });
+    await tester.pump();
+    expect(find.text('нет перевода'), findsOneWidget);
+    ws.selectBlock(0);
+    await tester.pump();
+    expect(find.textContaining('В ответе переводчика для этого пузыря ничего не было'), findsOneWidget);
+    await tester.enterText(find.widgetWithText(TextField, 'Перевод'), 'Привет');
+    await tester.pump();
+    expect(container.read(workspaceProvider).currentPage!.blocks.single.untranslated, isFalse);
+    ws.selectBlock(null);
+    await tester.pump();
+    expect(find.text('нет перевода'), findsNothing);
+  });
+
   testWidgets('the look menu: capitals for the page, back to the automatic look', (tester) async {
     final container = await openTranslatedPage(tester);
     await tester.tap(find.byTooltip('Оформление текста'));

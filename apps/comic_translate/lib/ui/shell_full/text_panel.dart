@@ -222,6 +222,14 @@ class _BlockCard extends ConsumerWidget {
                             const SizedBox(height: 4),
                             Text(block.translation, style: theme.textTheme.bodyMedium),
                           ],
+                          // The translator's answer had nothing for it.
+                          if (block.untranslated) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              context.l10n.untranslatedMark,
+                              style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.error),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -361,7 +369,11 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
           readOnly: busy,
           minLines: 2,
           maxLines: 8,
-          decoration: deco(l.translationText),
+          decoration: deco(l.translationText).copyWith(
+            helperText: widget.block.untranslated ? l.untranslatedHelp : null,
+            helperMaxLines: 3,
+            helperStyle: TextStyle(color: theme.colorScheme.error),
+          ),
           onChanged: (v) => ws.changeBlock(i, (b) {
             // Styled words move with the text typed before them.
             final style = b.style;
@@ -370,6 +382,7 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
               b.style = moved.isEmpty ? null : moved;
             }
             b.translation = v;
+            b.untranslated = false;
           }, mergeKey: 'tr:$i'),
         ),
         if (selected && !busy)

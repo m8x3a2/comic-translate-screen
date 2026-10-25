@@ -2600,6 +2600,36 @@ abstract class AppLocalizations {
   /// **'Copied'**
   String get historyCopied;
 
+  /// No description provided for @historyAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'the missing ones again'**
+  String get historyAgain;
+
+  /// No description provided for @untranslatedMark.
+  ///
+  /// In en, this message translates to:
+  /// **'no translation'**
+  String get untranslatedMark;
+
+  /// No description provided for @untranslatedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The translator\'s answer had nothing for this bubble: it keeps its original lettering. Type a translation, or press \"Translate\" on the bubble.'**
+  String get untranslatedHelp;
+
+  /// No description provided for @reportUntranslated.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles without a translation (their lettering stays):'**
+  String get reportUntranslated;
+
+  /// No description provided for @reportUntranslatedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'bubbles: {count}'**
+  String reportUntranslatedCount(int count);
+
   /// No description provided for @keyStatusFailed.
   ///
   /// In en, this message translates to:

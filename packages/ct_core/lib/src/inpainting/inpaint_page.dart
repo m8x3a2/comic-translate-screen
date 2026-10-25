@@ -34,8 +34,13 @@ typedef InpaintRegion = Future<RgbImage> Function(RgbImage image, GrayImage mask
 /// Blocks whose text is removed (`inpaint_blk_list` of the original batch
 /// run): with translations, blocks that have text and a renderable
 /// translation; otherwise blocks with text; otherwise every block (e.g.
-/// straight from detection).
-List<TextBlock> selectInpaintBlocks(List<TextBlock> blocks) {
+/// straight from detection). Blocks the translator left out
+/// ([TextBlock.untranslated]) keep their lettering.
+List<TextBlock> selectInpaintBlocks(List<TextBlock> all) {
+  final blocks = [
+    for (final b in all)
+      if (!b.untranslated) b,
+  ];
   bool hasRenderable(TextBlock b) => b.translation.trim().isNotEmpty && _alnum.hasMatch(b.translation);
   if (blocks.any((b) => b.translation.trim().isNotEmpty)) {
     return [

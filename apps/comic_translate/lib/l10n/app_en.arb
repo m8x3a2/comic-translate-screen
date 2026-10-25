@@ -975,6 +975,18 @@
   "historyClear": "Clear the history",
   "historyClearAsk": "Clear the whole history of requests?",
   "historyCopied": "Copied",
+  "historyAgain": "the missing ones again",
+  "untranslatedMark": "no translation",
+  "untranslatedHelp": "The translator's answer had nothing for this bubble: it keeps its original lettering. Type a translation, or press \"Translate\" on the bubble.",
+  "reportUntranslated": "Bubbles without a translation (their lettering stays):",
+  "reportUntranslatedCount": "bubbles: {count}",
+  "@reportUntranslatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "keyStatusFailed": "Could not check: {reason}",
   "@keyStatusFailed": {
     "placeholders": {

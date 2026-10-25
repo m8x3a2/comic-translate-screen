@@ -693,7 +693,11 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
         final work = strip(blocks);
         await token.checkpoint();
         final letters = await (await plugins.textMasker)?.letters(work, context);
-        return generateMask(work, blocks, letters: letters);
+        // Bubbles the translator left out keep their lettering.
+        return generateMask(work, [
+          for (final b in blocks)
+            if (!b.untranslated) b,
+        ], letters: letters);
       case _Op.inpaint:
         final inpainter = await plugins.inpainter;
         var mask = m.mask!;

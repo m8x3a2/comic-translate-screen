@@ -742,6 +742,7 @@ bool applyExchangeReply(TextBlock block, ExchangeReply? reply, ExchangeMode mode
     }
     if (reply.translation != null || (nothing && mode != ExchangeMode.recognize)) {
       block.translation = reply.translation ?? '';
+      block.untranslated = false;
     }
     if (reply.hasSpeaker) block.speaker = reply.speaker;
   }

@@ -306,6 +306,7 @@ class StepsNotifier extends Notifier<StepState> {
                       done,
                       (old, b) => old.copy()
                         ..translation = b.translation
+                        ..untranslated = b.untranslated
                         ..style = old.style?.placeOnly,
                     ),
                   ),

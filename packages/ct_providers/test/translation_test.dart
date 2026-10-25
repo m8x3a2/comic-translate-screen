@@ -317,7 +317,9 @@ void main() {
     );
     server.handler = (body) => (200, chatReply('{"block_0": "Привет"}'));
     await t.translate(request([block('Hello'), block('Bye')]), context);
-    final ok = kept.single;
+    // block_1 had no answer: asked again, a second entry.
+    expect([for (final e in kept) (e.again, e.blocks)], [(false, 2), (true, 1)]);
+    final ok = kept.first;
     expect((ok.plugin, ok.model, ok.page, ok.blocks, ok.failed), ('openrouter', 'm', 'p1.png', 2, false));
     expect(ok.sent, allOf(startsWith('[system]\n'), contains('[user]\n'), contains('"block_0": "Hello"')));
     expect(ok.sent, isNot(contains('sk-secret')), reason: 'the key never goes into the history');
@@ -344,6 +346,41 @@ void main() {
         },
       ],
     }), '[user]\nHi\n<image_url>');
+  });
+
+  test('bubbles the answer left out are asked once more on their own; still none: marked, kept', () async {
+    final kept = <HistoryEntry>[];
+    final context = PluginContext(log: EventLog.silent(), page: 'p1.png', onHistory: kept.add);
+    final asked = <String>[];
+    var second = '{"block_0": "Пока"}';
+    server.handler = (body) {
+      final user = ((((body['messages'] as List).last as Map)['content'] as List).first as Map)['text'] as String;
+      asked.add(user);
+      return (200, chatReply(asked.length == 1 ? '{"block_0": "Привет", "block_2": "Ну"}' : second));
+    };
+    final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', retryDelays: const []);
+    final blocks = [block('Hello'), block('Bye'), block('Well')];
+    await t.translate(request(blocks), context);
+    expect([for (final b in blocks) b.translation], ['Привет', 'Пока', 'Ну']);
+    expect(blocks.any((b) => b.untranslated), isFalse);
+    expect(asked.last, allOf(contains('"block_0": "Bye"'), isNot(contains('Hello'))), reason: 'only the missing one');
+    expect([for (final e in kept) e.again], [false, true]);
+
+    // Left out again: marked, the first answer stays.
+    asked.clear();
+    second = '{}';
+    final more = [block('Hello'), block('Bye'), block('Well')];
+    await t.translate(request(more), context);
+    expect([for (final b in more) b.untranslated], [false, true, false]);
+    expect(more[0].translation, 'Привет');
+
+    // Turned off: one request only.
+    asked.clear();
+    final once = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', retryDelays: const [], resendMissing: false);
+    final off = [block('Hello'), block('Bye'), block('Well')];
+    await once.translate(request(off), context);
+    expect(asked.length, 1);
+    expect(off[1].untranslated, isTrue);
   });
 
   test('each answered request is counted: tokens and cost from the reply, else estimated', () async {
@@ -461,7 +498,14 @@ void main() {
     expect(openAiCompatibleInfo.modelCatalog!(config(' ')), isNull, reason: 'own server with no address');
     // The OpenRouter translator: no address to set, the list, the key details and the key page.
     final own = PluginConfig.resolve(openRouterInfo.settings, {}, secrets: {'api_key': 'sk-or-1'});
-    expect(openRouterInfo.settings.map((f) => f.key), ['model', 'api_key', 'temperature', 'max_tokens', 'timeout']);
+    expect(openRouterInfo.settings.map((f) => f.key), [
+      'model',
+      'api_key',
+      'resend_missing',
+      'temperature',
+      'max_tokens',
+      'timeout',
+    ]);
     expect([for (final f in openRouterInfo.settings) if (f.advanced) f.key], ['temperature', 'max_tokens', 'timeout']);
     expect(openRouterInfo.modelCatalog!(own)!.host, 'openrouter.ai');
     expect((openRouterInfo.keyStatus!(own)!.host, openRouterInfo.keyStatus!(own)!.hasKey), ('openrouter.ai', true));

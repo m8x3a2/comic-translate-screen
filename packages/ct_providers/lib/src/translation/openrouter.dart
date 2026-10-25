@@ -25,6 +25,7 @@ const openRouterInfo = PluginInfo(
       placeholder: 'openai/gpt-4.1-mini',
     ),
     SecretSetting(key: 'api_key', label: 'API key', help: 'Made on openrouter.ai: "Get a key".'),
+    llmResendSetting,
     llmTemperatureSetting,
     llmMaxTokensSetting,
     llmTimeoutSetting,
@@ -44,6 +45,7 @@ final openRouterFactory = PluginFactory<Translator>(openRouterInfo, (config, env
     maxTokens: config.value<int>('max_tokens'),
     timeout: Duration(seconds: config.value<int>('timeout')),
     info: openRouterInfo,
+    resendMissing: config.value<bool>('resend_missing'),
   );
 });
 

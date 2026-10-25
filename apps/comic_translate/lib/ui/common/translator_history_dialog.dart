@@ -173,6 +173,7 @@ class _HistoryDialogState extends ConsumerState<_HistoryDialog> {
                               [
                                 DateFormat('d MMM, HH:mm:ss', locale).format(e.time),
                                 if (e.page.isNotEmpty) e.page,
+                                if (e.again) l.historyAgain,
                                 e.model,
                                 l.historySeconds(seconds(e.ms)),
                               ].join(' · '),

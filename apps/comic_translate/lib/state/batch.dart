@@ -67,6 +67,7 @@ class BatchReport {
     this.exportDirs = const [],
     this.stoppedBy,
     this.stageMs = const {},
+    this.untranslated = const [],
   });
 
   final int total;
@@ -84,6 +85,10 @@ class BatchReport {
   /// Time of each stage (`01_detect` … `06_render`), all translated pages
   /// together, in milliseconds.
   final Map<String, int> stageMs;
+
+  /// Pages done with bubbles the translator had nothing for (they keep their
+  /// lettering): page id, name and how many.
+  final List<(String id, String name, int count)> untranslated;
 }
 
 sealed class BatchState {
@@ -232,6 +237,7 @@ class BatchNotifier extends Notifier<BatchState> {
     var failuresInARow = 0;
     SkipReason? stoppedBy;
     final skipped = <SkippedPage>[];
+    final untranslated = <(String, String, int)>[];
     final exportDirs = <String>{};
     final pool = ref.read(workerPoolProvider);
     PipelineWorker? worker;
@@ -367,6 +373,8 @@ class BatchNotifier extends Notifier<BatchState> {
           }
           done++;
           failuresInARow = 0;
+          final left = cleaned.blocks.where((b) => b.untranslated).length;
+          if (left > 0) untranslated.add((page.id, page.name, left));
           if (settings.export.anyAutomatic) {
             final out = await _autoExport(worker, page, cleaned, settings.export, stamp, log);
             if (out != null) exportDirs.add(out);
@@ -421,6 +429,7 @@ class BatchNotifier extends Notifier<BatchState> {
           exportDirs: exportDirs.toList(),
           stoppedBy: stoppedBy,
           stageMs: stageMs,
+          untranslated: untranslated,
         );
         log.info('batch_end', {'done': done, 'skipped': skipped.length, 'cancelled': cancelled});
         state = BatchIdle(report);

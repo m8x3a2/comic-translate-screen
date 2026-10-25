@@ -1454,6 +1454,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String get historyCopied => 'Скопировано';
 
   @override
+  String get historyAgain => 'досылка';
+
+  @override
+  String get untranslatedMark => 'нет перевода';
+
+  @override
+  String get untranslatedHelp =>
+      'В ответе переводчика для этого пузыря ничего не было: на картинке остаётся оригинальный текст. Впишите перевод или нажмите «Перевести» у пузыря.';
+
+  @override
+  String get reportUntranslated =>
+      'Пузыри без перевода (оригинальный текст остался):';
+
+  @override
+  String reportUntranslatedCount(int count) {
+    return 'пузырей: $count';
+  }
+
+  @override
   String keyStatusFailed(String reason) {
     return 'Не удалось проверить: $reason';
   }

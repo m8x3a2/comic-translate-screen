@@ -164,4 +164,5 @@ void setField(TextBlock b, SearchOptions o, String value) {
     b.style = moved.isEmpty ? null : moved;
   }
   b.translation = value;
+  b.untranslated = false;
 }

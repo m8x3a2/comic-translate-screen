@@ -51,9 +51,17 @@ const noJsonWarning = 'No JSON found in the reply.';
 /// Unlike the original, when the outermost braces are not valid JSON (the
 /// model wrote more braces after its answer) the first balanced, valid JSON
 /// object is used instead of failing the whole page.
+///
+/// Blocks the reply has nothing for are marked [TextBlock.untranslated] (the
+/// others unmarked).
 List<String> applyTranslationsJson(List<TextBlock> blocks, String reply) {
   final match = _jsonObject.firstMatch(reply);
-  if (match == null) return [noJsonWarning];
+  if (match == null) {
+    for (final b in blocks) {
+      b.untranslated = true;
+    }
+    return [noJsonWarning];
+  }
   Object? decoded;
   try {
     decoded = jsonDecode(match[0]!);
@@ -68,7 +76,9 @@ List<String> applyTranslationsJson(List<TextBlock> blocks, String reply) {
     if (decoded.containsKey(key)) {
       final v = decoded[key];
       b.translation = v is String ? v : (v == null ? '' : '$v');
+      b.untranslated = false;
     } else {
+      b.untranslated = true;
       warnings.add('$key not found in the reply.');
     }
   }
@@ -124,6 +134,8 @@ Future<List<TextBlock>> translateBlocks(
 ) async {
   final translatable = <TextBlock>[];
   for (final b in request.blocks) {
+    // Translators that can tell mark again what their answer left out.
+    b.untranslated = false;
     if (hasTranslatableContent(b.text)) {
       translatable.add(b);
     } else {

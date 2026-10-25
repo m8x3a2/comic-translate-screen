@@ -254,6 +254,28 @@ class _ReportDialog extends ConsumerWidget {
                   ],
                 ),
               ),
+            if (report.untranslated.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(l.reportUntranslated, style: theme.textTheme.titleSmall),
+              const SizedBox(height: 4),
+              for (final (id, name, count) in report.untranslated)
+                ListTile(
+                  dense: true,
+                  leading: Icon(Icons.translate, color: theme.colorScheme.tertiary),
+                  title: Text(name),
+                  subtitle: Text(l.reportUntranslatedCount(count)),
+                  trailing: IconButton(
+                    tooltip: l.goToPage,
+                    icon: const Icon(Icons.arrow_forward),
+                    onPressed: () {
+                      final pages = ref.read(workspaceProvider).pages;
+                      final i = pages.indexWhere((p) => p.id == id);
+                      if (i >= 0) ref.read(workspaceProvider.notifier).select(i);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ),
+            ],
             const SizedBox(height: 12),
             if (report.skipped.isEmpty)
               Text(l.reportNoSkipped)

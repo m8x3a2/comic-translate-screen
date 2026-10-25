@@ -16,6 +16,7 @@ class HistoryEntry {
     required this.host,
     required this.model,
     this.page = '',
+    this.again = false,
     this.ms = 0,
     this.sent = '',
     this.image = false,
@@ -35,6 +36,9 @@ class HistoryEntry {
 
   /// The page's name.
   final String page;
+
+  /// The second request, for the bubbles the first answer had nothing for.
+  final bool again;
 
   /// How long the answer took.
   final int ms;
@@ -70,6 +74,7 @@ class HistoryEntry {
     'host': host,
     'model': model,
     if (page.isNotEmpty) 'page': page,
+    if (again) 'again': true,
     'ms': ms,
     'sent': sent,
     if (image) 'image': true,
@@ -94,6 +99,7 @@ class HistoryEntry {
       host: text('host'),
       model: text('model'),
       page: text('page'),
+      again: json['again'] == true,
       ms: number('ms'),
       sent: text('sent'),
       image: json['image'] == true,

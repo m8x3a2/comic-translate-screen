@@ -1453,6 +1453,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get historyCopied => 'Copied';
 
   @override
+  String get historyAgain => 'the missing ones again';
+
+  @override
+  String get untranslatedMark => 'no translation';
+
+  @override
+  String get untranslatedHelp =>
+      'The translator\'s answer had nothing for this bubble: it keeps its original lettering. Type a translation, or press \"Translate\" on the bubble.';
+
+  @override
+  String get reportUntranslated =>
+      'Bubbles without a translation (their lettering stays):';
+
+  @override
+  String reportUntranslatedCount(int count) {
+    return 'bubbles: $count';
+  }
+
+  @override
   String keyStatusFailed(String reason) {
     return 'Could not check: $reason';
   }
