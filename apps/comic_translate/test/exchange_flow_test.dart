@@ -13,6 +13,7 @@ import 'package:comic_translate/state/workspace.dart';
 import 'package:comic_translate/ui/shell_full/exchange_dialog.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -391,6 +392,48 @@ void main() {
     // Offered once.
     await comeBack();
     expect(find.text('Вставить'), findsNothing);
+  });
+
+  testWidgets('the wheel over the pictures moves them, not the window', (tester) async {
+    final settings = fakeSettings();
+    settings.exchange = settings.exchange.copyWith(sheetPerPage: true);
+    await tester.runAsync(() => start(settings));
+    // Many pages: more sheets than the strip shows, and a window taller than the dialog.
+    for (var i = 0; i < 6; i++) {
+      await tester.runAsync(() async {
+        final path = p.join(dir.path, 'more$i.png');
+        await ImageCodec.writeFile(path, RgbImage.filled(100, 60, 255, 255, 255));
+        await container.read(workspaceProvider.notifier).addInputs([path]);
+      });
+    }
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [for (final p in pages()) p.id], mode: ExchangeMode.both),
+      'Копировать картинки (8)',
+      ['Hello'],
+    );
+    tester.view.physicalSize = const Size(1600, 700);
+    await tester.pumpAndSettle();
+    final strip = find.byWidgetPredicate((w) => w is ListView && w.scrollDirection == Axis.horizontal);
+    final window = find.byWidgetPredicate((w) => w is SingleChildScrollView).first;
+    double offset(Finder f) =>
+        tester.state<ScrollableState>(find.descendant(of: f, matching: find.byType(Scrollable)).first).position.pixels;
+    await tester.ensureVisible(strip);
+    await tester.pumpAndSettle();
+    final before = offset(window);
+    await tester.sendEventToBinding(
+      PointerScrollEvent(position: tester.getCenter(strip), scrollDelta: const Offset(0, 200)),
+    );
+    await tester.pump();
+    expect(offset(strip), greaterThan(0));
+    expect(offset(window), before);
+    // Back up: the window could go up too, but the strip has the wheel.
+    await tester.sendEventToBinding(
+      PointerScrollEvent(position: tester.getCenter(strip), scrollDelta: const Offset(0, -100)),
+    );
+    await tester.pump();
+    expect(offset(strip), 100);
+    expect(offset(window), before);
   });
 
   testWidgets('the pictures of one page: the list of pages over the pictures', (tester) async {
