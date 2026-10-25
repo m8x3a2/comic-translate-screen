@@ -12,6 +12,7 @@ environment:
 dependencies:
   ct_core: any
   ct_ocr_windows: any
+  ct_llama: any
   ct_onnx: any
 
 dev_dependencies:

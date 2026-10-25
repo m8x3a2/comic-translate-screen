@@ -408,6 +408,32 @@ abstract final class ModelCatalog {
     ],
   );
 
+  static const paddleOcrVl = ModelSpec(
+    id: 'paddleocr-vl-1.6',
+    displayName: 'PaddleOCR-VL 1.6 (vision-language reader)',
+    purpose: 'Recognition levels High and Ultra: reads English blocks as a whole, best of all, slowly',
+    license: 'Apache-2.0',
+    homepage: 'https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6-GGUF',
+    files: [
+      ModelFile(
+        name: 'PaddleOCR-VL-1.6-GGUF.gguf',
+        url:
+            'https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6-GGUF/resolve/511b09642bb324401f15f97cc23bc67e8f0a291d/'
+            'PaddleOCR-VL-1.6-GGUF.gguf',
+        sha256: 'f3ae46ec885050acf4b3d31944431e1fd90d50664fb09126af4a3c050ba14ee8',
+        size: 935769056,
+      ),
+      ModelFile(
+        name: 'PaddleOCR-VL-1.6-GGUF-mmproj.gguf',
+        url:
+            'https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6-GGUF/resolve/511b09642bb324401f15f97cc23bc67e8f0a291d/'
+            'PaddleOCR-VL-1.6-GGUF-mmproj.gguf',
+        sha256: '204d757d7610d9b3faab10d506d69e5b244e32bf765e2bab2d0167e65e0a058a',
+        size: 881770560,
+      ),
+    ],
+  );
+
   static const all = [
     rtdetrV2,
     ppocrDet,
@@ -426,6 +452,7 @@ abstract final class ModelCatalog {
     lamaManga,
     comicTextDetector,
     osdScript,
+    paddleOcrVl,
   ];
 
   static ModelSpec? byId(String id) {

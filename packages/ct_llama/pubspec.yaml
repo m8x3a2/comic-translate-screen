@@ -1,0 +1,23 @@
+name: ct_llama
+description: >-
+  Thin FFI bindings to llama.cpp (llama, mtmd) for Comic Translate Screen:
+  vision-language models that read text from pictures. A build hook fetches
+  pinned official llama.cpp binaries.
+version: 0.1.0
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  archive: ^4.0.7
+  code_assets: ^2.1.0
+  crypto: ^3.0.7
+  ffi: ^2.1.4
+  hooks: ^2.2.0
+
+dev_dependencies:
+  ffigen: ^23.0.0
+  lints: ^6.0.0
+  test: ^1.26.3

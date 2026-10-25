@@ -111,6 +111,25 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   measured 2.5–4× fewer letter remains and less of the drawing repainted
   (the original's mask is the letters plus ≈6 px); the model needs
   `session.set_denormal_as_zero` (90 s per run without it on the CPU).
+- Recognition levels (new, `tools.read_level` / `tools.screen_read_level`, see
+  `read_level.dart`): for English, `LeveledOcr` wraps the chosen OCR (Default or
+  PaddleOCR). Medium (the default): PP-OCRv6 small (`ppocr_v6_small`, a
+  `reader` plugin) reads every block too, and the reading with the larger
+  share of common words (the SymSpell list at Zipf ≥ 2.5) wins. High: then
+  PaddleOCR-VL 1.6 (`paddleocr_vl`, llama.cpp through `ct_llama`) reads the
+  blocks where either fast reading has a word missing from the list. Ultra:
+  PaddleOCR-VL reads every block. The vision model reads the same picture of
+  the block as PP-OCR (enlarged small text included), with the prompt and
+  sampling of llama-server at temperature 0 (penalties 1.05 over the last 64
+  tokens, the prompt's text included); a reading that loops ("Clap Clap…")
+  is cut where the loop starts, and a block may take 5 min at most. The night
+  experiment of 2026-10-25 (30 pages, word F1 for manga screenshots / small /
+  full comic pages / games / dense text): Simple 81.6 / 96.2 / 98.2 / 91.5 /
+  88.5, Medium 83.3 / 96.6 / 98.2 / 96.4 / 99.2, High 95.8 / 98.2 / 98.6 /
+  97.8 / 99.4, Ultra 95.8 / 98.2 / 99.2 / 97.6 / 98.3. `cts ocr --level` gives the
+  same texts (Medium: all 164 blocks; High and Ultra: all but one or two
+  empty readings of sound effects). Reading time per page on the owner's laptop
+  (CPU): Simple 1 s, Medium +1 s, High +30 s, Ultra +52 s on average.
 - After the fast fill of plain bubbles, the original drops whatever mask is
   left inside a filled bubble's box but outside its interior. In touching
   bubbles that box often holds the end of the neighbour's text; when the
@@ -354,6 +373,8 @@ apps/comic_translate/   Flutter app: GUI and CLI share one Dart entry point
   windows/runner/       main.cpp → comic_translate.exe, cli_main.cpp → cts.exe
 packages/ct_core/       pure Dart: models, pipeline, plugin interfaces, registry,
                         image-processing ports, project format, diagnostics
+packages/ct_llama/      FFI bindings to llama.cpp (llama, mtmd) + build hook that
+                        fetches pinned official binaries: vision-language readers  (stage 2)
 packages/ct_onnx/       FFI bindings to the ONNX Runtime C API + build hook that
                         fetches pinned official binaries                            (M1)
 packages/ct_ocr_windows/ Windows.Media.Ocr: C++/WinRT library with a C ABI, compiled
@@ -433,7 +454,8 @@ Rule: no neural-network inference in pure Dart.
 
 - **ONNX Runtime** through our own thin FFI layer (`ct_onnx`). A build hook downloads
   the official binaries with a pinned version and SHA-256: DirectML + CPU on Windows,
-  the Android AAR later. llama.cpp (stage 2) follows the same pattern.
+  the Android AAR later. llama.cpp (`ct_llama`, stage 2) follows the same pattern: the official
+  CPU build of a pinned release, loaded in dependency order so that it also works from `dart test`.
 - **OpenCV** through `dartcv4` for classical image processing. The original's `imkit`
   mirrors the cv2 API, so ports map almost one-to-one.
 - **Windows.Media.Ocr** through a small C++/WinRT library with a C ABI.

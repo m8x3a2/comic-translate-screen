@@ -8,6 +8,7 @@ library;
 
 import 'dart:math' as math;
 
+import '../cancel.dart';
 import '../image/raster.dart';
 import '../model/text_block.dart';
 import '../models/model_manager.dart';
@@ -196,11 +197,18 @@ class LeveledOcr implements OcrEngine {
       if (todo.isNotEmpty) {
         await context.cancel.checkpoint();
         final copies = [for (final b in todo) b.copy()];
-        await vlm.recognize(image, copies, sourceLanguage: sourceLanguage, context: context);
-        for (final (i, b) in todo.indexed) {
-          if (copies[i].text.trim().isEmpty) continue;
-          _take(b, copies[i]);
-          vlmRead++;
+        try {
+          await vlm.recognize(image, copies, sourceLanguage: sourceLanguage, context: context);
+          for (final (i, b) in todo.indexed) {
+            if (copies[i].text.trim().isEmpty) continue;
+            _take(b, copies[i]);
+            vlmRead++;
+          }
+        } on CancelledException {
+          rethrow;
+        } catch (e, st) {
+          // The fast readings stay.
+          context.log.error('vlm_failed', e, st);
         }
       }
     }
@@ -243,6 +251,11 @@ Future<OcrEngine> withReadLevel(
       return await registry.instance<OcrEngine>(id, configs[id] ?? PluginConfig(), env);
     } on ModelNotInstalledException catch (e) {
       env.log.warn('reader_model_missing', {'id': id, 'error': e.toString()});
+      return null;
+    } catch (e, st) {
+      // A reader is an improvement: one that cannot start (no memory, no
+      // library on this system) leaves the reading to the others.
+      env.log.error('reader_failed', e, st);
       return null;
     }
   }

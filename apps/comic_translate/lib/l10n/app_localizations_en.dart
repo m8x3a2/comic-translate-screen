@@ -629,7 +629,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get readLevelInfo =>
-      'How many networks read each block of English text (times on a slow laptop without a graphics card, the reading of a page alone; finding the text and preparing small text come on top):\n• Simple — as before: PP-OCRv5. About 1 s.\n• Medium — PP-OCRv6 small reads too (21 MB, already there for Chinese and Japanese); of the two readings of a block, the one with more real English words is kept. About 2 s.\nOther languages are read as on Simple.';
+      'How many networks read each block of English text (times on a slow laptop without a graphics card, the reading of a page alone; finding the text and preparing small text come on top):\n• Simple — as before: PP-OCRv5. About 1 s.\n• Medium — PP-OCRv6 small reads too (21 MB, already there for Chinese and Japanese); of the two readings of a block, the one with more real English words is kept. About 2 s.\n• High — after Medium, the PaddleOCR-VL network reads again the blocks where either fast reader found a word missing from the dictionary (about half). Nearly Ultra, faster: about 7 s per such block, 30 s per page on average (about 1 min for a manga screenshot).\n• Ultra — PaddleOCR-VL reads every block: best of all on full comic pages. About 7 s per block, 1 min per page on average (up to 3 min).\nPaddleOCR-VL is a separate download (1.8 GB, Apache-2.0 licence) and takes about 2.5 GB of memory; the first block after starting takes 10–20 s longer, a huge block of a wall of text up to 2 min. Until it is there, High and Ultra work as Medium.\nOther languages are read as on Simple.';
 
   @override
   String get inpainter => 'Text removal';
@@ -1614,6 +1614,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get modelCtdInfo =>
       'Finds the letters themselves, so that text removal repaints them and not the drawing around them. Used by the Medium and High text removal levels. About 2 s per page. By dmMaze, licence GPL-3.0; file from EarthWL/hiyori-onnx.';
+
+  @override
+  String get modelVlm => 'Slow accurate reader (PaddleOCR-VL 1.6)';
+
+  @override
+  String get modelVlmInfo =>
+      'A picture-to-text network: reads an English block as a whole and makes the fewest mistakes. Needed by recognition quality High and Ultra. About 7 s per block on a slow laptop, about 2.5 GB of memory. By PaddlePaddle (Baidu), Apache-2.0 licence.';
 
   @override
   String get modelOcrEn => 'English';

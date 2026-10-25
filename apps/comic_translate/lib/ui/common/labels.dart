@@ -169,6 +169,7 @@ ModelGroup modelGroupOf(String id) => switch (id) {
   'manga-ocr-mobile' ||
   'osd-script-id' => ModelGroup.language,
   'waifu2x-cunet-art-2x' || 'waifu2x-swin-art-2x' || 'fatality-comix-4x' => ModelGroup.textPrep,
+  'paddleocr-vl-1.6' => ModelGroup.extra,
   _ => ModelGroup.extra,
 };
 
@@ -178,6 +179,7 @@ ModelGroup modelGroupOf(String id) => switch (id) {
   'aot-inpainting' => (l.modelAot, l.modelAotInfo),
   'lama-manga' => (l.modelLama, l.modelLamaInfo),
   'comic-text-detector' => (l.modelCtd, l.modelCtdInfo),
+  'paddleocr-vl-1.6' => (l.modelVlm, l.modelVlmInfo),
   'ppocr-v5-rec-en' => (l.modelOcrEn, l.modelOcrEnInfo),
   'ppocr-v5-rec-latin' => (l.modelOcrLatin, l.modelOcrLatinInfo),
   'ppocr-v5-rec-eslav' => (l.modelOcrEslav, l.modelOcrEslavInfo),

@@ -37,6 +37,18 @@ class _Ocr implements OcrEngine {
   Future<void> dispose() async {}
 }
 
+class _Failing extends _Ocr {
+  _Failing() : super('vlm', const []);
+
+  @override
+  Future<void> recognize(
+    RgbImage image,
+    List<TextBlock> blocks, {
+    required String sourceLanguage,
+    required PluginContext context,
+  }) async => throw StateError('out of memory');
+}
+
 TextBlock _block() => TextBlock(xyxy: const BBox(0, 0, 10, 10));
 
 final _context = PluginContext(log: EventLog.silent());
@@ -95,6 +107,14 @@ void main() {
     final blocks = [_block(), _block()];
     await ocr.recognize(_image, blocks, sourceLanguage: 'English', context: _context);
     expect([for (final b in blocks) b.text], ['THE POTION!', 'YOU!']);
+  });
+
+  test('a slow reader that fails leaves the fast readings', () async {
+    final base = _Ocr('ppocr', ['ZYXT']);
+    final ocr = LeveledOcr(base, ReadLevel.ultra, words, vlm: _Failing());
+    final blocks = [_block()];
+    await ocr.recognize(_image, blocks, sourceLanguage: 'English', context: _context);
+    expect(blocks.single.text, 'ZYXT');
   });
 
   test('other languages: the chosen OCR alone', () async {

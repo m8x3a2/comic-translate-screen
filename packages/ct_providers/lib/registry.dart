@@ -8,6 +8,7 @@ import 'src/inpainting/comic_text_detector.dart';
 import 'src/inpainting/lama.dart';
 import 'src/ocr/default_ocr.dart';
 import 'src/ocr/manga_ocr.dart';
+import 'src/ocr/paddleocr_vl.dart';
 import 'src/ocr/ppocr.dart';
 import 'src/ocr/windows_ocr.dart';
 import 'src/text_prep/neural_upscalers.dart';
@@ -22,6 +23,7 @@ void registerBuiltInPlugins(PluginRegistry registry) {
   registry.register(defaultOcrFactory);
   registry.register(ppocrFactory);
   registry.register(ppocrV6SmallFactory);
+  registry.register(paddleOcrVlFactory);
   registry.register(mangaOcrFactory);
   registry.register(windowsOcrFactory);
   registry.register(chatOcrFactory);

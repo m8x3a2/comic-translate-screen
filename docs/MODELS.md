@@ -52,6 +52,14 @@ bundled and not linked into the program: it is a separate download, run by ONNX 
 other model file. The export used (EarthWL/hiyori-onnx, pinned to commit 0aec190) keeps the
 mask and line heads with unchanged weights and takes any input size.
 
+Recognition levels of English text (new in this project; Settings → Tools → Recognition quality,
+one level for comics and one for sites and games): Simple is `ppocr-v5-rec-en` alone, Medium (the
+default) adds `ppocr-v6-rec-small` as a second reader, High and Ultra add PaddleOCR-VL.
+
+| Id | Purpose | Files | Size | License | Source |
+|---|---|---|---|---|---|
+| `paddleocr-vl-1.6` | Slow accurate English reader of the levels High and Ultra (vision-language model, run by llama.cpp) | `PaddleOCR-VL-1.6-GGUF.gguf`, `PaddleOCR-VL-1.6-GGUF-mmproj.gguf` | 1.7 GB | Apache-2.0 (PaddlePaddle) | huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6-GGUF (pinned commit) |
+
 Only the recognizer of the chosen source language is needed. The PP-OCR line
 detector of the original is not used (see docs/ARCHITECTURE.md).
 
@@ -70,6 +78,13 @@ cts models delete lama-manga
 ```
 
 Interrupted downloads resume from where they stopped (`*.part` files).
+
+## llama.cpp
+
+PaddleOCR-VL runs on llama.cpp b11858 (MIT, https://github.com/ggml-org/llama.cpp), the official
+Windows CPU build fetched at build time by the `ct_llama` build hook and verified by SHA-256
+(`llama.dll`, `mtmd.dll`, `ggml*.dll`, `libomp.dll`; ggml picks the `ggml-cpu-*` variant of the
+processor at run time).
 
 ## ONNX Runtime
 

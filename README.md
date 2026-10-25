@@ -84,6 +84,10 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
   plain ×1.5 / ×2, or neural networks on three levels (waifu2x CUNet, waifu2x Swin-UNet, Fatality
   Comix by Twittman, CC BY-NC-SA 4.0, the default for comics). Words glued together on tiny text can be
   split by a dictionary; tiny text gets advice on what to do.
+- **Recognition levels** Simple / Medium / High / Ultra for English text (one for comics, one for sites
+  and games): Medium (the default) lets PP-OCRv6 small read every block too and keeps the reading with
+  more dictionary words; High lets the vision-language model PaddleOCR-VL 1.6 (llama.cpp, separate
+  1.7 GB download) read again the blocks either fast reader is unsure of; Ultra lets it read every block.
 - **Text removal levels** Simple / Medium / High: Medium and High find the letters themselves
   (comic-text-detector, GPL-3.0, separate download), so the network repaints the letters and not the
   drawing around them; High repaints with LaMa (the default).

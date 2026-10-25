@@ -38,6 +38,10 @@ apps/comic_translate/assets/dict/en_words-LICENSE.txt.
 The PSD text layer layout follows ag-psd (https://github.com/Agamnentzar/ag-psd,
 Copyright 2016 Agamnentzar, MIT License).
 
+The program bundles llama.cpp (https://github.com/ggml-org/llama.cpp,
+Copyright (c) 2023-2026 The ggml authors, MIT License) for the vision-language
+reader of the recognition levels; see packages/ct_llama/third_party/llama.cpp.
+
 Machine-learning models are not bundled. On first use they are downloaded
 from their original publishers and remain under their own licenses; see
 docs/MODELS.md.

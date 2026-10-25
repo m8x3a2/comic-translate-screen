@@ -9,6 +9,7 @@ workspace:
   - apps/comic_translate
   - packages/ct_core
   - packages/ct_ocr_windows
+  - packages/ct_llama
   - packages/ct_onnx
   - packages/ct_providers
 

@@ -10,6 +10,7 @@ export 'src/inpainting/comic_text_detector.dart';
 export 'src/inpainting/lama.dart';
 export 'src/ocr/default_ocr.dart';
 export 'src/ocr/manga_ocr.dart';
+export 'src/ocr/paddleocr_vl.dart';
 export 'src/ocr/ppocr.dart';
 export 'src/ocr/script_id.dart';
 export 'src/ocr/windows_ocr.dart';
