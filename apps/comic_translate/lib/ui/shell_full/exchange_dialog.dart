@@ -511,8 +511,14 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     final s = ref.watch(settingsProvider.select((s) => s.exchange));
     final sheets = _mode.sendsImages;
     final items = _export?.items ?? const <ExchangeItem>[];
-    Widget dropdown<T>(String label, T value, Map<T, String> options, void Function(T v) onChanged) => SizedBox(
-      width: 200,
+    Widget dropdown<T>(
+      String label,
+      T value,
+      Map<T, String> options,
+      void Function(T v) onChanged, {
+      double width = 200,
+    }) => SizedBox(
+      width: width,
       child: DropdownButtonFormField<T>(
         initialValue: value,
         isDense: true,
@@ -537,10 +543,13 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         if (sheets) ...[
-          dropdown(l.chatSheets, s.grouping, {
-            SheetGrouping.size: l.chatGroupingSize,
-            SheetGrouping.count: l.chatGroupingCount,
-          }, (v) => _changeOptions((e) => e.copyWith(grouping: v))),
+          dropdown(
+            l.chatSheets,
+            s.grouping,
+            {SheetGrouping.size: l.chatGroupingSize, SheetGrouping.count: l.chatGroupingCount},
+            (v) => _changeOptions((e) => e.copyWith(grouping: v)),
+            width: 240,
+          ),
           if (s.grouping == SheetGrouping.count)
             dropdown(l.chatPerSheet, s.perSheet, {
               for (final n in {1, 2, 3, 4, 6, 8, 10, 12, 16, 20, 30, s.perSheet}.toList()..sort()) n: '$n',
