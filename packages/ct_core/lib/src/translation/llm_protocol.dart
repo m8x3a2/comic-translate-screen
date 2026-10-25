@@ -139,11 +139,26 @@ Future<List<TextBlock>> translateBlocks(
       sourceLanguage: resolveAutoSourceLanguage(request.blocks, request.sourceLanguage),
       targetLanguage: request.targetLanguage,
       pageImage: request.pageImage,
-      extraContext: request.extraContext,
+      extraContext: [
+        request.extraContext,
+        speakersForTranslator(translatable),
+      ].where((s) => s.trim().isNotEmpty).join('\n'),
     ),
     context,
   );
   return translatable;
+}
+
+/// Who says which block (`block_N` as in [blocksToJson]), when the user
+/// told; empty otherwise. Not in the original.
+String speakersForTranslator(List<TextBlock> blocks) {
+  final told = [
+    for (final (i, b) in blocks.indexed)
+      if (b.speaker case final s?) 'block_$i: ${s.words}',
+  ];
+  return told.isEmpty
+      ? ''
+      : 'Who speaks (use the grammatical gender that fits the speaker: verbs, adjectives): ${told.join('; ')}.';
 }
 
 /// `set_upper_case`: upper-cases translations, or turns all-caps ones into

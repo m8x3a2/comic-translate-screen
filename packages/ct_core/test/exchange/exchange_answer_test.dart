@@ -196,6 +196,59 @@ Let me know if you need anything else.''';
     });
   });
 
+  group('who speaks', () {
+    test('a tag after the label is read and taken off the text; [-] tells nobody', () {
+      final a = parseExchangeAnswer(
+        '[01-003] [f] Я опоздала!\n[01-004] [Ж] Hi --> Привет\n[01-005] [-] Бах\n[01-006] [x] text',
+        ExchangeMode.both,
+      );
+      final r3 = a.replies[l13]!, r4 = a.replies[l14]!;
+      expect((r3.translation, r3.speaker, r3.hasSpeaker), ('Я опоздала!', Speaker.female, true));
+      expect((r4.original, r4.translation, r4.speaker), ('Hi', 'Привет', Speaker.female));
+      final r5 = a.replies[const ExchangeLabel(1, 5)]!;
+      expect((r5.translation, r5.speaker, r5.hasSpeaker), ('Бах', null, true));
+      final r6 = a.replies[const ExchangeLabel(1, 6)]!;
+      expect((r6.translation, r6.hasSpeaker), ('[x] text', false), reason: 'not a speaker tag');
+    });
+
+    test('the tag is written into the block; a tag alone changes only the speaker', () {
+      final b = TextBlock(xyxy: const BBox(0, 0, 1, 1), text: 'Hi', translation: 'Привет');
+      expect(
+        applyExchangeReply(b, const ExchangeReply(hasSpeaker: true, speaker: Speaker.male), ExchangeMode.both),
+        isTrue,
+      );
+      expect((b.text, b.translation, b.speaker), ('Hi', 'Привет', Speaker.male));
+      applyExchangeReply(b, const ExchangeReply(hasSpeaker: true), ExchangeMode.both);
+      expect(b.speaker, isNull);
+    });
+
+    test('the tags go with the text and the instructions say what they mean', () {
+      final items = [
+        ExchangeItem(
+          label: l13,
+          pageId: 'a',
+          blockIndex: 2,
+          box: const BBox(0, 0, 1, 1),
+          text: 'Hi',
+          speaker: Speaker.female,
+        ),
+        ExchangeItem(label: l14, pageId: 'a', blockIndex: 3, box: const BBox(0, 0, 1, 1), text: 'Bye'),
+      ];
+      expect(exchangeTextLines(items), '[01-003] [f] Hi\n[01-004] Bye');
+      String prompt(ExchangePrompt kind, {String template = ''}) =>
+          exchangePrompt(kind, items, sourceLanguage: 'English', targetLanguage: 'Russian', template: template);
+      expect(prompt(ExchangePrompt.translate), contains('[f] a woman'));
+      expect(prompt(ExchangePrompt.both), contains('Who speaks: [01-003] a woman.'));
+      expect(prompt(ExchangePrompt.recognize), isNot(contains('[f]')), reason: 'reading has no gender');
+      expect(prompt(ExchangePrompt.translate, template: 'Mine: {lines}'), contains('tag after a label'));
+      expect(
+        exchangePrompt(ExchangePrompt.both, [items[1]], sourceLanguage: 'English', targetLanguage: 'Russian'),
+        isNot(contains('Who speaks')),
+        reason: 'nobody told',
+      );
+    });
+  });
+
   group('own grouping of the sheets', () {
     test('ranges and single pieces, counted from 1', () {
       expect(parseSheetGroups('1-4, 5-6; 8', 9), [

@@ -283,6 +283,28 @@ void main() {
     expect(systemPrompt(), startsWith('You are an expert translator who translates text in any language to English.'));
   });
 
+  test('who speaks goes to the translator, numbered as the blocks sent', () async {
+    server.handler = (body) => (200, chatReply('{"block_0": "a", "block_1": "b"}'));
+    final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm');
+    await translateBlocks(
+      t,
+      request([block('...'), block('I came')..speaker = Speaker.female, block('Me too')]),
+      PluginContext(log: EventLog.silent()),
+    );
+    final user = (((server.requests.last.body['messages'] as List).last as Map)['content'] as List).first['text'];
+    expect(
+      user,
+      contains(
+        'Who speaks (use the grammatical gender that fits the speaker: verbs, adjectives): '
+        'block_0: a woman.',
+      ),
+    );
+    // Nobody told: the prompt of the original.
+    await translateBlocks(t, request([block('I came'), block('Me too')]), PluginContext(log: EventLog.silent()));
+    final plain = (((server.requests.last.body['messages'] as List).last as Map)['content'] as List).first['text'];
+    expect(plain, isNot(contains('Who speaks')));
+  });
+
   test('each answered request is counted: tokens and cost from the reply, else estimated', () async {
     final counted = <ServiceUsage>[];
     final context = PluginContext(log: EventLog.silent(), onUsage: counted.add);

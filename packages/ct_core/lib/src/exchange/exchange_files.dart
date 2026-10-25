@@ -82,6 +82,7 @@ List<ExchangeItem> exchangeItems(List<ExchangePage> pages, ExchangeMode mode) =>
           box: b.xyxy,
           text: b.text,
           translation: b.translation,
+          speaker: b.speaker,
         ),
 ];
 
@@ -280,8 +281,9 @@ Future<ExchangeExport> writeExchange(
   // every mode; the answer is taken from whichever is filled in.
   final split = settings.splitFiles;
   Future<void> writeTexts(String base, Iterable<ExchangeItem> list) async {
+    // Who speaks goes in every file (`[01-003] [f] …`): it can be changed there.
     String lines(String Function(ExchangeItem it) text) =>
-        '${[for (final it in list) '${it.label} ${text(it)}'].join('\n')}\n';
+        '${[for (final it in list) '${it.label} ${it.speakerTag}${text(it)}'].join('\n')}\n';
     String source(ExchangeItem it) => mode == ExchangeMode.translate ? it.text.replaceAll('\n', ' ') : '';
     final files = {
       '$base.txt': lines(source),
@@ -504,9 +506,17 @@ ExchangeReply? _filledIn(ExchangeItem item, ExchangeReply reply, ExchangeMode mo
   String? written(String? s) =>
       s == null || s.trim().isEmpty || (mode == ExchangeMode.translate && s.trim() == item.text.trim()) ? null : s;
   final original = written(reply.original), translation = written(reply.translation);
-  if (original == null && translation == null) return null;
-  if (original == reply.original && translation == reply.translation) return reply;
-  return ExchangeReply(original: original, translation: translation, missingArrow: reply.missingArrow);
+  // Another speaker written in counts on its own.
+  final speaker = reply.hasSpeaker && reply.speaker != item.speaker;
+  if (original == null && translation == null && !speaker) return null;
+  if (original == reply.original && translation == reply.translation && speaker == reply.hasSpeaker) return reply;
+  return ExchangeReply(
+    original: original,
+    translation: translation,
+    missingArrow: reply.missingArrow,
+    speaker: speaker ? reply.speaker : null,
+    hasSpeaker: speaker,
+  );
 }
 
 /// Reads the answers written into the text files of [dir]: `ALL.txt` first,
@@ -528,11 +538,18 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
     String? changed(String? now, String? was) => now != null && now.trim() == (was ?? '').trim() ? null : now;
     return ExchangeAnswer({
       for (final MapEntry(key: label, value: reply) in answer.replies.entries)
-        label: ExchangeReply(
-          original: changed(reply.original, before[label]?.original),
-          translation: changed(reply.translation, before[label]?.translation),
-          missingArrow: reply.missingArrow,
-        ),
+        label: () {
+          // A speaker tag as written there is no answer either.
+          final was = before[label];
+          final speaker = reply.hasSpeaker && !(was != null && was.hasSpeaker && was.speaker == reply.speaker);
+          return ExchangeReply(
+            original: changed(reply.original, was?.original),
+            translation: changed(reply.translation, was?.translation),
+            missingArrow: reply.missingArrow,
+            speaker: speaker ? reply.speaker : null,
+            hasSpeaker: speaker,
+          );
+        }(),
     }, repeated: answer.repeated);
   }
 
@@ -551,7 +568,7 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
           (ExchangeReply reply) => [
             if (reply.original != null) '${base}_original.txt',
             if (reply.translation != null) '${base}_translation.txt',
-          ].join(' + '),
+          ].join(' + ').ifEmpty('${base}_original.txt / ${base}_translation.txt'),
         ),
       if (single != null) (single, (ExchangeReply _) => '$base.txt'),
     ];
@@ -564,14 +581,17 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
         if (had == null) {
           merged[label] = reply;
           sources[label] = name;
-        } else if (had.original == null || had.translation == null) {
+        } else if (had.original == null || had.translation == null || !had.hasSpeaker) {
           // Half of it in one file (the original), the rest in another.
           final original = had.original ?? reply.original, translation = had.translation ?? reply.translation;
-          if (original == had.original && translation == had.translation) continue;
+          final speakerToo = !had.hasSpeaker && reply.hasSpeaker;
+          if (original == had.original && translation == had.translation && !speakerToo) continue;
           merged[label] = ExchangeReply(
             original: original,
             translation: translation,
             missingArrow: had.missingArrow && reply.original == null,
+            speaker: had.hasSpeaker ? had.speaker : reply.speaker,
+            hasSpeaker: had.hasSpeaker || reply.hasSpeaker,
           );
           sources[label] = '${sources[label]}, $name';
         }
@@ -613,7 +633,7 @@ int? findExchangeBlock(List<TextBlock> blocks, ExchangeItem item) {
 /// translation between stars (`*НЕ*`) become bold words of the block; the
 /// words styled for the old translation go.
 bool applyExchangeReply(TextBlock block, ExchangeReply? reply, ExchangeMode mode, {String placeholder = ''}) {
-  final oldText = block.text, oldTranslation = block.translation, oldStyle = block.style;
+  final oldText = block.text, oldTranslation = block.translation, oldStyle = block.style, oldSpeaker = block.speaker;
   if (reply == null) {
     if (placeholder.isEmpty) return false;
     if (mode == ExchangeMode.recognize) {
@@ -624,13 +644,16 @@ bool applyExchangeReply(TextBlock block, ExchangeReply? reply, ExchangeMode mode
   } else {
     // What was given, in any mode (a translation may come along with the
     // reading, a corrected original with the translation). Nothing after
-    // the label empties what the mode asked for.
-    if (reply.original != null || (reply.isEmpty && mode != ExchangeMode.translate)) {
+    // the label empties what the mode asked for; a speaker tag alone only
+    // tells who speaks.
+    final nothing = reply.isEmpty && !reply.hasSpeaker;
+    if (reply.original != null || (nothing && mode != ExchangeMode.translate)) {
       block.text = reply.original ?? '';
     }
-    if (reply.translation != null || (reply.isEmpty && mode != ExchangeMode.recognize)) {
+    if (reply.translation != null || (nothing && mode != ExchangeMode.recognize)) {
       block.translation = reply.translation ?? '';
     }
+    if (reply.hasSpeaker) block.speaker = reply.speaker;
   }
   if (block.translation != oldTranslation) {
     final (text, runs) = boldFromStars(block.translation);
@@ -638,5 +661,12 @@ bool applyExchangeReply(TextBlock block, ExchangeReply? reply, ExchangeMode mode
     final style = (block.style ?? const BlockStyle()).copyWith(runs: runs);
     block.style = style.isEmpty ? null : style;
   }
-  return block.text != oldText || block.translation != oldTranslation || block.style != oldStyle;
+  return block.text != oldText ||
+      block.translation != oldTranslation ||
+      block.style != oldStyle ||
+      block.speaker != oldSpeaker;
+}
+
+extension on String {
+  String ifEmpty(String other) => isEmpty ? other : this;
 }

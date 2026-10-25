@@ -2346,6 +2346,34 @@ class AppLocalizationsEn extends AppLocalizations {
       'What you wrote into the txt files stays when the mode changes: \"Recognize\", \"Translate\" and \"Recognize and translate\" work with the same files. Off: each mode gets fresh templates of its own.';
 
   @override
+  String get speakerLabel => 'Who speaks';
+
+  @override
+  String get speakerInfo =>
+      'Helps the translation pick the grammatical gender (in Russian, \"я пришёл\" or \"я пришла\"). The tag goes to the chat and to translators over the network (OpenRouter and others); the offline translator does not use it.\n\nIn the exchange txt files the tag stands after the label: [01-003] [f] … — it can be changed there too: [m] a man, [f] a woman, [n] no gender, [-] none.';
+
+  @override
+  String get speakerMale => 'M';
+
+  @override
+  String get speakerFemale => 'F';
+
+  @override
+  String get speakerNeuter => 'N';
+
+  @override
+  String get speakerNoneTip => 'Not told';
+
+  @override
+  String get speakerMaleTip => 'A man';
+
+  @override
+  String get speakerFemaleTip => 'A woman';
+
+  @override
+  String get speakerNeuterTip => 'No gender: a thing, a crowd, a narrator';
+
+  @override
   String get chatAnswerFromClipboard => 'Offer the answer from the clipboard';
 
   @override

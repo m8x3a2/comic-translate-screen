@@ -15,6 +15,7 @@ import '../../state/editor.dart';
 import '../../state/glued_words.dart';
 import '../../state/steps.dart';
 import '../../state/workspace.dart';
+import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
 import 'batch_dialogs.dart';
@@ -187,7 +188,21 @@ class _BlockCard extends ConsumerWidget {
               : Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(width: 24, child: Text('${index + 1}', style: theme.textTheme.labelMedium)),
+                    SizedBox(
+                      width: 24,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('${index + 1}', style: theme.textTheme.labelMedium),
+                          // Who speaks, when told.
+                          if (block.speaker case final s?)
+                            Text(
+                              speakerShort(context.l10n, s),
+                              style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary),
+                            ),
+                        ],
+                      ),
+                    ),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,6 +333,10 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
             ),
           ],
         ),
+        _SpeakerRow(
+          speaker: widget.block.speaker,
+          onChanged: busy ? null : (v) => ws.changeBlock(i, (b) => b.speaker = v),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _source,
@@ -374,6 +393,55 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
     );
   }
 }
+
+/// "Who speaks: — / M / F / N" of the selected block: the translation takes
+/// the matching grammatical gender.
+class _SpeakerRow extends StatelessWidget {
+  const _SpeakerRow({required this.speaker, required this.onChanged});
+
+  final Speaker? speaker;
+  final ValueChanged<Speaker?>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    // A narrow panel puts the buttons under the words.
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 4,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l.speakerLabel, style: theme.textTheme.bodySmall),
+            InfoHint(l.speakerInfo),
+          ],
+        ),
+        SegmentedButton<Speaker?>(
+          showSelectedIcon: false,
+          style: const ButtonStyle(visualDensity: VisualDensity.compact),
+          segments: [
+            ButtonSegment(value: null, label: const Text('—'), tooltip: l.speakerNoneTip),
+            ButtonSegment(value: Speaker.male, label: Text(l.speakerMale), tooltip: l.speakerMaleTip),
+            ButtonSegment(value: Speaker.female, label: Text(l.speakerFemale), tooltip: l.speakerFemaleTip),
+            ButtonSegment(value: Speaker.neuter, label: Text(l.speakerNeuter), tooltip: l.speakerNeuterTip),
+          ],
+          selected: {speaker},
+          onSelectionChanged: onChanged == null ? null : (s) => onChanged!(s.first),
+        ),
+      ],
+    );
+  }
+}
+
+/// The short mark of [speaker] in a block card: `М`, `Ж`, `Ср`.
+String speakerShort(AppLocalizations l, Speaker speaker) => switch (speaker) {
+  Speaker.male => l.speakerMale,
+  Speaker.female => l.speakerFemale,
+  Speaker.neuter => l.speakerNeuter,
+};
 
 /// What to do about tiny text: the High level when a lighter one is chosen
 /// for comics, else a larger screenshot.

@@ -35,6 +35,37 @@ enum TextDirection {
       values.firstWhere((d) => d.id == id, orElse: () => TextDirection.unknown);
 }
 
+/// Who says the text of a block, set by the user: the translation takes the
+/// matching grammatical gender ("я пришёл" / "я пришла"). Not in the
+/// original.
+enum Speaker {
+  male('m'),
+  female('f'),
+
+  /// No gender: a thing, a crowd, a narrator.
+  neuter('n');
+
+  const Speaker(this.tag);
+
+  /// In JSON and in the text for a chat: `[f]`.
+  final String tag;
+
+  /// For a translator: who speaks.
+  String get words => switch (this) {
+        male => 'a man',
+        female => 'a woman',
+        neuter => 'no gender (a thing, a crowd)',
+      };
+
+  /// `m`, `f`, `n` (also Russian `м`, `ж`, `ср`); null for anything else.
+  static Speaker? parse(String? tag) => switch (tag?.trim().toLowerCase()) {
+        'm' || 'м' => male,
+        'f' || 'ж' => female,
+        'n' || 'ср' => neuter,
+        _ => null,
+      };
+}
+
 /// One block of text on a page and everything the pipeline learns about it.
 ///
 /// Port of `TextBlock` from `modules/utils/textblock.py`. Like the original
@@ -66,6 +97,7 @@ class TextBlock {
     this.linePx,
     this.fixedLines = false,
     this.sourceStyle,
+    this.speaker,
   })  : lines = lines ?? [],
         texts = texts ?? [],
         skippedSmallTexts = skippedSmallTexts ?? [],
@@ -128,6 +160,9 @@ class TextBlock {
   /// when the block is read; null before. Not in the original.
   SourceStyle? sourceStyle;
 
+  /// Who says it, when the user told; null: not told.
+  Speaker? speaker;
+
   BBox get bbox => xyxy;
   Point2 get center => xyxy.center;
 
@@ -184,6 +219,7 @@ class TextBlock {
         linePx: linePx,
         fixedLines: fixedLines,
         sourceStyle: sourceStyle,
+        speaker: speaker,
       )..text = text;
 
   /// JSON with the original attribute names, so artifacts can be compared
@@ -214,6 +250,7 @@ class TextBlock {
         if (linePx != null) 'line_px': linePx,
         if (fixedLines) 'fixed_lines': true,
         if (sourceStyle != null) 'source_style': sourceStyle!.toJson(),
+        if (speaker != null) 'speaker': speaker!.tag,
       };
 
   factory TextBlock.fromJson(Map<String, Object?> json) {
@@ -247,6 +284,7 @@ class TextBlock {
       sourceStyle: json['source_style'] is Map
           ? SourceStyle.fromJson((json['source_style'] as Map).cast<String, Object?>())
           : null,
+      speaker: Speaker.parse(json['speaker'] as String?),
     );
     // `text` is stored explicitly; it may differ from texts.join(' ').
     block.text = json['text'] as String? ?? block.text;

@@ -10,6 +10,7 @@
 library;
 
 import '../model/geometry.dart';
+import '../model/text_block.dart';
 import 'exchange_settings.dart';
 
 /// `[01-003]`: page 1, block 3.
@@ -53,6 +54,7 @@ class ExchangeItem {
     required this.box,
     this.text = '',
     this.translation = '',
+    this.speaker,
   });
 
   final ExchangeLabel label;
@@ -69,6 +71,12 @@ class ExchangeItem {
   final String text;
   final String translation;
 
+  /// Who says it, as the user told.
+  final Speaker? speaker;
+
+  /// `[f] ` before the text for the chat; empty without a speaker.
+  String get speakerTag => speaker == null ? '' : '[${speaker!.tag}] ';
+
   Map<String, Object?> toJson() => {
     'label': label.code,
     'page_id': pageId,
@@ -76,6 +84,7 @@ class ExchangeItem {
     'xyxy': box.toJson(),
     'text': text,
     if (translation.isNotEmpty) 'translation': translation,
+    if (speaker != null) 'speaker': speaker!.tag,
   };
 
   factory ExchangeItem.fromJson(Map<String, Object?> json) => ExchangeItem(
@@ -85,12 +94,33 @@ class ExchangeItem {
     box: BBox.fromJson(json['xyxy']),
     text: json['text'] as String? ?? '',
     translation: json['translation'] as String? ?? '',
+    speaker: Speaker.parse(json['speaker'] as String?),
   );
 }
 
 /// What the chat wrote for one label.
 class ExchangeReply {
-  const ExchangeReply({this.original, this.translation, this.missingArrow = false});
+  const ExchangeReply({
+    this.original,
+    this.translation,
+    this.missingArrow = false,
+    this.speaker,
+    this.hasSpeaker = false,
+  });
+
+  /// The same with [speaker] told ([hasSpeaker]: a tag was written; `[-]`
+  /// tells there is no speaker).
+  ExchangeReply withSpeaker(Speaker? speaker, {bool hasSpeaker = true}) => ExchangeReply(
+    original: original,
+    translation: translation,
+    missingArrow: missingArrow,
+    speaker: speaker,
+    hasSpeaker: hasSpeaker,
+  );
+
+  /// Who says it: `[m]`, `[f]`, `[n]` after the label (`[-]`: nobody told).
+  final Speaker? speaker;
+  final bool hasSpeaker;
 
   /// The text as read (any mode: in translate, only from the original's
   /// text file, a correction of the text sent).
@@ -139,12 +169,17 @@ ExchangeAnswer mergeExchangeAnswers(ExchangeAnswer originals, ExchangeAnswer tra
     for (final l in translations.replies.keys)
       if (!originals.replies.containsKey(l)) l,
   ];
+  // Who speaks: as told in the originals, else in the translations.
+  ExchangeReply? told(ExchangeLabel l) =>
+      [originals.replies[l], translations.replies[l]].firstWhere((r) => r?.hasSpeaker ?? false, orElse: () => null);
   return ExchangeAnswer(
     {
       for (final l in labels)
         l: ExchangeReply(
           original: given(originals.replies[l]?.original),
           translation: given(translations.replies[l]?.translation),
+          speaker: told(l)?.speaker,
+          hasSpeaker: told(l) != null,
         ),
     },
     repeated: [...originals.repeated, ...translations.repeated],
@@ -192,10 +227,19 @@ ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String sep
       repeated.add(label);
       continue;
     }
-    replies[label] = _reply(body, mode, arrow);
+    // Who speaks, before the text: `[f] Я опоздала`.
+    if (_speakerTag.firstMatch(body) case final tag?) {
+      final speaker = Speaker.parse(tag[1]);
+      replies[label] = _reply(_unquote(body.substring(tag.end)), mode, arrow).withSpeaker(speaker);
+    } else {
+      replies[label] = _reply(body, mode, arrow);
+    }
   }
   return ExchangeAnswer(replies, repeated: repeated);
 }
+
+/// `[m]`, `[f]`, `[n]` (also `[м]`, `[ж]`, `[ср]`), or `[-]` for nobody.
+final _speakerTag = RegExp(r'^\[\s*(m|f|n|м|ж|ср|-|—)\s*\]\s*', caseSensitive: false);
 
 ExchangeReply _reply(String body, ExchangeMode mode, RegExp arrows) {
   final arrow = arrows.firstMatch(body);

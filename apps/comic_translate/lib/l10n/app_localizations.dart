@@ -4070,6 +4070,60 @@ abstract class AppLocalizations {
   /// **'What you wrote into the txt files stays when the mode changes: \"Recognize\", \"Translate\" and \"Recognize and translate\" work with the same files. Off: each mode gets fresh templates of its own.'**
   String get chatSharedTextsHelp;
 
+  /// No description provided for @speakerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Who speaks'**
+  String get speakerLabel;
+
+  /// No description provided for @speakerInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Helps the translation pick the grammatical gender (in Russian, \"я пришёл\" or \"я пришла\"). The tag goes to the chat and to translators over the network (OpenRouter and others); the offline translator does not use it.\n\nIn the exchange txt files the tag stands after the label: [01-003] [f] … — it can be changed there too: [m] a man, [f] a woman, [n] no gender, [-] none.'**
+  String get speakerInfo;
+
+  /// No description provided for @speakerMale.
+  ///
+  /// In en, this message translates to:
+  /// **'M'**
+  String get speakerMale;
+
+  /// No description provided for @speakerFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'F'**
+  String get speakerFemale;
+
+  /// No description provided for @speakerNeuter.
+  ///
+  /// In en, this message translates to:
+  /// **'N'**
+  String get speakerNeuter;
+
+  /// No description provided for @speakerNoneTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Not told'**
+  String get speakerNoneTip;
+
+  /// No description provided for @speakerMaleTip.
+  ///
+  /// In en, this message translates to:
+  /// **'A man'**
+  String get speakerMaleTip;
+
+  /// No description provided for @speakerFemaleTip.
+  ///
+  /// In en, this message translates to:
+  /// **'A woman'**
+  String get speakerFemaleTip;
+
+  /// No description provided for @speakerNeuterTip.
+  ///
+  /// In en, this message translates to:
+  /// **'No gender: a thing, a crowd, a narrator'**
+  String get speakerNeuterTip;
+
   /// No description provided for @chatAnswerFromClipboard.
   ///
   /// In en, this message translates to:

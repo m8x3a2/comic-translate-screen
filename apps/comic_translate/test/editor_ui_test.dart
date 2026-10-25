@@ -255,6 +255,30 @@ void main() {
     expect(container.read(workspaceProvider).currentPage!.blocks.single.translation, 'Ну $text');
   });
 
+  testWidgets('who speaks is set in the card of the bubble and shown when it is closed', (tester) async {
+    final container = await openTranslatedPage(tester);
+    final ws = container.read(workspaceProvider.notifier);
+    ws.selectBlock(0);
+    await tester.pump();
+    Speaker? speaker() => container.read(workspaceProvider).currentPage!.blocks.single.speaker;
+    expect(find.text('Кто говорит'), findsOneWidget);
+    await tester.ensureVisible(find.text('Ж'));
+    await tester.pump();
+    await tester.tap(find.text('Ж'));
+    await tester.pump();
+    expect(speaker(), Speaker.female);
+    ws.selectBlock(null);
+    await tester.pump();
+    expect(find.text('Ж'), findsOneWidget, reason: 'the closed card shows it');
+    ws.selectBlock(0);
+    await tester.pump();
+    await tester.ensureVisible(find.text('—'));
+    await tester.pump();
+    await tester.tap(find.text('—'));
+    await tester.pump();
+    expect(speaker(), isNull);
+  });
+
   testWidgets('the look menu: capitals for the page, back to the automatic look', (tester) async {
     final container = await openTranslatedPage(tester);
     await tester.tap(find.byTooltip('Оформление текста'));

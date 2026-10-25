@@ -333,6 +333,30 @@ void main() {
       expect(read('ALL.txt'), '[01-001] \n[01-002] \n[02-001] \n');
     });
 
+    test('who speaks is in the text files and can be changed there', () async {
+      final ps = pages();
+      ps.first.blocks.first.speaker = Speaker.female;
+      await writeExchange(
+        dir,
+        ps,
+        ExchangeMode.translate,
+        const ExchangeSettings(),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      expect(File(p.join(dir.path, 'ALL.txt')).readAsStringSync(), '[01-001] [f] Hello\n[02-001] Bye\n');
+      expect(File(p.join(dir.path, 'ALL_translation.txt')).readAsStringSync(), '[01-001] [f] \n[02-001] \n');
+      // A tag left as it was is no answer; a new one is, even without text.
+      File(p.join(dir.path, 'ALL.txt')).writeAsStringSync('[01-001] [f] Hello\n[02-001] [m] Bye\n');
+      final m = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
+      expect(m.replies.keys, [const ExchangeLabel(2, 1)]);
+      final r = m.replies[const ExchangeLabel(2, 1)]!;
+      expect((r.translation, r.speaker, r.hasSpeaker), (null, Speaker.male, true));
+      final b = ps.last.blocks.single;
+      applyExchangeReply(b, r, ExchangeMode.translate);
+      expect((b.translation, b.speaker), ('', Speaker.male));
+    });
+
     test('a reading the same as the text already there is an answer', () async {
       await writeExchange(
         dir,

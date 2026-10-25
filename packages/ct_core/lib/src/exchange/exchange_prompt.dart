@@ -6,7 +6,7 @@ library;
 import 'exchange_answer.dart';
 import 'exchange_settings.dart';
 
-/// Built-in instructions. `{kind}`, `{source}`, `{target}`, `{labels}`,
+/// Built-in instructions. `{kind}`, `{source}`, `{target}`, `{labels}`, `{speakers}`,
 /// `{lines}`, `{context}`, `{pictures}`, `{stress}` and `{separator}` are
 /// filled in by [exchangePrompt].
 const defaultExchangePrompts = {
@@ -21,7 +21,7 @@ Labels: {labels}
   ExchangePrompt.translate: '''
 Translate these lines of {kind} from {source} into {target}.
 {pictures}Keep the tone and the way each character speaks; the translation should read naturally.
-{stress}Answer with one line per label and nothing else:
+{stress}{speakers}Answer with one line per label and nothing else:
 [01-003] translation
 {context}
 {lines}''',
@@ -29,7 +29,7 @@ Translate these lines of {kind} from {source} into {target}.
 The attached pictures show pieces of text cut out of {kind}. Each piece has a label like [01-003] above it.
 {pictures}For every labelled piece write the {source} text exactly as it is written, then " {separator} ", then its translation into {target}.
 Keep the tone and the way each character speaks; the translation should read naturally.
-{stress}Answer with one line per label and nothing else:
+{stress}{speakers}Answer with one line per label and nothing else:
 [01-003] original text {separator} translation
 Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
 Labels: {labels}
@@ -43,7 +43,7 @@ Then a line with only ===
 Then the translation of every piece into {target}, one line per label:
 [01-003] translation
 Keep the tone and the way each character speaks; the translation should read naturally.
-{stress}Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
+{stress}{speakers}Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
 Labels: {labels}
 {context}''',
 };
@@ -62,9 +62,16 @@ String exchangePrompt(
   bool contextPictures = false,
   String separator = defaultExchangeSeparator,
 }) {
-  final base = template.trim().isEmpty ? defaultExchangePrompts[kind]! : template;
+  var base = template.trim().isEmpty ? defaultExchangePrompts[kind]! : template;
   final lines = exchangeTextLines(items);
+  // Who speaks matters only to a translation.
+  final speakers = kind == ExchangePrompt.recognize
+      ? ''
+      : exchangeSpeakers(items, inLines: kind == ExchangePrompt.translate);
+  // Own instructions made before speakers existed get them at the end.
+  if (speakers.isNotEmpty && !base.contains('{speakers}')) base = '$base\n{speakers}';
   final values = {
+    'speakers': speakers.isEmpty ? '' : '$speakers\n',
     'separator': separator,
     'kind': screens ? 'screenshots of a site or a game' : 'a comic',
     'source': sourceLanguage == 'Auto' ? 'original' : sourceLanguage,
@@ -93,9 +100,27 @@ const stressInstruction =
     'Where the original stresses a word (bold or larger letters), put the matching word of the translation '
     'between stars: *word*. Use no other stars.';
 
-/// The text of [items], one line per label: `[01-003] I'M LATE!` (the
-/// `{lines}` of the instructions, and what "Copy the text" copies).
+/// The text of [items], one line per label: `[01-003] I'M LATE!`, with who
+/// speaks when told: `[01-003] [f] I'M LATE!` (the `{lines}` of the
+/// instructions, and what "Copy the text" copies).
 String exchangeTextLines(List<ExchangeItem> items) =>
-    [for (final i in items) '${i.label} ${_oneLine(i.text)}'].join('\n');
+    [for (final i in items) '${i.label} ${i.speakerTag}${_oneLine(i.text)}'].join('\n');
+
+/// What the speaker tags mean, for instructions that translate; empty when
+/// nobody is told. [inLines]: the tags stand in the lines of text; else the
+/// speakers are listed by label (the chat reads pictures).
+String exchangeSpeakers(List<ExchangeItem> items, {required bool inLines}) {
+  final told = [
+    for (final i in items)
+      if (i.speaker != null) i,
+  ];
+  if (told.isEmpty) return '';
+  const use = 'Use the grammatical gender that fits the speaker (verbs, adjectives).';
+  if (inLines) {
+    return 'A tag after a label tells who speaks: [m] a man, [f] a woman, [n] no gender (a thing, a crowd). '
+        '$use Do not write the tags in the answer.';
+  }
+  return 'Who speaks: ${[for (final i in told) '${i.label} ${i.speaker!.words}'].join('; ')}. $use';
+}
 
 String _oneLine(String s) => s.replaceAll(RegExp(r'\s*\n\s*'), ' ').trim();

@@ -2348,6 +2348,34 @@ class AppLocalizationsRu extends AppLocalizations {
       'Вписанное в txt-файлы остаётся при смене режима: «Распознать», «Перевести» и «Распознать и перевести» работают с одними и теми же файлами. Если выключить, у каждого режима свои чистые заготовки.';
 
   @override
+  String get speakerLabel => 'Кто говорит';
+
+  @override
+  String get speakerInfo =>
+      'Помогает переводу выбрать род: «я пришёл» или «я пришла». Тег уходит в чат и переводчику через сеть (OpenRouter и другие); офлайн-переводчик его не учитывает.\n\nВ txt-файлах обмена тег стоит после метки: [01-003] [f] … — там его можно и поменять: [m] — мужчина, [f] — женщина, [n] — без рода, [-] — убрать.';
+
+  @override
+  String get speakerMale => 'М';
+
+  @override
+  String get speakerFemale => 'Ж';
+
+  @override
+  String get speakerNeuter => 'Ср';
+
+  @override
+  String get speakerNoneTip => 'Не указано';
+
+  @override
+  String get speakerMaleTip => 'Мужчина';
+
+  @override
+  String get speakerFemaleTip => 'Женщина';
+
+  @override
+  String get speakerNeuterTip => 'Без рода: предмет, толпа, рассказчик';
+
+  @override
   String get chatAnswerFromClipboard => 'Предлагать ответ из буфера';
 
   @override
