@@ -234,7 +234,7 @@ void main() {
     expect(find.text('Копировать инструкцию'), findsOneWidget);
     expect(find.text('Пузырей с текстом: 2, страниц: 1'), findsOneWidget);
     final folders = Directory(p.join(dir.path, 'exchange')).listSync();
-    expect(File(p.join(folders.single.path, 'ALL.txt')).readAsStringSync(), '[01-001] Hello\n[01-002] Bye\n');
+    expect(File(p.join(folders.single.path, 'ALL.txt')).readAsStringSync(), '[01-001] Hello -->\n[01-002] Bye -->\n');
 
     await tester.enterText(find.byType(TextField).last, 'Sure!\n[01-001] Привет\n[07-001] ?');
     await tester.pump();

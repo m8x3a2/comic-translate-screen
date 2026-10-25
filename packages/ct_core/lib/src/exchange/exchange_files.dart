@@ -275,19 +275,28 @@ Future<ExchangeExport> writeExchange(
       );
   await File(p.join(dir.path, exchangePromptName)).writeAsString(prompt);
 
-  // Templates to fill: the text to translate, or empty lines. With the
-  // apart files too, the original goes in `_original.txt` and the
-  // translation in `_translation.txt` besides the one file, the same in
-  // every mode; the answer is taken from whichever is filled in.
+  // The text files show what the bubbles have now, the same in every mode:
+  // `[01-003] text --> translation` in the one file (the arrow when there
+  // is either), and with the apart files too, the text in `_original.txt`
+  // and the translation in `_translation.txt`. What the user changes is
+  // taken from whichever file it is in; lines left as written are no answer.
   final split = settings.splitFiles;
   Future<void> writeTexts(String base, Iterable<ExchangeItem> list) async {
     // Who speaks goes in every file (`[01-003] [f] …`): it can be changed there.
     String lines(String Function(ExchangeItem it) text) =>
         '${[for (final it in list) '${it.label} ${it.speakerTag}${text(it)}'].join('\n')}\n';
-    String source(ExchangeItem it) => mode == ExchangeMode.translate ? it.text.replaceAll('\n', ' ') : '';
+    String oneLine(String s) => s.replaceAll(RegExp(r'\s*\n\s*'), ' ').trim();
+    String both(ExchangeItem it) {
+      final text = oneLine(it.text), translation = oneLine(it.translation);
+      return text.isEmpty && translation.isEmpty ? '' : '$text ${settings.separator} $translation'.trim();
+    }
+
     final files = {
-      '$base.txt': lines(source),
-      if (split) ...{'${base}_original.txt': lines(source), '${base}_translation.txt': lines((_) => '')},
+      '$base.txt': lines(both),
+      if (split) ...{
+        '${base}_original.txt': lines((it) => oneLine(it.text)),
+        '${base}_translation.txt': lines((it) => oneLine(it.translation)),
+      },
     };
     for (final MapEntry(key: name, value: text) in files.entries) {
       final file = File(p.join(dir.path, name));
@@ -304,7 +313,8 @@ Future<ExchangeExport> writeExchange(
           // Written into: it stays for this mode too, with the labels it lacks.
           final more = _withMissingLabels(now, text);
           if (more != now) await file.writeAsString(more);
-          templates[name] = before;
+          // The lines added are as the program wrote them too.
+          templates[name] = _withMissingLabels(before, text);
           continue;
         }
       }
@@ -443,6 +453,7 @@ class ExchangeMatch {
     this.missingArrow = const [],
     this.repeated = const [],
     this.sources = const {},
+    this.unchanged = const [],
   });
 
   /// Answers for pieces that were sent.
@@ -450,6 +461,10 @@ class ExchangeMatch {
 
   /// Pieces the answer has nothing for.
   final List<ExchangeLabel> missing;
+
+  /// Pieces whose lines in the text files are still as the program wrote
+  /// them (what the bubble has): nothing to change, not missing either.
+  final List<ExchangeLabel> unchanged;
 
   /// Labels in the answer that were not sent.
   final List<ExchangeLabel> unknown;
@@ -525,6 +540,8 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
   final merged = <ExchangeLabel, ExchangeReply>{};
   final sources = <ExchangeLabel, String>{};
   final repeated = <ExchangeLabel>[];
+  // Labels the files have at all.
+  final seen = <ExchangeLabel>{};
   final mode = manifest.mode;
   // A line as the program wrote it (in this mode or, kept for it, another)
   // is not an answer: only what differs from it counts.
@@ -574,6 +591,7 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
     ];
     for (final (answer, nameOf) in answers) {
       repeated.addAll(answer.repeated);
+      seen.addAll(answer.replies.keys);
       final match = matchExchangeAnswer(manifest.items, answer, mode, ignoreUnchanged: true);
       for (final MapEntry(key: label, value: reply) in match.replies.entries) {
         final name = nameOf(reply);
@@ -603,11 +621,28 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
   for (final number in {...manifest.pages.values}.toList()..sort()) {
     await take(exchangePageBase(number));
   }
-  return matchExchangeAnswer(
+  final match = matchExchangeAnswer(
     manifest.items,
     ExchangeAnswer(merged, repeated: repeated),
     manifest.mode,
     sources: sources,
+  );
+  // In the files but left as they were: nothing to change, not missing.
+  final unchanged = [
+    for (final l in match.missing)
+      if (seen.contains(l)) l,
+  ];
+  return ExchangeMatch(
+    replies: match.replies,
+    missing: [
+      for (final l in match.missing)
+        if (!seen.contains(l)) l,
+    ],
+    unknown: match.unknown,
+    missingArrow: match.missingArrow,
+    repeated: match.repeated,
+    sources: match.sources,
+    unchanged: unchanged,
   );
 }
 

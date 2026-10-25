@@ -4175,19 +4175,19 @@ abstract class AppLocalizations {
   /// No description provided for @chatFromFilesInfoTranslate.
   ///
   /// In en, this message translates to:
-  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below). The files are the same in every mode: ALL.txt, ALL_original.txt (the original), ALL_translation.txt (the translation); page_01.txt… for the lines those do not have. The program takes what you wrote from any of them.\n\nIn \"Translate\" ALL.txt and ALL_original.txt have the original text with its labels beforehand: a template. The program waits for the translation: add it to the lines of ALL.txt\n[01-001] Morning, guys {separator} Доброе утро, ребята\nor write the translation alone into ALL_translation.txt:\n[01-001] Доброе утро, ребята\nLines left as in the template count as not answered. A typo corrected in ALL_original.txt goes into the bubble too. You can also replace the whole of ALL.txt with the chat\'s answer.'**
+  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below). The files are the same in every mode and show what the bubbles have now:\nALL.txt: [01-001] text {separator} translation\nALL_original.txt: the text alone, ALL_translation.txt: the translation alone; page_01.txt… the same by pages.\nChange any lines in any file and save it: what you changed goes into the bubble, lines left as they are change nothing. [f] after a label tells who speaks. You can also replace the whole of ALL.txt with the chat\'s answer.\n\n\"Translate\": add the translation after \"{separator}\" in ALL.txt or write it into ALL_translation.txt.'**
   String chatFromFilesInfoTranslate(String separator);
 
   /// No description provided for @chatFromFilesInfoRecognize.
   ///
   /// In en, this message translates to:
-  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below). The files are the same in every mode: ALL.txt, ALL_original.txt (the original), ALL_translation.txt (the translation); page_01.txt… for the lines those do not have. The program takes what you wrote from any of them.\n\nIn \"Recognize\" the files have only the labels. Write the text from the picture after each one (in ALL.txt or ALL_original.txt) or paste the chat\'s answer, and save the file:\n[01-001] Morning, guys\nA translation may come along too: after \"{separator}\" or in ALL_translation.txt. Empty lines count as not answered.'**
+  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below). The files are the same in every mode and show what the bubbles have now:\nALL.txt: [01-001] text {separator} translation\nALL_original.txt: the text alone, ALL_translation.txt: the translation alone; page_01.txt… the same by pages.\nChange any lines in any file and save it: what you changed goes into the bubble, lines left as they are change nothing. [f] after a label tells who speaks. You can also replace the whole of ALL.txt with the chat\'s answer.\n\n\"Recognize\": write or correct the text from the picture, before \"{separator}\" in ALL.txt or in ALL_original.txt. A translation may come along too.'**
   String chatFromFilesInfoRecognize(String separator);
 
   /// No description provided for @chatFromFilesInfoBoth.
   ///
   /// In en, this message translates to:
-  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below). The files are the same in every mode: ALL.txt, ALL_original.txt (the original), ALL_translation.txt (the translation); page_01.txt… for the lines those do not have. The program takes what you wrote from any of them.\n\nIn \"Recognize and translate\" the files have only the labels. In ALL.txt each needs the text from the picture, \"{separator}\" and the translation (or paste the chat\'s answer):\n[01-001] Morning, guys {separator} Доброе утро, ребята\nOr the text from the picture in ALL_original.txt and the translation in ALL_translation.txt. Empty lines count as not answered.'**
+  /// **'Takes the answer from the txt files of the exchange folder (Open the folder, below). The files are the same in every mode and show what the bubbles have now:\nALL.txt: [01-001] text {separator} translation\nALL_original.txt: the text alone, ALL_translation.txt: the translation alone; page_01.txt… the same by pages.\nChange any lines in any file and save it: what you changed goes into the bubble, lines left as they are change nothing. [f] after a label tells who speaks. You can also replace the whole of ALL.txt with the chat\'s answer.\n\n\"Recognize and translate\": both the text from the picture and the translation, in ALL.txt with \"{separator}\" between them, or apart in ALL_original.txt and ALL_translation.txt.'**
   String chatFromFilesInfoBoth(String separator);
 
   /// No description provided for @chatSheetPerPageOn.
@@ -4219,6 +4219,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No answer: {labels}'**
   String chatMissing(String labels);
+
+  /// No description provided for @chatUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Unchanged (as the bubbles are now): {count}'**
+  String chatUnchanged(int count);
 
   /// No description provided for @chatUnknown.
   ///

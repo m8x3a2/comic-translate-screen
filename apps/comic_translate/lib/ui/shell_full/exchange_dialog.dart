@@ -889,6 +889,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
               ),
               if (_fromFiles case final files? when files.isNotEmpty) Text(l.chatFromFilesNote(files.join(', '))),
               if (match.missing.isNotEmpty) Text(l.chatMissing(_codes(match.missing)), style: warn),
+              if (match.unchanged.isNotEmpty) Text(l.chatUnchanged(match.unchanged.length)),
               if (match.unknown.isNotEmpty) Text(l.chatUnknown(_codes(match.unknown)), style: warn),
               if (match.missingArrow.isNotEmpty) Text(l.chatNoArrow(sep, _codes(match.missingArrow)), style: warn),
               if (match.repeated.isNotEmpty) Text(l.chatRepeated(_codes(match.repeated))),

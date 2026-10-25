@@ -156,6 +156,8 @@ Future<ExchangeExport> exportExchange(
     final blocks = [...page.blocks];
     var any = false;
     for (final it in own) {
+      // Left as it was in the text files: the bubble stays (no placeholder).
+      if (match.unchanged.contains(it.label)) continue;
       final i = findExchangeBlock(blocks, it);
       if (i == null) {
         lost.add(it.label);
