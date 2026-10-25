@@ -3,9 +3,11 @@
 import 'dart:io';
 
 import 'package:comic_translate/bootstrap.dart';
+import 'package:comic_translate/l10n/app_localizations.dart';
 import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/state/window_mode.dart';
 import 'package:comic_translate/ui/app.dart';
+import 'package:comic_translate/ui/common/model_catalog_dialog.dart';
 import 'package:comic_translate/ui/settings/settings_screen.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
@@ -29,6 +31,8 @@ void main() {
       secretStore: secrets,
       registry: fakeRegistry()..register(openAiCompatibleFactory),
     );
+    // The log file is opened outside the test clock (else tearDown waits for it).
+    services.appLog.info('test_start');
   });
 
   tearDown(() async {
@@ -137,11 +141,12 @@ void main() {
 
   testWidgets('balance check only for OpenRouter, marked as sent to it, and needs a saved key', (tester) async {
     await openTranslatorSettings(tester, openRouter());
-    expect(find.text('Проверить остаток'), findsOneWidget);
+    expect(find.text('Сведения о ключе'), findsOneWidget);
     expect(find.textContaining('Спрашивает у openrouter.ai'), findsOneWidget);
-    await tester.ensureVisible(find.text('Проверить остаток'));
+    expect(find.text('Выбрать…'), findsOneWidget, reason: 'the list of models beside the model field');
+    await tester.ensureVisible(find.text('Сведения о ключе'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Проверить остаток'));
+    await tester.tap(find.text('Сведения о ключе'));
     await tester.pumpAndSettle();
     expect(find.text('Сначала сохраните ключ API'), findsOneWidget);
 
@@ -150,7 +155,89 @@ void main() {
           (s) => s.plugins['openai_compatible'] = {'api_url': 'http://localhost:1234/v1', 'model': 'local'},
         ));
     await tester.pumpAndSettle();
-    expect(find.text('Проверить остаток'), findsNothing);
+    expect(find.text('Сведения о ключе'), findsNothing);
+    expect(find.text('Выбрать…'), findsNothing);
+  });
+
+  testWidgets('the list of models: search, free ones, ones that take pictures, the picked one goes back',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    var asked = 0;
+    final query = ModelCatalogQuery(
+      host: 'openrouter.ai',
+      settingKey: 'model',
+      run: () async {
+        asked++;
+        return [
+          CatalogModel(
+            id: 'google/gemma-3-27b-it:free',
+            name: 'Gemma 3 27B (free)',
+            contextLength: 131072,
+            promptPrice: 0,
+            completionPrice: 0,
+            vision: true,
+            created: DateTime(2025),
+          ),
+          CatalogModel(
+            id: 'openai/gpt-4.1-mini',
+            name: 'GPT-4.1 Mini',
+            promptPrice: 0.4,
+            completionPrice: 1.6,
+            vision: true,
+            created: DateTime(2024),
+          ),
+          const CatalogModel(id: 'deepseek/deepseek-chat-v3.1', name: 'DeepSeek V3.1', promptPrice: 0.2, completionPrice: 0.8),
+        ];
+      },
+    );
+    String? picked;
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [servicesProvider.overrideWithValue(services)],
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () async =>
+                    picked = await showModelCatalogDialog(context, query, current: 'deepseek/deepseek-chat-v3.1'),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(asked, 1);
+    expect(find.text('Показано: 3 из 3'), findsOneWidget);
+    expect(find.textContaining('бесплатно · контекст 131'), findsOneWidget);
+    expect(find.textContaining('запрос 0,40'), findsOneWidget);
+
+    await tester.tap(find.text('Только бесплатные'));
+    await tester.pump();
+    expect(find.text('Показано: 1 из 3'), findsOneWidget);
+    await tester.tap(find.text('Только бесплатные'));
+    await tester.tap(find.text('Видит картинки'));
+    await tester.pump();
+    expect(find.text('Показано: 2 из 3'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'mini');
+    await tester.pump();
+    expect(find.text('Показано: 1 из 3'), findsOneWidget);
+    await tester.tap(find.text('GPT-4.1 Mini'));
+    await tester.pumpAndSettle();
+    expect(picked, 'openai/gpt-4.1-mini');
+
+    // Opened again: the list fetched before, without asking.
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(asked, 1);
+    expect(find.text('Показано: 3 из 3'), findsOneWidget);
   });
 
   testWidgets('the usage counted on this computer is listed per model and can be reset', (tester) async {

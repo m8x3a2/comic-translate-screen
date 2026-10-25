@@ -2249,13 +2249,19 @@ abstract class AppLocalizations {
   /// No description provided for @keyStatusCheck.
   ///
   /// In en, this message translates to:
-  /// **'Check balance'**
+  /// **'Key details'**
   String get keyStatusCheck;
+
+  /// No description provided for @keyStatusRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh key details'**
+  String get keyStatusRefresh;
 
   /// No description provided for @keyStatusHelp.
   ///
   /// In en, this message translates to:
-  /// **'Asks {host} what is left of the key\'s limit. Only the key is sent, and only when you press the button.'**
+  /// **'Asks {host} for the key name, its limit and what is left. Only the key is sent, and only when you press the button; the answer stays until the program closes.'**
   String keyStatusHelp(String host);
 
   /// No description provided for @keyStatusNeedsKey.
@@ -2323,6 +2329,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Free models also allow about 20 requests per minute; the server does not report that limit in advance.'**
   String get keyStatusFreeNote;
+
+  /// No description provided for @keyStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Key: {label}'**
+  String keyStatusLabel(String label);
+
+  /// No description provided for @keyStatusFreeTier.
+  ///
+  /// In en, this message translates to:
+  /// **'Free account: no credits were ever bought, so free models allow fewer requests a day.'**
+  String get keyStatusFreeTier;
+
+  /// No description provided for @keyStatusPaidTier.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits were bought for this account: free models allow more requests a day.'**
+  String get keyStatusPaidTier;
+
+  /// No description provided for @modelsChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose…'**
+  String get modelsChoose;
+
+  /// No description provided for @modelsChooseHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The list of models from {host}; your key does not go along'**
+  String modelsChooseHelp(String host);
+
+  /// No description provided for @modelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Models of {host}'**
+  String modelsTitle(String host);
+
+  /// No description provided for @modelsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The list comes from {host}; nothing of yours goes along (not the key either). Prices are per million tokens (a token is about 3–4 letters): for the request and for the answer. Free models allow a limited number of requests a day (see \"Key details\" in the translator settings).'**
+  String modelsHelp(String host);
+
+  /// No description provided for @modelsSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search: name or id'**
+  String get modelsSearch;
+
+  /// No description provided for @modelsNewest.
+  ///
+  /// In en, this message translates to:
+  /// **'Newest first'**
+  String get modelsNewest;
+
+  /// No description provided for @modelsCheapest.
+  ///
+  /// In en, this message translates to:
+  /// **'Cheapest first'**
+  String get modelsCheapest;
+
+  /// No description provided for @modelsByName.
+  ///
+  /// In en, this message translates to:
+  /// **'By name'**
+  String get modelsByName;
+
+  /// No description provided for @modelsByContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest context first'**
+  String get modelsByContext;
+
+  /// No description provided for @modelsFreeOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Free only'**
+  String get modelsFreeOnly;
+
+  /// No description provided for @modelsVisionOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Takes pictures'**
+  String get modelsVisionOnly;
+
+  /// No description provided for @modelsVisionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Needed when the page image goes to the translator (\"Send the page image\")'**
+  String get modelsVisionHelp;
+
+  /// No description provided for @modelsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown: {shown} of {total}'**
+  String modelsCount(int shown, int total);
+
+  /// No description provided for @modelsFree.
+  ///
+  /// In en, this message translates to:
+  /// **'free'**
+  String get modelsFree;
+
+  /// No description provided for @modelsPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'request {prompt} · answer {completion} per million'**
+  String modelsPrice(String prompt, String completion);
+
+  /// No description provided for @modelsContext.
+  ///
+  /// In en, this message translates to:
+  /// **'context {tokens}'**
+  String modelsContext(String tokens);
+
+  /// No description provided for @modelsVision.
+  ///
+  /// In en, this message translates to:
+  /// **'takes pictures'**
+  String get modelsVision;
+
+  /// No description provided for @modelsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No models like that'**
+  String get modelsNone;
+
+  /// No description provided for @modelsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get the list: {reason}'**
+  String modelsFailed(String reason);
+
+  /// No description provided for @modelsRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get modelsRetry;
+
+  /// No description provided for @modelsRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Get the list again'**
+  String get modelsRefresh;
 
   /// No description provided for @keyStatusFailed.
   ///

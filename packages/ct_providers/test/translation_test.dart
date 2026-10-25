@@ -386,6 +386,7 @@ void main() {
     expect((s.limit, s.remaining, s.used, s.usedToday, s.usedThisMonth), (1.0, 0.874, 0.126, 0.011, 0.126));
     expect(s.limitReset, isNull);
     expect((s.freeRequestsToday, s.freeRequestsLimit, s.freeRequestsLeft), (3, 50, 47));
+    expect((s.label, s.freeTier), ('sk-or-v1-0e6...1c4', false));
 
     status = 401;
     await expectLater(
@@ -407,5 +408,73 @@ void main() {
     expect((budget.limit, budget.remaining, budget.limitReset), (10.0, 7.5, LimitReset.monthly));
     final unlimited = parseOpenRouterKeyStatus({'limit': null, 'usage': 0});
     expect((unlimited.limit, unlimited.remaining, unlimited.freeRequestsLimit), (null, null, null));
+    expect((unlimited.label, unlimited.freeTier), ('', null));
+  });
+
+  test('the models of OpenRouter: listed without the key, prices per million tokens, text answers only', () async {
+    PluginConfig config(String url) =>
+        PluginConfig.resolve(openAiCompatibleInfo.settings, {'api_url': url}, secrets: {'api_key': 'sk-or-1'});
+    expect(openAiCompatibleInfo.modelCatalog!(config('http://localhost:11434/v1')), isNull);
+    final query = openAiCompatibleInfo.modelCatalog!(config('https://openrouter.ai/api/v1/'))!;
+    expect((query.host, query.settingKey), ('openrouter.ai', 'model'));
+
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => server.close(force: true));
+    final seen = <(String, String?)>[];
+    server.listen((req) async {
+      seen.add((req.uri.path, req.headers.value('authorization')));
+      req.response
+        ..headers.contentType = ContentType.json
+        ..write(
+          jsonEncode({
+            'data': [
+              {
+                'id': 'google/gemma-3-27b-it:free',
+                'name': 'Google: Gemma 3 27B (free)',
+                'created': 1741756359,
+                'context_length': 131072,
+                'architecture': {
+                  'input_modalities': ['text', 'image'],
+                  'output_modalities': ['text'],
+                },
+                'pricing': {'prompt': '0', 'completion': '0'},
+              },
+              {
+                'id': 'openai/gpt-4.1-mini',
+                'name': 'OpenAI: GPT-4.1 Mini',
+                'context_length': 1047576,
+                'architecture': {'modality': 'text+image->text'},
+                'pricing': {'prompt': '0.0000004', 'completion': '0.0000016'},
+              },
+              {
+                'id': 'openrouter/auto',
+                'architecture': {
+                  'input_modalities': ['text'],
+                  'output_modalities': ['text'],
+                },
+                'pricing': {'prompt': '-1', 'completion': '-1'},
+              },
+              {
+                'id': 'some/image-maker',
+                'architecture': {
+                  'input_modalities': ['text'],
+                  'output_modalities': ['image'],
+                },
+                'pricing': {'prompt': '0.000001', 'completion': '0.00004'},
+              },
+            ],
+          }),
+        );
+      await req.response.close();
+    });
+    final models = await fetchOpenRouterModels(Uri.parse('http://127.0.0.1:${server.port}/api/v1/models'));
+    expect(seen.single, ('/api/v1/models', null), reason: 'the key does not go along');
+    expect([for (final m in models) m.id], ['google/gemma-3-27b-it:free', 'openai/gpt-4.1-mini', 'openrouter/auto']);
+    final (gemma, gpt, auto) = (models[0], models[1], models[2]);
+    expect((gemma.free, gemma.vision, gemma.contextLength, gemma.created!.year), (true, true, 131072, 2025));
+    expect((gpt.free, gpt.vision), (false, true));
+    expect(gpt.promptPrice, closeTo(0.4, 1e-9));
+    expect(gpt.completionPrice, closeTo(1.6, 1e-9));
+    expect((auto.promptPrice, auto.free, auto.vision), (null, false, false));
   });
 }

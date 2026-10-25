@@ -1225,11 +1225,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'The saved key is removed from Windows secure storage. To translate with this service again, paste the key anew. The key itself stays valid on the service\'s site: revoke it there if you no longer need it.';
 
   @override
-  String get keyStatusCheck => 'Check balance';
+  String get keyStatusCheck => 'Key details';
+
+  @override
+  String get keyStatusRefresh => 'Refresh key details';
 
   @override
   String keyStatusHelp(String host) {
-    return 'Asks $host what is left of the key\'s limit. Only the key is sent, and only when you press the button.';
+    return 'Asks $host for the key name, its limit and what is left. Only the key is sent, and only when you press the button; the answer stays until the program closes.';
   }
 
   @override
@@ -1274,6 +1277,97 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get keyStatusFreeNote =>
       'Free models also allow about 20 requests per minute; the server does not report that limit in advance.';
+
+  @override
+  String keyStatusLabel(String label) {
+    return 'Key: $label';
+  }
+
+  @override
+  String get keyStatusFreeTier =>
+      'Free account: no credits were ever bought, so free models allow fewer requests a day.';
+
+  @override
+  String get keyStatusPaidTier =>
+      'Credits were bought for this account: free models allow more requests a day.';
+
+  @override
+  String get modelsChoose => 'Choose…';
+
+  @override
+  String modelsChooseHelp(String host) {
+    return 'The list of models from $host; your key does not go along';
+  }
+
+  @override
+  String modelsTitle(String host) {
+    return 'Models of $host';
+  }
+
+  @override
+  String modelsHelp(String host) {
+    return 'The list comes from $host; nothing of yours goes along (not the key either). Prices are per million tokens (a token is about 3–4 letters): for the request and for the answer. Free models allow a limited number of requests a day (see \"Key details\" in the translator settings).';
+  }
+
+  @override
+  String get modelsSearch => 'Search: name or id';
+
+  @override
+  String get modelsNewest => 'Newest first';
+
+  @override
+  String get modelsCheapest => 'Cheapest first';
+
+  @override
+  String get modelsByName => 'By name';
+
+  @override
+  String get modelsByContext => 'Longest context first';
+
+  @override
+  String get modelsFreeOnly => 'Free only';
+
+  @override
+  String get modelsVisionOnly => 'Takes pictures';
+
+  @override
+  String get modelsVisionHelp =>
+      'Needed when the page image goes to the translator (\"Send the page image\")';
+
+  @override
+  String modelsCount(int shown, int total) {
+    return 'Shown: $shown of $total';
+  }
+
+  @override
+  String get modelsFree => 'free';
+
+  @override
+  String modelsPrice(String prompt, String completion) {
+    return 'request $prompt · answer $completion per million';
+  }
+
+  @override
+  String modelsContext(String tokens) {
+    return 'context $tokens';
+  }
+
+  @override
+  String get modelsVision => 'takes pictures';
+
+  @override
+  String get modelsNone => 'No models like that';
+
+  @override
+  String modelsFailed(String reason) {
+    return 'Could not get the list: $reason';
+  }
+
+  @override
+  String get modelsRetry => 'Try again';
+
+  @override
+  String get modelsRefresh => 'Get the list again';
 
   @override
   String keyStatusFailed(String reason) {

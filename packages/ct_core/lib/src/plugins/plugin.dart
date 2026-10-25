@@ -2,6 +2,7 @@ import '../cancel.dart';
 import '../diagnostics/event_log.dart';
 import '../diagnostics/run_recorder.dart';
 import '../usage/key_status.dart';
+import '../usage/model_catalog.dart';
 import '../usage/usage_log.dart';
 import 'settings_schema.dart';
 
@@ -70,6 +71,7 @@ class PluginInfo {
     this.modelsForLanguage,
     this.endpoint,
     this.keyStatus,
+    this.modelCatalog,
   });
 
   /// Stable identifier stored in settings and logs, e.g. `openai_compatible`.
@@ -114,6 +116,10 @@ class PluginInfo {
   /// For services that can tell what is left of the user's key: how to ask
   /// for a configuration, or null when its server cannot tell.
   final KeyStatusQuery? Function(PluginConfig config)? keyStatus;
+
+  /// For services with a list of models: how to get it for a configuration,
+  /// or null when its server has none.
+  final ModelCatalogQuery? Function(PluginConfig config)? modelCatalog;
 
   SettingField? field(String key) {
     for (final f in settings) {

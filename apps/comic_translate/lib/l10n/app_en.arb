@@ -732,8 +732,9 @@
   "secretReplaceHint": "Paste a new key to replace the saved one",
   "secretRemoveTitle": "Delete the key?",
   "secretRemoveBody": "The saved key is removed from Windows secure storage. To translate with this service again, paste the key anew. The key itself stays valid on the service's site: revoke it there if you no longer need it.",
-  "keyStatusCheck": "Check balance",
-  "keyStatusHelp": "Asks {host} what is left of the key's limit. Only the key is sent, and only when you press the button.",
+  "keyStatusCheck": "Key details",
+  "keyStatusRefresh": "Refresh key details",
+  "keyStatusHelp": "Asks {host} for the key name, its limit and what is left. Only the key is sent, and only when you press the button; the answer stays until the program closes.",
   "@keyStatusHelp": {
     "placeholders": {
       "host": {
@@ -795,6 +796,92 @@
     }
   },
   "keyStatusFreeNote": "Free models also allow about 20 requests per minute; the server does not report that limit in advance.",
+  "keyStatusLabel": "Key: {label}",
+  "@keyStatusLabel": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "keyStatusFreeTier": "Free account: no credits were ever bought, so free models allow fewer requests a day.",
+  "keyStatusPaidTier": "Credits were bought for this account: free models allow more requests a day.",
+  "modelsChoose": "Choose…",
+  "modelsChooseHelp": "The list of models from {host}; your key does not go along",
+  "@modelsChooseHelp": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsTitle": "Models of {host}",
+  "@modelsTitle": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsHelp": "The list comes from {host}; nothing of yours goes along (not the key either). Prices are per million tokens (a token is about 3–4 letters): for the request and for the answer. Free models allow a limited number of requests a day (see \"Key details\" in the translator settings).",
+  "@modelsHelp": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsSearch": "Search: name or id",
+  "modelsNewest": "Newest first",
+  "modelsCheapest": "Cheapest first",
+  "modelsByName": "By name",
+  "modelsByContext": "Longest context first",
+  "modelsFreeOnly": "Free only",
+  "modelsVisionOnly": "Takes pictures",
+  "modelsVisionHelp": "Needed when the page image goes to the translator (\"Send the page image\")",
+  "modelsCount": "Shown: {shown} of {total}",
+  "@modelsCount": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsFree": "free",
+  "modelsPrice": "request {prompt} · answer {completion} per million",
+  "@modelsPrice": {
+    "placeholders": {
+      "prompt": {
+        "type": "String"
+      },
+      "completion": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsContext": "context {tokens}",
+  "@modelsContext": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsVision": "takes pictures",
+  "modelsNone": "No models like that",
+  "modelsFailed": "Could not get the list: {reason}",
+  "@modelsFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsRetry": "Try again",
+  "modelsRefresh": "Get the list again",
   "keyStatusFailed": "Could not check: {reason}",
   "@keyStatusFailed": {
     "placeholders": {

@@ -16,11 +16,8 @@ final usageReportProvider = FutureProvider.autoDispose<UsageReport>((ref) => ref
 String _locale(BuildContext context) => Localizations.localeOf(context).toString();
 
 /// `0,9962 $`: fractions of a cent stay visible ([moneyDecimals]).
-String formatMoney(BuildContext context, double v) => NumberFormat.currency(
-  locale: _locale(context),
-  symbol: r'$',
-  decimalDigits: moneyDecimals(v),
-).format(v);
+String formatMoney(BuildContext context, double v) =>
+    NumberFormat.currency(locale: _locale(context), symbol: r'$', decimalDigits: moneyDecimals(v)).format(v);
 
 String _number(BuildContext context, int v) => NumberFormat.decimalPattern(_locale(context)).format(v);
 
@@ -36,11 +33,16 @@ class KeyStatusPanel extends ConsumerStatefulWidget {
   ConsumerState<KeyStatusPanel> createState() => _KeyStatusPanelState();
 }
 
+/// The last answer about each plugin's key (`plugin@host`) in this session:
+/// the settings opened again show it without asking the service again.
+final _lastStatus = <String, (KeyStatus, DateTime)>{};
+
 class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
   bool _checking = false;
-  KeyStatus? _status;
+  late final _last = _lastStatus['${widget.info.id}@${widget.host}'];
+  late KeyStatus? _status = _last?.$1;
   String? _error;
-  DateTime? _at;
+  late DateTime? _at = _last?.$2;
 
   Future<void> _check() async {
     final l = context.l10n;
@@ -63,10 +65,12 @@ class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
     try {
       final status = await query.run();
       services.appLog.info('key_status', {'limit': status.limit, 'remaining': status.remaining});
+      final at = DateTime.now();
+      _lastStatus['${widget.info.id}@${widget.host}'] = (status, at);
       if (!mounted) return;
       setState(() {
         _status = status;
-        _at = DateTime.now();
+        _at = at;
       });
     } on TranslationException catch (e) {
       services.appLog.warn('key_status_failed', {'kind': e.kind.name, 'error': e.message});
@@ -86,12 +90,21 @@ class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
     final theme = Theme.of(context);
     final s = _status;
     String money(double v) => formatMoney(context, v);
+    // The limit and what is left: the main line.
+    final main = s == null
+        ? null
+        : s.limit != null
+        ? l.keyStatusLimit(money(s.limit!), money(s.used), money(s.remaining ?? s.limit! - s.used))
+        : l.keyStatusNoLimit(money(s.used));
     final lines = [
       if (s != null) ...[
-        if (s.limit != null)
-          l.keyStatusLimit(money(s.limit!), money(s.used), money(s.remaining ?? s.limit! - s.used))
-        else
-          l.keyStatusNoLimit(money(s.used)),
+        if (s.label.isNotEmpty) l.keyStatusLabel(s.label),
+        main!,
+        ...switch (s.freeTier) {
+          true => [l.keyStatusFreeTier],
+          false => [l.keyStatusPaidTier],
+          null => const <String>[],
+        },
         l.keyStatusToday(money(s.usedToday), money(s.usedThisMonth)),
         l.keyStatusDelay,
         if (s.limit != null)
@@ -127,7 +140,9 @@ class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
                 icon: _checking
                     ? const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.account_balance_wallet_outlined),
-                label: Text(_checking ? l.keyStatusChecking : l.keyStatusCheck),
+                label: Text(
+                  _checking ? l.keyStatusChecking : (_status == null ? l.keyStatusCheck : l.keyStatusRefresh),
+                ),
               ),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -150,8 +165,8 @@ class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final (i, line) in lines.indexed)
-                    Text(line, style: i == 0 ? theme.textTheme.bodyLarge : theme.textTheme.bodySmall),
+                  for (final line in lines)
+                    Text(line, style: line == main ? theme.textTheme.bodyLarge : theme.textTheme.bodySmall),
                 ],
               ),
             ),

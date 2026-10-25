@@ -91,5 +91,6 @@ export 'src/translation/marian.dart';
 export 'src/translation/sentencepiece.dart';
 export 'src/translation/translation_error.dart';
 export 'src/usage/key_status.dart';
+export 'src/usage/model_catalog.dart';
 export 'src/usage/usage_log.dart';
 export 'src/webtoon/seams.dart';

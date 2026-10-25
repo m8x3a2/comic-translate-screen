@@ -16,7 +16,17 @@ class KeyStatus {
     this.freeRequestsToday,
     this.freeRequestsLimit,
     this.freeRequestsLeft,
+    this.label = '',
+    this.freeTier,
   });
+
+  /// The key's name as the service shows it (OpenRouter: the name given to
+  /// it, or its start and end).
+  final String label;
+
+  /// No credits were ever bought for the account: free models allow fewer
+  /// requests a day. Null when the service does not say.
+  final bool? freeTier;
 
   /// Spending limit of the key in the service's credits (US dollars on
   /// OpenRouter); null when the key has no limit.

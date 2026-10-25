@@ -62,6 +62,7 @@ const openAiCompatibleInfo = PluginInfo(
   ],
   endpoint: openAiCompatibleEndpoint,
   keyStatus: openAiCompatibleKeyStatus,
+  modelCatalog: openAiCompatibleModelCatalog,
 );
 
 final openAiCompatibleFactory = PluginFactory<Translator>(openAiCompatibleInfo, (config, env) async {
@@ -408,10 +409,93 @@ Future<KeyStatus> fetchOpenRouterKeyStatus(
   Duration timeout = const Duration(seconds: 20),
   HttpClient Function()? httpClientFactory,
 }) async {
+  final data = await _openRouterGet(uri, apiKey: apiKey, timeout: timeout, httpClientFactory: httpClientFactory);
+  if (data is! Map) {
+    throw TranslationException('unexpected reply format: ${OpenAiCompatibleTranslator._clip('$data')}',
+        kind: TranslationErrorKind.badReply);
+  }
+  return parseOpenRouterKeyStatus(data.cast<String, Object?>());
+}
+
+/// The models OpenRouter offers can be listed (no key needed); other
+/// servers are not asked.
+ModelCatalogQuery? openAiCompatibleModelCatalog(PluginConfig config) {
+  final base = config.value<String>('api_url').trim().replaceAll(RegExp(r'/+$'), '');
+  final uri = Uri.tryParse(base);
+  if (uri == null || uri.host.toLowerCase() != 'openrouter.ai') return null;
+  return ModelCatalogQuery(
+    host: uri.host,
+    settingKey: 'model',
+    run: () => fetchOpenRouterModels(Uri.parse('$base/models')),
+  );
+}
+
+/// `GET /api/v1/models` of OpenRouter: every model with its prices.
+Future<List<CatalogModel>> fetchOpenRouterModels(
+  Uri uri, {
+  Duration timeout = const Duration(seconds: 30),
+  HttpClient Function()? httpClientFactory,
+}) async {
+  final data = await _openRouterGet(uri, timeout: timeout, httpClientFactory: httpClientFactory);
+  if (data is! List) {
+    throw TranslationException('unexpected reply format: ${OpenAiCompatibleTranslator._clip('$data')}',
+        kind: TranslationErrorKind.badReply);
+  }
+  return parseOpenRouterModels(data);
+}
+
+/// The `data` of OpenRouter's model list: models that answer with text.
+/// Prices come per token as strings; a negative one means "it depends".
+List<CatalogModel> parseOpenRouterModels(List<Object?> data) {
+  double? perMillion(Object? v) {
+    final price = v is num ? v.toDouble() : double.tryParse('$v');
+    return price == null || price < 0 ? null : price * 1000000;
+  }
+
+  return [
+    for (final m in data.whereType<Map>())
+      if (m['id'] is String && _modalities(m, 'output_modalities', 'text'))
+        CatalogModel(
+          id: m['id'] as String,
+          name: m['name'] as String? ?? '',
+          description: m['description'] as String? ?? '',
+          contextLength: (m['context_length'] as num?)?.toInt(),
+          promptPrice: perMillion((m['pricing'] as Map?)?['prompt']),
+          completionPrice: perMillion((m['pricing'] as Map?)?['completion']),
+          vision: _modalities(m, 'input_modalities', 'image'),
+          created: m['created'] is num
+              ? DateTime.fromMillisecondsSinceEpoch((m['created'] as num).toInt() * 1000, isUtc: true)
+              : null,
+        ),
+  ];
+}
+
+/// Whether the model's [kind] modalities have [what]; older replies only
+/// have `modality` like `text+image->text`.
+bool _modalities(Map<Object?, Object?> model, String kind, String what) {
+  final arch = model['architecture'];
+  if (arch is! Map) return what == 'text';
+  final list = arch[kind];
+  if (list is List) return list.contains(what);
+  final modality = arch['modality'];
+  if (modality is! String) return what == 'text';
+  final parts = modality.split('->');
+  final side = kind == 'input_modalities' ? parts.first : parts.last;
+  return side.split('+').contains(what);
+}
+
+/// A GET of OpenRouter's API: the `data` of its JSON reply. The key goes
+/// along only when given.
+Future<Object?> _openRouterGet(
+  Uri uri, {
+  String? apiKey,
+  required Duration timeout,
+  HttpClient Function()? httpClientFactory,
+}) async {
   final client = (httpClientFactory ?? OpenAiCompatibleTranslator._defaultClient)()..connectionTimeout = timeout;
   try {
     final req = await client.getUrl(uri).timeout(timeout);
-    req.headers.set(HttpHeaders.authorizationHeader, 'Bearer $apiKey');
+    if (apiKey != null) req.headers.set(HttpHeaders.authorizationHeader, 'Bearer $apiKey');
     final res = await req.close().timeout(timeout);
     final body = await res.transform(utf8.decoder).join().timeout(timeout);
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -426,12 +510,11 @@ Future<KeyStatus> fetchOpenRouterKeyStatus(
       throw TranslationException('the server reply is not JSON: ${OpenAiCompatibleTranslator._clip(body)}',
           kind: TranslationErrorKind.badReply);
     }
-    final data = json is Map ? json['data'] : null;
-    if (data is! Map) {
+    if (json is! Map || !json.containsKey('data')) {
       throw TranslationException('unexpected reply format: ${OpenAiCompatibleTranslator._clip(body)}',
           kind: TranslationErrorKind.badReply);
     }
-    return parseOpenRouterKeyStatus(data.cast<String, Object?>());
+    return json['data'];
   } on TimeoutException {
     throw TranslationException('${uri.host} did not answer within ${timeout.inSeconds} s', kind: TranslationErrorKind.timeout);
   } on SocketException catch (e) {
@@ -468,5 +551,7 @@ KeyStatus parseOpenRouterKeyStatus(Map<String, Object?> data) {
     freeRequestsToday: (free?['used'] as num?)?.toInt(),
     freeRequestsLimit: (free?['limit'] as num?)?.toInt(),
     freeRequestsLeft: (free?['remaining'] as num?)?.toInt(),
+    label: data['label'] as String? ?? '',
+    freeTier: data['is_free_tier'] as bool?,
   );
 }

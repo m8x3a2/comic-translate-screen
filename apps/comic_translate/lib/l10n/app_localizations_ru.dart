@@ -1226,11 +1226,14 @@ class AppLocalizationsRu extends AppLocalizations {
       'Сохранённый ключ будет удалён из защищённого хранилища Windows. Чтобы снова переводить через этот сервис, вставьте ключ заново. Сам ключ на сайте сервиса продолжит действовать: если он больше не нужен, отзовите его там.';
 
   @override
-  String get keyStatusCheck => 'Проверить остаток';
+  String get keyStatusCheck => 'Сведения о ключе';
+
+  @override
+  String get keyStatusRefresh => 'Обновить сведения о ключе';
 
   @override
   String keyStatusHelp(String host) {
-    return 'Спрашивает у $host, сколько осталось по лимиту ключа. Отправляется только ключ и только по нажатию.';
+    return 'Спрашивает у $host имя ключа, лимит и сколько осталось. Отправляется только ключ и только по нажатию; ответ виден до закрытия программы.';
   }
 
   @override
@@ -1275,6 +1278,97 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get keyStatusFreeNote =>
       'У бесплатных моделей есть ещё предел — около 20 запросов в минуту; заранее сервер его не сообщает.';
+
+  @override
+  String keyStatusLabel(String label) {
+    return 'Ключ: $label';
+  }
+
+  @override
+  String get keyStatusFreeTier =>
+      'Бесплатный аккаунт: кредиты ни разу не покупались, поэтому у бесплатных моделей меньше запросов в день.';
+
+  @override
+  String get keyStatusPaidTier =>
+      'На этот аккаунт покупали кредиты: у бесплатных моделей больше запросов в день.';
+
+  @override
+  String get modelsChoose => 'Выбрать…';
+
+  @override
+  String modelsChooseHelp(String host) {
+    return 'Список моделей с $host; ваш ключ туда не отправляется';
+  }
+
+  @override
+  String modelsTitle(String host) {
+    return 'Модели $host';
+  }
+
+  @override
+  String modelsHelp(String host) {
+    return 'Список приходит с $host; ничего вашего туда не отправляется (ключ тоже). Цены — за миллион токенов (токен — примерно 3–4 буквы): за запрос и за ответ. У бесплатных моделей ограничено число запросов в день (см. «Сведения о ключе» в настройках переводчика).';
+  }
+
+  @override
+  String get modelsSearch => 'Поиск: название или id';
+
+  @override
+  String get modelsNewest => 'Сначала новые';
+
+  @override
+  String get modelsCheapest => 'Сначала дешёвые';
+
+  @override
+  String get modelsByName => 'По названию';
+
+  @override
+  String get modelsByContext => 'Сначала с большим контекстом';
+
+  @override
+  String get modelsFreeOnly => 'Только бесплатные';
+
+  @override
+  String get modelsVisionOnly => 'Видит картинки';
+
+  @override
+  String get modelsVisionHelp =>
+      'Нужно, когда переводчику уходит картинка страницы («Отправлять картинку страницы»)';
+
+  @override
+  String modelsCount(int shown, int total) {
+    return 'Показано: $shown из $total';
+  }
+
+  @override
+  String get modelsFree => 'бесплатно';
+
+  @override
+  String modelsPrice(String prompt, String completion) {
+    return 'запрос $prompt · ответ $completion за миллион';
+  }
+
+  @override
+  String modelsContext(String tokens) {
+    return 'контекст $tokens';
+  }
+
+  @override
+  String get modelsVision => 'видит картинки';
+
+  @override
+  String get modelsNone => 'Таких моделей нет';
+
+  @override
+  String modelsFailed(String reason) {
+    return 'Не удалось получить список: $reason';
+  }
+
+  @override
+  String get modelsRetry => 'Повторить';
+
+  @override
+  String get modelsRefresh => 'Обновить список';
 
   @override
   String keyStatusFailed(String reason) {

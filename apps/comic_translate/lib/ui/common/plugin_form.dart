@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/app_state.dart';
 import 'info_hint.dart';
 import 'labels.dart';
+import 'model_catalog_dialog.dart';
 import 'plugin_strings.dart';
 
 class PluginSettingsForm extends ConsumerWidget {
@@ -56,17 +57,24 @@ class PluginSettingsForm extends ConsumerWidget {
                 ),
                 fieldInfo(context, info, field),
               ),
-              TextSetting(:final placeholder, :final multiline) => withInfo(
-                DebouncedTextField(
-                  key: ValueKey('${info.id}.${field.key}'),
-                  value: config.value<String>(field.key),
-                  label: fieldLabel(context, info, field),
-                  help: _helpText(context, field),
-                  hint: placeholder,
-                  multiline: multiline,
-                  onChanged: (v) => set(field.key, v),
+              TextSetting(:final placeholder, :final multiline) => _withCatalog(
+                context,
+                ref,
+                config,
+                field,
+                withInfo(
+                  DebouncedTextField(
+                    key: ValueKey('${info.id}.${field.key}'),
+                    value: config.value<String>(field.key),
+                    label: fieldLabel(context, info, field),
+                    help: _helpText(context, field),
+                    hint: placeholder,
+                    multiline: multiline,
+                    onChanged: (v) => set(field.key, v),
+                  ),
+                  fieldInfo(context, info, field),
                 ),
-                fieldInfo(context, info, field),
+                (id) => set(field.key, id),
               ),
               IntSetting() || DoubleSetting() => withInfo(
                 DebouncedTextField(
@@ -84,6 +92,46 @@ class PluginSettingsForm extends ConsumerWidget {
               ),
             },
           ),
+      ],
+    );
+  }
+
+  /// The model field of a service with a list of models: "Choose…" beside it.
+  Widget _withCatalog(
+    BuildContext context,
+    WidgetRef ref,
+    PluginConfig config,
+    SettingField field,
+    Widget child,
+    ValueChanged<String> pick,
+  ) {
+    final query = info.modelCatalog?.call(config);
+    if (query == null || query.settingKey != field.key) return child;
+    final l = context.l10n;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: child),
+        const SizedBox(width: 8),
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Tooltip(
+            message: l.modelsChooseHelp(query.host),
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final id = await showModelCatalogDialog(
+                  context,
+                  query,
+                  current: config.value<String>(field.key),
+                  vision: ref.read(settingsProvider).sendPageImage,
+                );
+                if (id != null) pick(id);
+              },
+              icon: const Icon(Icons.list_alt),
+              label: Text(l.modelsChoose),
+            ),
+          ),
+        ),
       ],
     );
   }
