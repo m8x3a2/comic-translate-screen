@@ -58,6 +58,10 @@ class KeyCombo {
     LogicalKeyboardKey.escape => 'Esc',
     LogicalKeyboardKey.pageUp => 'PageUp',
     LogicalKeyboardKey.pageDown => 'PageDown',
+    LogicalKeyboardKey.arrowUp => '↑',
+    LogicalKeyboardKey.arrowDown => '↓',
+    LogicalKeyboardKey.arrowLeft => '←',
+    LogicalKeyboardKey.arrowRight => '→',
     _ => key.keyLabel.isEmpty ? key.debugName ?? '?' : key.keyLabel,
   };
 
@@ -66,6 +70,8 @@ class KeyCombo {
     for (final k in LogicalKeyboardKey.knownLogicalKeys) {
       if (_modifiers.contains(k)) continue;
       map.putIfAbsent(keyName(k), () => k);
+      // Names stored before the arrows got their own.
+      if (k.keyLabel.isNotEmpty) map.putIfAbsent(k.keyLabel, () => k);
     }
     return map;
   }();
@@ -176,8 +182,8 @@ final defaultShortcuts = <ShortcutAction, List<KeyCombo>>{
   ShortcutAction.saveAs: [_ctrl(LogicalKeyboardKey.keyS, shift: true)],
   ShortcutAction.paste: [_ctrl(LogicalKeyboardKey.keyV)],
   ShortcutAction.translateAll: [_ctrl(LogicalKeyboardKey.enter)],
-  ShortcutAction.previousPage: [const KeyCombo(LogicalKeyboardKey.pageUp)],
-  ShortcutAction.nextPage: [const KeyCombo(LogicalKeyboardKey.pageDown)],
+  ShortcutAction.previousPage: [const KeyCombo(LogicalKeyboardKey.pageUp), const KeyCombo(LogicalKeyboardKey.arrowUp)],
+  ShortcutAction.nextPage: [const KeyCombo(LogicalKeyboardKey.pageDown), const KeyCombo(LogicalKeyboardKey.arrowDown)],
   ShortcutAction.pan: [const KeyCombo(LogicalKeyboardKey.keyH), const KeyCombo(LogicalKeyboardKey.keyV)],
   ShortcutAction.boxes: [const KeyCombo(LogicalKeyboardKey.keyR)],
   ShortcutAction.text: [const KeyCombo(LogicalKeyboardKey.keyT)],

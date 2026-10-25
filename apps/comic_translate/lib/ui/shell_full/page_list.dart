@@ -17,7 +17,13 @@ import '../common/panels.dart';
 import 'page_grid.dart';
 import 'page_numbers_field.dart';
 
-class PageList extends ConsumerWidget {
+/// Height of a page in the list: the thumbnail (76) with its padding.
+const pageTileExtent = 92.0;
+
+/// Space above the first page and below the last.
+const _listPadding = 6.0;
+
+class PageList extends ConsumerStatefulWidget {
   const PageList({super.key, this.onAdd, this.onAddAt, this.onPasteAt});
 
   final VoidCallback? onAdd;
@@ -27,7 +33,47 @@ class PageList extends ConsumerWidget {
   final ValueChanged<int>? onPasteAt;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PageList> createState() => _PageListState();
+}
+
+class _PageListState extends ConsumerState<PageList> {
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Scrolls the list just enough to show page [index] (the current page,
+  /// however it was chosen: keys, grid, mini view, a click).
+  void _reveal(int index) {
+    if (!_scroll.hasClients || index < 0) return;
+    final pos = _scroll.position;
+    final top = _listPadding + index * pageTileExtent;
+    final bottom = top + pageTileExtent;
+    double? to;
+    if (top < pos.pixels) {
+      to = top - _listPadding;
+    } else if (bottom > pos.pixels + pos.viewportDimension) {
+      to = bottom + _listPadding - pos.viewportDimension;
+    }
+    if (to == null) return;
+    _scroll.animateTo(
+      to.clamp(pos.minScrollExtent, pos.maxScrollExtent),
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final onAdd = widget.onAdd, onAddAt = widget.onAddAt, onPasteAt = widget.onPasteAt;
+    ref.listen(workspaceProvider.select((w) => w.current), (_, current) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _reveal(current);
+      });
+    });
     final ws = ref.watch(workspaceProvider);
     final running = ref.watch(batchProvider) is BatchRunning;
     final l = context.l10n;
@@ -53,7 +99,9 @@ class PageList extends ConsumerWidget {
         Expanded(
           // Dragging a page moves it (not while "Translate all" runs).
           child: ReorderableListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 6),
+            scrollController: _scroll,
+            itemExtent: pageTileExtent,
+            padding: const EdgeInsets.symmetric(vertical: _listPadding),
             buildDefaultDragHandles: false,
             itemCount: ws.pages.length,
             onReorderItem: (from, to) => ref.read(workspaceProvider.notifier).movePage(from, to),

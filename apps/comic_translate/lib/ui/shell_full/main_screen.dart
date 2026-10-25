@@ -731,6 +731,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     );
   }
 
+  static final _arrows = {
+    LogicalKeyboardKey.arrowUp,
+    LogicalKeyboardKey.arrowDown,
+    LogicalKeyboardKey.arrowLeft,
+    LogicalKeyboardKey.arrowRight,
+  };
+
   /// Shortcuts work wherever the focus is, but only on this screen (not in
   /// the settings or under a dialog).
   bool _onHardwareKey(KeyEvent e) => mounted && (ModalRoute.of(context)?.isCurrent ?? true) && _onKey(e);
@@ -741,9 +748,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
   /// over.
   bool _onKey(KeyEvent e) {
     if (e is! KeyDownEvent && e is! KeyRepeatEvent) return false;
-    final typing = FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>() != null;
+    final focus = FocusManager.instance.primaryFocus?.context;
+    final typing = focus?.findAncestorWidgetOfExactType<EditableText>() != null;
     final action = KeyBindings.of(ref.read(settingsProvider)).actionFor(e, typing: typing);
     if (action == null) return false;
+    // A focused slider moves with the arrows.
+    if (_arrows.contains(e.logicalKey) && focus?.findAncestorWidgetOfExactType<Slider>() != null) return false;
     final ws = ref.read(workspaceProvider.notifier);
     final state = ref.read(workspaceProvider);
     final running = ref.read(batchProvider) is BatchRunning;
