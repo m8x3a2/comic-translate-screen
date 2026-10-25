@@ -41,6 +41,21 @@ const llmTimeoutSetting = IntSetting(
   advanced: true,
 );
 
+/// How many pages go in one request ("Translate all" and the steps on
+/// several picked pages); read by the app, not by the translator.
+const llmPagesSetting = IntSetting(
+  key: 'pages_per_request',
+  label: 'Pages in one request',
+  help: 'More than 1: neighbouring pages go together, so the model keeps names and the story; fewer requests.',
+  info: 'Only pages with text count, and pages of different chapters (archives, folders) never go together. '
+      'Each line carries a label like 02-005 (page 2, bubble 5), so the model sees where a page ends. With '
+      '"Send the page image", the pictures of all the pages of a request go along: it costs more, and the model '
+      'must take pictures. Long requests may be cut off: raise "Maximum answer length" if they are.',
+  defaultValue: 1,
+  min: 1,
+  max: 30,
+);
+
 const llmResendSetting = BoolSetting(
   key: 'resend_missing',
   label: 'Send the missing ones',
@@ -71,6 +86,7 @@ const openAiCompatibleInfo = PluginInfo(
     ),
     TextSetting(key: 'model', label: 'Model', placeholder: 'qwen2.5:7b'),
     SecretSetting(key: 'api_key', label: 'API key', help: 'Not needed for most local servers.', optional: true),
+    llmPagesSetting,
     llmResendSetting,
     llmTemperatureSetting,
     llmMaxTokensSetting,
@@ -180,8 +196,8 @@ class OpenAiCompatibleTranslator implements Translator {
   /// Request body (`GPTTranslation._perform_translation`).
   Map<String, Object?> buildPayload(TranslationRequest request) {
     final system = llmSystemPrompt(request.sourceLanguage, request.targetLanguage);
-    final user = llmUserPrompt(request.extraContext, blocksToJson(request.blocks));
-    final image = request.pageImage;
+    final user = llmUserPrompt(request.extraContext, blocksToJson(request.blocks, keys: request.keys));
+    final images = [?request.pageImage, ...request.pageImages];
     return {
       'model': model,
       'messages': [
@@ -195,7 +211,7 @@ class OpenAiCompatibleTranslator implements Translator {
           'role': 'user',
           'content': [
             {'type': 'text', 'text': user},
-            if (image != null)
+            for (final image in images)
               {
                 'type': 'image_url',
                 'image_url': {'url': 'data:image/jpeg;base64,${base64Encode(ImageCodec.encodeJpeg(image, quality: 75))}'},
@@ -233,18 +249,7 @@ class OpenAiCompatibleTranslator implements Translator {
         'of': request.blocks.length,
       });
       try {
-        await _ask(
-          TranslationRequest(
-            blocks: missing,
-            sourceLanguage: request.sourceLanguage,
-            targetLanguage: request.targetLanguage,
-            pageImage: request.pageImage,
-            extraContext: request.extraContext,
-          ),
-          context,
-          uri,
-          again: true,
-        );
+        await _ask(request.only(missing), context, uri, again: true);
       } on TranslationException catch (e) {
         context.log.child(stage: 'translate').warn('translate_resend_failed', {'error': e.message});
       }
@@ -268,7 +273,8 @@ class OpenAiCompatibleTranslator implements Translator {
       'host': uri.host,
       'model': model,
       'blocks': request.blocks.length,
-      'image': request.pageImage != null,
+      'image': request.pageImage != null || request.pageImages.isNotEmpty,
+      if (request.pageImages.isNotEmpty) 'images': request.pageImages.length,
       if (again) 'again': true,
     });
     final artifact = again ? 'request_again' : 'request';
@@ -289,7 +295,7 @@ class OpenAiCompatibleTranslator implements Translator {
           again: again,
           ms: sw.elapsedMilliseconds,
           sent: sentText(payload),
-          image: request.pageImage != null,
+          image: request.pageImage != null || request.pageImages.isNotEmpty,
           reply: reply,
           blocks: request.blocks.length,
           warnings: warnings,
@@ -315,7 +321,7 @@ class OpenAiCompatibleTranslator implements Translator {
           {'content': reply}, page: context.page);
 
       try {
-        warnings = applyTranslationsJson(request.blocks, reply);
+        warnings = applyTranslationsJson(request.blocks, reply, keys: request.keys);
       } on FormatException catch (e) {
         throw TranslationException('the model reply has broken JSON (${e.message}): ${_clip(reply)}',
             kind: TranslationErrorKind.badReply);

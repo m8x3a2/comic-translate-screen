@@ -83,7 +83,8 @@ class _HistoryDialogState extends ConsumerState<_HistoryDialog> {
     final all = _entries;
     final shown = [
       for (final e in all ?? const <HistoryEntry>[])
-        if (!_onlyPage || e.page == widget.page) e,
+        // Several pages in one request: their names, with commas.
+        if (!_onlyPage || e.page.split(', ').contains(widget.page)) e,
     ];
     String seconds(int ms) => NumberFormat('0.0', locale).format(ms / 1000);
     Widget block(String title, String text, String empty) => Column(

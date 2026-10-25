@@ -208,6 +208,7 @@ class PipelineWorker {
     List<BBox> covered = const [],
     List<TextBlock>? blocks,
     bool read = true,
+    bool translate = true,
     CancelToken? cancel,
     void Function(String stage)? onStage,
   }) async => await _job(
@@ -217,6 +218,7 @@ class PipelineWorker {
     image: image,
     blocks: blocks,
     read: read,
+    translate: translate,
     source: sourceLanguage,
     target: targetLanguage,
     below: below,
@@ -290,6 +292,25 @@ class PipelineWorker {
     cancel: cancel,
   ) as List).cast<TextBlock>();
 
+  /// Several pages in one request (see [translatePack] of the core): their
+  /// blocks come back translated, page by page.
+  Future<List<List<TextBlock>>> translatePack(
+    List<PackJob> pages, {
+    required String sourceLanguage,
+    required String targetLanguage,
+    CancelToken? cancel,
+  }) async => [
+    for (final page in (await _job(
+      _Op.translatePack,
+      [for (final p in pages) p.name].join(', '),
+      pack: pages,
+      source: sourceLanguage,
+      target: targetLanguage,
+      cancel: cancel,
+    ) as List))
+      (page as List).cast<TextBlock>(),
+  ];
+
   /// The text-removal mask of [blocks] (every block, as the original's
   /// manual "Segment"). With the image [below], blocks may reach below the
   /// page: the mask is then taller than the page by the rows they need.
@@ -332,13 +353,18 @@ class PipelineWorker {
     String? below,
     List<BBox> covered = const [],
     bool read = true,
+    bool translate = true,
+    List<PackJob> pack = const [],
     CancelToken? cancel,
     void Function(String stage)? onStage,
   }) {
-    assert(op == _Op.load || (path == null) != (image == null), 'pass either path or image');
+    assert(
+      op == _Op.load || op == _Op.translatePack || (path == null) != (image == null),
+      'pass either path or image',
+    );
     final id = _nextId++;
     final pending = _Pending<Object?>(onStage);
-    _send(id, pending, _Job(id, op, page, path, image, blocks, mask, source, target, parts, below, covered, read));
+    _send(id, pending, _Job(id, op, page, path, image, blocks, mask, source, target, parts, below, covered, read, translate, pack));
     // A cancel answers at once: the worker stops at its next checkpoint, and
     // what it sends back for this job is dropped (a step must not apply the
     // result of work the user stopped).
@@ -425,7 +451,7 @@ class _Pending<T> {
   final void Function(String stage)? onStage;
 }
 
-enum _Op { prepare, load, detect, recognize, translate, mask, inpaint }
+enum _Op { prepare, load, detect, recognize, translate, translatePack, mask, inpaint }
 
 // Messages main → worker.
 
@@ -444,6 +470,8 @@ class _Job {
     this.below,
     this.covered, [
     this.read = true,
+    this.translate = true,
+    this.pack = const [],
   ]);
 
   final int id;
@@ -465,6 +493,25 @@ class _Job {
   /// Whole pages with [blocks] already found: read them too (false: the
   /// exchange with a chat already did).
   final bool read;
+
+  /// Whole pages: translate them too (false: translated already, several
+  /// pages in one request).
+  final bool translate;
+
+  /// The pages of one request ([_Op.translatePack]).
+  final List<PackJob> pack;
+}
+
+/// One page of several translated in one request.
+class PackJob {
+  const PackJob(this.name, this.path, this.number, this.blocks);
+
+  final String name;
+  final String path;
+
+  /// Its place among all pages, from 1 (the labels).
+  final int number;
+  final List<TextBlock> blocks;
 }
 
 class _Cancel {
@@ -634,6 +681,27 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
       return null;
     }
     token.throwIfCancelled();
+    if (m.op == _Op.translatePack) {
+      await translatePackBlocks(
+        await plugins.translator,
+        [
+          for (final p in m.pack)
+            PackPage(p.number, p.blocks, image: settings.sendPageImage ? await ImageCodec.readFile(p.path) : null),
+        ],
+        settings,
+        PluginContext(
+          log: log.child(page: m.page),
+          cancel: token,
+          recorder: recorder,
+          page: m.page,
+          onUsage: usage?.record,
+          onHistory: history?.record,
+        ),
+        sourceLanguage: m.source,
+        targetLanguage: m.target,
+      );
+      return [for (final p in m.pack) p.blocks];
+    }
     final image = m.image ?? await ImageCodec.readFile(m.path!);
     final next = m.below == null ? null : await ImageCodec.readFile(m.below!);
     // The page with the rows of the next one that [blocks] reach into.
@@ -652,6 +720,9 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
     );
     final blocks = m.blocks ?? const <TextBlock>[];
     switch (m.op) {
+      // Handled before the page is read.
+      case _Op.load || _Op.translatePack:
+        return null;
       case _Op.prepare:
         final pipeline = await plugins.pipeline(m.source, m.target);
         return pipeline.prepare(
@@ -662,6 +733,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
           covered: m.covered,
           blocks: m.blocks,
           read: m.read,
+          translate: m.translate,
         );
       case _Op.detect:
         final found = await detectOnStrip(await plugins.detector, image, context, next: next, covered: m.covered);
@@ -718,8 +790,6 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
         );
         final (clean, overflow) = splitBelow(cleaned, mask, image.height);
         return CleanedImage(clean, overflow);
-      case _Op.load:
-        return null;
     }
   }
 

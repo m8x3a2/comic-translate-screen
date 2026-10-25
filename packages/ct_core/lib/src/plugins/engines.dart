@@ -49,6 +49,8 @@ class TranslationRequest {
     required this.targetLanguage,
     this.pageImage,
     this.extraContext = '',
+    this.keys,
+    this.pageImages = const [],
   });
 
   /// Blocks in reading order; translators fill `TextBlock.translation`.
@@ -62,6 +64,27 @@ class TranslationRequest {
 
   /// Free-form context about the comic, from settings.
   final String extraContext;
+
+  /// The name of each block in the request (several pages in one request:
+  /// their labels, `01-003`); null: `block_0`, `block_1`… as the original.
+  final List<String>? keys;
+
+  /// Several pages in one request: their pictures (with "send page image").
+  final List<RgbImage> pageImages;
+
+  /// The key of block [i] (see [keys]).
+  String keyOf(int i) => keys?[i] ?? 'block_$i';
+
+  /// The same request for [some] of its blocks only (their keys kept).
+  TranslationRequest only(List<TextBlock> some) => TranslationRequest(
+    blocks: some,
+    sourceLanguage: sourceLanguage,
+    targetLanguage: targetLanguage,
+    pageImage: pageImage,
+    extraContext: extraContext,
+    keys: keys == null ? null : [for (final b in some) keys![blocks.indexOf(b)]],
+    pageImages: pageImages,
+  );
 }
 
 /// Translates recognized text.

@@ -493,7 +493,8 @@ class PagePipeline {
   /// reach into (not detected again here).
   ///
   /// [blocks]: found already (the exchange with a chat), so not detected
-  /// again; with [read] false their text is kept as it is too.
+  /// again; with [read] false their text is kept as it is too, with
+  /// [translate] false their translation (several pages in one request).
   Future<CleanPage> prepare(
     RgbImage image,
     PluginContext context, {
@@ -502,6 +503,7 @@ class PagePipeline {
     List<BBox> covered = const [],
     List<TextBlock>? blocks,
     bool read = true,
+    bool translate = true,
   }) async {
     final recorder = context.recorder;
     final page = context.page;
@@ -546,17 +548,19 @@ class PagePipeline {
     }
     blocks = found;
 
-    start('03_translate');
-    await translatePageBlocks(
-      translator,
-      image,
-      blocks,
-      settings,
-      context,
-      sourceLanguage: sourceLanguage,
-      targetLanguage: targetLanguage,
-    );
-    lap('03_translate');
+    if (translate) {
+      start('03_translate');
+      await translatePageBlocks(
+        translator,
+        image,
+        blocks,
+        settings,
+        context,
+        sourceLanguage: sourceLanguage,
+        targetLanguage: targetLanguage,
+      );
+      lap('03_translate');
+    }
 
     start('04_mask');
     final inpaintBlocks = selectInpaintBlocks(blocks);
@@ -684,6 +688,26 @@ Future<void> translatePageBlocks(
         : settings.extraContext,
   ),
   context,
+);
+
+/// Several pages in one request (pictures given only when the setting
+/// allows it); as [translatePageBlocks] otherwise.
+Future<void> translatePackBlocks(
+  Translator translator,
+  List<PackPage> pages,
+  AppSettings settings,
+  PluginContext context, {
+  required String sourceLanguage,
+  required String targetLanguage,
+}) => translatePack(
+  translator,
+  pages,
+  context,
+  sourceLanguage: sourceLanguage,
+  targetLanguage: targetLanguage,
+  extraContext: pages.any((p) => p.blocks.any(isSmallText))
+      ? [settings.extraContext, smallTextTranslatorNote].where((s) => s.trim().isNotEmpty).join('\n')
+      : settings.extraContext,
 );
 
 /// The plugins of a [PipelineSpec], created when first needed and kept.

@@ -44,6 +44,32 @@ void main() {
     );
     expect([for (final b in blocks) b.untranslated], [false, false]);
   });
+
+  test('several pages in one request: the blocks named by their labels, pictures along', () async {
+    final seen = _Seen();
+    final picture = RgbImage.filled(4, 4, 0, 0, 0);
+    await translatePack(
+      seen,
+      [
+        PackPage(2, [block('Hi'), block('!!'), block('Bye')], image: picture),
+        PackPage(5, [block('Well')]),
+      ],
+      PluginContext(log: EventLog.silent()),
+      sourceLanguage: 'English',
+      targetLanguage: 'Russian',
+      extraContext: 'A comedy.',
+    );
+    final r = seen.request!;
+    expect(r.keys, ['02-001', '02-003', '05-001'], reason: 'the block without letters is not sent');
+    expect(r.pageImages.length, 1);
+    expect(r.extraContext, startsWith('A comedy.\n$packTranslatorNote'));
+    expect(blocksToJson(r.blocks, keys: r.keys), contains('"05-001": "Well"'));
+    final only = r.only([r.blocks[2]]);
+    expect(only.keys, ['05-001']);
+    expect(only.blocks.single.text, 'Well');
+    applyTranslationsJson(r.blocks, '{"02-001": "Привет", "05-001": "Ну"}', keys: r.keys);
+    expect([for (final b in r.blocks) b.untranslated], [false, true, false]);
+  });
 }
 
 /// Upper-cases the text; tells nothing about left-out blocks.
@@ -58,6 +84,21 @@ class _Upper implements Translator {
       b.translation = b.text.toUpperCase();
     }
   }
+
+  @override
+  Future<void> dispose() async {}
+}
+
+/// Keeps what it was asked.
+class _Seen implements Translator {
+  TranslationRequest? request;
+
+  @override
+  PluginInfo get info =>
+      const PluginInfo(id: 'seen', displayName: 'Seen', kind: PluginKind.translator, privacy: Privacy.local);
+
+  @override
+  Future<void> translate(TranslationRequest request, PluginContext context) async => this.request = request;
 
   @override
   Future<void> dispose() async {}

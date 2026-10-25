@@ -12,6 +12,7 @@ import '../pipeline/page_pipeline.dart';
 import '../pipeline/pipeline_worker.dart';
 import 'app_state.dart';
 import 'exchange.dart';
+import 'export.dart';
 import 'page_render.dart';
 import 'steps.dart';
 import 'worker_pool.dart';
@@ -261,6 +262,7 @@ class BatchNotifier extends Notifier<BatchState> {
       _update((s) => s.copyWith(stage: 'loading'));
       final (setup, key) = await currentWorkerSetup(ref);
       worker = await pool.acquire(setup, key, log);
+      final active = worker;
       await worker.load({...PipelinePart.values}, cancel: cancel);
       log.info('batch_start', {'pages': todo.length, 'translator': settings.translator});
       // Reading or translating through a chat: the text of every page is
@@ -289,9 +291,35 @@ class BatchNotifier extends Notifier<BatchState> {
       }
       final stamp = _stamp(started);
       final pageMs = <int>[];
-      for (final (i, page) in todo.indexed) {
-        if (cancel.isCancelled) break;
-        if (viaChat && !withText.contains(page)) continue;
+
+      /// [page] failed: skipped, with its reason. True when the run stops
+      /// (the translator cannot go on).
+      bool failed(int i, PageEntry page, Object e, StackTrace st, int ms) {
+        log.error('page_failed', e, st, {'page': page.name});
+        final reason = skipReasonFor(e);
+        skipped.add(SkippedPage(page.id, page.name, reason));
+        workspace.updatePage(page.id, (p) => p.copyWith(status: PageStatus.skipped, reason: reason, stage: null));
+        failuresInARow = reason is TranslationFailedReason ? failuresInARow + 1 : 0;
+        pageMs.add(ms);
+        _update((b) => b.copyWith(done: i + 1, pageMs: List.of(pageMs)));
+        final fatal = reason is TranslationFailedReason && reason.kind.stopsRun;
+        if (fatal || failuresInARow >= maxTranslationFailuresInARow || reason is WorkerStoppedReason) {
+          log.warn('batch_stopped', {'failures_in_a_row': failuresInARow, 'reason': reason.runtimeType.toString()});
+          stoppedBy = reason;
+          return true;
+        }
+        return false;
+      }
+
+      /// The rest of [page] (all of it, or from cleaning on with [found]
+      /// blocks): false when the run stops.
+      Future<bool> finish(
+        int i,
+        PageEntry page, {
+        List<TextBlock>? found,
+        bool read = true,
+        bool translate = true,
+      }) async {
         final sw = Stopwatch()..start();
         void stage(String s) {
           workspace.updatePage(page.id, (p) => p.copyWith(stage: s));
@@ -304,8 +332,7 @@ class BatchNotifier extends Notifier<BatchState> {
           // Webtoon mode: bubbles cut by the edge to the next page are this
           // page's; those of the page above (done just before) are its.
           final seams = await webtoonSeams(ref.read(workspaceProvider), page);
-          final found = viaChat ? ref.read(workspaceProvider).byId(page.id)?.blocks : null;
-          final cleaned = await worker.prepare(
+          final cleaned = await active.prepare(
             page.name,
             path: page.path,
             sourceLanguage: page.sourceOf(settings),
@@ -313,7 +340,8 @@ class BatchNotifier extends Notifier<BatchState> {
             below: seams.below,
             covered: seams.covered,
             blocks: found == null ? null : [for (final b in found) b.copy()],
-            read: !viaChat,
+            read: read,
+            translate: translate,
             cancel: cancel,
             onStage: stage,
           );
@@ -334,7 +362,7 @@ class BatchNotifier extends Notifier<BatchState> {
           final clean = p.join(dir.path, 'clean_$run.png');
           final overflow = cleaned.overflow;
           final patch = overflow == null ? null : p.join(dir.path, 'overflow_$run.png');
-          await worker.save(
+          await active.save(
             [
               ImageOutput(translated, render.image),
               ImageOutput(clean, cleaned.clean),
@@ -376,7 +404,7 @@ class BatchNotifier extends Notifier<BatchState> {
           final left = cleaned.blocks.where((b) => b.untranslated).length;
           if (left > 0) untranslated.add((page.id, page.name, left));
           if (settings.export.anyAutomatic) {
-            final out = await _autoExport(worker, page, cleaned, settings.export, stamp, log);
+            final out = await _autoExport(active, page, cleaned, settings.export, stamp, log);
             if (out != null) exportDirs.add(out);
           }
         } on CancelledException {
@@ -384,24 +412,36 @@ class BatchNotifier extends Notifier<BatchState> {
             page.id,
             (p) => p.copyWith(status: p.isDone ? PageStatus.done : PageStatus.pending, stage: null),
           );
-          break;
+          return false;
         } catch (e, st) {
-          log.error('page_failed', e, st, {'page': page.name});
-          final reason = skipReasonFor(e);
-          skipped.add(SkippedPage(page.id, page.name, reason));
-          workspace.updatePage(page.id, (p) => p.copyWith(status: PageStatus.skipped, reason: reason, stage: null));
-          failuresInARow = reason is TranslationFailedReason ? failuresInARow + 1 : 0;
-          final fatal = reason is TranslationFailedReason && reason.kind.stopsRun;
-          if (fatal || failuresInARow >= maxTranslationFailuresInARow || reason is WorkerStoppedReason) {
-            log.warn('batch_stopped', {'failures_in_a_row': failuresInARow, 'reason': reason.runtimeType.toString()});
-            stoppedBy = reason;
-            pageMs.add(sw.elapsedMilliseconds);
-            _update((b) => b.copyWith(done: i + 1, pageMs: List.of(pageMs)));
-            break;
-          }
+          return !failed(i, page, e, st, sw.elapsedMilliseconds);
         }
         pageMs.add(sw.elapsedMilliseconds);
         _update((b) => b.copyWith(done: i + 1, pageMs: List.of(pageMs)));
+        return true;
+      }
+
+      final size = viaChat ? 1 : pagesPerRequest(services.registry, settings);
+      if (size > 1) {
+        await _runPacks(
+          active,
+          todo,
+          size,
+          settings,
+          cancel,
+          skipped,
+          log,
+          finish: finish,
+          failed: failed,
+          translated: (ms) => stageMs['03_translate'] = (stageMs['03_translate'] ?? 0) + ms,
+        );
+      } else {
+        for (final (i, page) in todo.indexed) {
+          if (cancel.isCancelled) break;
+          if (viaChat && !withText.contains(page)) continue;
+          final found = viaChat ? ref.read(workspaceProvider).byId(page.id)?.blocks : null;
+          if (!await finish(i, page, found: found, read: !viaChat)) break;
+        }
       }
     } on CancelledException {
       // Stopped while downloading or loading.
@@ -446,8 +486,9 @@ class BatchNotifier extends Notifier<BatchState> {
     AppSettings settings,
     CancelToken cancel,
     List<SkippedPage> skipped,
-    EventLog log,
-  ) async {
+    EventLog log, {
+    String waitStage = 'exchange',
+  }) async {
     final workspace = ref.read(workspaceProvider.notifier);
     final read = !readsThroughChat(settings);
     final ready = <PageEntry>[];
@@ -477,7 +518,7 @@ class BatchNotifier extends Notifier<BatchState> {
             cancel: cancel,
           );
         }
-        workspace.edit(page.id, (p) => p.copyWith(blocks: blocks, stage: 'exchange'), byHand: false);
+        workspace.edit(page.id, (p) => p.copyWith(blocks: blocks, stage: waitStage), byHand: false);
         ready.add(page);
       } on CancelledException {
         workspace.updatePage(
@@ -493,6 +534,95 @@ class BatchNotifier extends Notifier<BatchState> {
       }
     }
     return ready;
+  }
+
+  /// "Pages in one request" more than 1 (the owner's idea): the pages are
+  /// found and read one after another; those with text wait until [size] of
+  /// them (of one chapter and the same languages) are ready, go to the
+  /// translator in one request, then are cleaned and drawn by [finish].
+  /// Pages without text are finished at once. A failed request skips its
+  /// pages ([failed]); [translated] gets the time of each request.
+  Future<void> _runPacks(
+    PipelineWorker worker,
+    List<PageEntry> todo,
+    int size,
+    AppSettings settings,
+    CancelToken cancel,
+    List<SkippedPage> skipped,
+    EventLog log, {
+    required Future<bool> Function(int i, PageEntry page, {List<TextBlock>? found, bool read, bool translate}) finish,
+    required bool Function(int i, PageEntry page, Object e, StackTrace st, int ms) failed,
+    required void Function(int ms) translated,
+  }) async {
+    final workspace = ref.read(workspaceProvider.notifier);
+    final waiting = <(int, PageEntry, List<TextBlock>)>[];
+    // Pages of one request: one chapter, the same languages.
+    String together(PageEntry page) => '${chapterOf(page)}|${page.sourceOf(settings)}|${page.targetOf(settings)}';
+
+    /// The waiting pages in one request; false when the run stops.
+    Future<bool> send() async {
+      if (waiting.isEmpty) return true;
+      final pack = List.of(waiting);
+      waiting.clear();
+      final pages = ref.read(workspaceProvider).pages;
+      _update(
+        (b) => b.copyWith(pageName: [for (final (_, page, _) in pack) page.name].join(', '), stage: '03_translate'),
+      );
+      log.info('batch_pack', {'pages': pack.length});
+      final sw = Stopwatch()..start();
+      final List<List<TextBlock>> done;
+      try {
+        done = await worker.translatePack(
+          [
+            for (final (_, page, blocks) in pack)
+              PackJob(page.name, page.path, pages.indexWhere((p) => p.id == page.id) + 1, [
+                for (final b in blocks) b.copy(),
+              ]),
+          ],
+          sourceLanguage: pack.first.$2.sourceOf(settings),
+          targetLanguage: pack.first.$2.targetOf(settings),
+          cancel: cancel,
+        );
+      } on CancelledException {
+        for (final (_, page, _) in pack) {
+          workspace.updatePage(
+            page.id,
+            (p) => p.copyWith(status: p.isDone ? PageStatus.done : PageStatus.pending, stage: null),
+          );
+        }
+        return false;
+      } catch (e, st) {
+        for (final (i, page, _) in pack) {
+          if (failed(i, page, e, st, sw.elapsedMilliseconds ~/ pack.length)) return false;
+        }
+        return true;
+      }
+      translated(sw.elapsedMilliseconds);
+      for (final ((i, page, _), blocks) in [for (var n = 0; n < pack.length; n++) (pack[n], done[n])]) {
+        if (cancel.isCancelled) return false;
+        if (!await finish(i, page, found: blocks, read: false, translate: false)) return false;
+      }
+      return true;
+    }
+
+    for (final (i, page) in todo.indexed) {
+      if (cancel.isCancelled) return;
+      if (waiting.isNotEmpty && together(waiting.first.$2) != together(page) && !await send()) return;
+      // Found and read now; translated with the pages after it.
+      if ((await _findText(worker, [page], settings, cancel, skipped, log, waitStage: '03_translate')).isEmpty) {
+        _update((b) => b.copyWith(done: i + 1));
+        continue;
+      }
+      final blocks = ref.read(workspaceProvider).byId(page.id)?.blocks ?? const <TextBlock>[];
+      if (!blocks.any((b) => hasTranslatableContent(b.text))) {
+        // Nothing to translate: cleaned and drawn at once.
+        if (!await finish(i, page, found: [for (final b in blocks) b.copy()], read: false, translate: false)) return;
+        continue;
+      }
+      waiting.add((i, page, blocks));
+      if (waiting.length >= size && !await send()) return;
+    }
+    if (!cancel.isCancelled) await send();
   }
 
   /// Writes the original's automatic exports for [page]; returns the folder.

@@ -7,6 +7,8 @@ library;
 import 'dart:convert';
 
 import '../model/language.dart';
+import '../exchange/exchange_answer.dart';
+import '../image/raster.dart';
 import '../model/text_block.dart';
 import '../ocr/auto_language.dart';
 import '../plugins/engines.dart';
@@ -31,9 +33,10 @@ String llmSystemPrompt(String sourceLanguage, String targetLanguage) =>
         Do Your Best! I'm really counting on you.''';
 
 /// `get_raw_text`: `{"block_0": text, ...}` as Python's
-/// `json.dumps(..., ensure_ascii=False, indent=4)`.
-String blocksToJson(List<TextBlock> blocks) =>
-    const JsonEncoder.withIndent('    ').convert({for (final (i, b) in blocks.indexed) 'block_$i': b.text});
+/// `json.dumps(..., ensure_ascii=False, indent=4)`; with [keys], those
+/// instead of `block_N` (several pages in one request).
+String blocksToJson(List<TextBlock> blocks, {List<String>? keys}) => const JsonEncoder.withIndent('    ')
+    .convert({for (final (i, b) in blocks.indexed) (keys?[i] ?? 'block_$i'): b.text});
 
 /// The user message of `BaseLLMTranslation.translate`.
 String llmUserPrompt(String extraContext, String blocksJson) =>
@@ -54,7 +57,7 @@ const noJsonWarning = 'No JSON found in the reply.';
 ///
 /// Blocks the reply has nothing for are marked [TextBlock.untranslated] (the
 /// others unmarked).
-List<String> applyTranslationsJson(List<TextBlock> blocks, String reply) {
+List<String> applyTranslationsJson(List<TextBlock> blocks, String reply, {List<String>? keys}) {
   final match = _jsonObject.firstMatch(reply);
   if (match == null) {
     for (final b in blocks) {
@@ -72,7 +75,7 @@ List<String> applyTranslationsJson(List<TextBlock> blocks, String reply) {
   if (decoded is! Map) throw const FormatException('The reply JSON is not an object.');
   final warnings = <String>[];
   for (final (i, b) in blocks.indexed) {
-    final key = 'block_$i';
+    final key = keys?[i] ?? 'block_$i';
     if (decoded.containsKey(key)) {
       final v = decoded[key];
       b.translation = v is String ? v : (v == null ? '' : '$v');
@@ -133,16 +136,19 @@ Future<List<TextBlock>> translateBlocks(
   PluginContext context,
 ) async {
   final translatable = <TextBlock>[];
-  for (final b in request.blocks) {
+  final keys = <String>[];
+  for (final (i, b) in request.blocks.indexed) {
     // Translators that can tell mark again what their answer left out.
     b.untranslated = false;
     if (hasTranslatableContent(b.text)) {
       translatable.add(b);
+      keys.add(request.keyOf(i));
     } else {
       b.translation = '';
     }
   }
   if (translatable.isEmpty) return translatable;
+  final named = request.keys == null ? null : keys;
   await translator.translate(
     TranslationRequest(
       blocks: translatable,
@@ -153,20 +159,67 @@ Future<List<TextBlock>> translateBlocks(
       pageImage: request.pageImage,
       extraContext: [
         request.extraContext,
-        speakersForTranslator(translatable),
+        speakersForTranslator(translatable, keys: named),
       ].where((s) => s.trim().isNotEmpty).join('\n'),
+      keys: named,
+      pageImages: request.pageImages,
     ),
     context,
   );
   return translatable;
 }
 
-/// Who says which block (`block_N` as in [blocksToJson]), when the user
-/// told; empty otherwise. Not in the original.
-String speakersForTranslator(List<TextBlock> blocks) {
+/// One page of several translated in one request: its place among all
+/// pages (from 1, the first part of the labels), its blocks and picture.
+class PackPage {
+  const PackPage(this.number, this.blocks, {this.image});
+
+  final int number;
+  final List<TextBlock> blocks;
+  final RgbImage? image;
+}
+
+/// Told to the translator when several pages go in one request (not in the
+/// original).
+const packTranslatorNote =
+    'Several pages of the comic follow one another here. The keys are labels: 01-003 is page 1, block 3. '
+    'Keep every key as it is.';
+
+/// Several pages in one request (the owner's idea): the blocks of [pages]
+/// named by their labels (`01-003`, as in the exchange with a chat), the
+/// pages' pictures when given. Blocks the answer left out are marked as
+/// with one page. Returns the blocks that were sent.
+Future<List<TextBlock>> translatePack(
+  Translator translator,
+  List<PackPage> pages,
+  PluginContext context, {
+  required String sourceLanguage,
+  required String targetLanguage,
+  String extraContext = '',
+}) => translateBlocks(
+  translator,
+  TranslationRequest(
+    blocks: [for (final page in pages) ...page.blocks],
+    sourceLanguage: sourceLanguage,
+    targetLanguage: targetLanguage,
+    extraContext: [extraContext, packTranslatorNote].where((s) => s.trim().isNotEmpty).join('\n'),
+    keys: [
+      for (final page in pages)
+        for (var i = 0; i < page.blocks.length; i++) ExchangeLabel(page.number, i + 1).code,
+    ],
+    pageImages: [
+      for (final page in pages) ?page.image,
+    ],
+  ),
+  context,
+);
+
+/// Who says which block (`block_N` as in [blocksToJson], or its key), when
+/// the user told; empty otherwise. Not in the original.
+String speakersForTranslator(List<TextBlock> blocks, {List<String>? keys}) {
   final told = [
     for (final (i, b) in blocks.indexed)
-      if (b.speaker case final s?) 'block_$i: ${s.words}',
+      if (b.speaker case final s?) '${keys?[i] ?? 'block_$i'}: ${s.words}',
   ];
   return told.isEmpty
       ? ''

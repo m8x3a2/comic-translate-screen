@@ -25,6 +25,7 @@ const openRouterInfo = PluginInfo(
       placeholder: 'openai/gpt-4.1-mini',
     ),
     SecretSetting(key: 'api_key', label: 'API key', help: 'Made on openrouter.ai: "Get a key".'),
+    llmPagesSetting,
     llmResendSetting,
     llmTemperatureSetting,
     llmMaxTokensSetting,

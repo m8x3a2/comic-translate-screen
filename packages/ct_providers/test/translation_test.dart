@@ -501,6 +501,7 @@ void main() {
     expect(openRouterInfo.settings.map((f) => f.key), [
       'model',
       'api_key',
+      'pages_per_request',
       'resend_missing',
       'temperature',
       'max_tokens',

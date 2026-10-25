@@ -86,6 +86,31 @@ final workerPoolProvider = Provider<WorkerPool>((ref) {
   return pool;
 });
 
+/// How many pages the chosen translator takes in one request (its "Pages in
+/// one request"); 1 for translators without it.
+int pagesPerRequest(PluginRegistry registry, AppSettings settings) {
+  final id = settings.translator;
+  if (!registry.contains(id)) return 1;
+  final info = registry.info(id);
+  if (info.field('pages_per_request') == null) return 1;
+  return PluginConfig.resolve(info.settings, settings.pluginValues(id)).value<int>('pages_per_request');
+}
+
+/// Pages that may go together in one request: in order, at most [size],
+/// never across a chapter (another archive or folder, as [chapterOf] tells).
+List<List<T>> packsOf<T>(List<T> pages, int size, String Function(T page) chapterOf) {
+  final packs = <List<T>>[];
+  for (final page in pages) {
+    final last = packs.isEmpty ? null : packs.last;
+    if (last != null && last.length < size && chapterOf(last.first) == chapterOf(page)) {
+      last.add(page);
+    } else {
+      packs.add([page]);
+    }
+  }
+  return packs;
+}
+
 /// [settings] for the worker: the chosen styles of translation and the
 /// project's [glossary] go to translators over the network with the extra
 /// context (as to a chat).

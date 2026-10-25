@@ -6,6 +6,13 @@ library;
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter/widgets.dart';
 
+const _pagesInfo =
+    'Считаются только страницы с текстом; страницы разных глав (разные архивы и папки) вместе не уходят. '
+    'У каждой строки метка вида 02-005 (страница 2, пузырь 5) — по ней модель видит, где кончается страница. '
+    'Если включено «Отправлять картинку страницы», уходят картинки всех страниц запроса: это дороже, и модель '
+    'должна уметь видеть картинки. Длинный ответ может оборваться — тогда увеличьте «Наибольшую длину ответа» '
+    '(в «Дополнительно»).';
+
 const _resendInfo =
     'Модели иногда пропускают пузыри, особенно на длинных страницах. Тогда программа отправляет ещё один '
     'короткий запрос только с пропущенными. Пузырь, который и после этого остался без перевода, сохраняет '
@@ -90,6 +97,10 @@ const _ru = <String, String>{
   'openrouter.model.help': 'Выберите из списка («Выбрать…») или впишите её id.',
   'openrouter.api_key': 'Ключ API',
   'openrouter.api_key.help': 'Делается на openrouter.ai: «Получить ключ».',
+  'openrouter.pages_per_request': 'Страниц в одном запросе',
+  'openrouter.pages_per_request.help':
+      'Больше 1 — соседние страницы уходят вместе: модель лучше держит имена и сюжет, запросов меньше.',
+  'openrouter.pages_per_request.info': _pagesInfo,
   'openrouter.resend_missing': 'Досылать недостающее',
   'openrouter.resend_missing.help': 'Если в ответе нет перевода части пузырей — один раз спросить только про них.',
   'openrouter.resend_missing.info': _resendInfo,
@@ -113,6 +124,10 @@ const _ru = <String, String>{
   'openai_compatible.model': 'Модель',
   'openai_compatible.api_key': 'Ключ API',
   'openai_compatible.api_key.help': 'Для большинства локальных серверов не нужен.',
+  'openai_compatible.pages_per_request': 'Страниц в одном запросе',
+  'openai_compatible.pages_per_request.help':
+      'Больше 1 — соседние страницы уходят вместе: модель лучше держит имена и сюжет, запросов меньше.',
+  'openai_compatible.pages_per_request.info': _pagesInfo,
   'openai_compatible.resend_missing': 'Досылать недостающее',
   'openai_compatible.resend_missing.help': 'Если в ответе нет перевода части пузырей — один раз спросить только про них.',
   'openai_compatible.resend_missing.info': _resendInfo,
