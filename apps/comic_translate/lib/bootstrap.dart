@@ -22,6 +22,7 @@ class AppServices {
     required this.settingsStore,
     required this.registry,
     required this.usage,
+    required this.history,
   });
 
   final AppPaths paths;
@@ -42,6 +43,9 @@ class AppServices {
 
   /// The local usage counter of paid services (`usage.json`).
   final UsageLog usage;
+
+  /// The last requests to translators over the network, for the user to look through.
+  final TranslatorHistory history;
   final JsonlFileSink _appLogSink;
 
   /// Resolves the configuration of plugin [id]: stored values from
@@ -139,6 +143,7 @@ class AppServices {
       settingsStore: SettingsStore(paths.settingsFile, log: log),
       registry: registry ?? builtInRegistry(),
       usage: UsageLog(paths.usageFile),
+      history: TranslatorHistory(paths.historyFile),
     );
   }
 

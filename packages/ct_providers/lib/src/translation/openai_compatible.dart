@@ -139,6 +139,7 @@ class OpenAiCompatibleTranslator implements Translator {
     this.tokenLimitParam = 'max_completion_tokens',
     this.timeout = const Duration(seconds: 120),
     this.retryDelays = const [Duration(seconds: 2), Duration(seconds: 6)],
+    this.info = openAiCompatibleInfo,
     HttpClient Function()? httpClientFactory,
   }) : _httpClientFactory = httpClientFactory ?? _defaultClient;
 
@@ -156,8 +157,9 @@ class OpenAiCompatibleTranslator implements Translator {
 
   static HttpClient _defaultClient() => HttpClient()..findProxy = HttpClient.findProxyFromEnvironment;
 
+  /// "Own server", or OpenRouter when made by its factory.
   @override
-  PluginInfo get info => openAiCompatibleInfo;
+  final PluginInfo info;
 
   /// Request body (`GPTTranslation._perform_translation`).
   Map<String, Object?> buildPayload(TranslationRequest request) {
@@ -214,36 +216,78 @@ class OpenAiCompatibleTranslator implements Translator {
         page: context.page);
 
     final sw = Stopwatch()..start();
-    final (reply, usage) = await _postWithRetries(uri, payload, context.cancel, log);
-    final used = usageOf(usage, payload, reply, host: uri.host);
-    log.info('translate_response', {
-      'ms': sw.elapsedMilliseconds,
-      'chars': reply.length,
-      'input_tokens': used.inputTokens,
-      'output_tokens': used.outputTokens,
-      if (used.cost != null) 'cost': used.cost,
-      if (used.estimated) 'tokens_estimated': true,
-    });
-    await context.reportUsage(used);
-    await context.recorder?.writeJsonArtifact('03_translate', 'response.json', {'content': reply}, page: context.page);
-
-    final List<String> warnings;
+    // What the history keeps of this request, whatever comes of it.
+    var reply = '';
+    var warnings = const <String>[];
+    ServiceUsage? used;
+    Future<void> keep([String error = '']) => context.reportHistory(HistoryEntry(
+          time: DateTime.now(),
+          plugin: info.id,
+          host: uri.host,
+          model: model,
+          page: context.page ?? '',
+          ms: sw.elapsedMilliseconds,
+          sent: sentText(payload),
+          image: request.pageImage != null,
+          reply: reply,
+          blocks: request.blocks.length,
+          warnings: warnings,
+          error: error,
+          inputTokens: used?.inputTokens ?? 0,
+          outputTokens: used?.outputTokens ?? 0,
+          cost: used?.cost,
+        ));
     try {
-      warnings = applyTranslationsJson(request.blocks, reply);
-    } on FormatException catch (e) {
-      throw TranslationException('the model reply has broken JSON (${e.message}): ${_clip(reply)}',
-          kind: TranslationErrorKind.badReply);
-    }
-    for (final w in warnings) {
-      log.warn('translate_reply_warning', {'warning': w});
-    }
-    // The original only warns; a page with no translation at all would look
-    // done but keep its text removed, so it is reported instead.
-    final nothing = warnings.length >= request.blocks.length || warnings.contains(noJsonWarning);
-    if (request.blocks.isNotEmpty && nothing) {
-      throw TranslationException('the model reply has no translations: ${_clip(reply)}', kind: TranslationErrorKind.badReply);
+      final Map<String, Object?>? usage;
+      (reply, usage) = await _postWithRetries(uri, payload, context.cancel, log);
+      used = usageOf(usage, payload, reply, host: uri.host);
+      log.info('translate_response', {
+        'ms': sw.elapsedMilliseconds,
+        'chars': reply.length,
+        'input_tokens': used.inputTokens,
+        'output_tokens': used.outputTokens,
+        if (used.cost != null) 'cost': used.cost,
+        if (used.estimated) 'tokens_estimated': true,
+      });
+      await context.reportUsage(used);
+      await context.recorder?.writeJsonArtifact('03_translate', 'response.json', {'content': reply}, page: context.page);
+
+      try {
+        warnings = applyTranslationsJson(request.blocks, reply);
+      } on FormatException catch (e) {
+        throw TranslationException('the model reply has broken JSON (${e.message}): ${_clip(reply)}',
+            kind: TranslationErrorKind.badReply);
+      }
+      for (final w in warnings) {
+        log.warn('translate_reply_warning', {'warning': w});
+      }
+      // The original only warns; a page with no translation at all would look
+      // done but keep its text removed, so it is reported instead.
+      final nothing = warnings.length >= request.blocks.length || warnings.contains(noJsonWarning);
+      if (request.blocks.isNotEmpty && nothing) {
+        throw TranslationException('the model reply has no translations: ${_clip(reply)}',
+            kind: TranslationErrorKind.badReply);
+      }
+      await keep();
+    } on TranslationException catch (e) {
+      await keep(e.message);
+      rethrow;
     }
   }
+
+  /// The messages of [payload] as text, for the history: each with its role,
+  /// a picture as a note (the picture itself is not kept).
+  static String sentText(Map<String, Object?> payload) => [
+        for (final m in (payload['messages'] as List? ?? const []).whereType<Map>())
+          '[${m['role']}]\n${switch (m['content']) {
+            final String text => text,
+            final List parts => [
+                for (final part in parts.whereType<Map>())
+                  part['type'] == 'text' ? '${part['text']}' : '<${part['type']}>',
+              ].join('\n'),
+            _ => '',
+          }}',
+      ].join('\n\n');
 
   /// Sends again after temporary failures (rate limit, server error, lost
   /// connection), waiting [retryDelays] (or the server's Retry-After, up to

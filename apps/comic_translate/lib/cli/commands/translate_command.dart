@@ -104,7 +104,13 @@ class TranslateCommand extends CtsCommand {
             pageImage: pageImage,
             extraContext: settings.extraContext,
           ),
-          PluginContext(log: pageLog, recorder: recorder, page: page, onUsage: services.usage.record),
+          PluginContext(
+            log: pageLog,
+            recorder: recorder,
+            page: page,
+            onUsage: services.usage.record,
+            onHistory: services.history.record,
+          ),
         );
         for (final b in ordered) {
           b.translation = casedTranslation(b, settings.textCase, upperCase: b.style?.upperCase);

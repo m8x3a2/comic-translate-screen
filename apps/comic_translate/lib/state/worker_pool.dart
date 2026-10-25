@@ -121,6 +121,7 @@ Future<(WorkerSetup, String)> currentWorkerSetup(Ref ref) async {
     registry: ref.read(workerRegistryProvider),
     preload: const {},
     usageFile: services.paths.usageFile.path,
+    historyFile: services.paths.historyFile.path,
   );
   return (setup, '${spec.fingerprint}|${services.models.root.path}|${runs ?? ''}');
 }

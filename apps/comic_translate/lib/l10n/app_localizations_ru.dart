@@ -1371,6 +1371,89 @@ class AppLocalizationsRu extends AppLocalizations {
   String get modelsRefresh => 'Обновить список';
 
   @override
+  String get historyOpen => 'История запросов';
+
+  @override
+  String get historyPage => 'Что ответил переводчик';
+
+  @override
+  String get historyTitle => 'История переводчика';
+
+  @override
+  String historyHelp(String keep) {
+    return 'Последние $keep запросов к переводчикам через сеть (OpenRouter, свой сервер): что ушло и что пришло — как есть. Хранится только на этом компьютере; ключ и картинки сюда не попадают.';
+  }
+
+  @override
+  String historyOnlyPage(String page) {
+    return 'Только $page';
+  }
+
+  @override
+  String historyCount(int shown, int total) {
+    return 'Показано: $shown из $total';
+  }
+
+  @override
+  String get historyNone =>
+      'Запросов ещё нет. Они появятся здесь после перевода через OpenRouter или свой сервер.';
+
+  @override
+  String get historyNoneForPage =>
+      'Для этой страницы запросов нет. Снимите фильтр, чтобы увидеть все.';
+
+  @override
+  String historyOk(int count) {
+    return 'Переведено пузырей: $count';
+  }
+
+  @override
+  String historyMissing(int got, int total) {
+    return 'Переведено $got из $total: на часть пузырей в ответе ничего нет';
+  }
+
+  @override
+  String historyFailed(String error) {
+    return 'Ошибка: $error';
+  }
+
+  @override
+  String historySeconds(String seconds) {
+    return '$seconds с';
+  }
+
+  @override
+  String get historyImage => 'с картинкой страницы';
+
+  @override
+  String historyTokens(int input, int output) {
+    return 'токены: $input в запросе, $output в ответе';
+  }
+
+  @override
+  String historyWarnings(String warnings) {
+    return 'При разборе ответа: $warnings';
+  }
+
+  @override
+  String get historySent => 'Отправлено';
+
+  @override
+  String get historyReply => 'Ответ (как пришёл)';
+
+  @override
+  String get historyNoReply => '(ответа нет)';
+
+  @override
+  String get historyClear => 'Очистить историю';
+
+  @override
+  String get historyClearAsk => 'Очистить всю историю запросов?';
+
+  @override
+  String get historyCopied => 'Скопировано';
+
+  @override
   String keyStatusFailed(String reason) {
     return 'Не удалось проверить: $reason';
   }

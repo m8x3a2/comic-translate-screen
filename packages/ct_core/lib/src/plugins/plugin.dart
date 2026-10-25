@@ -3,6 +3,7 @@ import '../diagnostics/event_log.dart';
 import '../diagnostics/run_recorder.dart';
 import '../usage/key_status.dart';
 import '../usage/model_catalog.dart';
+import '../usage/translator_history.dart';
 import '../usage/usage_log.dart';
 import 'settings_schema.dart';
 
@@ -142,6 +143,7 @@ class PluginContext {
     this.recorder,
     this.page,
     this.onUsage,
+    this.onHistory,
   }) : cancel = cancel ?? CancelToken.none;
 
   final EventLog log;
@@ -166,8 +168,27 @@ class PluginContext {
     }
   }
 
-  PluginContext forPage(String page) =>
-      PluginContext(log: log.child(page: page), cancel: cancel, recorder: recorder, page: page, onUsage: onUsage);
+  /// Keeps the requests to translators over the network (the history the
+  /// user can look through).
+  final HistorySink? onHistory;
+
+  /// Translators that call a service put each request here, answered or
+  /// not. Never throws.
+  Future<void> reportHistory(HistoryEntry entry) async {
+    try {
+      await onHistory?.call(entry);
+    } on Object catch (e) {
+      log.warn('history_not_kept', {'error': e.toString()});
+    }
+  }
+
+  PluginContext forPage(String page) => PluginContext(
+      log: log.child(page: page),
+      cancel: cancel,
+      recorder: recorder,
+      page: page,
+      onUsage: onUsage,
+      onHistory: onHistory);
 }
 
 /// Base interface of all plugin instances.

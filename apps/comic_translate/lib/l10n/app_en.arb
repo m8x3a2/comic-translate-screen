@@ -882,6 +882,99 @@
   },
   "modelsRetry": "Try again",
   "modelsRefresh": "Get the list again",
+  "historyOpen": "Request history",
+  "historyPage": "What the translator answered",
+  "historyTitle": "Translator history",
+  "historyHelp": "The last {keep} requests to translators over the network (OpenRouter, own server): what went and what came back as it came. Kept only on this computer; the key never goes in, nor the pictures.",
+  "@historyHelp": {
+    "placeholders": {
+      "keep": {
+        "type": "String"
+      }
+    }
+  },
+  "historyOnlyPage": "Only {page}",
+  "@historyOnlyPage": {
+    "placeholders": {
+      "page": {
+        "type": "String"
+      }
+    }
+  },
+  "historyCount": "Shown: {shown} of {total}",
+  "@historyCount": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "historyNone": "No requests yet. They appear here after a translation through OpenRouter or your own server.",
+  "historyNoneForPage": "No requests for this page. Turn the filter off to see all.",
+  "historyOk": "Bubbles translated: {count}",
+  "@historyOk": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "historyMissing": "Translated {got} of {total}: the answer has nothing for some bubbles",
+  "@historyMissing": {
+    "placeholders": {
+      "got": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "historyFailed": "Error: {error}",
+  "@historyFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "historySeconds": "{seconds} s",
+  "@historySeconds": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "historyImage": "with the page image",
+  "historyTokens": "tokens: {input} in, {output} out",
+  "@historyTokens": {
+    "placeholders": {
+      "input": {
+        "type": "int"
+      },
+      "output": {
+        "type": "int"
+      }
+    }
+  },
+  "historyWarnings": "Found when reading the answer: {warnings}",
+  "@historyWarnings": {
+    "placeholders": {
+      "warnings": {
+        "type": "String"
+      }
+    }
+  },
+  "historySent": "Sent",
+  "historyReply": "Answer (as it came)",
+  "historyNoReply": "(no answer)",
+  "historyClear": "Clear the history",
+  "historyClearAsk": "Clear the whole history of requests?",
+  "historyCopied": "Copied",
   "keyStatusFailed": "Could not check: {reason}",
   "@keyStatusFailed": {
     "placeholders": {

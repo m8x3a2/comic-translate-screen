@@ -20,6 +20,7 @@ import '../common/content_kind_switch.dart';
 import '../common/key_bindings.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
+import '../common/translator_history_dialog.dart';
 import '../settings/settings_place.dart';
 import 'batch_dialogs.dart';
 import 'page_canvas.dart';
@@ -606,6 +607,13 @@ class _StepStrip extends ConsumerWidget {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
+                  // Translated over the network: what the model answered.
+                  if (last.ms.containsKey(ManualStep.translate) && _translatesOverNetwork(ref))
+                    TextButton.icon(
+                      onPressed: () => showTranslatorHistory(context, page: page.name),
+                      icon: const Icon(Icons.history, size: 16),
+                      label: Text(l.historyPage),
+                    ),
                 ],
               ),
             ),
@@ -614,6 +622,14 @@ class _StepStrip extends ConsumerWidget {
       },
     );
   }
+}
+
+/// The chosen translator sends the text over the network (its requests go
+/// into the history).
+bool _translatesOverNetwork(WidgetRef ref) {
+  final registry = ref.read(servicesProvider).registry;
+  final id = ref.watch(settingsProvider.select((s) => s.translator));
+  return registry.contains(id) && registry.info(id).privacy.sendsData;
 }
 
 /// After "Comics / Sites and games" is switched: the boxes on the page were

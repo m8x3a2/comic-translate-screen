@@ -18,6 +18,7 @@ import '../../state/workspace.dart';
 import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
+import '../common/translator_history_dialog.dart';
 import 'batch_dialogs.dart';
 import 'block_style_editor.dart';
 import 'find_replace.dart';
@@ -93,6 +94,12 @@ class _TextPanelState extends ConsumerState<TextPanel> {
                 isSelected: findOpen,
                 onPressed: () => ref.read(findOpenProvider.notifier).set(!findOpen),
                 icon: const Icon(Icons.find_replace),
+              ),
+              // What the translator over the network answered for this page.
+              IconButton(
+                tooltip: l.historyPage,
+                onPressed: page == null ? null : () => showTranslatorHistory(context, page: page.name),
+                icon: const Icon(Icons.history),
               ),
             ],
           ),

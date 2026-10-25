@@ -1370,6 +1370,89 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelsRefresh => 'Get the list again';
 
   @override
+  String get historyOpen => 'Request history';
+
+  @override
+  String get historyPage => 'What the translator answered';
+
+  @override
+  String get historyTitle => 'Translator history';
+
+  @override
+  String historyHelp(String keep) {
+    return 'The last $keep requests to translators over the network (OpenRouter, own server): what went and what came back as it came. Kept only on this computer; the key never goes in, nor the pictures.';
+  }
+
+  @override
+  String historyOnlyPage(String page) {
+    return 'Only $page';
+  }
+
+  @override
+  String historyCount(int shown, int total) {
+    return 'Shown: $shown of $total';
+  }
+
+  @override
+  String get historyNone =>
+      'No requests yet. They appear here after a translation through OpenRouter or your own server.';
+
+  @override
+  String get historyNoneForPage =>
+      'No requests for this page. Turn the filter off to see all.';
+
+  @override
+  String historyOk(int count) {
+    return 'Bubbles translated: $count';
+  }
+
+  @override
+  String historyMissing(int got, int total) {
+    return 'Translated $got of $total: the answer has nothing for some bubbles';
+  }
+
+  @override
+  String historyFailed(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String historySeconds(String seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String get historyImage => 'with the page image';
+
+  @override
+  String historyTokens(int input, int output) {
+    return 'tokens: $input in, $output out';
+  }
+
+  @override
+  String historyWarnings(String warnings) {
+    return 'Found when reading the answer: $warnings';
+  }
+
+  @override
+  String get historySent => 'Sent';
+
+  @override
+  String get historyReply => 'Answer (as it came)';
+
+  @override
+  String get historyNoReply => '(no answer)';
+
+  @override
+  String get historyClear => 'Clear the history';
+
+  @override
+  String get historyClearAsk => 'Clear the whole history of requests?';
+
+  @override
+  String get historyCopied => 'Copied';
+
+  @override
   String keyStatusFailed(String reason) {
     return 'Could not check: $reason';
   }

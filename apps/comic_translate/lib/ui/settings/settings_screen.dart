@@ -20,6 +20,7 @@ import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../common/plugin_form.dart';
 import '../common/plugin_strings.dart';
+import '../common/translator_history_dialog.dart';
 import '../shell_full/main_screen.dart' show showInExplorer;
 import 'gpu_section.dart';
 import 'keys_section.dart';
@@ -605,7 +606,20 @@ class _TranslatorSection extends ConsumerWidget {
             ),
           ],
         ),
-        SettingsGroup(title: l.usageTitle, children: const [UsagePanel()]),
+        SettingsGroup(
+          title: l.usageTitle,
+          children: [
+            const UsagePanel(),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () => showTranslatorHistory(context),
+                icon: const Icon(Icons.history),
+                label: Text(l.historyOpen),
+              ),
+            ),
+          ],
+        ),
         SettingsGroup(
           title: l.approvals,
           children: [

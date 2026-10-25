@@ -24,6 +24,7 @@ class AppPaths {
 
   /// The local usage counter of paid services ([UsageLog]).
   File get usageFile => File(p.join(root.path, 'usage.json'));
+  File get historyFile => File(p.join(root.path, 'translator_history.json'));
 
   Directory _dir(String name) => Directory(p.join(root.path, name));
 

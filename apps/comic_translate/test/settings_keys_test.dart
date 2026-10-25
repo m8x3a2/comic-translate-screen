@@ -209,6 +209,59 @@ void main() {
     await second.dispose();
   });
 
+  testWidgets('the translator history: newest first, one page or all, what went and came, cleared on request', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      await services.history.record(HistoryEntry(
+        time: DateTime(2026, 10, 25, 18, 0),
+        plugin: 'openrouter',
+        host: 'openrouter.ai',
+        model: 'nvidia/nemotron:free',
+        page: 'p1.png',
+        ms: 3200,
+        sent: '[user]\n{"block_0": "Hello"}',
+        reply: '{"block_0": "Привет"}',
+        blocks: 2,
+        warnings: const ['block_1 missing'],
+      ));
+      await services.history.record(HistoryEntry(
+        time: DateTime(2026, 10, 25, 18, 5),
+        plugin: 'openrouter',
+        host: 'openrouter.ai',
+        model: 'nvidia/nemotron:free',
+        page: 'p2.png',
+        ms: 900,
+        error: 'openrouter.ai answered HTTP 429',
+      ));
+    });
+    await openTranslatorSettings(tester, fakeSettings()..translator = 'openrouter');
+    await tester.ensureVisible(find.text('История запросов'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('История запросов'));
+    for (var i = 0; i < 20 && find.textContaining('Показано').evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+    }
+    expect(find.text('Показано: 2 из 2'), findsOneWidget);
+    expect(find.text('Ошибка: openrouter.ai answered HTTP 429'), findsOneWidget);
+    expect(find.text('Переведено 1 из 2: на часть пузырей в ответе ничего нет'), findsOneWidget);
+    await tester.tap(find.text('Переведено 1 из 2: на часть пузырей в ответе ничего нет'));
+    await tester.pumpAndSettle();
+    expect(find.text('{"block_0": "Привет"}'), findsOneWidget);
+    expect(find.text('[user]\n{"block_0": "Hello"}'), findsOneWidget);
+
+    await tester.tap(find.text('Очистить историю'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Очистить историю'));
+    for (var i = 0; i < 20 && find.text('Показано: 0 из 0').evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+    }
+    expect(find.textContaining('Запросов ещё нет'), findsOneWidget);
+    expect(await tester.runAsync(() => services.history.read()), isEmpty);
+  });
+
   testWidgets('the list of models: search, free ones, ones that take pictures, the picked one goes back',
       (tester) async {
     tester.view.physicalSize = const Size(1280, 900);

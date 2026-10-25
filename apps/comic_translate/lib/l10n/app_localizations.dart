@@ -2474,6 +2474,132 @@ abstract class AppLocalizations {
   /// **'Get the list again'**
   String get modelsRefresh;
 
+  /// No description provided for @historyOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Request history'**
+  String get historyOpen;
+
+  /// No description provided for @historyPage.
+  ///
+  /// In en, this message translates to:
+  /// **'What the translator answered'**
+  String get historyPage;
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Translator history'**
+  String get historyTitle;
+
+  /// No description provided for @historyHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The last {keep} requests to translators over the network (OpenRouter, own server): what went and what came back as it came. Kept only on this computer; the key never goes in, nor the pictures.'**
+  String historyHelp(String keep);
+
+  /// No description provided for @historyOnlyPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {page}'**
+  String historyOnlyPage(String page);
+
+  /// No description provided for @historyCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown: {shown} of {total}'**
+  String historyCount(int shown, int total);
+
+  /// No description provided for @historyNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests yet. They appear here after a translation through OpenRouter or your own server.'**
+  String get historyNone;
+
+  /// No description provided for @historyNoneForPage.
+  ///
+  /// In en, this message translates to:
+  /// **'No requests for this page. Turn the filter off to see all.'**
+  String get historyNoneForPage;
+
+  /// No description provided for @historyOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles translated: {count}'**
+  String historyOk(int count);
+
+  /// No description provided for @historyMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Translated {got} of {total}: the answer has nothing for some bubbles'**
+  String historyMissing(int got, int total);
+
+  /// No description provided for @historyFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: {error}'**
+  String historyFailed(String error);
+
+  /// No description provided for @historySeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s'**
+  String historySeconds(String seconds);
+
+  /// No description provided for @historyImage.
+  ///
+  /// In en, this message translates to:
+  /// **'with the page image'**
+  String get historyImage;
+
+  /// No description provided for @historyTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'tokens: {input} in, {output} out'**
+  String historyTokens(int input, int output);
+
+  /// No description provided for @historyWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Found when reading the answer: {warnings}'**
+  String historyWarnings(String warnings);
+
+  /// No description provided for @historySent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get historySent;
+
+  /// No description provided for @historyReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer (as it came)'**
+  String get historyReply;
+
+  /// No description provided for @historyNoReply.
+  ///
+  /// In en, this message translates to:
+  /// **'(no answer)'**
+  String get historyNoReply;
+
+  /// No description provided for @historyClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the history'**
+  String get historyClear;
+
+  /// No description provided for @historyClearAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the whole history of requests?'**
+  String get historyClearAsk;
+
+  /// No description provided for @historyCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get historyCopied;
+
   /// No description provided for @keyStatusFailed.
   ///
   /// In en, this message translates to:

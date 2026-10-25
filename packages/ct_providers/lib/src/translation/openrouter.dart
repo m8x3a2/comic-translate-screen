@@ -43,6 +43,7 @@ final openRouterFactory = PluginFactory<Translator>(openRouterInfo, (config, env
     temperature: config.value<double>('temperature'),
     maxTokens: config.value<int>('max_tokens'),
     timeout: Duration(seconds: config.value<int>('timeout')),
+    info: openRouterInfo,
   );
 });
 

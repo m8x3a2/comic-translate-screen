@@ -305,6 +305,47 @@ void main() {
     expect(plain, isNot(contains('Who speaks')));
   });
 
+  test('every request goes into the history: what was sent, the answer as it came, what went wrong', () async {
+    final kept = <HistoryEntry>[];
+    final context = PluginContext(log: EventLog.silent(), page: 'p1.png', onHistory: kept.add);
+    final t = OpenAiCompatibleTranslator(
+      apiUrl: server.url,
+      model: 'm',
+      apiKey: 'sk-secret-key-123456',
+      retryDelays: const [],
+      info: openRouterInfo,
+    );
+    server.handler = (body) => (200, chatReply('{"block_0": "Привет"}'));
+    await t.translate(request([block('Hello'), block('Bye')]), context);
+    final ok = kept.single;
+    expect((ok.plugin, ok.model, ok.page, ok.blocks, ok.failed), ('openrouter', 'm', 'p1.png', 2, false));
+    expect(ok.sent, allOf(startsWith('[system]\n'), contains('[user]\n'), contains('"block_0": "Hello"')));
+    expect(ok.sent, isNot(contains('sk-secret')), reason: 'the key never goes into the history');
+    expect(ok.reply, '{"block_0": "Привет"}');
+    expect(ok.warnings, isNotEmpty, reason: 'block_1 had no answer');
+
+    server.handler = (body) => (
+      401,
+      jsonEncode({
+        'error': {'message': 'User not found.'},
+      }),
+    );
+    await expectLater(t.translate(request([block('Hello')]), context), throwsA(isA<TranslationException>()));
+    expect((kept.last.failed, kept.last.reply), (true, ''));
+    expect(kept.last.error, contains('User not found'));
+    expect(OpenAiCompatibleTranslator.sentText({
+      'messages': [
+        {
+          'role': 'user',
+          'content': [
+            {'type': 'text', 'text': 'Hi'},
+            {'type': 'image_url', 'image_url': {'url': 'data:...'}},
+          ],
+        },
+      ],
+    }), '[user]\nHi\n<image_url>');
+  });
+
   test('each answered request is counted: tokens and cost from the reply, else estimated', () async {
     final counted = <ServiceUsage>[];
     final context = PluginContext(log: EventLog.silent(), onUsage: counted.add);

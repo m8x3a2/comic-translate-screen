@@ -38,6 +38,7 @@ class WorkerSetup {
     this.registry = builtInRegistry,
     this.preload = const {...PipelinePart.values},
     this.usageFile,
+    this.historyFile,
   });
 
   final PipelineSpec spec;
@@ -63,6 +64,9 @@ class WorkerSetup {
 
   /// The local usage counter ([UsageLog]); translations are counted there.
   final String? usageFile;
+
+  /// The history of requests to translators ([TranslatorHistory]).
+  final String? historyFile;
 }
 
 /// A file the worker writes after a page is drawn.
@@ -571,6 +575,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
   final registry = setup.registry();
   final settings = setup.spec.settings;
   final usage = setup.usageFile == null ? null : UsageLog(File(setup.usageFile!));
+  final history = setup.historyFile == null ? null : TranslatorHistory(File(setup.historyFile!));
   RunRecorder? recorder;
   late final EventLog log;
   late final LazyPlugins plugins;
@@ -643,6 +648,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
       recorder: recorder,
       page: m.page,
       onUsage: usage?.record,
+      onHistory: history?.record,
     );
     final blocks = m.blocks ?? const <TextBlock>[];
     switch (m.op) {
