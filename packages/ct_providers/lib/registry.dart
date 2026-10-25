@@ -21,6 +21,7 @@ void registerBuiltInPlugins(PluginRegistry registry) {
   registry.register(ppocrLinesFactory);
   registry.register(defaultOcrFactory);
   registry.register(ppocrFactory);
+  registry.register(ppocrV6SmallFactory);
   registry.register(mangaOcrFactory);
   registry.register(windowsOcrFactory);
   registry.register(chatOcrFactory);

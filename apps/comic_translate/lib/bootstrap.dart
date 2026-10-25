@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:ct_providers/ct_providers.dart';
 
 import 'app_info.dart';
+import 'pipeline/word_list.dart';
 import 'services/secure_secret_store.dart';
 import 'state/gpu_check.dart' show shortGpuReason;
 
@@ -79,6 +80,24 @@ class AppServices {
     final config = registry.contains(prep) ? await pluginConfig(prep, settings) : null;
     final env = PluginEnvironment(models: models, log: log ?? appLog, useGpu: useGpu ?? settings.useGpu);
     return loadTextPrep(registry, prep, config, env);
+  }
+
+  /// [ocr] with the readers of the recognition [level] (default: the one of
+  /// the settings' content kind), see `withReadLevel`.
+  Future<OcrEngine> leveledOcr(
+    OcrEngine ocr,
+    AppSettings settings, {
+    ReadLevel? level,
+    bool? useGpu,
+    EventLog? log,
+  }) async {
+    final l = level ?? settings.activeReadLevel;
+    final env = PluginEnvironment(models: models, log: log ?? appLog, useGpu: useGpu ?? settings.useGpu);
+    final configs = {
+      for (final id in l.readers)
+        if (registry.contains(id)) id: await pluginConfig(id, settings),
+    };
+    return withReadLevel(registry, l, ocr, await loadEnglishWords(), env, configs: configs);
   }
 
   /// The line detector that checks comic lines, or null (see

@@ -672,6 +672,23 @@ class _ToolsSection extends ConsumerWidget {
         pluginWithForm(l.ocr, PluginKind.ocr, s.ocr, (s, v) => s.ocr = v),
         SettingsGroup(
           children: [
+            if (leveledOcrIds.contains(s.ocr))
+              _Dropdown<ReadLevel>(
+                label: s.contentKind == ContentKind.screens ? l.readLevelScreens : l.readLevel,
+                value: s.activeReadLevel,
+                options: {
+                  ReadLevel.simple: l.readLevelSimple,
+                  ReadLevel.medium: l.readLevelMedium,
+                  for (final level in const [ReadLevel.high, ReadLevel.ultra])
+                    if (s.activeReadLevel == level || services.registry.contains(vlmReaderId))
+                      level: level == ReadLevel.high ? l.readLevelHigh : l.readLevelUltra,
+                },
+                onChanged: (v) => _change(
+                  ref,
+                  (s) => s.contentKind == ContentKind.screens ? s.screenReadLevel = v : s.readLevel = v,
+                ),
+                info: l.readLevelInfo,
+              ),
             withInfo(
               _PluginPicker(
                 label: s.contentKind == ContentKind.screens ? l.textPrepScreens : l.textPrep,

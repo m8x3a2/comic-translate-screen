@@ -21,6 +21,11 @@ class OcrCommand extends CtsCommand {
         help: 'Source language, e.g. English, Japanese, or Auto to find it per block (default from settings).',
       )
       ..addOption('ocr', help: 'OCR plugin id (default from settings: ppocr).')
+      ..addOption(
+        'level',
+        allowed: [for (final l in ReadLevel.values) l.name],
+        help: 'Recognition level of English text (default from settings: medium).',
+      )
       ..addOption('detector', help: 'Detector plugin id (default from settings).')
       ..addFlag('gpu', help: 'Use the GPU (DirectML). Default from settings.', defaultsTo: null)
       ..addOption(
@@ -103,7 +108,13 @@ class OcrCommand extends CtsCommand {
     final TextUpscaler textPrep;
     LineDetector? lineChecker;
     try {
-      ocr = await services.plugin<OcrEngine>(args.option('ocr') ?? settings.ocr, settings, useGpu: useGpu, log: log);
+      ocr = await services.leveledOcr(
+        await services.plugin<OcrEngine>(args.option('ocr') ?? settings.ocr, settings, useGpu: useGpu, log: log),
+        settings,
+        level: ReadLevel.values.asNameMap()[args.option('level')],
+        useGpu: useGpu,
+        log: log,
+      );
       textPrep = await services.textPrep(settings, id: prepId, useGpu: useGpu, log: log);
       if (textPrep.info.id != prepId) {
         ctx.err.writeln('"$prepId" is not downloaded: plain ×2 instead (cts models download).');
@@ -176,6 +187,7 @@ class OcrCommand extends CtsCommand {
           'source_language': language,
           if (language == Languages.auto) 'detected_language': detected,
           'ocr': ocr.info.id,
+          'read_level': ocr is LeveledOcr ? ocr.level.name : ReadLevel.simple.name,
           'text_prep': textPrep.info.id,
           'reading_factor': reading.factor,
           'enlarged_pieces': reading.pieces,

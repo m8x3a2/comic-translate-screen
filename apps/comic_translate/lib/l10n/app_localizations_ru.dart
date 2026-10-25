@@ -609,6 +609,29 @@ class AppLocalizationsRu extends AppLocalizations {
   String get ocr => 'Распознавание текста';
 
   @override
+  String get readLevel => 'Качество распознавания (английский)';
+
+  @override
+  String get readLevelScreens =>
+      'Качество распознавания для сайтов и игр (английский)';
+
+  @override
+  String get readLevelSimple => 'Простой — как было раньше';
+
+  @override
+  String get readLevelMedium => 'Средний (по умолчанию)';
+
+  @override
+  String get readLevelHigh => 'Высокий';
+
+  @override
+  String get readLevelUltra => 'Ультра';
+
+  @override
+  String get readLevelInfo =>
+      'Сколько нейросетей читает каждый блок английского текста (время — на слабом ноутбуке без видеокарты, только само чтение страницы; поиск текста и подготовка мелкого текста идут сверху):\n• Простой — как было раньше: PP-OCRv5. Около 1 с.\n• Средний — ещё и PP-OCRv6 small (21 МБ, для китайского и японского она уже есть); из двух прочтений блока берётся то, где больше настоящих английских слов. Около 2 с.\nДругие языки читаются как на «Простом».';
+
+  @override
   String get inpainter => 'Удаление текста';
 
   @override
@@ -1622,11 +1645,12 @@ class AppLocalizationsRu extends AppLocalizations {
       'Распознаёт корейский текст (PaddleOCR): манхва и вебтуны.';
 
   @override
-  String get modelOcrChinese => 'Китайский (и крупный японский текст)';
+  String get modelOcrChinese =>
+      'Китайский (и крупный японский текст; второй чтец английского)';
 
   @override
   String get modelOcrChineseInfo =>
-      'Распознаёт китайский текст (PaddleOCR). Для японского тоже нужна, вместе с manga-ocr: читает крупные заголовки и надписи.';
+      'Распознаёт китайский текст (PaddleOCR). Для японского тоже нужна, вместе с manga-ocr: читает крупные заголовки и надписи. Для английского на «Среднем» и «Высоком» качестве распознавания читает каждый блок второй раз.';
 
   @override
   String get modelOcrJapanese => 'Японский (manga-ocr)';

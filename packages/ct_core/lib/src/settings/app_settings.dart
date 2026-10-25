@@ -1,5 +1,6 @@
 import '../export/export_pages.dart';
 import '../exchange/exchange_settings.dart';
+import '../ocr/read_level.dart';
 import '../ocr/text_prep.dart';
 import '../export/strip_export.dart';
 import '../inpainting/clean_level.dart';
@@ -34,6 +35,8 @@ class AppSettings {
     this.useGpu = false,
     this.textPrep = 'fatality_comix',
     this.screenTextPrep = 'plain_x1_5',
+    this.readLevel = ReadLevel.medium,
+    this.screenReadLevel = ReadLevel.medium,
     this.fixCyrillicLookalikes = false,
     this.splitGluedWords = false,
     this.checkLines = true,
@@ -111,6 +114,14 @@ class AppSettings {
 
   /// The text preparation of the current [contentKind].
   String get activeTextPrep => contentKind == ContentKind.screens ? screenTextPrep : textPrep;
+
+  /// The recognition level (see `read_level.dart`) for comics and for
+  /// screens. New in this project.
+  ReadLevel readLevel;
+  ReadLevel screenReadLevel;
+
+  /// The recognition level of the current [contentKind].
+  ReadLevel get activeReadLevel => contentKind == ContentKind.screens ? screenReadLevel : readLevel;
 
   /// For Cyrillic source languages, replace Latin look-alike letters that OCR
   /// returns in Cyrillic text ("HET" → "НЕТ"). Off by default: Latin words in
@@ -241,6 +252,8 @@ class AppSettings {
       if (gpuCpuModels.isNotEmpty) 'gpu_cpu_models': gpuCpuModels,
       'text_prep': textPrep,
       'screen_text_prep': screenTextPrep,
+      'read_level': readLevel.name,
+      'screen_read_level': screenReadLevel.name,
       'fix_cyrillic_lookalikes': fixCyrillicLookalikes,
       'split_glued_words': splitGluedWords,
       'check_lines': checkLines,
@@ -331,6 +344,8 @@ class AppSettings {
       },
       textPrep: pick(tools, 'text_prep', oldOff ? textPrepOffId : defaults.textPrep),
       screenTextPrep: pick(tools, 'screen_text_prep', oldOff ? textPrepOffId : defaults.screenTextPrep),
+      readLevel: ReadLevel.values.asNameMap()[tools['read_level']] ?? defaults.readLevel,
+      screenReadLevel: ReadLevel.values.asNameMap()[tools['screen_read_level']] ?? defaults.screenReadLevel,
       fixCyrillicLookalikes: pick(tools, 'fix_cyrillic_lookalikes', defaults.fixCyrillicLookalikes),
       splitGluedWords: pick(tools, 'split_glued_words', defaults.splitGluedWords),
       checkLines: pick(tools, 'check_lines', defaults.checkLines),

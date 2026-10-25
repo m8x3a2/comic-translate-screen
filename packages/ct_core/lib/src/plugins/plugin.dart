@@ -5,8 +5,10 @@ import '../usage/key_status.dart';
 import '../usage/usage_log.dart';
 import 'settings_schema.dart';
 
-/// What a plugin does in the pipeline.
-enum PluginKind { detector, ocr, translator, inpainter, textPrep, textMask }
+/// What a plugin does in the pipeline. [reader]: an OCR engine that the
+/// recognition levels add to the chosen one (see `read_level.dart`); not
+/// picked by hand.
+enum PluginKind { detector, ocr, translator, inpainter, textPrep, textMask, reader }
 
 /// Where a plugin sends data. Anything other than [local] is marked in the UI
 /// and requires the user's confirmation before first use.

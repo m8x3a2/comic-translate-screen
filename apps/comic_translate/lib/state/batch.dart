@@ -618,6 +618,10 @@ Future<List<ModelSpec>> missingModels(
     for (final id in chosen)
       if (registry.contains(id))
         for (final language in languages) ...registry.info(id).requiredModels(language),
+    if (parts.contains(PipelinePart.ocr))
+      for (final language in languages)
+        for (final id in readLevelPlugins(settings, language))
+          if (registry.contains(id)) ...registry.info(id).requiredModels(language),
   };
   return [
     for (final id in ids)

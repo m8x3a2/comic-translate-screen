@@ -376,6 +376,8 @@ class PipelineSpec {
           lineCheckerId: await services.pluginConfig(lineCheckerId, settings),
         if (services.registry.contains(settings.textMask))
           settings.textMask: await services.pluginConfig(settings.textMask, settings),
+        for (final id in settings.activeReadLevel.readers)
+          if (services.registry.contains(id)) id: await services.pluginConfig(id, settings),
       },
     );
   }
@@ -451,7 +453,14 @@ class PagePipeline {
       sourceLanguage: spec.sourceLanguage,
       targetLanguage: spec.targetLanguage,
       detector: await make<TextDetector>(s.activeDetector),
-      ocr: await make<OcrEngine>(s.ocr),
+      ocr: await withReadLevel(
+        registry,
+        s.activeReadLevel,
+        await make<OcrEngine>(s.ocr),
+        await loadEnglishWords(),
+        env,
+        configs: spec.configs,
+      ),
       translator: await make<Translator>(spec.translatorId),
       inpainter: await make<Inpainter>(s.inpainter),
       textPrep: await loadTextPrep(registry, s.activeTextPrep, spec.configs[s.activeTextPrep], env),
@@ -705,7 +714,14 @@ class LazyPlugins {
   }
 
   Future<TextDetector> get detector => _make(spec.settings.activeDetector);
-  Future<OcrEngine> get ocr => _make(spec.settings.ocr);
+  Future<OcrEngine> get ocr async => withReadLevel(
+    registry,
+    spec.settings.activeReadLevel,
+    await _make<OcrEngine>(spec.settings.ocr),
+    await loadEnglishWords(),
+    PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
+    configs: spec.configs,
+  );
   Future<Translator> get translator => _make(spec.translatorId);
   Future<Inpainter> get inpainter => _make(spec.settings.inpainter);
   Future<TextUpscaler> get textPrep => loadTextPrep(

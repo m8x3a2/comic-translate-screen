@@ -609,6 +609,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ocr => 'Text recognition';
 
   @override
+  String get readLevel => 'Recognition quality (English)';
+
+  @override
+  String get readLevelScreens =>
+      'Recognition quality for sites and games (English)';
+
+  @override
+  String get readLevelSimple => 'Simple — as before';
+
+  @override
+  String get readLevelMedium => 'Medium (default)';
+
+  @override
+  String get readLevelHigh => 'High';
+
+  @override
+  String get readLevelUltra => 'Ultra';
+
+  @override
+  String get readLevelInfo =>
+      'How many networks read each block of English text (times on a slow laptop without a graphics card, the reading of a page alone; finding the text and preparing small text come on top):\n• Simple — as before: PP-OCRv5. About 1 s.\n• Medium — PP-OCRv6 small reads too (21 MB, already there for Chinese and Japanese); of the two readings of a block, the one with more real English words is kept. About 2 s.\nOther languages are read as on Simple.';
+
+  @override
   String get inpainter => 'Text removal';
 
   @override
@@ -1621,11 +1644,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Reads Korean text (PaddleOCR): manhwa and webtoons.';
 
   @override
-  String get modelOcrChinese => 'Chinese (and large Japanese text)';
+  String get modelOcrChinese =>
+      'Chinese (and large Japanese text; second English reader)';
 
   @override
   String get modelOcrChineseInfo =>
-      'Reads Chinese text (PaddleOCR). For Japanese it is needed too, with manga-ocr: it reads large titles and captions.';
+      'Reads Chinese text (PaddleOCR). For Japanese it is needed too, with manga-ocr: it reads large titles and captions. For English at recognition quality Medium and High it reads every block a second time.';
 
   @override
   String get modelOcrJapanese => 'Japanese (manga-ocr)';

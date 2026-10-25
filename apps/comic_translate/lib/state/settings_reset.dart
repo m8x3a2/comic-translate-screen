@@ -45,6 +45,8 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..textMask = d.textMask
           ..textPrep = d.textPrep
           ..screenTextPrep = d.screenTextPrep
+          ..readLevel = d.readLevel
+          ..screenReadLevel = d.screenReadLevel
           ..fixCyrillicLookalikes = d.fixCyrillicLookalikes
           ..splitGluedWords = d.splitGluedWords
           ..checkLines = d.checkLines
@@ -56,6 +58,7 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           PluginKind.inpainter,
           PluginKind.textPrep,
           PluginKind.textMask,
+          PluginKind.reader,
         });
       case SettingsPart.text:
         s.render = d.render;

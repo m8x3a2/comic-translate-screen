@@ -26,6 +26,50 @@ final ppocrFactory = PluginFactory<OcrEngine>(ppocrInfo, (config, env) async {
   return PpocrEngine(env.models, device: env.useGpu ? OrtDevice.directml : OrtDevice.cpu, log: env.log);
 });
 
+const ppocrV6SmallInfo = PluginInfo(
+  id: secondReaderId,
+  displayName: 'PP-OCRv6 small (second English reader)',
+  description: 'Reads English blocks a second time for the recognition level "Medium" and higher.',
+  kind: PluginKind.reader,
+  privacy: Privacy.local,
+  platforms: {PlatformId.windows, PlatformId.android, PlatformId.linux, PlatformId.macos},
+  models: ['ppocr-v6-rec-small'],
+);
+
+final ppocrV6SmallFactory = PluginFactory<OcrEngine>(ppocrV6SmallInfo, (config, env) async {
+  return PpocrV6SmallReader(
+    PpocrEngine(env.models, device: env.useGpu ? OrtDevice.directml : OrtDevice.cpu, log: env.log),
+  );
+});
+
+/// PP-OCRv6 small (the model of Chinese and Japanese) reading English: it
+/// reads games and dense text better than PP-OCRv5 and tiny comic letters
+/// worse, so the two together beat either (see `read_level.dart`).
+class PpocrV6SmallReader implements OcrEngine {
+  PpocrV6SmallReader(this._ppocr);
+
+  final PpocrEngine _ppocr;
+
+  @override
+  PluginInfo get info => ppocrV6SmallInfo;
+
+  @override
+  Future<void> recognize(
+    RgbImage image,
+    List<TextBlock> blocks, {
+    required String sourceLanguage,
+    required PluginContext context,
+  }) async {
+    applySourceLanguage(blocks, sourceLanguage);
+    final rec = await _ppocr.recognizer('ch');
+    await context.cancel.checkpoint();
+    rec.recognizeBlocks(image, blocks);
+  }
+
+  @override
+  Future<void> dispose() => _ppocr.dispose();
+}
+
 /// Recognizer model per PP-OCR language (`LANG_TO_REC_MODEL`).
 const ppocrRecModels = <String, (ModelSpec, String, String)>{
   'en': (ModelCatalog.ppocrRecEn, 'en_PP-OCRv5_rec_mobile_infer.onnx', 'ppocrv5_en_dict.txt'),

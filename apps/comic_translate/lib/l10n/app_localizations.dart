@@ -1106,6 +1106,48 @@ abstract class AppLocalizations {
   /// **'Text recognition'**
   String get ocr;
 
+  /// No description provided for @readLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognition quality (English)'**
+  String get readLevel;
+
+  /// No description provided for @readLevelScreens.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognition quality for sites and games (English)'**
+  String get readLevelScreens;
+
+  /// No description provided for @readLevelSimple.
+  ///
+  /// In en, this message translates to:
+  /// **'Simple — as before'**
+  String get readLevelSimple;
+
+  /// No description provided for @readLevelMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium (default)'**
+  String get readLevelMedium;
+
+  /// No description provided for @readLevelHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get readLevelHigh;
+
+  /// No description provided for @readLevelUltra.
+  ///
+  /// In en, this message translates to:
+  /// **'Ultra'**
+  String get readLevelUltra;
+
+  /// No description provided for @readLevelInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'How many networks read each block of English text (times on a slow laptop without a graphics card, the reading of a page alone; finding the text and preparing small text come on top):\n• Simple — as before: PP-OCRv5. About 1 s.\n• Medium — PP-OCRv6 small reads too (21 MB, already there for Chinese and Japanese); of the two readings of a block, the one with more real English words is kept. About 2 s.\nOther languages are read as on Simple.'**
+  String get readLevelInfo;
+
   /// No description provided for @inpainter.
   ///
   /// In en, this message translates to:
@@ -2903,13 +2945,13 @@ abstract class AppLocalizations {
   /// No description provided for @modelOcrChinese.
   ///
   /// In en, this message translates to:
-  /// **'Chinese (and large Japanese text)'**
+  /// **'Chinese (and large Japanese text; second English reader)'**
   String get modelOcrChinese;
 
   /// No description provided for @modelOcrChineseInfo.
   ///
   /// In en, this message translates to:
-  /// **'Reads Chinese text (PaddleOCR). For Japanese it is needed too, with manga-ocr: it reads large titles and captions.'**
+  /// **'Reads Chinese text (PaddleOCR). For Japanese it is needed too, with manga-ocr: it reads large titles and captions. For English at recognition quality Medium and High it reads every block a second time.'**
   String get modelOcrChineseInfo;
 
   /// No description provided for @modelOcrJapanese.
