@@ -421,7 +421,17 @@ class _SpeakerRow extends StatelessWidget {
         ),
         SegmentedButton<Speaker?>(
           showSelectedIcon: false,
-          style: const ButtonStyle(visualDensity: VisualDensity.compact),
+          // The card of the selected bubble has the colour of a selected
+          // segment: the choice stands out in the main colour.
+          style: ButtonStyle(
+            visualDensity: VisualDensity.compact,
+            backgroundColor: WidgetStateProperty.resolveWith(
+              (s) => s.contains(WidgetState.selected) ? theme.colorScheme.primary : null,
+            ),
+            foregroundColor: WidgetStateProperty.resolveWith(
+              (s) => s.contains(WidgetState.selected) ? theme.colorScheme.onPrimary : null,
+            ),
+          ),
           segments: [
             ButtonSegment(value: null, label: const Text('—'), tooltip: l.speakerNoneTip),
             ButtonSegment(value: Speaker.male, label: Text(l.speakerMale), tooltip: l.speakerMaleTip),
