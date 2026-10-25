@@ -67,6 +67,12 @@ Let me know if you need anything else.''';
       expect(a.replies[l14]!.translation, 'Пока');
     });
 
+    test('recognize: a translation may come along after the arrow', () {
+      final a = parseExchangeAnswer('[01-003] Hello --> Привет\n[01-004] Bye', ExchangeMode.recognize);
+      expect((a.replies[l13]!.original, a.replies[l13]!.translation), ('Hello', 'Привет'));
+      expect((a.replies[l14]!.original, a.replies[l14]!.translation), ('Bye', null));
+    });
+
     test('both, but without an arrow: all of it is the translation, marked', () {
       final a = parseExchangeAnswer('[01-003] Привет', ExchangeMode.both);
       expect(a.replies[l13]!.translation, 'Привет');
@@ -163,6 +169,30 @@ Let me know if you need anything else.''';
       final c = TextBlock(xyxy: const BBox(0, 0, 1, 1), text: 'Hi');
       applyExchangeReply(c, const ExchangeReply(translation: 'Привет', missingArrow: true), ExchangeMode.both);
       expect((c.text, c.translation), ('Hi', 'Привет'));
+    });
+
+    test('any mode takes what was given: a translation with the reading, a corrected original', () {
+      final b = TextBlock(xyxy: const BBox(0, 0, 1, 1), text: 'HELO', translation: 'старый');
+      applyExchangeReply(b, const ExchangeReply(original: 'HELLO', translation: 'Привет'), ExchangeMode.recognize);
+      expect((b.text, b.translation), ('HELLO', 'Привет'));
+      applyExchangeReply(b, const ExchangeReply(original: 'HELLO!'), ExchangeMode.translate);
+      expect((b.text, b.translation), ('HELLO!', 'Привет'), reason: 'the translation stays');
+      applyExchangeReply(b, const ExchangeReply(translation: 'Пока'), ExchangeMode.recognize);
+      expect((b.text, b.translation), ('HELLO!', 'Пока'), reason: 'the text stays');
+    });
+
+    test('translating: the original left as it was sent is no answer, a corrected one is', () {
+      final m = matchExchangeAnswer(
+        items,
+        mergeExchangeAnswers(
+          parseExchangeAnswer('[01-003] Hello\n[01-004] Bye!', ExchangeMode.recognize),
+          parseExchangeAnswer('[01-003]\n[01-004]', ExchangeMode.translate),
+        ),
+        ExchangeMode.translate,
+        ignoreUnchanged: true,
+      );
+      expect(m.replies.keys, [l14]);
+      expect((m.replies[l14]!.original, m.replies[l14]!.translation), ('Bye!', null));
     });
   });
 

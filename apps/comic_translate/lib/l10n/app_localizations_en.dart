@@ -2366,17 +2366,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String chatFromFilesInfoTranslate(String separator) {
-    return 'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Translate\" the program writes the original text with its labels into the file beforehand: a template. It waits for the translation: add it to every line and save the file:\n[01-001] Morning, guys $separator Доброе утро, ребята\nor the translation alone:\n[01-001] Доброе утро, ребята\nLines left as in the template count as not answered. You can also replace the whole file with the chat\'s answer. Next to it are ALL_original.txt (the same original text) and an empty ALL_translation.txt: the translation can go there too; the program takes it from whichever file is filled in.';
+    return 'Takes the answer from the txt files of the exchange folder (Open the folder, below). The files are the same in every mode: ALL.txt, ALL_original.txt (the original), ALL_translation.txt (the translation); page_01.txt… for the lines those do not have. The program takes what you wrote from any of them.\n\nIn \"Translate\" ALL.txt and ALL_original.txt have the original text with its labels beforehand: a template. The program waits for the translation: add it to the lines of ALL.txt\n[01-001] Morning, guys $separator Доброе утро, ребята\nor write the translation alone into ALL_translation.txt:\n[01-001] Доброе утро, ребята\nLines left as in the template count as not answered. A typo corrected in ALL_original.txt goes into the bubble too. You can also replace the whole of ALL.txt with the chat\'s answer.';
   }
 
   @override
-  String get chatFromFilesInfoRecognize =>
-      'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Recognize\" the file has only the labels. Write the text from the picture after each one (or paste the chat\'s answer) and save the file:\n[01-001] Morning, guys\nEmpty lines count as not answered.';
+  String chatFromFilesInfoRecognize(String separator) {
+    return 'Takes the answer from the txt files of the exchange folder (Open the folder, below). The files are the same in every mode: ALL.txt, ALL_original.txt (the original), ALL_translation.txt (the translation); page_01.txt… for the lines those do not have. The program takes what you wrote from any of them.\n\nIn \"Recognize\" the files have only the labels. Write the text from the picture after each one (in ALL.txt or ALL_original.txt) or paste the chat\'s answer, and save the file:\n[01-001] Morning, guys\nA translation may come along too: after \"$separator\" or in ALL_translation.txt. Empty lines count as not answered.';
+  }
 
   @override
   String chatFromFilesInfoBoth(String separator) {
-    return 'Takes the answer from the txt files of the exchange folder (Open the folder, below): ALL.txt first, then page_01.txt, page_02.txt… for the lines ALL.txt does not have.\n\nIn \"Recognize and translate\" the file has only the labels. Each needs the text from the picture, \"$separator\" and the translation (or paste the chat\'s answer); then save the file:\n[01-001] Morning, guys $separator Доброе утро, ребята\nEmpty lines count as not answered. Next to it are ALL_original.txt and ALL_translation.txt: the text from the picture can go into the first and the translation into the second; the program takes the answer from whichever file is filled in.';
+    return 'Takes the answer from the txt files of the exchange folder (Open the folder, below). The files are the same in every mode: ALL.txt, ALL_original.txt (the original), ALL_translation.txt (the translation); page_01.txt… for the lines those do not have. The program takes what you wrote from any of them.\n\nIn \"Recognize and translate\" the files have only the labels. In ALL.txt each needs the text from the picture, \"$separator\" and the translation (or paste the chat\'s answer):\n[01-001] Morning, guys $separator Доброе утро, ребята\nOr the text from the picture in ALL_original.txt and the translation in ALL_translation.txt. Empty lines count as not answered.';
   }
+
+  @override
+  String get chatSheetPerPageOn =>
+      '\"Each page on a new sheet\" is on: the sheets show the bubbles of one page only.';
 
   @override
   String get chatOpenTxt => 'Open a txt file…';

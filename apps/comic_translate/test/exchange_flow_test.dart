@@ -412,5 +412,71 @@ void main() {
     expect(find.text('Копировать картинки (1)'), findsOneWidget);
     expect(find.text('стр. 1 · 1'), findsNothing);
     expect(find.text('стр. 2 · 2'), findsOneWidget);
+
+    // The large view shows the same page and can pick another.
+    await tester.tap(find.byIcon(Icons.open_in_full));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('стр. 2 · 2'), findsNWidgets(2), reason: 'in the window and in the large view');
+    await tester.tap(find.text('Страница 2 (1)').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Страница 1 (1)').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('стр. 1 · 1'), findsNWidgets(2));
+    expect(find.textContaining('стр. 2 · 2'), findsNothing);
+  });
+
+  testWidgets('one page picked while sheets mix pages: each page starts a sheet of its own', (tester) async {
+    await tester.runAsync(() => start(fakeSettings()));
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [for (final p in pages()) p.id], mode: ExchangeMode.both),
+      'стр. 1–2 · 1–2',
+      ['Hello'],
+    );
+    await tester.tap(find.text('Все страницы (1)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Страница 2 (1)').last);
+    await tester.pump();
+    expect(find.textContaining('Включено «Каждая страница с нового листа»'), findsOneWidget);
+    expect(container.read(settingsProvider).exchange.sheetPerPage, isTrue);
+    // The sheets are made again after a moment.
+    for (var i = 0; i < 80 && find.text('стр. 2 · 2').evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('стр. 2 · 2'), findsOneWidget);
+    expect(find.text('стр. 1 · 1'), findsNothing);
+    expect(find.textContaining('Включено «Каждая страница с нового листа»'), findsOneWidget, reason: 'it says why');
+  });
+
+  testWidgets('the mode can be switched when the chat button opened the window, not in "Translate all"', (
+    tester,
+  ) async {
+    await tester.runAsync(() => start(fakeSettings()));
+    final id = pages().first.id;
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [id], mode: ExchangeMode.translate, fromRun: true),
+      'Копировать текст',
+      ['Hello'],
+    );
+    expect(find.byType(SegmentedButton<ExchangeMode>), findsOneWidget);
+    await tester.tap(find.text('Распознать'));
+    for (var i = 0; i < 80 && find.text('Копировать картинки (1)').evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+    }
+    expect(find.text('Копировать картинки (1)'), findsOneWidget);
+    expect(find.text('Применить и продолжить'), findsOneWidget);
+
+    await tester.tap(find.text('Отмена'));
+    await tester.pumpAndSettle();
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [id], mode: ExchangeMode.translate, fromRun: true, modeFixed: true),
+      'Копировать текст',
+      ['Hello'],
+    );
+    expect(find.byType(SegmentedButton<ExchangeMode>), findsNothing);
   });
 }

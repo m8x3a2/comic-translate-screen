@@ -14,7 +14,13 @@ import 'workspace.dart';
 
 /// What the exchange window works on.
 class ExchangeRequest {
-  const ExchangeRequest({required this.pageIds, required this.mode, this.only = const {}, this.fromRun = false});
+  const ExchangeRequest({
+    required this.pageIds,
+    required this.mode,
+    this.only = const {},
+    this.fromRun = false,
+    this.modeFixed = false,
+  });
 
   /// In page order.
   final List<String> pageIds;
@@ -25,6 +31,10 @@ class ExchangeRequest {
 
   /// Opened by "Translate all" or a step: the work goes on after "Apply".
   final bool fromRun;
+
+  /// "Translate all" goes on in its own order after "Apply": the window
+  /// cannot switch to another mode.
+  final bool modeFixed;
 }
 
 /// The rounds of the exchange that reading ([read]) and translating

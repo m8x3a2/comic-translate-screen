@@ -92,10 +92,11 @@ class ExchangeItem {
 class ExchangeReply {
   const ExchangeReply({this.original, this.translation, this.missingArrow = false});
 
-  /// The text as read (modes recognize and both).
+  /// The text as read (any mode: in translate, only from the original's
+  /// text file, a correction of the text sent).
   final String? original;
 
-  /// The translation (modes translate and both).
+  /// The translation (any mode: when reading, it may come along).
   final String? translation;
 
   /// Mode both, but the line had no `-->`: all of it was taken as the
@@ -200,7 +201,12 @@ ExchangeReply _reply(String body, ExchangeMode mode, RegExp arrows) {
   final arrow = arrows.firstMatch(body);
   switch (mode) {
     case ExchangeMode.recognize:
-      return ExchangeReply(original: body);
+      // The translation may come along: `original --> translation`.
+      if (arrow == null) return ExchangeReply(original: body);
+      return ExchangeReply(
+        original: _unquote(body.substring(0, arrow.start)),
+        translation: _unquote(body.substring(arrow.end)),
+      );
     case ExchangeMode.translate:
       // The chat repeated the original before the translation.
       return ExchangeReply(translation: arrow == null ? body : _unquote(body.substring(arrow.end)));

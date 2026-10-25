@@ -281,6 +281,30 @@ void main() {
       expect(m.sources[const ExchangeLabel(2, 1)], 'ALL_original.txt, ALL.txt');
     });
 
+    test('recognize: the same three files; a translation written in comes along', () async {
+      await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.recognize,
+        const ExchangeSettings(),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      expect(filesIn(dir.path).where((f) => f.endsWith('.txt')), [
+        'ALL.txt',
+        'ALL_original.txt',
+        'ALL_translation.txt',
+        'prompt.txt',
+      ]);
+      File(p.join(dir.path, 'ALL.txt')).writeAsStringSync('[01-001] Hello --> Привет\n[01-002]\n[02-001] Bye\n');
+      File(p.join(dir.path, 'ALL_translation.txt')).writeAsStringSync('[01-001]\n[01-002]\n[02-001] Пока\n');
+      final m = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
+      ExchangeReply r(int page, int block) => m.replies[ExchangeLabel(page, block)]!;
+      expect((r(1, 1).original, r(1, 1).translation), ('Hello', 'Привет'));
+      expect((r(2, 1).original, r(2, 1).translation), ('Bye', 'Пока'));
+      expect(m.sources[const ExchangeLabel(2, 1)], 'ALL_translation.txt, ALL.txt');
+    });
+
     test('translate: the template filled in, the apart files left as they are', () async {
       await writeExchange(
         dir,

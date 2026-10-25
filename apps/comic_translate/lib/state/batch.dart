@@ -267,7 +267,7 @@ class BatchNotifier extends Notifier<BatchState> {
           if (withText.isEmpty || cancel.isCancelled) break;
           _update((b) => b.copyWith(stage: 'exchange', pageName: ''));
           final applied = await ui.exchange(
-            ExchangeRequest(pageIds: [for (final p in withText) p.id], mode: mode, fromRun: true),
+            ExchangeRequest(pageIds: [for (final p in withText) p.id], mode: mode, fromRun: true, modeFixed: true),
           );
           if (!applied) {
             log.info('batch_exchange_cancelled', {'mode': mode.name});

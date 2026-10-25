@@ -48,7 +48,11 @@ class ExchangeDialog extends ConsumerStatefulWidget {
 
 class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBindingObserver {
   late ExchangeMode _mode = widget.existing?.mode ?? widget.request.mode;
-  ExchangeExport? _export;
+
+  /// The folder as written; the large view follows it.
+  final _shown = ValueNotifier<ExchangeExport?>(null);
+  ExchangeExport? get _export => _shown.value;
+  set _export(ExchangeExport? export) => _shown.value = export;
   Object? _exportError;
   var _exporting = false;
   var _again = false;
@@ -85,8 +89,12 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   /// What the last copy did.
   String? _note;
 
+  /// [_note] stays when the pictures are made again (it tells why).
+  var _keepNote = false;
+
   /// The pictures of one page only (its number in the labels); null: all.
-  int? _page;
+  /// The same in the large view.
+  final _page = ValueNotifier<int?>(null);
 
   /// What this window put into the clipboard (not an answer to offer).
   String? _copied;
@@ -124,6 +132,8 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _debounce?.cancel();
+    _shown.dispose();
+    _page.dispose();
     _groups.dispose();
     _prompt.dispose();
     _strip.dispose();
@@ -177,7 +187,9 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       if (!mounted) return;
       setState(() {
         _export = out;
-        _note = null;
+        // What was copied is gone; why the sheets changed stays once.
+        _note = _keepNote ? _note : null;
+        _keepNote = false;
         _selected.removeWhere((f) => !out.pictures.contains(f));
         if (!_promptChanged) _prompt.text = out.prompt;
       });
@@ -314,6 +326,24 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     if (paste) _setAnswer(text);
   }
 
+  /// Shows the pictures of [page] (null: all). A sheet with pieces of
+  /// several pages would bring other pages along, so each page then starts
+  /// a sheet of its own; true when that was switched on.
+  bool _pickPage(int? page) {
+    final export = _export;
+    final mixed = export != null && export.pictures.any((f) => picturePages(export, f).length > 1);
+    final perPage = page != null && mixed && !_options.sheetPerPage;
+    setState(() {
+      _page.value = page;
+      if (perPage) {
+        _note = context.l10n.chatSheetPerPageOn;
+        _keepNote = true;
+      }
+    });
+    if (perPage) unawaited(_changeOptions((e) => e.copyWith(sheetPerPage: true)));
+    return perPage;
+  }
+
   Future<void> _copyText() async {
     final export = _export;
     if (export == null) return;
@@ -347,7 +377,9 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     if (export == null) return;
     final result = await showExchangeGallery(
       context,
-      export,
+      _shown,
+      page: _page,
+      onPage: _pickPage,
       selected: _selected,
       groups: _groups.text,
       onCopy: _copy,
@@ -426,7 +458,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                   Icon(Icons.forum_outlined, color: theme.colorScheme.primary),
                   const SizedBox(width: 12),
                   Expanded(child: Text(l.chatTitle, style: theme.textTheme.titleLarge)),
-                  if (!widget.request.fromRun && !existing)
+                  if (!widget.request.modeFixed && !existing)
                     SegmentedButton<ExchangeMode>(
                       segments: [
                         ButtonSegment(value: ExchangeMode.both, label: Text(l.chatModeBoth)),
@@ -601,14 +633,8 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   Widget _sendCard(AppLocalizations l, ThemeData theme) {
     final export = _export;
     final all = export?.pictures ?? const <String>[];
-    // Which pages each picture shows: with many pages, the pictures of one.
-    final pagesOf = {for (final f in all) f: picturePages(export!, f)};
-    final pageNumbers = {for (final ps in pagesOf.values) ...ps}.toList()..sort();
-    final page = pageNumbers.contains(_page) ? _page : null;
-    final pictures = [
-      for (final f in all)
-        if (page == null || pagesOf[f]!.contains(page)) f,
-    ];
+    // With many pages, the pictures of one.
+    final pictures = export == null ? all : picturesOfPage(export, _page.value);
     final picked = [
       for (final f in all)
         if (_selected.contains(f)) f,
@@ -661,20 +687,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                       icon: const Icon(Icons.notes),
                       label: Text(l.chatCopyText),
                     ),
-                  if (pageNumbers.length > 1)
-                    DropdownButton<int?>(
-                      value: page,
-                      isDense: true,
-                      items: [
-                        DropdownMenuItem(value: null, child: Text(l.chatPagesAll(all.length))),
-                        for (final n in pageNumbers)
-                          DropdownMenuItem(
-                            value: n,
-                            child: Text(l.chatPageOnly(n, pagesOf.values.where((ps) => ps.contains(n)).length)),
-                          ),
-                      ],
-                      onChanged: (v) => setState(() => _page = v),
-                    ),
+                  ExchangePagePicker(export: export, page: _page.value, onChanged: _pickPage),
                   if (all.isNotEmpty)
                     IconButton(
                       tooltip: l.chatGalleryOpen,
@@ -692,10 +705,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                 const SizedBox(height: 8),
                 Text(_note!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
               ],
-              if (pictures.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _pictureStrip(l, export, pictures, pagesOf, pages: pageNumbers.length > 1),
-              ],
+              if (pictures.isNotEmpty) ...[const SizedBox(height: 12), _pictureStrip(l, export, pictures)],
               const SizedBox(height: 4),
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,
@@ -744,13 +754,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
 
   /// The pictures in a row: the wheel scrolls it sideways, arrows at the
   /// ends, a tick on each to pick it for copying.
-  Widget _pictureStrip(
-    AppLocalizations l,
-    ExchangeExport export,
-    List<String> pictures,
-    Map<String, Set<int>> pagesOf, {
-    required bool pages,
-  }) {
+  Widget _pictureStrip(AppLocalizations l, ExchangeExport export, List<String> pictures) {
     void by(double dx) {
       if (!_strip.hasClients) return;
       final to = (_strip.offset + dx).clamp(0.0, _strip.position.maxScrollExtent);
@@ -781,14 +785,10 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                   separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, i) {
                     final f = pictures[i];
-                    final range = pieceRange(export, f);
                     return _Thumb(
                       file: p.join(export.dir, f),
                       name: f,
-                      // With several pages, which page it is: "p. 2 · 5–7".
-                      range: pages && range.isNotEmpty
-                          ? '${l.chatPicturePages(pagesText(pagesOf[f]!))} · $range'
-                          : range,
+                      range: pictureCaption(l, export, f),
                       selected: _selected.contains(f),
                       onToggle: () => setState(() => _selected.contains(f) ? _selected.remove(f) : _selected.add(f)),
                       onCopy: () => _copyPictures([f]),
@@ -914,7 +914,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                     ),
                     InfoHint(switch (_mode) {
                       ExchangeMode.translate => l.chatFromFilesInfoTranslate(sep),
-                      ExchangeMode.recognize => l.chatFromFilesInfoRecognize,
+                      ExchangeMode.recognize => l.chatFromFilesInfoRecognize(sep),
                       ExchangeMode.both => l.chatFromFilesInfoBoth(sep),
                     }),
                   ],

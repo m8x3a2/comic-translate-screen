@@ -257,10 +257,9 @@ Future<ExchangeExport> writeExchange(
 
   // Templates to fill: the text to translate, or empty lines. With the
   // apart files too, the original goes in `_original.txt` and the
-  // translation in `_translation.txt` besides the one file (reading alone
-  // needs no translation file); the answer is taken from whichever is
-  // filled in.
-  final split = settings.splitFiles && mode != ExchangeMode.recognize;
+  // translation in `_translation.txt` besides the one file, the same in
+  // every mode; the answer is taken from whichever is filled in.
+  final split = settings.splitFiles;
   Future<void> writeTexts(String base, Iterable<ExchangeItem> list) async {
     String lines(String Function(ExchangeItem it) text) =>
         '${[for (final it in list) '${it.label} ${text(it)}'].join('\n')}\n';
@@ -417,8 +416,8 @@ ExchangeMatch matchExchangeAnswer(
   for (final e in answer.replies.entries) {
     final item = sent[e.key];
     if (item == null) continue;
-    if (ignoreUnchanged && _unchanged(item, e.value, mode)) continue;
-    replies[e.key] = e.value;
+    final reply = ignoreUnchanged ? _filledIn(item, e.value, mode) : e.value;
+    if (reply != null) replies[e.key] = reply;
   }
   return ExchangeMatch(
     replies: replies,
@@ -442,8 +441,17 @@ ExchangeMatch matchExchangeAnswer(
   );
 }
 
-bool _unchanged(ExchangeItem item, ExchangeReply reply, ExchangeMode mode) =>
-    reply.isEmpty || (mode == ExchangeMode.translate && reply.translation?.trim() == item.text.trim());
+/// What the user wrote into a template line: empty parts and, when
+/// translating, the text sent left as it was are not an answer. Null:
+/// nothing written.
+ExchangeReply? _filledIn(ExchangeItem item, ExchangeReply reply, ExchangeMode mode) {
+  String? written(String? s) =>
+      s == null || s.trim().isEmpty || (mode == ExchangeMode.translate && s.trim() == item.text.trim()) ? null : s;
+  final original = written(reply.original), translation = written(reply.translation);
+  if (original == null && translation == null) return null;
+  if (original == reply.original && translation == reply.translation) return reply;
+  return ExchangeReply(original: original, translation: translation, missingArrow: reply.missingArrow);
+}
 
 /// Reads the answers written into the text files of [dir]: `ALL.txt` first,
 /// then each page's file for what is still missing.
@@ -461,33 +469,32 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
   Future<void> take(String base) async {
     // The original and the translation apart, then the one file: each piece
     // takes what was filled in, wherever it is.
+    // In every mode: a corrected original (when translating) or a
+    // translation that came along (when reading) counts too.
     final translations = await parse('${base}_translation.txt', ExchangeMode.translate);
-    final originals = mode == ExchangeMode.translate
-        ? null
-        : await parse('${base}_original.txt', ExchangeMode.recognize);
+    final originals = await parse('${base}_original.txt', ExchangeMode.recognize);
     final single = await parse('$base.txt', mode);
-    bool filled(String? s) => s != null && s.trim().isNotEmpty;
     final answers = [
       if (translations != null || originals != null)
         (
           mergeExchangeAnswers(originals ?? const ExchangeAnswer({}), translations ?? const ExchangeAnswer({})),
-          (ExchangeLabel label) => [
-            if (filled(originals?.replies[label]?.original)) '${base}_original.txt',
-            if (filled(translations?.replies[label]?.translation)) '${base}_translation.txt',
+          (ExchangeReply reply) => [
+            if (reply.original != null) '${base}_original.txt',
+            if (reply.translation != null) '${base}_translation.txt',
           ].join(' + '),
         ),
-      if (single != null) (single, (ExchangeLabel _) => '$base.txt'),
+      if (single != null) (single, (ExchangeReply _) => '$base.txt'),
     ];
     for (final (answer, nameOf) in answers) {
       repeated.addAll(answer.repeated);
       final match = matchExchangeAnswer(manifest.items, answer, mode, ignoreUnchanged: true);
       for (final MapEntry(key: label, value: reply) in match.replies.entries) {
-        final name = nameOf(label);
+        final name = nameOf(reply);
         final had = merged[label];
         if (had == null) {
           merged[label] = reply;
           sources[label] = name;
-        } else if (mode == ExchangeMode.both && (had.original == null || had.translation == null)) {
+        } else if (had.original == null || had.translation == null) {
           // Half of it in one file (the original), the rest in another.
           final original = had.original ?? reply.original, translation = had.translation ?? reply.translation;
           if (original == had.original && translation == had.translation) continue;
@@ -545,16 +552,14 @@ bool applyExchangeReply(TextBlock block, ExchangeReply? reply, ExchangeMode mode
       block.translation = placeholder;
     }
   } else {
-    switch (mode) {
-      case ExchangeMode.recognize:
-        block.text = reply.original ?? '';
-      case ExchangeMode.translate:
-        block.translation = reply.translation ?? '';
-      case ExchangeMode.both:
-        // Nothing after the label: no text. Otherwise what was given (the
-        // original may be missing: no arrow, or a translation file only).
-        if (reply.original != null || reply.isEmpty) block.text = reply.original ?? '';
-        if (reply.translation != null || reply.isEmpty) block.translation = reply.translation ?? '';
+    // What was given, in any mode (a translation may come along with the
+    // reading, a corrected original with the translation). Nothing after
+    // the label empties what the mode asked for.
+    if (reply.original != null || (reply.isEmpty && mode != ExchangeMode.translate)) {
+      block.text = reply.original ?? '';
+    }
+    if (reply.translation != null || (reply.isEmpty && mode != ExchangeMode.recognize)) {
+      block.translation = reply.translation ?? '';
     }
   }
   if (block.translation != oldTranslation) {

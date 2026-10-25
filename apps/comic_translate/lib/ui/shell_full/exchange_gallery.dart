@@ -6,6 +6,7 @@ library;
 import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
@@ -23,19 +24,80 @@ class GalleryResult {
   final String? groups;
 }
 
-/// Opens the large view of [export]; [onCopy] copies pictures (file names in
-/// its folder) and tells what happened.
+/// Opens the large view of [export] (made again while it is open when the
+/// options change); [onCopy] copies pictures (file names in its folder) and
+/// tells what happened. [page]: the page whose pictures are shown, the same
+/// as in the exchange window; [onPage] picks another one and tells whether
+/// each page now starts its own sheet.
 Future<GalleryResult?> showExchangeGallery(
   BuildContext context,
-  ExchangeExport export, {
+  ValueListenable<ExchangeExport?> export, {
+  required ValueListenable<int?> page,
+  required bool Function(int? page) onPage,
   required Set<String> selected,
   required String groups,
   required String Function(List<String> files) onCopy,
   bool pieces = false,
 }) => showDialog<GalleryResult>(
   context: context,
-  builder: (_) => _Gallery(export: export, selected: selected, groups: groups, onCopy: onCopy, pieces: pieces),
+  builder: (_) => _Gallery(
+    export: export,
+    page: page,
+    onPage: onPage,
+    selected: selected,
+    groups: groups,
+    onCopy: onCopy,
+    pieces: pieces,
+  ),
 );
+
+/// The pictures of [export] showing [page]; all of them for null or a page
+/// they do not show.
+List<String> picturesOfPage(ExchangeExport export, int? page) {
+  final own = [
+    for (final f in export.pictures)
+      if (page == null || picturePages(export, f).contains(page)) f,
+  ];
+  return own.isEmpty ? export.pictures : own;
+}
+
+/// What is written under [picture]: the pieces on it (`1–4`) and, when the
+/// pictures show several pages, which page (`p. 2 · 5–7`); empty for a
+/// picture of a whole page.
+String pictureCaption(AppLocalizations l, ExchangeExport export, String picture) {
+  final range = pieceRange(export, picture);
+  if (range.isEmpty) return range;
+  final several = {for (final f in export.pictures) ...picturePages(export, f)}.length > 1;
+  return several ? '${l.chatPicturePages(pagesText(picturePages(export, picture)))} · $range' : range;
+}
+
+/// "All pages (5) / Page 2 (1)…" over the pictures; nothing when they show
+/// one page only.
+class ExchangePagePicker extends StatelessWidget {
+  const ExchangePagePicker({super.key, required this.export, required this.page, required this.onChanged});
+
+  final ExchangeExport export;
+  final int? page;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final pagesOf = [for (final f in export.pictures) picturePages(export, f)];
+    final numbers = {for (final ps in pagesOf) ...ps}.toList()..sort();
+    if (numbers.length < 2) return const SizedBox.shrink();
+    return DropdownButton<int?>(
+      value: numbers.contains(page) ? page : null,
+      isDense: true,
+      items: [
+        DropdownMenuItem(value: null, child: Text(l.chatPagesAll(export.pictures.length))),
+        for (final n in numbers)
+          DropdownMenuItem(value: n, child: Text(l.chatPageOnly(n, pagesOf.where((ps) => ps.contains(n)).length))),
+      ],
+      onChanged: onChanged,
+    );
+  }
+}
 
 /// Running numbers (from 1) of the pieces on a sheet, as `1–4` or `5, 7`.
 String pieceRange(ExchangeExport export, String sheet) {
@@ -96,13 +158,17 @@ Set<int> breaksFromGroups(String text, int count) {
 class _Gallery extends StatefulWidget {
   const _Gallery({
     required this.export,
+    required this.page,
+    required this.onPage,
     required this.selected,
     required this.groups,
     required this.onCopy,
     required this.pieces,
   });
 
-  final ExchangeExport export;
+  final ValueListenable<ExchangeExport?> export;
+  final ValueListenable<int?> page;
+  final bool Function(int? page) onPage;
   final Set<String> selected;
   final String groups;
   final String Function(List<String> files) onCopy;
@@ -114,24 +180,34 @@ class _Gallery extends StatefulWidget {
 
 class _GalleryState extends State<_Gallery> {
   late final _selected = {...widget.selected};
-  late var _piecesTab = widget.pieces && widget.export.previews.isNotEmpty;
-  late final _breaks = breaksFromGroups(widget.groups, widget.export.items.length);
+  late var _piecesTab = widget.pieces && _export.previews.isNotEmpty;
+  late final _breaks = breaksFromGroups(widget.groups, _export.items.length);
   var _breaksChanged = false;
   String? _note;
 
-  List<String> get _pictures => widget.export.pictures;
+  /// The folder as it is now (it was there when the view opened).
+  late ExchangeExport _last = widget.export.value!;
+  ExchangeExport get _export => _last = widget.export.value ?? _last;
+
+  /// The pictures of the page picked (all of them for none).
+  List<String> get _pictures => picturesOfPage(_export, widget.page.value);
 
   void _close() => Navigator.pop(
     context,
-    GalleryResult(_selected, groups: _breaksChanged ? groupsFromBreaks(_breaks, widget.export.items.length) : null),
+    GalleryResult(_selected, groups: _breaksChanged ? groupsFromBreaks(_breaks, _export.items.length) : null),
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([widget.export, widget.page]),
+    builder: (context, _) => _build(context),
+  );
+
+  Widget _build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
     final picked = [
-      for (final f in _pictures)
+      for (final f in _export.pictures)
         if (_selected.contains(f)) f,
     ];
     return Dialog(
@@ -143,7 +219,7 @@ class _GalleryState extends State<_Gallery> {
           children: [
             Row(
               children: [
-                if (widget.export.previews.isNotEmpty)
+                if (_export.previews.isNotEmpty)
                   SegmentedButton<bool>(
                     segments: [
                       ButtonSegment(value: false, label: Text(l.chatGalleryPictures)),
@@ -177,6 +253,14 @@ class _GalleryState extends State<_Gallery> {
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        ExchangePagePicker(
+          export: _export,
+          page: widget.page.value,
+          onChanged: (v) {
+            final perPage = widget.onPage(v);
+            setState(() => _note = perPage ? l.chatSheetPerPageOn : null);
+          },
+        ),
         FilledButton.icon(
           onPressed: picked.isEmpty ? null : () => setState(() => _note = widget.onCopy(picked)),
           icon: const Icon(Icons.collections_outlined),
@@ -200,9 +284,9 @@ class _GalleryState extends State<_Gallery> {
         children: [
           for (final f in _pictures)
             _BigPicture(
-              file: p.join(widget.export.dir, f),
+              file: p.join(_export.dir, f),
               name: f,
-              range: pieceRange(widget.export, f),
+              range: pictureCaption(l, _export, f),
               selected: _selected.contains(f),
               onTap: () => setState(() => _selected.contains(f) ? _selected.remove(f) : _selected.add(f)),
             ),
@@ -212,7 +296,7 @@ class _GalleryState extends State<_Gallery> {
   ];
 
   List<Widget> _piecesView(AppLocalizations l, ThemeData theme) {
-    final items = widget.export.items;
+    final items = _export.items;
     final groups = groupsFromBreaks(_breaks, items.length);
     return [
       Text(l.chatPiecesHelp, style: theme.textTheme.bodySmall),
@@ -243,9 +327,9 @@ class _GalleryState extends State<_Gallery> {
                 _PieceTile(
                   number: i + 1,
                   label: it.label.code,
-                  file: widget.export.previews[it.label.code] == null
+                  file: _export.previews[it.label.code] == null
                       ? null
-                      : p.join(widget.export.dir, widget.export.previews[it.label.code]!),
+                      : p.join(_export.dir, _export.previews[it.label.code]!),
                   startsSheet: i == 0 || _breaks.contains(i),
                   onTap: i == 0
                       ? null
