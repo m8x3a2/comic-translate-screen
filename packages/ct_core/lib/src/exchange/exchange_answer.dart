@@ -11,6 +11,7 @@ library;
 
 import '../model/geometry.dart';
 import '../model/text_block.dart';
+import 'glossary.dart';
 import 'exchange_settings.dart';
 
 /// `[01-003]`: page 1, block 3.
@@ -208,7 +209,8 @@ final _fence = RegExp(r'^[ \t]*```.*$', multiLine: true);
 /// piece are joined with spaces.
 ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String separator = defaultExchangeSeparator}) {
   final arrow = _arrow(separator);
-  final text = answer.replaceAll('\r\n', '\n').replaceAll(_fence, '');
+  // Words suggested for the glossary are no answer for a piece.
+  final text = withoutNewTerms(answer).replaceAll(_fence, '');
   final marks = <(int start, int end, ExchangeLabel label)>[];
   for (final m in _bracketed.allMatches(text)) {
     marks.add((m.start, m.end, ExchangeLabel(int.parse(m[1]!), int.parse(m[2]!))));

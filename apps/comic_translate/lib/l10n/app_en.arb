@@ -1536,6 +1536,64 @@
     }
   },
   "chatClipboardPaste": "Paste",
+  "glossaryMenu": "Names and words…",
+  "glossaryTitle": "Names and words",
+  "glossaryButton": "Glossary ({count})",
+  "@glossaryButton": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "glossaryHelp": "How to translate the names and words of this project. One line, one word: Kai --> Кай. Any other line is a note on the translation (for example: \"Leave senpai as it is\", \"The heroes are on first-name terms\"). Lines starting with # are your own remarks and go nowhere.\n\nThe glossary is kept in the project. It goes into the instructions for the chat (only the words in the text) and to translators over the network (OpenRouter and others); the offline translator does not use it. The chat may suggest new names: one button in the exchange window adds them.",
+  "glossaryHint": "Kai --> Кай\nSenpai --> семпай\nThe heroes are on first-name terms.",
+  "glossaryCounts": "Words: {words}, notes: {notes}",
+  "@glossaryCounts": {
+    "placeholders": {
+      "words": {
+        "type": "int"
+      },
+      "notes": {
+        "type": "int"
+      }
+    }
+  },
+  "glossaryLoad": "Load from txt…",
+  "glossarySave": "Save to txt…",
+  "glossarySaved": "Saved: {path}",
+  "@glossarySaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "glossaryApply": "Done",
+  "chatNewTerms": "The chat suggests for the glossary:",
+  "chatNewTermsAdd": "Add to the glossary",
+  "chatNewTermsAdded": "Added to the glossary: {count}",
+  "@chatNewTermsAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatStyles": "Style of the translation:",
+  "chatStylesOwn": "Own styles and instructions",
+  "styleLiteral": "Close to the original",
+  "styleLively": "Lively, spoken",
+  "styleSoften": "Soften rude words",
+  "styleKeepSwearing": "Rude words as strong",
+  "styleHonorifics": "Keep -san/-kun",
+  "styleOwn": "Own style",
+  "chatStylesTitle": "Styles of translation",
+  "chatStylesHelp": "The chosen styles go into the instructions for the chat and to translators over the network (OpenRouter and others). An own style: the name is for the list, and what to ask is in English (chats follow it best).",
+  "chatOwnStyleName": "Name",
+  "chatOwnStyleText": "What to ask (in English)",
+  "chatOwnStyleAdd": "Add a style of your own",
+  "chatOwnStyleDelete": "Delete the style",
   "chatSharedTexts": "One text for every mode",
   "chatSharedTextsHelp": "What you wrote into the txt files stays when the mode changes: \"Recognize\", \"Translate\" and \"Recognize and translate\" work with the same files. Off: each mode gets fresh templates of its own.",
   "speakerLabel": "Who speaks",

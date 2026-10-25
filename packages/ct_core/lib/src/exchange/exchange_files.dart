@@ -136,6 +136,7 @@ Future<ExchangeExport> writeExchange(
   required String sourceLanguage,
   required String targetLanguage,
   String extraContext = '',
+  String glossary = '',
   bool screens = false,
   List<List<int>> groups = const [],
   bool keepTexts = false,
@@ -272,6 +273,8 @@ Future<ExchangeExport> writeExchange(
         screens: screens,
         contextPictures: contextWanted,
         separator: settings.separator,
+        glossary: glossary,
+        styles: settings.chosenStyles,
       );
   await File(p.join(dir.path, exchangePromptName)).writeAsString(prompt);
 

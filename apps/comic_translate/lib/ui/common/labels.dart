@@ -239,3 +239,14 @@ String modelFileLabel(AppLocalizations l, String file) {
     final s => modelText(l, s).$1,
   };
 }
+
+/// The name of a style of translation: built-in ones in the language of the
+/// app, own ones as the user named them.
+String promptStyleName(AppLocalizations l, PromptStyle style) => switch (style.id) {
+  'literal' => l.styleLiteral,
+  'lively' => l.styleLively,
+  'soften' => l.styleSoften,
+  'keep_swearing' => l.styleKeepSwearing,
+  'honorifics' => l.styleHonorifics,
+  _ => style.name.trim().isEmpty ? l.styleOwn : style.name.trim(),
+};

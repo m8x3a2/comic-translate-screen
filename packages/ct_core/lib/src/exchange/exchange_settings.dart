@@ -3,6 +3,8 @@
 /// back. New in this project.
 library;
 
+import 'glossary.dart';
+
 /// What the chat is asked to do.
 /// Between the original and the translation in the chat's answer, unless
 /// the user chose another one.
@@ -94,6 +96,8 @@ class ExchangeSettings {
     this.prompts = const {},
     this.answerFromClipboard = false,
     this.sharedTexts = true,
+    this.ownStyles = const [],
+    this.activeStyles = const [],
   });
 
   static const minSheetPx = 600;
@@ -145,6 +149,21 @@ class ExchangeSettings {
   /// templates.
   final bool sharedTexts;
 
+  /// Styles of translation the user wrote (ids `own_1`, …).
+  final List<PromptStyle> ownStyles;
+
+  /// The styles the instructions ask for (ids of built-in and own ones).
+  final List<String> activeStyles;
+
+  /// Built-in and own styles.
+  List<PromptStyle> get allStyles => [...builtInPromptStyles, ...ownStyles];
+
+  /// The styles asked for, in the order of [allStyles].
+  List<PromptStyle> get chosenStyles => [
+    for (final s in allStyles)
+      if (activeStyles.contains(s.id)) s,
+  ];
+
   /// The instructions [mode] uses with these settings.
   ExchangePrompt promptKind(ExchangeMode mode) => ExchangePrompt.of(mode, apart: apart);
 
@@ -168,6 +187,8 @@ class ExchangeSettings {
     Map<ExchangePrompt, String>? prompts,
     bool? answerFromClipboard,
     bool? sharedTexts,
+    List<PromptStyle>? ownStyles,
+    List<String>? activeStyles,
   }) => ExchangeSettings(
     together: together ?? this.together,
     apart: apart ?? this.apart,
@@ -185,6 +206,8 @@ class ExchangeSettings {
     prompts: prompts ?? this.prompts,
     answerFromClipboard: answerFromClipboard ?? this.answerFromClipboard,
     sharedTexts: sharedTexts ?? this.sharedTexts,
+    ownStyles: ownStyles ?? this.ownStyles,
+    activeStyles: activeStyles ?? this.activeStyles,
   );
 
   /// [copyWith] for the user's own instructions of [kind] ('' = back to the
@@ -214,6 +237,8 @@ class ExchangeSettings {
     for (final kind in ExchangePrompt.values) kind.key: promptFor(kind),
     'answer_from_clipboard': answerFromClipboard,
     'shared_texts': sharedTexts,
+    'own_styles': [for (final s in ownStyles) s.toJson()],
+    'active_styles': activeStyles,
   };
 
   factory ExchangeSettings.fromJson(Map<String, Object?> json) {
@@ -241,6 +266,10 @@ class ExchangeSettings {
       placeholder: text('placeholder'),
       answerFromClipboard: flag('answer_from_clipboard', d.answerFromClipboard),
       sharedTexts: flag('shared_texts', d.sharedTexts),
+      ownStyles: [
+        for (final s in (json['own_styles'] is List ? json['own_styles'] as List : const [])) ?PromptStyle.fromJson(s),
+      ],
+      activeStyles: [...(json['active_styles'] is List ? json['active_styles'] as List : const []).whereType<String>()],
       prompts: {
         for (final kind in ExchangePrompt.values)
           if (text(kind.key).trim().isNotEmpty) kind: text(kind.key),

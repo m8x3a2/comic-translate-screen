@@ -102,7 +102,12 @@ PageEntry pageEntryOf(ProjectPage page) => PageEntry(
 
 ProjectData projectDataOf(WorkspaceState ws, {Map<String, Object?> extra = const {}}) => ProjectData(
   pages: [for (final page in ws.pages) projectPageOf(page)],
-  state: {'current': ws.current, if (ws.webtoon) 'webtoon': true, ...extra},
+  state: {
+    'current': ws.current,
+    if (ws.webtoon) 'webtoon': true,
+    if (ws.glossary.trim().isNotEmpty) 'glossary': ws.glossary,
+    ...extra,
+  },
 );
 
 // Isolate entry points: top-level, so nothing of the app is copied along.
@@ -173,6 +178,9 @@ class ProjectNotifier extends Notifier<ProjectState> {
       }
     });
     ref.listen(workspaceProvider.select((s) => s.webtoon), (prev, next) {
+      if (!_loading && prev != next && ref.read(workspaceProvider).pages.isNotEmpty) _changed();
+    });
+    ref.listen(workspaceProvider.select((s) => s.glossary), (prev, next) {
       if (!_loading && prev != next && ref.read(workspaceProvider).pages.isNotEmpty) _changed();
     });
     ref.onDispose(() {
@@ -291,6 +299,7 @@ class ProjectNotifier extends Notifier<ProjectState> {
             [for (final page in data.pages) pageEntryOf(page)],
             current: (data.state['current'] as num?)?.toInt() ?? 0,
             webtoon: data.state['webtoon'] == true,
+            glossary: data.state['glossary'] is String ? data.state['glossary'] as String : '',
             session: session,
           );
       _loaded = ref.read(workspaceProvider).pages;

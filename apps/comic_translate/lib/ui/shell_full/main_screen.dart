@@ -36,6 +36,7 @@ import '../settings/settings_place.dart';
 import '../settings/settings_screen.dart';
 import 'batch_dialogs.dart';
 import 'exchange_dialog.dart';
+import 'glossary_dialog.dart';
 import 'export_dialog.dart';
 import 'home_view.dart';
 import 'page_grid.dart';
@@ -969,6 +970,11 @@ class _TopBar extends ConsumerWidget {
             leadingIcon: const Icon(Icons.folder_open_outlined),
             onPressed: chatEnabled ? onChatFolder : null,
             child: Text(l.chatMenuFolder),
+          ),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.menu_book_outlined),
+            onPressed: hasPages ? () => showGlossaryDialog(context) : null,
+            child: Text(l.glossaryMenu),
           ),
         ];
         return Padding(

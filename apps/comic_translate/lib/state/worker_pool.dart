@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../pipeline/page_pipeline.dart';
 import '../pipeline/pipeline_worker.dart';
 import 'app_state.dart';
+import 'workspace.dart';
 
 class WorkerPool {
   WorkerPool({this.idle = const Duration(minutes: 3)});
@@ -85,11 +86,24 @@ final workerPoolProvider = Provider<WorkerPool>((ref) {
   return pool;
 });
 
+/// [settings] for the worker: the chosen styles of translation and the
+/// project's [glossary] go to translators over the network with the extra
+/// context (as to a chat).
+AppSettings settingsForTranslators(AppSettings settings, String glossary) {
+  final extra = [
+    settings.extraContext,
+    promptStyleLine(settings.exchange.chosenStyles),
+    Glossary.parse(glossary).forPrompt(),
+  ].where((s) => s.trim().isNotEmpty).join('\n');
+  if (extra == settings.extraContext) return settings;
+  return AppSettings.fromJson(settings.toJson())..extraContext = extra;
+}
+
 /// The worker setup for the current settings (plugins load when first
 /// needed) and the key that tells when a running worker no longer fits.
 Future<(WorkerSetup, String)> currentWorkerSetup(Ref ref) async {
   final services = ref.read(servicesProvider);
-  final settings = ref.read(settingsProvider);
+  final settings = settingsForTranslators(ref.read(settingsProvider), ref.read(workspaceProvider).glossary);
   final spec = await PipelineSpec.resolve(
     services,
     settings,

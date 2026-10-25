@@ -2341,6 +2341,98 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatClipboardPaste => 'Вставить';
 
   @override
+  String get glossaryMenu => 'Словарь имён и терминов…';
+
+  @override
+  String get glossaryTitle => 'Словарь имён и терминов';
+
+  @override
+  String glossaryButton(int count) {
+    return 'Словарь ($count)';
+  }
+
+  @override
+  String get glossaryHelp =>
+      'Как переводить имена и слова в этом проекте. Одна строка — одно слово: Kai --> Кай. Любая другая строка — пояснение для перевода (например: «Senpai не переводить», «Герои говорят друг другу „ты“»). Строки с # — ваши заметки, они никуда не уходят.\n\nСловарь хранится в проекте. Он уходит в инструкцию для чата (там — только слова, которые есть в тексте) и переводчику через сеть (OpenRouter и другие); офлайн-переводчик его не учитывает. Чат может предложить новые имена — их можно добавить одной кнопкой в окне обмена.';
+
+  @override
+  String get glossaryHint =>
+      'Kai --> Кай\nSenpai --> семпай\nГерои говорят друг другу «ты».';
+
+  @override
+  String glossaryCounts(int words, int notes) {
+    return 'Слов: $words, пояснений: $notes';
+  }
+
+  @override
+  String get glossaryLoad => 'Загрузить из txt…';
+
+  @override
+  String get glossarySave => 'Сохранить в txt…';
+
+  @override
+  String glossarySaved(String path) {
+    return 'Сохранено: $path';
+  }
+
+  @override
+  String get glossaryApply => 'Готово';
+
+  @override
+  String get chatNewTerms => 'Чат предлагает добавить в словарь:';
+
+  @override
+  String get chatNewTermsAdd => 'Добавить в словарь';
+
+  @override
+  String chatNewTermsAdded(int count) {
+    return 'Добавлено в словарь: $count';
+  }
+
+  @override
+  String get chatStyles => 'Стиль перевода:';
+
+  @override
+  String get chatStylesOwn => 'Свои стили и инструкции';
+
+  @override
+  String get styleLiteral => 'Дословно';
+
+  @override
+  String get styleLively => 'Живо, разговорно';
+
+  @override
+  String get styleSoften => 'Смягчить грубости';
+
+  @override
+  String get styleKeepSwearing => 'Грубости как в оригинале';
+
+  @override
+  String get styleHonorifics => 'Сохранить -сан/-кун';
+
+  @override
+  String get styleOwn => 'Свой стиль';
+
+  @override
+  String get chatStylesTitle => 'Стили перевода';
+
+  @override
+  String get chatStylesHelp =>
+      'Выбранные стили добавляются в инструкцию для чата и уходят переводчику через сеть (OpenRouter и другие). Свой стиль: название — для списка, а что просить — по-английски (так чаты понимают лучше).';
+
+  @override
+  String get chatOwnStyleName => 'Название';
+
+  @override
+  String get chatOwnStyleText => 'Что просить (по-английски)';
+
+  @override
+  String get chatOwnStyleAdd => 'Добавить свой стиль';
+
+  @override
+  String get chatOwnStyleDelete => 'Удалить стиль';
+
+  @override
   String get chatSharedTexts => 'Общий текст для всех режимов';
 
   @override

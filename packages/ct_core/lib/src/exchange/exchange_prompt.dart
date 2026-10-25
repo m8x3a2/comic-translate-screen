@@ -5,8 +5,9 @@ library;
 
 import 'exchange_answer.dart';
 import 'exchange_settings.dart';
+import 'glossary.dart';
 
-/// Built-in instructions. `{kind}`, `{source}`, `{target}`, `{labels}`, `{speakers}`,
+/// Built-in instructions. `{kind}`, `{source}`, `{target}`, `{labels}`, `{speakers}`, `{style}`, `{glossary}`,
 /// `{lines}`, `{context}`, `{pictures}`, `{stress}` and `{separator}` are
 /// filled in by [exchangePrompt].
 const defaultExchangePrompts = {
@@ -17,23 +18,23 @@ Answer with one line per label and nothing else:
 [01-003] text
 Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
 Labels: {labels}
-{context}''',
+{glossary}{context}''',
   ExchangePrompt.translate: '''
 Translate these lines of {kind} from {source} into {target}.
 {pictures}Keep the tone and the way each character speaks; the translation should read naturally.
-{stress}{speakers}Answer with one line per label and nothing else:
+{stress}{speakers}{style}Answer with one line per label and nothing else:
 [01-003] translation
-{context}
+{glossary}{context}
 {lines}''',
   ExchangePrompt.both: '''
 The attached pictures show pieces of text cut out of {kind}. Each piece has a label like [01-003] above it.
 {pictures}For every labelled piece write the {source} text exactly as it is written, then " {separator} ", then its translation into {target}.
 Keep the tone and the way each character speaks; the translation should read naturally.
-{stress}{speakers}Answer with one line per label and nothing else:
+{stress}{speakers}{style}Answer with one line per label and nothing else:
 [01-003] original text {separator} translation
 Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
 Labels: {labels}
-{context}''',
+{glossary}{context}''',
   ExchangePrompt.bothApart: '''
 The attached pictures show pieces of text cut out of {kind}. Each piece has a label like [01-003] above it.
 {pictures}Answer with two lists and nothing else.
@@ -43,9 +44,9 @@ Then a line with only ===
 Then the translation of every piece into {target}, one line per label:
 [01-003] translation
 Keep the tone and the way each character speaks; the translation should read naturally.
-{stress}{speakers}Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
+{stress}{speakers}{style}Write a piece with several lines as one line. If a piece has no readable text, write its label with nothing after it.
 Labels: {labels}
-{context}''',
+{glossary}{context}''',
 };
 
 /// The instructions for [items]: the user's own [template] or the
@@ -61,17 +62,33 @@ String exchangePrompt(
   bool screens = false,
   bool contextPictures = false,
   String separator = defaultExchangeSeparator,
+  String glossary = '',
+  List<PromptStyle> styles = const [],
 }) {
   var base = template.trim().isEmpty ? defaultExchangePrompts[kind]! : template;
   final lines = exchangeTextLines(items);
-  // Who speaks matters only to a translation.
-  final speakers = kind == ExchangePrompt.recognize
-      ? ''
-      : exchangeSpeakers(items, inLines: kind == ExchangePrompt.translate);
-  // Own instructions made before speakers existed get them at the end.
-  if (speakers.isNotEmpty && !base.contains('{speakers}')) base = '$base\n{speakers}';
+  final translates = kind != ExchangePrompt.recognize;
+  // Who speaks, the style and the glossary matter only to a translation.
+  final speakers = translates ? exchangeSpeakers(items, inLines: kind == ExchangePrompt.translate) : '';
+  final style = translates ? promptStyleLine(styles) : '';
+  // The words of the glossary in the text sent, all of them when the chat
+  // reads the pictures; the chat suggests new ones.
+  final words = Glossary.parse(glossary)
+      .forPrompt(texts: kind == ExchangePrompt.translate ? [for (final i in items) i.text] : null);
+  final glossaryPart = translates ? [if (words.isNotEmpty) words, glossaryNewInstruction].join('\n') : '';
+  // Own instructions made before these existed get them at the end (the
+  // glossary only when it has something).
+  for (final (key, value) in [
+    ('speakers', speakers),
+    ('style', style),
+    ('glossary', words.isEmpty ? '' : glossaryPart),
+  ]) {
+    if (value.isNotEmpty && !base.contains('{$key}')) base = '$base\n{$key}';
+  }
   final values = {
     'speakers': speakers.isEmpty ? '' : '$speakers\n',
+    'style': style.isEmpty ? '' : '$style\n',
+    'glossary': glossaryPart.isEmpty ? '' : '$glossaryPart\n',
     'separator': separator,
     'kind': screens ? 'screenshots of a site or a game' : 'a comic',
     'source': sourceLanguage == 'Auto' ? 'original' : sourceLanguage,

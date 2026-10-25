@@ -253,11 +253,16 @@ class WorkspaceState {
     this.history = const {},
     this.selectedPages = const {},
     this.webtoon = false,
+    this.glossary = '',
   });
 
   /// Webtoon mode: the pages are shown as one strip, and bubbles cut by the
   /// edge between two pages are handled as one (original `webtoon_mode`).
   final bool webtoon;
+
+  /// The words of the project and how to translate them (see [Glossary]):
+  /// for the chat and translators over the network. Saved with the project.
+  final String glossary;
 
   final List<PageEntry> pages;
   final int current;
@@ -318,6 +323,7 @@ class WorkspaceState {
     Map<String, PageHistory>? history,
     Set<String>? selectedPages,
     bool? webtoon,
+    String? glossary,
   }) => WorkspaceState(
     pages: pages ?? this.pages,
     current: current ?? this.current,
@@ -326,6 +332,7 @@ class WorkspaceState {
     history: history ?? this.history,
     selectedPages: selectedPages ?? this.selectedPages,
     webtoon: webtoon ?? this.webtoon,
+    glossary: glossary ?? this.glossary,
   );
 }
 
@@ -424,7 +431,13 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   /// Replaces the open pages with the pages of a project, whose files are in
   /// [session] (a [newSessionDir]); the old session's files are removed. No
   /// undo history: it is not kept in project files.
-  void loadPages(List<PageEntry> pages, {int current = 0, Directory? session, bool webtoon = false}) {
+  void loadPages(
+    List<PageEntry> pages, {
+    int current = 0,
+    Directory? session,
+    bool webtoon = false,
+    String glossary = '',
+  }) {
     final old = _session;
     if (session != null) _session = session;
     var next = 0;
@@ -437,6 +450,7 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
       pages: pages,
       current: pages.isEmpty ? 0 : current.clamp(0, pages.length - 1),
       webtoon: webtoon,
+      glossary: glossary,
     );
     if (old != null && session != null && !p.equals(old.path, session.path) && old.existsSync()) {
       try {
@@ -569,6 +583,11 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
       go = state.pages.indexWhere((p) => picked.contains(p.id));
     }
     state = state.copyWith(current: go, clearBlock: true, selectedPages: picked.length < 2 ? const {} : picked);
+  }
+
+  /// The words of the project and how to translate them.
+  void setGlossary(String text) {
+    if (text != state.glossary) state = state.copyWith(glossary: text);
   }
 
   /// Turns the webtoon mode on or off.

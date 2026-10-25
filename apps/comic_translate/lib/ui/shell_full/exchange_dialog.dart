@@ -23,6 +23,7 @@ import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../settings/settings_screen.dart';
 import 'exchange_gallery.dart';
+import 'glossary_dialog.dart';
 import 'main_screen.dart' show showInExplorer;
 
 /// Opens the exchange window for [request]; with [existing], the folder of
@@ -91,6 +92,11 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
 
   /// [_note] stays when the pictures are made again (it tells why).
   var _keepNote = false;
+
+  /// Words the chat suggests for the glossary, and the ones unticked.
+  var _suggested = <GlossaryEntry>[];
+  final _skipped = <GlossaryEntry>{};
+  String? _glossaryNote;
 
   /// The pictures of one page only (its number in the labels); null: all.
   /// The same in the large view.
@@ -239,7 +245,40 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     setState(() {
       _fromFiles = null;
       _match = answer == null ? null : matchExchangeAnswer(export.items, answer, export.mode);
+      _suggest('${_answer.text}\n${_answer2.text}');
     });
+  }
+
+  /// Words the chat suggests in [answer] (`NEW: Kai --> Кай`) that the
+  /// glossary does not have yet.
+  void _suggest(String answer) {
+    final glossary = Glossary.parse(ref.read(workspaceProvider).glossary);
+    final seen = <String>{};
+    _suggested = [
+      for (final e in exchangeNewTerms(answer))
+        if (!glossary.has(e.term) && seen.add(e.term.toLowerCase())) e,
+    ];
+    _skipped.removeWhere((e) => !_suggested.contains(e));
+  }
+
+  void _addSuggested() {
+    final picked = [
+      for (final e in _suggested)
+        if (!_skipped.contains(e)) e,
+    ];
+    final ws = ref.read(workspaceProvider.notifier);
+    ws.setGlossary(Glossary.add(ref.read(workspaceProvider).glossary, picked));
+    setState(() {
+      _glossaryNote = context.l10n.chatNewTermsAdded(picked.length);
+      _suggested = [];
+      _skipped.clear();
+    });
+    // The instructions of the next round have the words.
+    unawaited(_rebuild());
+  }
+
+  Future<void> _editGlossary() async {
+    if (await showGlossaryDialog(context) && mounted) unawaited(_rebuild());
   }
 
   void _setAnswer(String text) {
@@ -268,9 +307,14 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       c.clear();
       c.addListener(_parse);
     }
+    // The chat's answer pasted into ALL.txt may suggest words too.
+    final all = File(p.join(dir.path, exchangeAllName));
+    final allText = await all.exists() ? await all.readAsString() : '';
+    if (!mounted) return;
     setState(() {
       _match = match;
       _fromFiles = {...match.sources.values}.toList()..sort();
+      _suggest(allText);
     });
   }
 
@@ -495,6 +539,10 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                       children: [
                         // Room for the floating labels of the fields.
                         if (!existing) Padding(padding: const EdgeInsets.only(top: 8), child: _optionsRow(l, theme)),
+                        if (!existing && _mode != ExchangeMode.recognize) ...[
+                          const SizedBox(height: 10),
+                          _translationRow(l, theme),
+                        ],
                         const SizedBox(height: 12),
                         if (c.maxWidth >= 1000)
                           Row(
@@ -628,6 +676,48 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
             onSelected: (v) => _changeOptions((e) => e.copyWith(sheetPerPage: v)),
           ),
         ],
+      ],
+    );
+  }
+
+  /// The glossary and the styles of translation (for the modes that
+  /// translate): they go into the instructions.
+  Widget _translationRow(AppLocalizations l, ThemeData theme) {
+    final s = ref.watch(settingsProvider.select((s) => s.exchange));
+    final words = Glossary.parse(ref.watch(workspaceProvider.select((w) => w.glossary))).entries.length;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        ActionChip(
+          avatar: const Icon(Icons.menu_book_outlined, size: 18),
+          label: Text(l.glossaryButton(words)),
+          onPressed: _editGlossary,
+        ),
+        const SizedBox(width: 8),
+        Text(l.chatStyles, style: theme.textTheme.bodyMedium),
+        for (final style in s.allStyles)
+          FilterChip(
+            label: Text(promptStyleName(l, style)),
+            tooltip: style.text,
+            selected: s.activeStyles.contains(style.id),
+            onSelected: (on) => _changeOptions(
+              (e) => e.copyWith(
+                activeStyles: [
+                  for (final id in e.activeStyles)
+                    if (id != style.id) id,
+                  if (on) style.id,
+                ],
+              ),
+            ),
+          ),
+        IconButton(
+          tooltip: l.chatStylesOwn,
+          visualDensity: VisualDensity.compact,
+          onPressed: _editTemplate,
+          icon: const Icon(Icons.edit_note),
+        ),
       ],
     );
   }
@@ -877,6 +967,45 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                   ],
                 ),
               ),
+              const SizedBox(height: 8),
+            ],
+            if (_suggested.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.chatNewTerms, style: TextStyle(color: theme.colorScheme.onTertiaryContainer)),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final e in _suggested)
+                          FilterChip(
+                            label: Text(e.line),
+                            selected: !_skipped.contains(e),
+                            onSelected: (v) => setState(() => v ? _skipped.remove(e) : _skipped.add(e)),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    FilledButton.tonalIcon(
+                      onPressed: _suggested.every(_skipped.contains) ? null : _addSuggested,
+                      icon: const Icon(Icons.menu_book_outlined),
+                      label: Text(l.chatNewTermsAdd),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (_glossaryNote != null) ...[
+              Text(_glossaryNote!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
               const SizedBox(height: 8),
             ],
             if (match != null) ...[

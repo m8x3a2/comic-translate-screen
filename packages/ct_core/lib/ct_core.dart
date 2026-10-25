@@ -25,6 +25,7 @@ export 'src/export/pdf_writer.dart';
 export 'src/export/strip_export.dart';
 export 'src/exchange/exchange_answer.dart';
 export 'src/exchange/exchange_files.dart';
+export 'src/exchange/glossary.dart';
 export 'src/exchange/exchange_prompt.dart';
 export 'src/exchange/exchange_settings.dart';
 export 'src/exchange/exchange_sheets.dart';

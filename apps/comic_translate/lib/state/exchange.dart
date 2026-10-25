@@ -99,6 +99,7 @@ Future<ExchangeExport> exportExchange(
   final paths = {for (final page in pages) page.id: ws.byId(page.id)?.path};
   final exchange = settings.exchange;
   final context = settings.extraContext;
+  final glossary = ws.glossary;
   final screens = settings.contentKind == ContentKind.screens;
   return Isolate.run(() async {
     final withImages = [
@@ -122,6 +123,7 @@ Future<ExchangeExport> exportExchange(
       sourceLanguage: source,
       targetLanguage: target,
       extraContext: context,
+      glossary: glossary,
       screens: screens,
       groups: groups,
       keepTexts: keepTexts,

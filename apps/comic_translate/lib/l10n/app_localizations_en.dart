@@ -2339,6 +2339,98 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatClipboardPaste => 'Paste';
 
   @override
+  String get glossaryMenu => 'Names and words…';
+
+  @override
+  String get glossaryTitle => 'Names and words';
+
+  @override
+  String glossaryButton(int count) {
+    return 'Glossary ($count)';
+  }
+
+  @override
+  String get glossaryHelp =>
+      'How to translate the names and words of this project. One line, one word: Kai --> Кай. Any other line is a note on the translation (for example: \"Leave senpai as it is\", \"The heroes are on first-name terms\"). Lines starting with # are your own remarks and go nowhere.\n\nThe glossary is kept in the project. It goes into the instructions for the chat (only the words in the text) and to translators over the network (OpenRouter and others); the offline translator does not use it. The chat may suggest new names: one button in the exchange window adds them.';
+
+  @override
+  String get glossaryHint =>
+      'Kai --> Кай\nSenpai --> семпай\nThe heroes are on first-name terms.';
+
+  @override
+  String glossaryCounts(int words, int notes) {
+    return 'Words: $words, notes: $notes';
+  }
+
+  @override
+  String get glossaryLoad => 'Load from txt…';
+
+  @override
+  String get glossarySave => 'Save to txt…';
+
+  @override
+  String glossarySaved(String path) {
+    return 'Saved: $path';
+  }
+
+  @override
+  String get glossaryApply => 'Done';
+
+  @override
+  String get chatNewTerms => 'The chat suggests for the glossary:';
+
+  @override
+  String get chatNewTermsAdd => 'Add to the glossary';
+
+  @override
+  String chatNewTermsAdded(int count) {
+    return 'Added to the glossary: $count';
+  }
+
+  @override
+  String get chatStyles => 'Style of the translation:';
+
+  @override
+  String get chatStylesOwn => 'Own styles and instructions';
+
+  @override
+  String get styleLiteral => 'Close to the original';
+
+  @override
+  String get styleLively => 'Lively, spoken';
+
+  @override
+  String get styleSoften => 'Soften rude words';
+
+  @override
+  String get styleKeepSwearing => 'Rude words as strong';
+
+  @override
+  String get styleHonorifics => 'Keep -san/-kun';
+
+  @override
+  String get styleOwn => 'Own style';
+
+  @override
+  String get chatStylesTitle => 'Styles of translation';
+
+  @override
+  String get chatStylesHelp =>
+      'The chosen styles go into the instructions for the chat and to translators over the network (OpenRouter and others). An own style: the name is for the list, and what to ask is in English (chats follow it best).';
+
+  @override
+  String get chatOwnStyleName => 'Name';
+
+  @override
+  String get chatOwnStyleText => 'What to ask (in English)';
+
+  @override
+  String get chatOwnStyleAdd => 'Add a style of your own';
+
+  @override
+  String get chatOwnStyleDelete => 'Delete the style';
+
+  @override
   String get chatSharedTexts => 'One text for every mode';
 
   @override

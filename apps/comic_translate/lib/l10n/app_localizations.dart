@@ -4058,6 +4058,168 @@ abstract class AppLocalizations {
   /// **'Paste'**
   String get chatClipboardPaste;
 
+  /// No description provided for @glossaryMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Names and words…'**
+  String get glossaryMenu;
+
+  /// No description provided for @glossaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Names and words'**
+  String get glossaryTitle;
+
+  /// No description provided for @glossaryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Glossary ({count})'**
+  String glossaryButton(int count);
+
+  /// No description provided for @glossaryHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How to translate the names and words of this project. One line, one word: Kai --> Кай. Any other line is a note on the translation (for example: \"Leave senpai as it is\", \"The heroes are on first-name terms\"). Lines starting with # are your own remarks and go nowhere.\n\nThe glossary is kept in the project. It goes into the instructions for the chat (only the words in the text) and to translators over the network (OpenRouter and others); the offline translator does not use it. The chat may suggest new names: one button in the exchange window adds them.'**
+  String get glossaryHelp;
+
+  /// No description provided for @glossaryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Kai --> Кай\nSenpai --> семпай\nThe heroes are on first-name terms.'**
+  String get glossaryHint;
+
+  /// No description provided for @glossaryCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Words: {words}, notes: {notes}'**
+  String glossaryCounts(int words, int notes);
+
+  /// No description provided for @glossaryLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Load from txt…'**
+  String get glossaryLoad;
+
+  /// No description provided for @glossarySave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to txt…'**
+  String get glossarySave;
+
+  /// No description provided for @glossarySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved: {path}'**
+  String glossarySaved(String path);
+
+  /// No description provided for @glossaryApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get glossaryApply;
+
+  /// No description provided for @chatNewTerms.
+  ///
+  /// In en, this message translates to:
+  /// **'The chat suggests for the glossary:'**
+  String get chatNewTerms;
+
+  /// No description provided for @chatNewTermsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to the glossary'**
+  String get chatNewTermsAdd;
+
+  /// No description provided for @chatNewTermsAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to the glossary: {count}'**
+  String chatNewTermsAdded(int count);
+
+  /// No description provided for @chatStyles.
+  ///
+  /// In en, this message translates to:
+  /// **'Style of the translation:'**
+  String get chatStyles;
+
+  /// No description provided for @chatStylesOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Own styles and instructions'**
+  String get chatStylesOwn;
+
+  /// No description provided for @styleLiteral.
+  ///
+  /// In en, this message translates to:
+  /// **'Close to the original'**
+  String get styleLiteral;
+
+  /// No description provided for @styleLively.
+  ///
+  /// In en, this message translates to:
+  /// **'Lively, spoken'**
+  String get styleLively;
+
+  /// No description provided for @styleSoften.
+  ///
+  /// In en, this message translates to:
+  /// **'Soften rude words'**
+  String get styleSoften;
+
+  /// No description provided for @styleKeepSwearing.
+  ///
+  /// In en, this message translates to:
+  /// **'Rude words as strong'**
+  String get styleKeepSwearing;
+
+  /// No description provided for @styleHonorifics.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep -san/-kun'**
+  String get styleHonorifics;
+
+  /// No description provided for @styleOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Own style'**
+  String get styleOwn;
+
+  /// No description provided for @chatStylesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Styles of translation'**
+  String get chatStylesTitle;
+
+  /// No description provided for @chatStylesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The chosen styles go into the instructions for the chat and to translators over the network (OpenRouter and others). An own style: the name is for the list, and what to ask is in English (chats follow it best).'**
+  String get chatStylesHelp;
+
+  /// No description provided for @chatOwnStyleName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get chatOwnStyleName;
+
+  /// No description provided for @chatOwnStyleText.
+  ///
+  /// In en, this message translates to:
+  /// **'What to ask (in English)'**
+  String get chatOwnStyleText;
+
+  /// No description provided for @chatOwnStyleAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a style of your own'**
+  String get chatOwnStyleAdd;
+
+  /// No description provided for @chatOwnStyleDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the style'**
+  String get chatOwnStyleDelete;
+
   /// No description provided for @chatSharedTexts.
   ///
   /// In en, this message translates to:

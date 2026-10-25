@@ -1098,6 +1098,57 @@ class _ExportSection extends ConsumerWidget {
 }
 
 /// The exchange with a chat AI by hand.
+/// A style of translation the user wrote: its name, what to ask, on or off.
+class _OwnStyle extends StatelessWidget {
+  const _OwnStyle({
+    super.key,
+    required this.style,
+    required this.active,
+    required this.onChanged,
+    required this.onActive,
+    required this.onDelete,
+  });
+
+  final PromptStyle style;
+  final bool active;
+  final ValueChanged<PromptStyle> onChanged;
+  final ValueChanged<bool> onActive;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Switch(value: active, onChanged: onActive),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 180,
+            child: DebouncedTextField(
+              value: style.name,
+              label: l.chatOwnStyleName,
+              onChanged: (v) => onChanged(PromptStyle(style.id, style.text, name: v)),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: DebouncedTextField(
+              value: style.text,
+              label: l.chatOwnStyleText,
+              hint: 'Keep it short and punchy.',
+              onChanged: (v) => onChanged(PromptStyle(style.id, v, name: style.name)),
+            ),
+          ),
+          IconButton(tooltip: l.chatOwnStyleDelete, onPressed: onDelete, icon: const Icon(Icons.delete_outline)),
+        ],
+      ),
+    );
+  }
+}
+
 class _ExchangeSection extends ConsumerStatefulWidget {
   const _ExchangeSection();
 
@@ -1114,6 +1165,12 @@ class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
     final l = context.l10n;
     final e = ref.watch(settingsProvider.select((s) => s.exchange));
     void set(ExchangeSettings Function(ExchangeSettings e) f) => _change(ref, (s) => s.exchange = f(s.exchange));
+    // The chosen styles with [id] turned on or off.
+    List<String> turned(String id, bool on) => [
+      for (final a in e.activeStyles)
+        if (a != id) a,
+      if (on) id,
+    ];
     final kinds = {
       ExchangePrompt.both: l.chatModeBoth,
       ExchangePrompt.bothApart: l.chatPromptBothApart,
@@ -1236,6 +1293,46 @@ class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
               help: l.chatSeparatorHelp,
               onChanged: (v) =>
                   set((e) => e.copyWith(separator: v.trim().isEmpty ? defaultExchangeSeparator : v.trim())),
+            ),
+          ],
+        ),
+        SettingsGroup(
+          title: l.chatStylesTitle,
+          children: [
+            Text(l.chatStylesHelp, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 4),
+            for (final style in builtInPromptStyles)
+              _switch(
+                promptStyleName(l, style),
+                e.activeStyles.contains(style.id),
+                (v) => set((e) => e.copyWith(activeStyles: turned(style.id, v))),
+                help: style.text,
+              ),
+            for (final (i, style) in e.ownStyles.indexed)
+              _OwnStyle(
+                key: ValueKey(style.id),
+                style: style,
+                active: e.activeStyles.contains(style.id),
+                onChanged: (s) => set((e) => e.copyWith(ownStyles: [...e.ownStyles]..[i] = s)),
+                onActive: (v) => set((e) => e.copyWith(activeStyles: turned(style.id, v))),
+                onDelete: () => set(
+                  (e) => e.copyWith(ownStyles: [...e.ownStyles]..removeAt(i), activeStyles: turned(style.id, false)),
+                ),
+              ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => set((e) {
+                  final taken = {for (final s in e.ownStyles) s.id};
+                  var n = 1;
+                  while (taken.contains('own_$n')) {
+                    n++;
+                  }
+                  return e.copyWith(ownStyles: [...e.ownStyles, PromptStyle('own_$n', '')]);
+                }),
+                icon: const Icon(Icons.add),
+                label: Text(l.chatOwnStyleAdd),
+              ),
             ),
           ],
         ),

@@ -10,6 +10,7 @@ import 'package:comic_translate/state/batch.dart';
 import 'package:comic_translate/state/exchange.dart';
 import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
+import 'package:comic_translate/state/worker_pool.dart';
 import 'package:comic_translate/ui/shell_full/exchange_dialog.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
@@ -535,5 +536,59 @@ void main() {
       ['Hello'],
     );
     expect(find.byType(SegmentedButton<ExchangeMode>), findsNothing);
+  });
+
+  testWidgets('the glossary and the styles go into the instructions; words the chat suggests are added', (
+    tester,
+  ) async {
+    await tester.runAsync(() => start(fakeSettings()));
+    container.read(workspaceProvider.notifier).setGlossary('Kai --> Кай\n');
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [pages().first.id], mode: ExchangeMode.translate),
+      'Копировать текст',
+      ['KAI!', 'Bye'],
+    );
+    String promptFile() {
+      final folder = Directory(p.join(dir.path, 'exchange')).listSync().single.path;
+      return File(p.join(folder, 'prompt.txt')).readAsStringSync();
+    }
+
+    expect(promptFile(), contains('Kai → Кай'));
+    expect(find.text('Словарь (1)'), findsOneWidget);
+
+    // A style turned on goes into the instructions.
+    await tester.tap(find.text('Смягчить грубости'));
+    for (var i = 0; i < 40 && !promptFile().contains('Soften'); i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(promptFile(), contains('Style of the translation: Soften rude words and swearing.'));
+    expect(container.read(settingsProvider).exchange.activeStyles, ['soften']);
+
+    // The chat suggests a word: added with one button.
+    await tester.enterText(
+      find.byType(TextField).last,
+      '[01-001] КАЙ!\n[01-002] Пока\n\nNEW: Maya --> Майя\nNEW: Kai --> Каи',
+    );
+    await tester.pump();
+    expect(find.text('Найдено ответов: 2 из 2'), findsOneWidget);
+    expect(find.text('Maya --> Майя'), findsOneWidget);
+    expect(find.text('Kai --> Каи'), findsNothing, reason: 'the glossary has Kai');
+    await tester.tap(find.text('Добавить в словарь'));
+    await tester.pump();
+    expect(container.read(workspaceProvider).glossary, 'Kai --> Кай\nMaya --> Майя\n');
+    expect(find.text('Добавлено в словарь: 1'), findsOneWidget);
+  });
+
+  test('translators over the network get the glossary and the styles with the context', () {
+    final settings = fakeSettings()..extraContext = 'A comedy.';
+    settings.exchange = settings.exchange.copyWith(activeStyles: ['lively']);
+    final forWorker = settingsForTranslators(settings, 'Kai --> Кай');
+    expect(forWorker.extraContext, startsWith('A comedy.\nStyle of the translation: Make it lively'));
+    expect(forWorker.extraContext, contains('Kai → Кай'));
+    expect(settings.extraContext, 'A comedy.', reason: 'the settings themselves stay');
+    final plain = fakeSettings();
+    expect(identical(settingsForTranslators(plain, ''), plain), isTrue);
   });
 }

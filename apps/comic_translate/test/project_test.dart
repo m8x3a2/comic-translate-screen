@@ -123,7 +123,9 @@ void main() {
     await openPages(c);
     final ws = c.read(workspaceProvider);
     translate(c, ws.pages.first.id, 'Привет');
-    c.read(workspaceProvider.notifier).select(1);
+    c.read(workspaceProvider.notifier)
+      ..select(1)
+      ..setGlossary('Kai --> Кай\n');
     expect(c.read(projectProvider).dirty, isTrue);
     expect(c.read(projectProvider).path, isNull);
 
@@ -136,11 +138,13 @@ void main() {
 
     c.read(workspaceProvider.notifier).clear();
     expect(c.read(projectProvider).path, isNull, reason: 'closing all pages closes the project');
+    expect(c.read(workspaceProvider).glossary, '', reason: 'the glossary goes with the project');
 
     await c.read(projectProvider.notifier).open(path);
     final back = c.read(workspaceProvider);
     expect(back.pages.map((x) => x.name), ['001.png', '002.png']);
     expect(back.current, 1);
+    expect(back.glossary, 'Kai --> Кай\n');
     final first = back.pages.first;
     expect(first.status, PageStatus.done);
     expect(first.blocks.single.translation, 'Привет');
