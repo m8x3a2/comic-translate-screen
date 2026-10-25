@@ -2339,6 +2339,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatClipboardPaste => 'Paste';
 
   @override
+  String get chatSharedTexts => 'One text for every mode';
+
+  @override
+  String get chatSharedTextsHelp =>
+      'What you wrote into the txt files stays when the mode changes: \"Recognize\", \"Translate\" and \"Recognize and translate\" work with the same files. Off: each mode gets fresh templates of its own.';
+
+  @override
   String get chatAnswerFromClipboard => 'Offer the answer from the clipboard';
 
   @override

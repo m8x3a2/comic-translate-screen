@@ -180,11 +180,12 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       );
       _textsKey = textsKey;
       if (!mounted) return;
-      // The same image files are written again: show the new pictures.
-      for (final f in [...out.pictures, ...out.previews.values]) {
-        await FileImage(File(p.join(dir.path, f))).evict();
-      }
-      if (!mounted) return;
+      // The same image files are written again: every size of them shown
+      // before is forgotten (the pictures are keyed by [out], so they load
+      // again).
+      PaintingBinding.instance.imageCache
+        ..clear()
+        ..clearLiveImages();
       setState(() {
         _export = out;
         // What was copied is gone; why the sheets changed stays once.
@@ -380,6 +381,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       _shown,
       page: _page,
       onPage: _pickPage,
+      onPerPage: (v) => unawaited(_changeOptions((e) => e.copyWith(sheetPerPage: v))),
       selected: _selected,
       groups: _groups.text,
       onCopy: _copy,
@@ -767,10 +769,13 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
         Expanded(
           child: Listener(
             onPointerSignal: (e) {
-              if (e is PointerScrollEvent && _strip.hasClients) {
-                final d = e.scrollDelta.dx != 0 ? e.scrollDelta.dx : e.scrollDelta.dy;
+              if (e is! PointerScrollEvent || !_strip.hasClients) return;
+              // The strip takes the wheel: the window behind it stays.
+              GestureBinding.instance.pointerSignalResolver.register(e, (e) {
+                final s = e as PointerScrollEvent;
+                final d = s.scrollDelta.dx != 0 ? s.scrollDelta.dx : s.scrollDelta.dy;
                 _strip.jumpTo((_strip.offset + d).clamp(0.0, _strip.position.maxScrollExtent));
-              }
+              });
             },
             child: Scrollbar(
               controller: _strip,
@@ -786,6 +791,8 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                   itemBuilder: (context, i) {
                     final f = pictures[i];
                     return _Thumb(
+                      // Made again with the folder: the picture loads anew.
+                      key: ValueKey((export, f)),
                       file: p.join(export.dir, f),
                       name: f,
                       range: pictureCaption(l, export, f),
@@ -947,6 +954,7 @@ String _modeLabel(AppLocalizations l, ExchangeMode mode) => switch (mode) {
 
 class _Thumb extends StatelessWidget {
   const _Thumb({
+    super.key,
     required this.file,
     required this.name,
     required this.range,

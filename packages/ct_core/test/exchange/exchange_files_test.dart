@@ -305,6 +305,49 @@ void main() {
       expect(m.sources[const ExchangeLabel(2, 1)], 'ALL_translation.txt, ALL.txt');
     });
 
+    test('one set of texts for every mode: what was written stays when the mode changes', () async {
+      Future<void> write(ExchangeMode mode, {bool shared = true}) => writeExchange(
+        dir,
+        pages(),
+        mode,
+        ExchangeSettings(sharedTexts: shared),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      String read(String name) => File(p.join(dir.path, name)).readAsStringSync();
+
+      await write(ExchangeMode.translate);
+      File(p.join(dir.path, 'ALL.txt')).writeAsStringSync('[01-001] Hello --> Привет\n[02-001] Bye\n');
+      await write(ExchangeMode.recognize);
+      // Written into: kept, with the piece reading adds (01-002 has no letters).
+      expect(read('ALL.txt'), '[01-001] Hello --> Привет\n[02-001] Bye\n[01-002] \n');
+      // Not written into: the template of this mode.
+      expect(read('ALL_translation.txt'), '[01-001] \n[01-002] \n[02-001] \n');
+      final m = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
+      expect(m.replies.keys, [const ExchangeLabel(1, 1)], reason: 'lines as the program wrote them are no answer');
+      expect(m.replies[const ExchangeLabel(1, 1)]!.original, isNull, reason: 'the original as it was sent');
+      expect(m.replies[const ExchangeLabel(1, 1)]!.translation, 'Привет');
+
+      // Off: each mode starts from its own templates.
+      await write(ExchangeMode.both, shared: false);
+      expect(read('ALL.txt'), '[01-001] \n[01-002] \n[02-001] \n');
+    });
+
+    test('a reading the same as the text already there is an answer', () async {
+      await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.recognize,
+        const ExchangeSettings(),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      File(p.join(dir.path, 'ALL.txt')).writeAsStringSync('[01-001] Hello\n[02-001] Bye\n');
+      final m = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
+      expect(m.replies.keys, [const ExchangeLabel(1, 1), const ExchangeLabel(2, 1)]);
+      expect(m.missing, [const ExchangeLabel(1, 2)]);
+    });
+
     test('translate: the template filled in, the apart files left as they are', () async {
       await writeExchange(
         dir,

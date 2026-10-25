@@ -124,7 +124,9 @@ class ExchangeExport {
 /// Writes the exchange folder [dir] for [pages]. [groups]: the user's own
 /// grouping of the pieces into sheets (see [parseSheetGroups]).
 /// [keepTexts]: text files already there stay (the user may have written
-/// into them). [promptText]: instructions changed by the user for this time.
+/// into them). With [ExchangeSettings.sharedTexts], the files the user wrote
+/// into stay anyway (another mode, other options), with the labels they lack
+/// added. [promptText]: instructions changed by the user for this time.
 Future<ExchangeExport> writeExchange(
   Directory dir,
   List<ExchangePage> pages,
@@ -140,6 +142,23 @@ Future<ExchangeExport> writeExchange(
   bool previews = false,
 }) async {
   await dir.create(recursive: true);
+  // The text files as this folder wrote them last time: one that is not
+  // like that any more was written into by the user.
+  final written = <String, String>{};
+  final oldManifest = File(p.join(dir.path, exchangeManifestName));
+  if (await oldManifest.exists()) {
+    try {
+      final json = jsonDecode(await oldManifest.readAsString());
+      if (json is Map && json['templates'] is Map) {
+        for (final e in (json['templates'] as Map).entries) {
+          if (e.value is String) written['${e.key}'] = e.value as String;
+        }
+      }
+    } on FormatException {
+      // Not readable: everything is written anew.
+    }
+  }
+  final templates = <String, String>{};
   // Pictures of an earlier writing of this folder go: fewer sheets must not
   // leave old ones behind.
   await for (final f in dir.list()) {
@@ -270,8 +289,23 @@ Future<ExchangeExport> writeExchange(
     };
     for (final MapEntry(key: name, value: text) in files.entries) {
       final file = File(p.join(dir.path, name));
-      // Filled in by the user already: kept when only the pictures change.
-      if (keepTexts && await file.exists()) continue;
+      templates[name] = text;
+      if (await file.exists()) {
+        // Filled in by the user already: kept when only the pictures change.
+        if (keepTexts) {
+          templates[name] = written[name] ?? text;
+          continue;
+        }
+        final now = await file.readAsString();
+        final before = written[name];
+        if (settings.sharedTexts && before != null && now != before) {
+          // Written into: it stays for this mode too, with the labels it lacks.
+          final more = _withMissingLabels(now, text);
+          if (more != now) await file.writeAsString(more);
+          templates[name] = before;
+          continue;
+        }
+      }
       await file.writeAsString(text);
     }
   }
@@ -301,6 +335,7 @@ Future<ExchangeExport> writeExchange(
       ],
       'contexts': contexts,
       'crops': crops,
+      'templates': templates,
     }),
   );
   return ExchangeExport(
@@ -316,6 +351,19 @@ Future<ExchangeExport> writeExchange(
   );
 }
 
+/// [text] with the lines of [template] whose labels it does not have added
+/// at the end.
+String _withMissingLabels(String text, String template) {
+  final label = RegExp(r'^\s*\[(\d+-\d+)\]', multiLine: true);
+  final has = {for (final m in label.allMatches(text)) m[1]};
+  final missing = [
+    for (final line in template.split('\n'))
+      if (label.firstMatch(line) case final m? when !has.contains(m[1])) line,
+  ];
+  if (missing.isEmpty) return text;
+  return '${text.endsWith('\n') || text.isEmpty ? text : '$text\n'}${missing.join('\n')}\n';
+}
+
 /// An exchange folder read back.
 class ExchangeManifest {
   const ExchangeManifest({
@@ -326,10 +374,14 @@ class ExchangeManifest {
     this.targetLanguage = '',
     this.separator = defaultExchangeSeparator,
     this.export,
+    this.templates = const {},
   });
 
   final ExchangeMode mode;
   final List<ExchangeItem> items;
+
+  /// The text files as the program wrote them (file name → text).
+  final Map<String, String> templates;
 
   /// Between the original and the translation in the answers.
   final String separator;
@@ -359,6 +411,10 @@ class ExchangeManifest {
       sourceLanguage: json['source_language'] as String? ?? '',
       targetLanguage: json['target_language'] as String? ?? '',
       separator: json['separator'] as String? ?? defaultExchangeSeparator,
+      templates: {
+        for (final e in (json['templates'] as Map? ?? const {}).entries)
+          if (e.value is String) '${e.key}': e.value as String,
+      },
       export: ExchangeExport(
         dir: dir.path,
         mode: mode,
@@ -460,10 +516,24 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
   final sources = <ExchangeLabel, String>{};
   final repeated = <ExchangeLabel>[];
   final mode = manifest.mode;
+  // A line as the program wrote it (in this mode or, kept for it, another)
+  // is not an answer: only what differs from it counts.
   Future<ExchangeAnswer?> parse(String name, ExchangeMode as) async {
     final file = File(p.join(dir.path, name));
     if (!await file.exists()) return null;
-    return parseExchangeAnswer(await file.readAsString(), as, separator: manifest.separator);
+    final answer = parseExchangeAnswer(await file.readAsString(), as, separator: manifest.separator);
+    final template = manifest.templates[name];
+    if (template == null) return answer;
+    final before = parseExchangeAnswer(template, as, separator: manifest.separator).replies;
+    String? changed(String? now, String? was) => now != null && now.trim() == (was ?? '').trim() ? null : now;
+    return ExchangeAnswer({
+      for (final MapEntry(key: label, value: reply) in answer.replies.entries)
+        label: ExchangeReply(
+          original: changed(reply.original, before[label]?.original),
+          translation: changed(reply.translation, before[label]?.translation),
+          missingArrow: reply.missingArrow,
+        ),
+    }, repeated: answer.repeated);
   }
 
   Future<void> take(String base) async {

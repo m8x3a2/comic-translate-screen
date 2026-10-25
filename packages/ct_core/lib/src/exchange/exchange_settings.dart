@@ -93,6 +93,7 @@ class ExchangeSettings {
     this.placeholder = '',
     this.prompts = const {},
     this.answerFromClipboard = false,
+    this.sharedTexts = true,
   });
 
   static const minSheetPx = 600;
@@ -139,6 +140,11 @@ class ExchangeSettings {
   /// (lines with labels): offer to paste it.
   final bool answerFromClipboard;
 
+  /// What the user wrote into the text files stays when the mode changes
+  /// (one set of files for every mode); off: each mode starts from fresh
+  /// templates.
+  final bool sharedTexts;
+
   /// The instructions [mode] uses with these settings.
   ExchangePrompt promptKind(ExchangeMode mode) => ExchangePrompt.of(mode, apart: apart);
 
@@ -161,6 +167,7 @@ class ExchangeSettings {
     String? placeholder,
     Map<ExchangePrompt, String>? prompts,
     bool? answerFromClipboard,
+    bool? sharedTexts,
   }) => ExchangeSettings(
     together: together ?? this.together,
     apart: apart ?? this.apart,
@@ -177,6 +184,7 @@ class ExchangeSettings {
     placeholder: placeholder ?? this.placeholder,
     prompts: prompts ?? this.prompts,
     answerFromClipboard: answerFromClipboard ?? this.answerFromClipboard,
+    sharedTexts: sharedTexts ?? this.sharedTexts,
   );
 
   /// [copyWith] for the user's own instructions of [kind] ('' = back to the
@@ -205,6 +213,7 @@ class ExchangeSettings {
     'placeholder': placeholder,
     for (final kind in ExchangePrompt.values) kind.key: promptFor(kind),
     'answer_from_clipboard': answerFromClipboard,
+    'shared_texts': sharedTexts,
   };
 
   factory ExchangeSettings.fromJson(Map<String, Object?> json) {
@@ -231,6 +240,7 @@ class ExchangeSettings {
       separator: text('separator').trim().isEmpty ? d.separator : text('separator').trim(),
       placeholder: text('placeholder'),
       answerFromClipboard: flag('answer_from_clipboard', d.answerFromClipboard),
+      sharedTexts: flag('shared_texts', d.sharedTexts),
       prompts: {
         for (final kind in ExchangePrompt.values)
           if (text(kind.key).trim().isNotEmpty) kind: text(kind.key),

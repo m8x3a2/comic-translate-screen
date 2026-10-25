@@ -4058,6 +4058,18 @@ abstract class AppLocalizations {
   /// **'Paste'**
   String get chatClipboardPaste;
 
+  /// No description provided for @chatSharedTexts.
+  ///
+  /// In en, this message translates to:
+  /// **'One text for every mode'**
+  String get chatSharedTexts;
+
+  /// No description provided for @chatSharedTextsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'What you wrote into the txt files stays when the mode changes: \"Recognize\", \"Translate\" and \"Recognize and translate\" work with the same files. Off: each mode gets fresh templates of its own.'**
+  String get chatSharedTextsHelp;
+
   /// No description provided for @chatAnswerFromClipboard.
   ///
   /// In en, this message translates to:

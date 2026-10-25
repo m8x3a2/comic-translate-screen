@@ -683,10 +683,8 @@ class _ToolsSection extends ConsumerWidget {
                     if (s.activeReadLevel == level || services.registry.contains(vlmReaderId))
                       level: level == ReadLevel.high ? l.readLevelHigh : l.readLevelUltra,
                 },
-                onChanged: (v) => _change(
-                  ref,
-                  (s) => s.contentKind == ContentKind.screens ? s.screenReadLevel = v : s.readLevel = v,
-                ),
+                onChanged: (v) =>
+                    _change(ref, (s) => s.contentKind == ContentKind.screens ? s.screenReadLevel = v : s.readLevel = v),
                 info: l.readLevelInfo,
               ),
             withInfo(
@@ -1218,6 +1216,12 @@ class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
               e.splitFiles,
               (v) => set((e) => e.copyWith(splitFiles: v)),
               help: l.chatSplitFilesHelp,
+            ),
+            _switch(
+              l.chatSharedTexts,
+              e.sharedTexts,
+              (v) => set((e) => e.copyWith(sharedTexts: v)),
+              help: l.chatSharedTextsHelp,
             ),
             _switch(
               l.chatAnswerFromClipboard,

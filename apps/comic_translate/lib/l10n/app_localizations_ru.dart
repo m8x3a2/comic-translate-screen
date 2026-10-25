@@ -2341,6 +2341,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatClipboardPaste => 'Вставить';
 
   @override
+  String get chatSharedTexts => 'Общий текст для всех режимов';
+
+  @override
+  String get chatSharedTextsHelp =>
+      'Вписанное в txt-файлы остаётся при смене режима: «Распознать», «Перевести» и «Распознать и перевести» работают с одними и теми же файлами. Если выключить, у каждого режима свои чистые заготовки.';
+
+  @override
   String get chatAnswerFromClipboard => 'Предлагать ответ из буфера';
 
   @override

@@ -447,6 +447,20 @@ void main() {
     expect(find.text('стр. 2 · 2'), findsOneWidget);
     expect(find.text('стр. 1 · 1'), findsNothing);
     expect(find.textContaining('Включено «Каждая страница с нового листа»'), findsOneWidget, reason: 'it says why');
+
+    // The large view has the switch too; off again, the sheets mix pages.
+    await tester.tap(find.byIcon(Icons.open_in_full));
+    await tester.pumpAndSettle();
+    final perPage = find.widgetWithText(FilterChip, 'Каждая страница с нового листа');
+    expect(perPage, findsNWidgets(2));
+    await tester.tap(perPage.last);
+    await tester.pump();
+    expect(container.read(settingsProvider).exchange.sheetPerPage, isFalse);
+    for (var i = 0; i < 80 && find.textContaining('стр. 1–2 · 1–2').evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.textContaining('стр. 1–2 · 1–2'), findsWidgets, reason: 'the large view follows the folder');
   });
 
   testWidgets('the mode can be switched when the chat button opened the window, not in "Translate all"', (

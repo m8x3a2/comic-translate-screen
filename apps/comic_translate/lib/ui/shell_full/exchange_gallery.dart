@@ -8,9 +8,11 @@ import 'dart:io';
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import '../../l10n/app_localizations.dart';
+import '../../state/app_state.dart';
 import '../common/labels.dart';
 
 /// What the large view changed.
@@ -34,6 +36,7 @@ Future<GalleryResult?> showExchangeGallery(
   ValueListenable<ExchangeExport?> export, {
   required ValueListenable<int?> page,
   required bool Function(int? page) onPage,
+  required ValueChanged<bool> onPerPage,
   required Set<String> selected,
   required String groups,
   required String Function(List<String> files) onCopy,
@@ -44,6 +47,7 @@ Future<GalleryResult?> showExchangeGallery(
     export: export,
     page: page,
     onPage: onPage,
+    onPerPage: onPerPage,
     selected: selected,
     groups: groups,
     onCopy: onCopy,
@@ -155,11 +159,12 @@ Set<int> breaksFromGroups(String text, int count) {
   }
 }
 
-class _Gallery extends StatefulWidget {
+class _Gallery extends ConsumerStatefulWidget {
   const _Gallery({
     required this.export,
     required this.page,
     required this.onPage,
+    required this.onPerPage,
     required this.selected,
     required this.groups,
     required this.onCopy,
@@ -169,16 +174,19 @@ class _Gallery extends StatefulWidget {
   final ValueListenable<ExchangeExport?> export;
   final ValueListenable<int?> page;
   final bool Function(int? page) onPage;
+
+  /// Turns "each page on a new sheet" on or off.
+  final ValueChanged<bool> onPerPage;
   final Set<String> selected;
   final String groups;
   final String Function(List<String> files) onCopy;
   final bool pieces;
 
   @override
-  State<_Gallery> createState() => _GalleryState();
+  ConsumerState<_Gallery> createState() => _GalleryState();
 }
 
-class _GalleryState extends State<_Gallery> {
+class _GalleryState extends ConsumerState<_Gallery> {
   late final _selected = {...widget.selected};
   late var _piecesTab = widget.pieces && _export.previews.isNotEmpty;
   late final _breaks = breaksFromGroups(widget.groups, _export.items.length);
@@ -261,6 +269,12 @@ class _GalleryState extends State<_Gallery> {
             setState(() => _note = perPage ? l.chatSheetPerPageOn : null);
           },
         ),
+        if (_export.sheets.isNotEmpty)
+          FilterChip(
+            label: Text(l.chatSheetPerPage),
+            selected: ref.watch(settingsProvider.select((s) => s.exchange.sheetPerPage)),
+            onSelected: widget.onPerPage,
+          ),
         FilledButton.icon(
           onPressed: picked.isEmpty ? null : () => setState(() => _note = widget.onCopy(picked)),
           icon: const Icon(Icons.collections_outlined),
@@ -284,6 +298,8 @@ class _GalleryState extends State<_Gallery> {
         children: [
           for (final f in _pictures)
             _BigPicture(
+              // Made again with the folder: the picture loads anew.
+              key: ValueKey((_export, f)),
               file: p.join(_export.dir, f),
               name: f,
               range: pictureCaption(l, _export, f),
@@ -325,6 +341,7 @@ class _GalleryState extends State<_Gallery> {
             children: [
               for (final (i, it) in items.indexed)
                 _PieceTile(
+                  key: ValueKey((_export, it.label)),
                   number: i + 1,
                   label: it.label.code,
                   file: _export.previews[it.label.code] == null
@@ -349,6 +366,7 @@ class _GalleryState extends State<_Gallery> {
 
 class _BigPicture extends StatelessWidget {
   const _BigPicture({
+    super.key,
     required this.file,
     required this.name,
     required this.range,
@@ -392,6 +410,7 @@ class _BigPicture extends StatelessWidget {
 
 class _PieceTile extends StatelessWidget {
   const _PieceTile({
+    super.key,
     required this.number,
     required this.label,
     required this.file,

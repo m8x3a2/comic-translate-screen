@@ -1536,6 +1536,8 @@
     }
   },
   "chatClipboardPaste": "Paste",
+  "chatSharedTexts": "One text for every mode",
+  "chatSharedTextsHelp": "What you wrote into the txt files stays when the mode changes: \"Recognize\", \"Translate\" and \"Recognize and translate\" work with the same files. Off: each mode gets fresh templates of its own.",
   "chatAnswerFromClipboard": "Offer the answer from the clipboard",
   "chatAnswerFromClipboardHelp": "Back in the exchange window with a chat answer (lines with labels) in the clipboard, the program offers to paste it.",
   "chatCopyFailed": "Could not copy: another program holds the clipboard. Try again, or open the folder and drag the files into the chat.",
