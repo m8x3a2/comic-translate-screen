@@ -69,7 +69,7 @@ class VisionModel {
   // ignore: unused_field
   static ffi.NativeCallable<LogCallback>? _logSink;
 
-  /// Error lines of llama.cpp (the rest is dropped); null: dropped too.
+  /// Told when llama.cpp logs an error (its other lines are dropped).
   static void Function(String line)? onError;
 
   /// Loads the libraries in dependency order (each by its full path, so
@@ -79,6 +79,19 @@ class VisionModel {
     if (_ready) return;
     omp_get_max_threads();
     ggml_time_init();
+    // The callback runs later on this isolate, when llama.cpp has freed the
+    // line already: only the level is used.
+    final sink = ffi.NativeCallable<LogCallback>.listener((
+      int level,
+      ffi.Pointer<ffi.Char> _,
+      ffi.Pointer<ffi.Void> _,
+    ) {
+      // GGML_LOG_LEVEL_ERROR = 4.
+      if (level == 4) onError?.call('llama.cpp reported an error');
+    });
+    sink.keepIsolateAlive = false;
+    _logSink = sink;
+    ggml_log_set(sink.nativeFunction, ffi.nullptr);
     final dir = _moduleDir('ggml.dll', () => ggml_backend_dev_count());
     if (dir != null) {
       final p = dir.toNativeUtf8();
@@ -89,16 +102,6 @@ class VisionModel {
       }
     }
     if (ggml_backend_dev_count() == 0) throw LlamaException('no processor backend found next to ggml.dll');
-    final sink = ffi.NativeCallable<LogCallback>.listener((
-      int level,
-      ffi.Pointer<ffi.Char> text,
-      ffi.Pointer<ffi.Void> _,
-    ) {
-      // GGML_LOG_LEVEL_ERROR = 4.
-      if (level == 4) onError?.call(text.cast<Utf8>().toDartString().trimRight());
-    });
-    sink.keepIsolateAlive = false;
-    _logSink = sink;
     llama_log_set(sink.nativeFunction.cast(), ffi.nullptr);
     mtmd_helper_log_set(sink.nativeFunction, ffi.nullptr);
     llama_backend_init();

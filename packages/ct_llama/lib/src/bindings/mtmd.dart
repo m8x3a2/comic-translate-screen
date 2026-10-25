@@ -158,6 +158,9 @@ external void ggml_backend_load_all_from_path(ffi.Pointer<ffi.Char> dirPath);
 @ffi.Native<ffi.Size Function()>(assetId: _ggml)
 external int ggml_backend_dev_count();
 
+@ffi.Native<ffi.Void Function(ffi.Pointer<ffi.NativeFunction<LogCallback>>, ffi.Pointer<ffi.Void>)>(assetId: _ggmlBase)
+external void ggml_log_set(ffi.Pointer<ffi.NativeFunction<LogCallback>> callback, ffi.Pointer<ffi.Void> user);
+
 /// Any function of ggml-base.dll: calling it loads the library first.
 @ffi.Native<ffi.Void Function()>(assetId: _ggmlBase)
 external void ggml_time_init();
