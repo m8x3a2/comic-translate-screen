@@ -22,6 +22,7 @@ import 'app_state.dart';
 import 'batch.dart';
 import 'editor.dart';
 import 'exchange.dart';
+import 'export.dart';
 import 'page_render.dart';
 import 'worker_pool.dart';
 import 'workspace.dart';
@@ -360,7 +361,74 @@ class StepsNotifier extends Notifier<StepState> {
         }
       }
 
-      if (rounds.isEmpty) {
+      // Several pages in one request (the owner's idea): the steps before
+      // translating on every page, then the translation in packs, then the
+      // steps after it.
+      final size = block == null ? pagesPerRequest(services.registry, settings) : 1;
+      final packed =
+          rounds.isEmpty && size > 1 && targets.length > 1 && plans.values.any((s) => s.contains(ManualStep.translate));
+      if (packed) {
+        await runSteps({
+          for (final e in plans.entries) e.key: e.value.takeWhile((s) => s != ManualStep.translate).toList(),
+        });
+        final ws = ref.read(workspaceProvider);
+        final ready = [
+          for (final t in targets)
+            if (plans[t.id]!.contains(ManualStep.translate))
+              if (ws.byId(t.id) case final page? when page.blocks.any((b) => b.text.trim().isNotEmpty)) page,
+        ];
+        String together(PageEntry p) => '${chapterOf(p)}|${p.sourceOf(settings)}|${p.targetOf(settings)}';
+        for (final pack in packsOf(ready, size, together)) {
+          cancel.throwIfCancelled();
+          state = state.copyWith(pageId: pack.first.id, stage: _stage(ManualStep.translate));
+          final which = {
+            for (final page in pack)
+              page.id: [
+                for (final (i, b) in page.blocks.indexed)
+                  if (b.text.trim().isNotEmpty) i,
+              ],
+          };
+          final pages = ref.read(workspaceProvider).pages;
+          final sw = Stopwatch()..start();
+          final done = await active.translatePack(
+            [
+              for (final page in pack)
+                PackJob(page.name, page.path, pages.indexWhere((p) => p.id == page.id) + 1, [
+                  for (final i in which[page.id]!) page.blocks[i].copy(),
+                ]),
+            ],
+            sourceLanguage: pack.first.sourceOf(settings),
+            targetLanguage: pack.first.targetOf(settings),
+            cancel: cancel,
+          );
+          times[ManualStep.translate] = (times[ManualStep.translate] ?? 0) + sw.elapsedMilliseconds;
+          for (final (n, page) in pack.indexed) {
+            count += which[page.id]!.length;
+            timedPages.add(page.id);
+            workspace.edit(
+              page.id,
+              (p) => p.copyWith(
+                // As one page: a new translation starts from the automatic look.
+                blocks: _replace(
+                  p.blocks,
+                  which[page.id]!,
+                  done[n],
+                  (old, b) => old.copy()
+                    ..translation = b.translation
+                    ..untranslated = b.untranslated
+                    ..style = old.style?.placeOnly,
+                ),
+              ),
+              mergeKey: 'step:${_runs++}',
+              mergeWindow: _stepMergeWindow,
+              byHand: false,
+            );
+          }
+        }
+        await runSteps({
+          for (final e in plans.entries) e.key: e.value.skipWhile((s) => s != ManualStep.translate).skip(1).toList(),
+        });
+      } else if (rounds.isEmpty) {
         await runSteps(plans);
       } else {
         await runSteps({for (final e in plans.entries) e.key: e.value.takeWhile((s) => !viaChat(s)).toList()});

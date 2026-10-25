@@ -10,6 +10,7 @@ import 'package:comic_translate/bootstrap.dart';
 import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/state/batch.dart';
 import 'package:comic_translate/state/exchange.dart';
+import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
@@ -148,6 +149,20 @@ void main() {
     expect((second.isDone, second.blocks.single.untranslated), (true, true));
     final report = (container.read(batchProvider) as BatchIdle).last!;
     expect([for (final (_, name, count) in report.untranslated) (name, count)], [('page_1.png', 1)]);
+  });
+
+  test('the "Translate" step on picked pages: found and read, then one request for them', () async {
+    answer = (n) => '{"01-001": "Привет", "03-001": "Ну"}';
+    await start(pages: 3);
+    container.read(workspaceProvider.notifier).pickPages({0, 2});
+    await container.read(stepsProvider.notifier).run(ManualStep.translate, _Ui());
+    expect(asked.length, 1);
+    expect(asked.single, allOf(contains('"01-001": "HELLO"'), contains('"03-001": "HELLO"')));
+    expect(
+      [for (final page in pages()) page.blocks.isEmpty ? null : page.blocks.single.translation],
+      ['Привет', null, 'Ну'],
+    );
+    expect(container.read(stepsProvider).last!.count, 2);
   });
 
   test('one page in a request: as before, the keys of the original', () async {
