@@ -2374,6 +2374,85 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get textExportMenu => 'Export text…';
+
+  @override
+  String get textExportTitle => 'Export text';
+
+  @override
+  String get textExportHelp =>
+      'The dialogues of the pages as plain text: the originals, the translations or both. Keep them, or attach them to a chat as context. The labels are the same as in the exchange with a chat (ALL.txt).';
+
+  @override
+  String textExportAllPages(String count) {
+    return 'Empty: all pages ($count)';
+  }
+
+  @override
+  String textExportSomePages(String count) {
+    return 'Pages: $count';
+  }
+
+  @override
+  String get textExportWhat => 'What:';
+
+  @override
+  String get textExportOriginal => 'Original';
+
+  @override
+  String get textExportTranslation => 'Translation';
+
+  @override
+  String get textExportBoth => 'Both';
+
+  @override
+  String get textExportTwoFiles =>
+      'Two files: …_original.txt and …_translation.txt (you will choose a folder).';
+
+  @override
+  String get textExportLabels => 'Labels before the lines: [01-003]';
+
+  @override
+  String get textExportSpeakers => 'Who speaks: [m] [f] [n]';
+
+  @override
+  String get textExportHeadings => 'Page headings';
+
+  @override
+  String get textExportHeading => 'Heading';
+
+  @override
+  String textExportHeadingHelp(String number, String name) {
+    return '$number is the number of the page, $name the name of its file. For example: --- $number ---';
+  }
+
+  @override
+  String get textExportPage => 'Page';
+
+  @override
+  String get textExportPreview => 'How it looks';
+
+  @override
+  String get textExportEmpty => '(no text)';
+
+  @override
+  String get textExportCopy => 'Copy';
+
+  @override
+  String get textExportCopyShown => 'Copy the shown one';
+
+  @override
+  String get textExportCopied => 'Copied. Paste it with Ctrl+V.';
+
+  @override
+  String get textExportSave => 'Save…';
+
+  @override
+  String textExportSaved(String paths) {
+    return 'Saved:\n$paths';
+  }
+
+  @override
   String get glossaryApply => 'Done';
 
   @override

@@ -4,6 +4,7 @@
 library;
 
 import 'glossary.dart';
+import 'text_export.dart';
 
 /// What the chat is asked to do.
 /// Between the original and the translation in the chat's answer, unless
@@ -98,6 +99,7 @@ class ExchangeSettings {
     this.sharedTexts = true,
     this.ownStyles = const [],
     this.activeStyles = const [],
+    this.textExport = const TextExportOptions(),
   });
 
   static const minSheetPx = 600;
@@ -155,6 +157,9 @@ class ExchangeSettings {
   /// The styles the instructions ask for (ids of built-in and own ones).
   final List<String> activeStyles;
 
+  /// The choices of the Export text window.
+  final TextExportOptions textExport;
+
   /// Built-in and own styles.
   List<PromptStyle> get allStyles => [...builtInPromptStyles, ...ownStyles];
 
@@ -189,6 +194,7 @@ class ExchangeSettings {
     bool? sharedTexts,
     List<PromptStyle>? ownStyles,
     List<String>? activeStyles,
+    TextExportOptions? textExport,
   }) => ExchangeSettings(
     together: together ?? this.together,
     apart: apart ?? this.apart,
@@ -208,6 +214,7 @@ class ExchangeSettings {
     sharedTexts: sharedTexts ?? this.sharedTexts,
     ownStyles: ownStyles ?? this.ownStyles,
     activeStyles: activeStyles ?? this.activeStyles,
+    textExport: textExport ?? this.textExport,
   );
 
   /// [copyWith] for the user's own instructions of [kind] ('' = back to the
@@ -239,6 +246,7 @@ class ExchangeSettings {
     'shared_texts': sharedTexts,
     'own_styles': [for (final s in ownStyles) s.toJson()],
     'active_styles': activeStyles,
+    'text_export': textExport.toJson(),
   };
 
   factory ExchangeSettings.fromJson(Map<String, Object?> json) {
@@ -270,6 +278,7 @@ class ExchangeSettings {
         for (final s in (json['own_styles'] is List ? json['own_styles'] as List : const [])) ?PromptStyle.fromJson(s),
       ],
       activeStyles: [...(json['active_styles'] is List ? json['active_styles'] as List : const []).whereType<String>()],
+      textExport: TextExportOptions.fromJson(json['text_export']),
       prompts: {
         for (final kind in ExchangePrompt.values)
           if (text(kind.key).trim().isNotEmpty) kind: text(kind.key),

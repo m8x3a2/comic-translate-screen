@@ -4112,6 +4112,144 @@ abstract class AppLocalizations {
   /// **'Saved: {path}'**
   String glossarySaved(String path);
 
+  /// No description provided for @textExportMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Export text…'**
+  String get textExportMenu;
+
+  /// No description provided for @textExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export text'**
+  String get textExportTitle;
+
+  /// No description provided for @textExportHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The dialogues of the pages as plain text: the originals, the translations or both. Keep them, or attach them to a chat as context. The labels are the same as in the exchange with a chat (ALL.txt).'**
+  String get textExportHelp;
+
+  /// No description provided for @textExportAllPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty: all pages ({count})'**
+  String textExportAllPages(String count);
+
+  /// No description provided for @textExportSomePages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages: {count}'**
+  String textExportSomePages(String count);
+
+  /// No description provided for @textExportWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What:'**
+  String get textExportWhat;
+
+  /// No description provided for @textExportOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get textExportOriginal;
+
+  /// No description provided for @textExportTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation'**
+  String get textExportTranslation;
+
+  /// No description provided for @textExportBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get textExportBoth;
+
+  /// No description provided for @textExportTwoFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Two files: …_original.txt and …_translation.txt (you will choose a folder).'**
+  String get textExportTwoFiles;
+
+  /// No description provided for @textExportLabels.
+  ///
+  /// In en, this message translates to:
+  /// **'Labels before the lines: [01-003]'**
+  String get textExportLabels;
+
+  /// No description provided for @textExportSpeakers.
+  ///
+  /// In en, this message translates to:
+  /// **'Who speaks: [m] [f] [n]'**
+  String get textExportSpeakers;
+
+  /// No description provided for @textExportHeadings.
+  ///
+  /// In en, this message translates to:
+  /// **'Page headings'**
+  String get textExportHeadings;
+
+  /// No description provided for @textExportHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Heading'**
+  String get textExportHeading;
+
+  /// No description provided for @textExportHeadingHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'{number} is the number of the page, {name} the name of its file. For example: --- {number} ---'**
+  String textExportHeadingHelp(String number, String name);
+
+  /// No description provided for @textExportPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Page'**
+  String get textExportPage;
+
+  /// No description provided for @textExportPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'How it looks'**
+  String get textExportPreview;
+
+  /// No description provided for @textExportEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'(no text)'**
+  String get textExportEmpty;
+
+  /// No description provided for @textExportCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get textExportCopy;
+
+  /// No description provided for @textExportCopyShown.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the shown one'**
+  String get textExportCopyShown;
+
+  /// No description provided for @textExportCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied. Paste it with Ctrl+V.'**
+  String get textExportCopied;
+
+  /// No description provided for @textExportSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save…'**
+  String get textExportSave;
+
+  /// No description provided for @textExportSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved:\n{paths}'**
+  String textExportSaved(String paths);
+
   /// No description provided for @glossaryApply.
   ///
   /// In en, this message translates to:

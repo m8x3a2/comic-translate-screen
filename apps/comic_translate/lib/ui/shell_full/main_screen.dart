@@ -44,6 +44,7 @@ import 'page_list.dart';
 import 'page_viewer.dart';
 import 'repeats_dialog.dart';
 import 'shortcuts_dialog.dart';
+import 'text_export_dialog.dart';
 import 'text_panel.dart';
 
 /// Opens [path] in Windows Explorer (selecting it when it is a file).
@@ -495,6 +496,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               for (final (i, page) in ws.pages.indexed)
                 if (ws.selectedPages.contains(page.id)) i,
             ]),
+      onExportText: () => showTextExportDialog(context),
     );
     if (choice == null || !mounted) return;
     await ref.read(settingsProvider.notifier).change((s) => s.export = choice.settings);
@@ -975,6 +977,11 @@ class _TopBar extends ConsumerWidget {
             leadingIcon: const Icon(Icons.menu_book_outlined),
             onPressed: hasPages ? () => showGlossaryDialog(context) : null,
             child: Text(l.glossaryMenu),
+          ),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.notes),
+            onPressed: hasPages ? () => showTextExportDialog(context) : null,
+            child: Text(l.textExportMenu),
           ),
         ];
         return Padding(

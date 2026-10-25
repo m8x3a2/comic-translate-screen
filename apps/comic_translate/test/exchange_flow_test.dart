@@ -12,6 +12,7 @@ import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:comic_translate/state/worker_pool.dart';
 import 'package:comic_translate/ui/shell_full/exchange_dialog.dart';
+import 'package:comic_translate/ui/shell_full/text_export_dialog.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
 import 'package:flutter/gestures.dart';
@@ -596,5 +597,81 @@ void main() {
     expect(settings.extraContext, 'A comedy.', reason: 'the settings themselves stay');
     final plain = fakeSettings();
     expect(identical(settingsForTranslators(plain, ''), plain), isTrue);
+  });
+
+  testWidgets('"Export text": the pages chosen by number, the original or the translation, copied', (tester) async {
+    await tester.runAsync(() => start(fakeSettings()));
+    String? clipboard;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') clipboard = (call.arguments as Map)['text'] as String?;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    tester.view
+      ..physicalSize = const Size(1600, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    for (final (n, page) in pages().indexed) {
+      container
+          .read(workspaceProvider.notifier)
+          .edit(
+            page.id,
+            (p) => p.copyWith(
+              blocks: [
+                TextBlock(xyxy: const BBox(0, 0, 10, 10), text: 'Hi $n', translation: 'Привет $n')
+                  ..speaker = Speaker.female,
+                TextBlock(xyxy: const BBox(0, 20, 10, 30)),
+              ],
+            ),
+          );
+    }
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) =>
+                  TextButton(onPressed: () => showTextExportDialog(context), child: const Text('open')),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Пусто — все страницы (2)'), findsOneWidget);
+    expect(
+      find.text('Страница 1\n[01-001] [f] Hi 0\n[01-002]\n\nСтраница 2\n[02-001] [f] Hi 1\n[02-002]\n'),
+      findsOneWidget,
+    );
+
+    // Only the second page, its translation, plain lines with a heading of the user.
+    await tester.enterText(find.byType(TextField).first, '2');
+    await tester.tap(find.text('Перевод').first);
+    await tester.tap(find.text('Метки перед строками: [01-003]'));
+    await tester.tap(find.text('Кто говорит: [m] [f] [n]'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).last, '--- {n} ---');
+    await tester.pump();
+    expect(find.text('Страниц: 1'), findsOneWidget);
+    expect(find.text('--- 2 ---\nПривет 1\n'), findsOneWidget);
+    await tester.tap(find.text('Копировать'));
+    await tester.pump();
+    expect(clipboard, '--- 2 ---\nПривет 1\n');
+    expect(find.text('Скопировано. Вставьте: Ctrl+V.'), findsOneWidget);
+    final remembered = container.read(settingsProvider).exchange.textExport;
+    expect(
+      (remembered.part, remembered.labels, remembered.speakers, remembered.heading),
+      (TextExportPart.translation, false, false, '--- {n} ---'),
+    );
+
+    // A wrong number is told.
+    await tester.enterText(find.byType(TextField).first, '7');
+    await tester.pump();
+    expect(find.text('Не понял «7»: страниц всего 2'), findsOneWidget);
   });
 }

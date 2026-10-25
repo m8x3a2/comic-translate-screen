@@ -34,6 +34,7 @@ Future<ExportChoice?> showExportDialog(
   int allCount = 0,
   Set<int> doneIndexes = const {},
   String picked = '',
+  VoidCallback? onExportText,
 }) => showDialog<ExportChoice>(
   context: context,
   builder: (_) => _ExportDialog(
@@ -46,6 +47,7 @@ Future<ExportChoice?> showExportDialog(
     allCount: allCount,
     doneIndexes: doneIndexes,
     picked: picked,
+    onExportText: onExportText,
   ),
 );
 
@@ -60,9 +62,13 @@ class _ExportDialog extends StatefulWidget {
     required this.allCount,
     required this.doneIndexes,
     required this.picked,
+    required this.onExportText,
   });
 
   final ExportSettings initial;
+
+  /// Closes the window for "Export text".
+  final VoidCallback? onExportText;
 
   /// Translated pages (the ones "All" saves).
   final int pageCount;
@@ -398,6 +404,15 @@ class _ExportDialogState extends State<_ExportDialog> {
         ),
       ),
       actions: [
+        if (widget.onExportText != null)
+          TextButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              widget.onExportText!();
+            },
+            icon: const Icon(Icons.notes),
+            label: Text(l.textExportMenu),
+          ),
         TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
         FilledButton(
           onPressed: _ready && (_which != _Which.numbers || _numbered.isNotEmpty)

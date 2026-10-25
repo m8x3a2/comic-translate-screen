@@ -2376,6 +2376,85 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get textExportMenu => 'Выгрузить текст…';
+
+  @override
+  String get textExportTitle => 'Выгрузить текст';
+
+  @override
+  String get textExportHelp =>
+      'Диалоги страниц обычным текстом: оригинал, перевод или оба. Можно сохранить себе или приложить в чат как контекст. Метки — те же, что в обмене с чатом (ALL.txt).';
+
+  @override
+  String textExportAllPages(String count) {
+    return 'Пусто — все страницы ($count)';
+  }
+
+  @override
+  String textExportSomePages(String count) {
+    return 'Страниц: $count';
+  }
+
+  @override
+  String get textExportWhat => 'Что:';
+
+  @override
+  String get textExportOriginal => 'Оригинал';
+
+  @override
+  String get textExportTranslation => 'Перевод';
+
+  @override
+  String get textExportBoth => 'Оба';
+
+  @override
+  String get textExportTwoFiles =>
+      'Два файла: …_original.txt и …_translation.txt (выберете папку).';
+
+  @override
+  String get textExportLabels => 'Метки перед строками: [01-003]';
+
+  @override
+  String get textExportSpeakers => 'Кто говорит: [m] [f] [n]';
+
+  @override
+  String get textExportHeadings => 'Заголовки страниц';
+
+  @override
+  String get textExportHeading => 'Заголовок';
+
+  @override
+  String textExportHeadingHelp(String number, String name) {
+    return '$number — номер страницы, $name — имя её файла. Например: --- $number ---';
+  }
+
+  @override
+  String get textExportPage => 'Страница';
+
+  @override
+  String get textExportPreview => 'Как будет выглядеть';
+
+  @override
+  String get textExportEmpty => '(текста нет)';
+
+  @override
+  String get textExportCopy => 'Копировать';
+
+  @override
+  String get textExportCopyShown => 'Копировать показанный';
+
+  @override
+  String get textExportCopied => 'Скопировано. Вставьте: Ctrl+V.';
+
+  @override
+  String get textExportSave => 'Сохранить…';
+
+  @override
+  String textExportSaved(String paths) {
+    return 'Сохранено:\n$paths';
+  }
+
+  @override
   String get glossaryApply => 'Готово';
 
   @override
