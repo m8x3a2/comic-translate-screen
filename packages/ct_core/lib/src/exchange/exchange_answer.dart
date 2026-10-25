@@ -44,6 +44,19 @@ class ExchangeLabel implements Comparable<ExchangeLabel> {
 
   @override
   int compareTo(ExchangeLabel other) => page != other.page ? page - other.page : block - other.block;
+
+  /// Labels written by the user: `01-002, 03-005`, `[1-2] [3-5]`. Throws
+  /// [FormatException] naming the part that is not a label.
+  static List<ExchangeLabel> parseList(String text) {
+    final labels = <ExchangeLabel>[];
+    for (final part in text.replaceAll(RegExp(r'[\[\]]'), ' ').split(RegExp(r'[,;\s]+'))) {
+      if (part.isEmpty) continue;
+      final label = tryParse(part);
+      if (label == null) throw FormatException(part);
+      if (!labels.contains(label)) labels.add(label);
+    }
+    return labels;
+  }
 }
 
 /// One piece of text sent to the chat.

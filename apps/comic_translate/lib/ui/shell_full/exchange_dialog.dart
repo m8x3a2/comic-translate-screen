@@ -111,6 +111,36 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   var _offerFound = 0;
   String? _seen;
 
+  /// All the pieces of this exchange: the answers count against them in
+  /// every round.
+  List<ExchangeItem>? _allItems;
+  List<ExchangeItem> get _items => _allItems ?? _export?.items ?? const [];
+
+  /// The folder of the whole exchange, while another round is shown.
+  ExchangeExport? _first;
+
+  /// Another round for some pieces (their own folder `again_N` with only
+  /// their pictures): the pieces, the ones the answer had nothing for and
+  /// the ones the user asks again. Null: the whole exchange.
+  List<ExchangeItem>? _round;
+  var _roundMissing = <ExchangeLabel>[];
+  var _roundAgain = <ExchangeLabel>[];
+  Directory? _roundDir;
+  var _rounds = 0;
+
+  /// Answers taken in earlier rounds; a new answer for a piece replaces its
+  /// earlier one.
+  final _accepted = <ExchangeLabel, ExchangeReply>{};
+  final _acceptedUnchanged = <ExchangeLabel>{};
+
+  /// Labels the user asks again (the chat answered them badly).
+  final _askAgain = TextEditingController();
+
+  /// The answers of all rounds together.
+  ExchangeMatch? get _shownMatch => _accepted.isEmpty && _acceptedUnchanged.isEmpty
+      ? _match
+      : combineExchangeMatches(_items, _accepted, _acceptedUnchanged, _match);
+
   ExchangeSettings get _options => ref.read(settingsProvider).exchange;
 
   /// Two answer fields: reading and translating in one message, as two lists.
@@ -124,6 +154,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     final existing = widget.existing;
     if (existing != null) {
       _export = existing.export;
+      _allItems = existing.items;
       _prompt.text = existing.export?.prompt ?? '';
       _dir = Directory(existing.export?.dir ?? '');
     } else {
@@ -145,10 +176,16 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     _strip.dispose();
     _answer.dispose();
     _answer2.dispose();
+    _askAgain.dispose();
     super.dispose();
   }
 
-  List<ExchangePage> get _pages => exchangePages(ref.read(workspaceProvider), widget.request);
+  /// The pages of the exchange; in another round, only with its pieces.
+  List<ExchangePage> get _pages {
+    final pages = exchangePages(ref.read(workspaceProvider), widget.request);
+    final round = _round;
+    return round == null ? pages : exchangePagesOf(pages, round);
+  }
 
   /// Writes the exchange folder again (options changed).
   Future<void> _rebuild() async {
@@ -158,22 +195,26 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     }
     final settings = ref.read(settingsProvider);
     final pages = _pages;
+    final round = _round != null;
     final count = exchangeItems(pages, _mode).length;
     List<List<int>> groups = const [];
-    try {
-      groups = parseSheetGroups(_groups.text, count);
-      _groupsError = null;
-    } on FormatException catch (e) {
-      setState(() => _groupsError = context.l10n.chatGroupsError(e.message, count));
+    // Own groups are numbered among all the pieces: not for another round.
+    if (!round) {
+      try {
+        groups = parseSheetGroups(_groups.text, count);
+        _groupsError = null;
+      } on FormatException catch (e) {
+        setState(() => _groupsError = context.l10n.chatGroupsError(e.message, count));
+      }
     }
     setState(() {
       _exporting = true;
       _exportError = null;
     });
     try {
-      final dir = _dir ??= newExchangeDir(ref.read(servicesProvider).paths);
+      final dir = _roundDir ?? (_dir ??= newExchangeDir(ref.read(servicesProvider).paths));
       final e = settings.exchange;
-      final textsKey = '${_mode.name}|${e.splitFiles}|${e.textFiles.name}';
+      final textsKey = '${dir.path}|${_mode.name}|${e.splitFiles}|${e.textFiles.name}';
       final out = await exportExchange(
         dir,
         ref.read(workspaceProvider),
@@ -183,9 +224,11 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
         groups: groups,
         keepTexts: textsKey == _textsKey,
         promptText: _promptChanged ? _prompt.text : null,
+        lead: round ? exchangeResendLead(missing: _roundMissing, again: _roundAgain) : '',
       );
       _textsKey = textsKey;
       if (!mounted) return;
+      if (!round) _allItems = out.items;
       // The same image files are written again: every size of them shown
       // before is forgotten (the pictures are keyed by [out], so they load
       // again).
@@ -244,7 +287,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     }
     setState(() {
       _fromFiles = null;
-      _match = answer == null ? null : matchExchangeAnswer(export.items, answer, export.mode);
+      _match = answer == null ? null : matchExchangeAnswer(_items, answer, export.mode);
       _suggest('${_answer.text}\n${_answer2.text}');
     });
   }
@@ -302,11 +345,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     final dir = Directory(export.dir);
     final match = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
     if (!mounted) return;
-    for (final c in [_answer, _answer2]) {
-      c.removeListener(_parse);
-      c.clear();
-      c.addListener(_parse);
-    }
+    _clearAnswer();
     // The chat's answer pasted into ALL.txt may suggest words too.
     final all = File(p.join(dir.path, exchangeAllName));
     final allText = await all.exists() ? await all.readAsString() : '';
@@ -354,7 +393,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
             parseExchangeAnswer(lists.$2, ExchangeMode.translate, separator: sep),
           );
     // Lines still as they were sent (the text to translate) are no answer.
-    final found = matchExchangeAnswer(export.items, answer, export.mode, ignoreUnchanged: true).replies.length;
+    final found = matchExchangeAnswer(_items, answer, export.mode, ignoreUnchanged: true).replies.length;
     setState(() {
       _offer = found == 0 ? null : text;
       _offerFound = found;
@@ -451,14 +490,76 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     unawaited(_rebuild());
   }
 
+  /// Clears the answer fields without counting the empty answer.
+  void _clearAnswer() {
+    for (final c in [_answer, _answer2]) {
+      c.removeListener(_parse);
+      c.clear();
+      c.addListener(_parse);
+    }
+  }
+
+  /// Another round for the pieces the answer had nothing for ([missing]) and
+  /// the ones asked again ([again]): what was answered so far is kept, the
+  /// answer fields are for the new answer.
+  Future<void> _startRound(List<ExchangeLabel> missing, List<ExchangeLabel> again) async {
+    final shown = _shownMatch;
+    final labels = {...missing, ...again};
+    _clearAnswer();
+    setState(() {
+      if (shown != null) {
+        _accepted
+          ..clear()
+          ..addAll(shown.replies);
+        _acceptedUnchanged
+          ..clear()
+          ..addAll(shown.unchanged);
+      }
+      _first ??= _export;
+      _rounds++;
+      _round = [
+        for (final it in _items)
+          if (labels.contains(it.label)) it,
+      ];
+      _roundMissing = missing;
+      _roundAgain = again;
+      _roundDir = Directory(p.join(_first!.dir, 'again_$_rounds'));
+      _resetPrompt();
+      _match = null;
+      _fromFiles = null;
+      _note = null;
+      _selected.clear();
+      _page.value = null;
+      _askAgain.clear();
+    });
+    await _rebuild();
+  }
+
+  /// Back to the pictures and instructions of the whole exchange; the
+  /// answers taken stay.
+  void _backToAll() {
+    final first = _first;
+    if (first == null) return;
+    setState(() {
+      _round = null;
+      _roundDir = null;
+      _export = first;
+      _resetPrompt();
+      _prompt.text = first.prompt;
+      _note = null;
+      _selected.clear();
+      _page.value = null;
+    });
+  }
+
   void _apply() {
-    final export = _export, match = _match;
+    final export = _export, match = _shownMatch;
     if (export == null || match == null) return;
     final settings = ref.read(settingsProvider);
     final result = applyExchange(
       ref.read(workspaceProvider.notifier),
       ref.read(workspaceProvider),
-      export.items,
+      _items,
       match,
       export.mode,
       placeholder: settings.exchange.placeholder,
@@ -490,7 +591,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     final existing = widget.existing != null;
     final pages = existing ? widget.existing!.pages.length : widget.request.pageIds.length;
     final count = export?.items.length ?? (existing ? 0 : exchangeItems(_pages, _mode).length);
-    final canApply = export != null && (_match?.replies.isNotEmpty ?? false);
+    final canApply = export != null && (_shownMatch?.replies.isNotEmpty ?? false);
     return Dialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1280, maxHeight: 860),
@@ -512,14 +613,17 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                         ButtonSegment(value: ExchangeMode.translate, label: Text(l.chatModeTranslate)),
                       ],
                       selected: {_mode},
-                      onSelectionChanged: (s) {
-                        setState(() {
-                          _mode = s.first;
-                          _match = null;
-                          _resetPrompt();
-                        });
-                        unawaited(_rebuild());
-                      },
+                      // The answers taken belong to this mode.
+                      onSelectionChanged: _rounds > 0
+                          ? null
+                          : (s) {
+                              setState(() {
+                                _mode = s.first;
+                                _match = null;
+                                _resetPrompt();
+                              });
+                              unawaited(_rebuild());
+                            },
                     )
                   else
                     Chip(label: Text(_modeLabel(l, _mode))),
@@ -650,6 +754,8 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
             width: 220,
             child: TextField(
               controller: _groups,
+              // Numbered among all the pieces: for the whole exchange only.
+              enabled: _round == null,
               decoration: InputDecoration(
                 labelText: l.chatGroups,
                 hintText: l.chatGroupsHint,
@@ -753,6 +859,29 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
             const SizedBox(height: 4),
             Text(pictures.isEmpty ? l.chatStep1TextHelp : l.chatStep1Help, style: theme.textTheme.bodySmall),
             const SizedBox(height: 12),
+            if (_round case final round?) ...[
+              Container(
+                padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.replay, color: theme.colorScheme.onSecondaryContainer),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        l.chatRoundBanner(round.length, _codes([for (final it in round) it.label])),
+                        style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+                      ),
+                    ),
+                    TextButton(onPressed: _backToAll, child: Text(l.chatRoundBack)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (_exporting && export == null)
               Row(
                 children: [
@@ -915,8 +1044,8 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   }
 
   Widget _answerCard(AppLocalizations l, ThemeData theme) {
-    final match = _match;
-    final total = _export?.items.length ?? 0;
+    final match = _shownMatch;
+    final total = _items.length;
     final warn = TextStyle(color: theme.colorScheme.error);
     final s = ref.watch(settingsProvider.select((s) => s.exchange));
     final two = _mode == ExchangeMode.both && s.apart;
@@ -1020,6 +1149,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
               Text(_glossaryNote!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
               const SizedBox(height: 8),
             ],
+            if (_accepted.isNotEmpty) Text(l.chatAccepted(_accepted.length, total)),
             if (match != null) ...[
               Text(
                 l.chatFound(match.replies.length, total),
@@ -1035,6 +1165,8 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
               if (match.missingArrow.isNotEmpty) Text(l.chatNoArrow(sep, _codes(match.missingArrow)), style: warn),
               if (match.repeated.isNotEmpty) Text(l.chatRepeated(_codes(match.repeated))),
               const SizedBox(height: 8),
+              // In another round: once its answer is there.
+              if (_round == null || _match != null) ...[_roundRow(l, theme, match), const SizedBox(height: 8)],
             ],
             if (two)
               Row(
@@ -1078,6 +1210,64 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
           ],
         ),
       ),
+    );
+  }
+
+  /// "Ask again" (labels of pieces answered badly) and the button for
+  /// another round: the missing pieces and the ones asked again.
+  Widget _roundRow(AppLocalizations l, ThemeData theme, ExchangeMatch match) {
+    final missing = match.missing;
+    List<ExchangeLabel> again = const [];
+    String? error;
+    try {
+      final sent = {for (final it in _items) it.label};
+      final written = ExchangeLabel.parseList(_askAgain.text);
+      final unknown = [
+        for (final label in written)
+          if (!sent.contains(label)) label,
+      ];
+      if (unknown.isNotEmpty) error = l.chatAskAgainUnknown(_codes(unknown));
+      again = [
+        for (final label in written)
+          if (sent.contains(label) && !missing.contains(label)) label,
+      ];
+    } on FormatException catch (e) {
+      error = l.chatAskAgainWrong(e.message);
+    }
+    final count = missing.length + again.length;
+    // Nothing missing: the button is for asking again.
+    final label = missing.isEmpty
+        ? l.chatResendAgain(count)
+        : again.isEmpty
+        ? l.chatResendMissing(count)
+        : l.chatResendBoth(count);
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        SizedBox(
+          width: 260,
+          child: TextField(
+            controller: _askAgain,
+            decoration: InputDecoration(
+              isDense: true,
+              border: const OutlineInputBorder(),
+              labelText: l.chatAskAgain,
+              hintText: '01-002, 03-005',
+              errorText: error,
+              errorMaxLines: 2,
+              suffixIcon: InfoHint(l.chatAskAgainInfo),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ),
+        FilledButton.tonalIcon(
+          onPressed: count == 0 || error != null || _exporting ? null : () => _startRound(missing, again),
+          icon: const Icon(Icons.replay),
+          label: Text(label),
+        ),
+      ],
     );
   }
 }

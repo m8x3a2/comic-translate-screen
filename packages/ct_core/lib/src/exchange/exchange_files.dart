@@ -86,6 +86,25 @@ List<ExchangeItem> exchangeItems(List<ExchangePage> pages, ExchangeMode mode) =>
         ),
 ];
 
+/// [pages] with only the blocks of [items] (a second round for some
+/// pieces); pages without any of them are left out.
+List<ExchangePage> exchangePagesOf(List<ExchangePage> pages, List<ExchangeItem> items) => [
+  for (final page in pages)
+    if ([
+          for (final it in items)
+            if (it.pageId == page.id) it.blockIndex,
+        ]
+        case final only when only.isNotEmpty)
+      ExchangePage(
+        id: page.id,
+        number: page.number,
+        name: page.name,
+        blocks: page.blocks,
+        image: page.image,
+        only: only,
+      ),
+];
+
 /// What [writeExchange] made.
 class ExchangeExport {
   const ExchangeExport({
@@ -128,6 +147,7 @@ class ExchangeExport {
 /// into them). With [ExchangeSettings.sharedTexts], the files the user wrote
 /// into stay anyway (another mode, other options), with the labels they lack
 /// added. [promptText]: instructions changed by the user for this time.
+/// [lead]: put before the instructions made here (see [exchangeResendLead]).
 Future<ExchangeExport> writeExchange(
   Directory dir,
   List<ExchangePage> pages,
@@ -141,6 +161,7 @@ Future<ExchangeExport> writeExchange(
   List<List<int>> groups = const [],
   bool keepTexts = false,
   String? promptText,
+  String lead = '',
   bool previews = false,
 }) async {
   await dir.create(recursive: true);
@@ -263,19 +284,22 @@ Future<ExchangeExport> writeExchange(
   final kind = settings.promptKind(mode);
   final prompt =
       promptText ??
-      exchangePrompt(
-        kind,
-        items,
-        sourceLanguage: sourceLanguage,
-        targetLanguage: targetLanguage,
-        template: settings.promptFor(kind),
-        extraContext: extraContext,
-        screens: screens,
-        contextPictures: contextWanted,
-        separator: settings.separator,
-        glossary: glossary,
-        styles: settings.chosenStyles,
-      );
+      [
+        if (lead.isNotEmpty) lead,
+        exchangePrompt(
+          kind,
+          items,
+          sourceLanguage: sourceLanguage,
+          targetLanguage: targetLanguage,
+          template: settings.promptFor(kind),
+          extraContext: extraContext,
+          screens: screens,
+          contextPictures: contextWanted,
+          separator: settings.separator,
+          glossary: glossary,
+          styles: settings.chosenStyles,
+        ),
+      ].join('\n\n');
   await File(p.join(dir.path, exchangePromptName)).writeAsString(prompt);
 
   // The text files show what the bubbles have now, the same in every mode:
@@ -514,6 +538,34 @@ ExchangeMatch matchExchangeAnswer(
       for (final e in sources.entries)
         if (replies.containsKey(e.key)) e.key: e.value,
     },
+  );
+}
+
+/// The answers taken in earlier rounds ([earlierReplies], [earlierUnchanged])
+/// with the answer of this round ([now], may be null) over all [items]: a
+/// new answer for a piece replaces the earlier one.
+ExchangeMatch combineExchangeMatches(
+  List<ExchangeItem> items,
+  Map<ExchangeLabel, ExchangeReply> earlierReplies,
+  Set<ExchangeLabel> earlierUnchanged,
+  ExchangeMatch? now,
+) {
+  final replies = {...earlierReplies, ...?now?.replies};
+  final unchanged = {...earlierUnchanged, ...?now?.unchanged}..removeAll(replies.keys);
+  return ExchangeMatch(
+    replies: replies,
+    missing: [
+      for (final it in items)
+        if (!replies.containsKey(it.label) && !unchanged.contains(it.label)) it.label,
+    ],
+    unchanged: [
+      for (final it in items)
+        if (unchanged.contains(it.label)) it.label,
+    ],
+    unknown: now?.unknown ?? const [],
+    missingArrow: now?.missingArrow ?? const [],
+    repeated: now?.repeated ?? const [],
+    sources: now?.sources ?? const {},
   );
 }
 

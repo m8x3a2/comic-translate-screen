@@ -2613,6 +2613,51 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String chatAccepted(int count, int total) {
+    return 'Уже принято из прошлых ответов: $count из $total';
+  }
+
+  @override
+  String get chatAskAgain => 'Ещё спросить';
+
+  @override
+  String get chatAskAgainInfo =>
+      'Чат ответил на все пузыри, но где-то плохо (неверный перевод, ошибка при чтении с картинки)? Впишите сюда метки этих пузырей через запятую: 01-002, 03-005. Кнопка рядом подготовит короткий запрос только на них — их картинки и инструкцию. Отправьте его в тот же чат и вставьте ответ: новый ответ заменит старый у этих пузырей, ответы остальных пузырей сохранятся. Пузыри совсем без ответа добавляются сами.';
+
+  @override
+  String chatAskAgainWrong(String part) {
+    return 'Это не метка: «$part»';
+  }
+
+  @override
+  String chatAskAgainUnknown(String labels) {
+    return 'Таких меток не было: $labels';
+  }
+
+  @override
+  String chatResendMissing(int count) {
+    return 'Дослать недостающее ($count)';
+  }
+
+  @override
+  String chatResendAgain(int count) {
+    return 'Спросить ещё раз ($count)';
+  }
+
+  @override
+  String chatResendBoth(int count) {
+    return 'Дослать и переспросить ($count)';
+  }
+
+  @override
+  String chatRoundBanner(int count, String labels) {
+    return 'Досылка: пузырей — $count ($labels). Картинки и инструкция здесь — только для них; ответ чата вставьте справа.';
+  }
+
+  @override
+  String get chatRoundBack => 'Вернуться к полной выгрузке';
+
+  @override
   String chatUnchanged(int count) {
     return 'Без изменений (как в пузырях сейчас): $count';
   }

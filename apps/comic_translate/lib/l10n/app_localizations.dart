@@ -4526,6 +4526,66 @@ abstract class AppLocalizations {
   /// **'No answer: {labels}'**
   String chatMissing(String labels);
 
+  /// No description provided for @chatAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken from earlier answers: {count} of {total}'**
+  String chatAccepted(int count, int total);
+
+  /// No description provided for @chatAskAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask again'**
+  String get chatAskAgain;
+
+  /// No description provided for @chatAskAgainInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The chat answered every bubble, but some badly (a wrong translation, a misread picture)? Write their labels here, with commas: 01-002, 03-005. The button next to it prepares a short request for them only: their pictures and instructions. Send it to the same chat and paste its answer: the new answer replaces the old one of these bubbles, the answers of the other bubbles stay. Bubbles with no answer at all are added by themselves.'**
+  String get chatAskAgainInfo;
+
+  /// No description provided for @chatAskAgainWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a label: “{part}”'**
+  String chatAskAgainWrong(String part);
+
+  /// No description provided for @chatAskAgainUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'These were not sent: {labels}'**
+  String chatAskAgainUnknown(String labels);
+
+  /// No description provided for @chatResendMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the missing ones ({count})'**
+  String chatResendMissing(int count);
+
+  /// No description provided for @chatResendAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask again ({count})'**
+  String chatResendAgain(int count);
+
+  /// No description provided for @chatResendBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the missing ones and ask again ({count})'**
+  String chatResendBoth(int count);
+
+  /// No description provided for @chatRoundBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Another round: bubbles — {count} ({labels}). The pictures and instructions here are for them only; paste the chat\'s answer on the right.'**
+  String chatRoundBanner(int count, String labels);
+
+  /// No description provided for @chatRoundBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the whole exchange'**
+  String get chatRoundBack;
+
   /// No description provided for @chatUnchanged.
   ///
   /// In en, this message translates to:

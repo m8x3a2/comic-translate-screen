@@ -460,6 +460,73 @@ void main() {
       expect(m.sources, {const ExchangeLabel(1, 1): 'ALL.txt', const ExchangeLabel(2, 1): 'page_02.txt'});
       expect(m.missing, isEmpty);
     });
+
+    test('another round for some pieces: only their pictures, the reason before the instructions', () async {
+      const settings = ExchangeSettings(contextImage: ContextImage.separate);
+      final first = await writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.both,
+        settings,
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+      );
+      final again = [first.items[1], first.items[2]];
+      final second = await writeExchange(
+        Directory(p.join(dir.path, 'again_1')),
+        exchangePagesOf(pages(), again),
+        ExchangeMode.both,
+        settings,
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+        lead: exchangeResendLead(missing: [again[0].label], again: [again[1].label]),
+      );
+      expect([for (final i in second.items) i.label.code], ['01-002', '02-001'], reason: 'the labels stay');
+      expect(second.pictures, ['page_01_context.jpg', 'page_02_context.jpg', 'sheet_01.png']);
+      expect(
+        second.prompt,
+        startsWith(
+          'Your previous answer had nothing for these labels: [01-002]. '
+          'Answer again for these labels, the previous answer was not good: [02-001]. '
+          'Answer only for them, in the same form as asked below.\n\n',
+        ),
+      );
+      expect(
+        exchangeResendLead(missing: [again[0].label]),
+        endsWith('Answer only for it, in the same form as asked below.'),
+      );
+      expect(first.pictures, isNotEmpty, reason: 'the first folder stays as it was');
+      expect(File(p.join(dir.path, 'sheet_01.png')).existsSync(), isTrue);
+    });
+
+    test('the answers of two rounds together: a new answer replaces the earlier one', () {
+      final items = [
+        for (final (i, l) in [const ExchangeLabel(1, 1), const ExchangeLabel(1, 2), const ExchangeLabel(2, 1)].indexed)
+          ExchangeItem(label: l, pageId: 'p', blockIndex: i, box: const BBox(0, 0, 1, 1), text: 'T$i'),
+      ];
+      final first = {const ExchangeLabel(1, 1): const ExchangeReply(translation: 'плохо')};
+      final now = matchExchangeAnswer(
+        items,
+        parseExchangeAnswer('[01-001] хорошо\n[01-002] два', ExchangeMode.translate),
+        ExchangeMode.translate,
+      );
+      final both = combineExchangeMatches(items, first, {const ExchangeLabel(2, 1)}, now);
+      expect(
+        {for (final e in both.replies.entries) e.key.code: e.value.translation},
+        {'01-001': 'хорошо', '01-002': 'два'},
+      );
+      expect(both.unchanged, [const ExchangeLabel(2, 1)]);
+      expect(both.missing, isEmpty);
+      final nothingYet = combineExchangeMatches(items, first, const {}, null);
+      expect(nothingYet.replies.keys, [const ExchangeLabel(1, 1)]);
+      expect(nothingYet.missing, [const ExchangeLabel(1, 2), const ExchangeLabel(2, 1)]);
+    });
+  });
+
+  test('labels written by the user', () {
+    expect(ExchangeLabel.parseList('01-002, [3-5] 01-002;  ').map((l) => l.code), ['01-002', '03-005']);
+    expect(() => ExchangeLabel.parseList('01-002, abc'), throwsA(isA<FormatException>()));
+    expect(ExchangeLabel.parseList(' '), isEmpty);
   });
 
   test('settings survive a round trip and wrong values fall back', () {

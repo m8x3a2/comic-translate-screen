@@ -582,6 +582,7 @@ void main() {
     expect(find.text('Найдено ответов: 2 из 2'), findsOneWidget);
     expect(find.text('Maya --> Майя'), findsOneWidget);
     expect(find.text('Kai --> Каи'), findsNothing, reason: 'the glossary has Kai');
+    await tester.ensureVisible(find.text('Добавить в словарь'));
     await tester.tap(find.text('Добавить в словарь'));
     await tester.pump();
     expect(container.read(workspaceProvider).glossary, 'Kai --> Кай\nMaya --> Майя\n');
@@ -673,5 +674,77 @@ void main() {
     await tester.enterText(find.byType(TextField).first, '7');
     await tester.pump();
     expect(find.text('Не понял «7»: страниц всего 2'), findsOneWidget);
+  });
+
+  testWidgets('another round for the missing pieces and the ones asked again; earlier answers stay', (tester) async {
+    await tester.runAsync(() => start(fakeSettings()));
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [for (final p in pages()) p.id], mode: ExchangeMode.translate),
+      'Копировать текст',
+      ['Hello', 'Bye'],
+    );
+    final folder = Directory(p.join(dir.path, 'exchange')).listSync().single.path;
+    Future<void> waitFor(String text) async {
+      for (var i = 0; i < 80 && find.textContaining(text).evaluate().isEmpty; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+      }
+      expect(find.textContaining(text), findsOneWidget);
+    }
+
+    await tester.enterText(find.byType(TextField).last, '[01-001] плохо\n[01-002] Пока\n[02-001] Привет');
+    await tester.pump();
+    expect(find.text('Нет ответа: 02-002'), findsOneWidget);
+    await tester.tap(find.text('Дослать недостающее (1)'));
+    await waitFor('Досылка: пузырей — 1 (02-002)');
+    expect(
+      File(p.join(folder, 'again_1', 'prompt.txt')).readAsStringSync(),
+      startsWith('Your previous answer had nothing for these labels: [02-002]. Answer only for it'),
+    );
+    expect(File(p.join(folder, 'again_1', 'ALL.txt')).readAsStringSync(), '[02-002] Bye -->\n');
+    expect(find.text('Уже принято из прошлых ответов: 3 из 4'), findsOneWidget);
+    expect(find.text('Найдено ответов: 3 из 4'), findsOneWidget);
+    expect(find.text('Дослать недостающее (1)'), findsNothing, reason: 'not before the answer of this round');
+    expect((tester.widget<TextField>(find.byType(TextField).last)).controller!.text, isEmpty);
+
+    // The answer of this round: all of them.
+    await tester.enterText(find.byType(TextField).last, '[02-002] Пока-пока');
+    await tester.pump();
+    expect(find.text('Найдено ответов: 4 из 4'), findsOneWidget);
+
+    // Asked again: a wrong label is told, a good one makes another round.
+    final again = find.widgetWithText(TextField, 'Ещё спросить');
+    await tester.enterText(again, '01-001, abc');
+    await tester.pump();
+    expect(find.text('Это не метка: «abc»'), findsOneWidget);
+    await tester.enterText(again, '01-001 09-001');
+    await tester.pump();
+    expect(find.text('Таких меток не было: 09-001'), findsOneWidget);
+    await tester.enterText(again, '01-001');
+    await tester.pump();
+    await tester.tap(find.text('Спросить ещё раз (1)'));
+    await waitFor('Досылка: пузырей — 1 (01-001)');
+    expect(
+      File(p.join(folder, 'again_2', 'prompt.txt')).readAsStringSync(),
+      startsWith('Answer again for these labels, the previous answer was not good: [01-001].'),
+    );
+    expect(find.text('Уже принято из прошлых ответов: 4 из 4'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).last, '[01-001] Здравствуй');
+    await tester.pump();
+
+    // Back to the whole exchange: the answers taken stay.
+    await tester.tap(find.text('Вернуться к полной выгрузке'));
+    await tester.pump();
+    expect(find.textContaining('Досылка'), findsNothing);
+    await tester.tap(find.text('Применить'));
+    await tester.pumpAndSettle();
+    expect(
+      [
+        for (final page in pages())
+          for (final b in page.blocks) b.translation,
+      ],
+      ['Здравствуй', 'Пока', 'Привет', 'Пока-пока'],
+    );
   });
 }

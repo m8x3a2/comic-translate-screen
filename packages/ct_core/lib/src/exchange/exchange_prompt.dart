@@ -140,4 +140,13 @@ String exchangeSpeakers(List<ExchangeItem> items, {required bool inLines}) {
   return 'Who speaks: ${[for (final i in told) '${i.label} ${i.speaker!.words}'].join('; ')}. $use';
 }
 
+/// Before the instructions of another round for some pieces: the ones the
+/// previous answer had nothing for ([missing]) and the ones the user asks
+/// again ([again]). The chat answers only for them, as it did before.
+String exchangeResendLead({List<ExchangeLabel> missing = const [], List<ExchangeLabel> again = const []}) => [
+  if (missing.isNotEmpty) 'Your previous answer had nothing for these labels: ${missing.join(', ')}.',
+  if (again.isNotEmpty) 'Answer again for these labels, the previous answer was not good: ${again.join(', ')}.',
+  'Answer only for ${missing.length + again.length == 1 ? 'it' : 'them'}, in the same form as asked below.',
+].join(' ');
+
 String _oneLine(String s) => s.replaceAll(RegExp(r'\s*\n\s*'), ' ').trim();

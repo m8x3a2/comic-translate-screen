@@ -2611,6 +2611,51 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String chatAccepted(int count, int total) {
+    return 'Taken from earlier answers: $count of $total';
+  }
+
+  @override
+  String get chatAskAgain => 'Ask again';
+
+  @override
+  String get chatAskAgainInfo =>
+      'The chat answered every bubble, but some badly (a wrong translation, a misread picture)? Write their labels here, with commas: 01-002, 03-005. The button next to it prepares a short request for them only: their pictures and instructions. Send it to the same chat and paste its answer: the new answer replaces the old one of these bubbles, the answers of the other bubbles stay. Bubbles with no answer at all are added by themselves.';
+
+  @override
+  String chatAskAgainWrong(String part) {
+    return 'Not a label: “$part”';
+  }
+
+  @override
+  String chatAskAgainUnknown(String labels) {
+    return 'These were not sent: $labels';
+  }
+
+  @override
+  String chatResendMissing(int count) {
+    return 'Send the missing ones ($count)';
+  }
+
+  @override
+  String chatResendAgain(int count) {
+    return 'Ask again ($count)';
+  }
+
+  @override
+  String chatResendBoth(int count) {
+    return 'Send the missing ones and ask again ($count)';
+  }
+
+  @override
+  String chatRoundBanner(int count, String labels) {
+    return 'Another round: bubbles — $count ($labels). The pictures and instructions here are for them only; paste the chat\'s answer on the right.';
+  }
+
+  @override
+  String get chatRoundBack => 'Back to the whole exchange';
+
+  @override
   String chatUnchanged(int count) {
     return 'Unchanged (as the bubbles are now): $count';
   }

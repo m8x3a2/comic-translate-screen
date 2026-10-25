@@ -82,7 +82,7 @@ List<ExchangePage> exchangePages(WorkspaceState ws, ExchangeRequest request) => 
 ];
 
 /// Writes the exchange folder for [pages] in the background (see
-/// [writeExchange] for [keepTexts] and [promptText]).
+/// [writeExchange] for [keepTexts], [promptText] and [lead]).
 Future<ExchangeExport> exportExchange(
   Directory dir,
   WorkspaceState ws,
@@ -92,6 +92,7 @@ Future<ExchangeExport> exportExchange(
   List<List<int>> groups = const [],
   bool keepTexts = false,
   String? promptText,
+  String lead = '',
 }) {
   final first = ws.byId(pages.isEmpty ? '' : pages.first.id);
   final source = first?.sourceOf(settings) ?? settings.sourceLanguage;
@@ -128,6 +129,7 @@ Future<ExchangeExport> exportExchange(
       groups: groups,
       keepTexts: keepTexts,
       promptText: promptText,
+      lead: lead,
       previews: true,
     );
   });

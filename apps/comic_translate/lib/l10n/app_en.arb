@@ -1721,6 +1721,71 @@
       }
     }
   },
+  "chatAccepted": "Taken from earlier answers: {count} of {total}",
+  "@chatAccepted": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "chatAskAgain": "Ask again",
+  "chatAskAgainInfo": "The chat answered every bubble, but some badly (a wrong translation, a misread picture)? Write their labels here, with commas: 01-002, 03-005. The button next to it prepares a short request for them only: their pictures and instructions. Send it to the same chat and paste its answer: the new answer replaces the old one of these bubbles, the answers of the other bubbles stay. Bubbles with no answer at all are added by themselves.",
+  "chatAskAgainWrong": "Not a label: “{part}”",
+  "@chatAskAgainWrong": {
+    "placeholders": {
+      "part": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAskAgainUnknown": "These were not sent: {labels}",
+  "@chatAskAgainUnknown": {
+    "placeholders": {
+      "labels": {
+        "type": "String"
+      }
+    }
+  },
+  "chatResendMissing": "Send the missing ones ({count})",
+  "@chatResendMissing": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatResendAgain": "Ask again ({count})",
+  "@chatResendAgain": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatResendBoth": "Send the missing ones and ask again ({count})",
+  "@chatResendBoth": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatRoundBanner": "Another round: bubbles — {count} ({labels}). The pictures and instructions here are for them only; paste the chat's answer on the right.",
+  "@chatRoundBanner": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "labels": {
+        "type": "String"
+      }
+    }
+  },
+  "chatRoundBack": "Back to the whole exchange",
   "chatUnchanged": "Unchanged (as the bubbles are now): {count}",
   "@chatUnchanged": {
     "placeholders": {
