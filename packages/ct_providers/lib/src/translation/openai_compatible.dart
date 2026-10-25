@@ -20,7 +20,8 @@ const openAiCompatibleInfo = PluginInfo(
     TextSetting(
       key: 'api_url',
       label: 'API URL',
-      help: 'Base URL ending in /v1, e.g. https://openrouter.ai/api/v1 or http://localhost:11434/v1 (Ollama).',
+      help: 'Base URL ending in /v1, e.g. http://localhost:11434/v1 (Ollama). Empty: OpenRouter '
+          '(https://openrouter.ai/api/v1).',
       placeholder: 'https://openrouter.ai/api/v1',
       isUrl: true,
     ),
@@ -48,6 +49,10 @@ const openAiCompatibleInfo = PluginInfo(
       key: 'token_limit_param',
       label: 'Length limit parameter',
       help: 'Name of the length limit field the server expects. Use max_tokens for older servers, none to omit it.',
+      info: 'With each request the program tells the server the longest answer it wants ("Maximum answer '
+          'length" above). Servers expect it under different names: max_completion_tokens is the new one '
+          '(OpenRouter, OpenAI), max_tokens the old one (many local servers and older models), none leaves it '
+          'out. Change it only when the server answers with an error about this parameter.',
       options: {'max_completion_tokens': 'max_completion_tokens', 'max_tokens': 'max_tokens', 'none': 'none'},
       defaultValue: 'max_completion_tokens',
     ),
@@ -67,7 +72,7 @@ const openAiCompatibleInfo = PluginInfo(
 
 final openAiCompatibleFactory = PluginFactory<Translator>(openAiCompatibleInfo, (config, env) async {
   return OpenAiCompatibleTranslator(
-    apiUrl: config.value<String>('api_url'),
+    apiUrl: openAiCompatibleUrl(config),
     model: config.value<String>('model'),
     apiKey: config.secret('api_key') ?? '',
     temperature: config.value<double>('temperature'),
@@ -77,11 +82,20 @@ final openAiCompatibleFactory = PluginFactory<Translator>(openAiCompatibleInfo, 
   );
 });
 
+/// The server most people use; an empty API URL means it.
+const openRouterApiUrl = 'https://openrouter.ai/api/v1';
+
+/// The API URL of [config] without the slashes at the end; empty: OpenRouter.
+String openAiCompatibleUrl(PluginConfig config) {
+  final url = config.value<String>('api_url').trim().replaceAll(RegExp(r'/+$'), '');
+  return url.isEmpty ? openRouterApiUrl : url;
+}
+
 /// Where a configuration sends data: on this computer for `localhost`, the
 /// local network for private addresses and `.local` names, otherwise the
 /// internet.
 PluginEndpoint openAiCompatibleEndpoint(PluginConfig config) {
-  final host = Uri.tryParse(config.value<String>('api_url').trim())?.host.toLowerCase() ?? '';
+  final host = Uri.tryParse(openAiCompatibleUrl(config))?.host.toLowerCase() ?? '';
   return PluginEndpoint(privacyOfHost(host), host);
 }
 
@@ -390,7 +404,7 @@ class _RetryAfter extends TranslationException {
 /// OpenRouter tells what is left of a key's limit; other servers have no
 /// such request.
 KeyStatusQuery? openAiCompatibleKeyStatus(PluginConfig config) {
-  final base = config.value<String>('api_url').trim().replaceAll(RegExp(r'/+$'), '');
+  final base = openAiCompatibleUrl(config);
   final uri = Uri.tryParse(base);
   if (uri == null || uri.host.toLowerCase() != 'openrouter.ai') return null;
   final key = config.secret('api_key') ?? '';
@@ -420,7 +434,7 @@ Future<KeyStatus> fetchOpenRouterKeyStatus(
 /// The models OpenRouter offers can be listed (no key needed); other
 /// servers are not asked.
 ModelCatalogQuery? openAiCompatibleModelCatalog(PluginConfig config) {
-  final base = config.value<String>('api_url').trim().replaceAll(RegExp(r'/+$'), '');
+  final base = openAiCompatibleUrl(config);
   final uri = Uri.tryParse(base);
   if (uri == null || uri.host.toLowerCase() != 'openrouter.ai') return null;
   return ModelCatalogQuery(

@@ -83,8 +83,8 @@ const _ru = <String, String>{
       'OpenAI, DeepSeek или локальный LM Studio / Ollama / llama.cpp.',
   'openai_compatible.api_url': 'Адрес API',
   'openai_compatible.api_url.help':
-      'Адрес, оканчивающийся на /v1, например https://openrouter.ai/api/v1 или '
-      'http://localhost:11434/v1 (Ollama).',
+      'Адрес, оканчивающийся на /v1, например http://localhost:11434/v1 (Ollama). '
+      'Пусто — OpenRouter (https://openrouter.ai/api/v1).',
   'openai_compatible.model': 'Модель',
   'openai_compatible.api_key': 'Ключ API',
   'openai_compatible.api_key.help': 'Для большинства локальных серверов не нужен.',
@@ -100,6 +100,12 @@ const _ru = <String, String>{
   'openai_compatible.token_limit_param.help':
       'Как сервер называет ограничение длины: max_tokens для старых серверов, '
       'none — не передавать.',
+  'openai_compatible.token_limit_param.info':
+      'Вместе с запросом программа говорит серверу, какой самый длинный ответ ей нужен '
+      '(«Наибольшая длина ответа» выше). Разные серверы ждут это под разными названиями. '
+      'max_completion_tokens — новое название (OpenRouter, OpenAI), max_tokens — старое (многие локальные '
+      'серверы и старые модели), none — не передавать вовсе. Менять, только если сервер отвечает ошибкой '
+      'про этот параметр.',
   'openai_compatible.timeout': 'Время ожидания (секунды)',
   'openai_compatible.timeout.info':
       'Сколько ждать ответа сервера. Медленные бесплатные модели и локальные серверы на слабом компьютере '

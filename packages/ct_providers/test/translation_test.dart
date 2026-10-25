@@ -417,6 +417,10 @@ void main() {
     expect(openAiCompatibleInfo.modelCatalog!(config('http://localhost:11434/v1')), isNull);
     final query = openAiCompatibleInfo.modelCatalog!(config('https://openrouter.ai/api/v1/'))!;
     expect((query.host, query.settingKey), ('openrouter.ai', 'model'));
+    // An empty API URL is OpenRouter: the list, the key details and where the text goes.
+    expect(openAiCompatibleInfo.modelCatalog!(config(' '))!.host, 'openrouter.ai');
+    expect(openAiCompatibleInfo.keyStatus!(config(''))!.host, 'openrouter.ai');
+    expect(openAiCompatibleInfo.endpointFor(config(''))!.host, 'openrouter.ai');
 
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     addTearDown(() => server.close(force: true));
