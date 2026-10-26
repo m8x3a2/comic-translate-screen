@@ -4991,8 +4991,50 @@ abstract class AppLocalizations {
   /// No description provided for @chatMenuFolder.
   ///
   /// In en, this message translates to:
-  /// **'Answer for an earlier exchange…'**
+  /// **'Open an earlier exchange…'**
   String get chatMenuFolder;
+
+  /// No description provided for @chatHelpMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Help on the exchange…'**
+  String get chatHelpMenu;
+
+  /// No description provided for @chatHelpTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Help on the exchange with a chat AI'**
+  String get chatHelpTooltip;
+
+  /// No description provided for @chatHelpSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Help on the exchange'**
+  String get chatHelpSettings;
+
+  /// No description provided for @helpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get helpTitle;
+
+  /// No description provided for @helpOpenElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in another app'**
+  String get helpOpenElsewhere;
+
+  /// No description provided for @helpOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open it in another app. The help file: {path}'**
+  String helpOpenFailed(String path);
+
+  /// No description provided for @helpSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved: {path}'**
+  String helpSaved(String path);
 
   /// No description provided for @chatNotExchangeFolder.
   ///
@@ -5009,7 +5051,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatSettingsHelp.
   ///
   /// In en, this message translates to:
-  /// **'The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Tools → Reading.'**
+  /// **'The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Recognition and cleaning.'**
   String get chatSettingsHelp;
 
   /// No description provided for @chatTogether.

@@ -2914,7 +2914,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatMenuTranslate => 'Translate through a chat…';
 
   @override
-  String get chatMenuFolder => 'Answer for an earlier exchange…';
+  String get chatMenuFolder => 'Open an earlier exchange…';
+
+  @override
+  String get chatHelpMenu => 'Help on the exchange…';
+
+  @override
+  String get chatHelpTooltip => 'Help on the exchange with a chat AI';
+
+  @override
+  String get chatHelpSettings => 'Help on the exchange';
+
+  @override
+  String get helpTitle => 'Help';
+
+  @override
+  String get helpOpenElsewhere => 'Open in another app';
+
+  @override
+  String helpOpenFailed(String path) {
+    return 'Could not open it in another app. The help file: $path';
+  }
+
+  @override
+  String helpSaved(String path) {
+    return 'Saved: $path';
+  }
 
   @override
   String get chatNotExchangeFolder =>
@@ -2925,7 +2950,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatSettingsHelp =>
-      'The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Tools → Reading.';
+      'The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Recognition and cleaning.';
 
   @override
   String get chatTogether => 'Read and translate in one message';

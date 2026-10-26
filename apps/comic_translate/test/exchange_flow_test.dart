@@ -450,6 +450,8 @@ void main() {
     );
     expect(find.text('стр. 1 · 1'), findsOneWidget);
     expect(find.text('стр. 2 · 2'), findsOneWidget);
+    // At the bottom of the scrolled part of the window.
+    await tester.ensureVisible(find.text('Все страницы (2)'));
     await tester.tap(find.text('Все страницы (2)'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Страница 2 (1)').last);
@@ -478,6 +480,7 @@ void main() {
       'стр. 1–2 · 1–2',
       ['Hello'],
     );
+    await tester.ensureVisible(find.text('Все страницы (1)'));
     await tester.tap(find.text('Все страницы (1)'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Страница 2 (1)').last);

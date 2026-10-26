@@ -19,6 +19,7 @@ import '../../services/file_clipboard.dart';
 import '../../state/app_state.dart';
 import '../../state/exchange.dart';
 import '../../state/workspace.dart';
+import '../common/help_dialog.dart';
 import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../settings/settings_screen.dart';
@@ -605,6 +606,14 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                   Icon(Icons.forum_outlined, color: theme.colorScheme.primary),
                   const SizedBox(width: 12),
                   Expanded(child: Text(l.chatTitle, style: theme.textTheme.titleLarge)),
+                  IconButton(
+                    tooltip: l.chatHelpTooltip,
+                    // As high as the switch of the modes: the window keeps its room.
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => showHelp(context, HelpTopic.exchange),
+                    icon: const Icon(Icons.help_outline),
+                  ),
+                  const SizedBox(width: 8),
                   if (!widget.request.modeFixed && !existing)
                     SegmentedButton<ExchangeMode>(
                       segments: [

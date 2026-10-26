@@ -2916,7 +2916,32 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatMenuTranslate => 'Перевести через чат…';
 
   @override
-  String get chatMenuFolder => 'Ответ для прошлой выгрузки…';
+  String get chatMenuFolder => 'Открыть прошлую выгрузку…';
+
+  @override
+  String get chatHelpMenu => 'Справка по обмену с чатом…';
+
+  @override
+  String get chatHelpTooltip => 'Справка по обмену с чатом';
+
+  @override
+  String get chatHelpSettings => 'Справка по обмену с чатом';
+
+  @override
+  String get helpTitle => 'Справка';
+
+  @override
+  String get helpOpenElsewhere => 'Открыть в другой программе';
+
+  @override
+  String helpOpenFailed(String path) {
+    return 'Не удалось открыть другой программой. Файл справки: $path';
+  }
+
+  @override
+  String helpSaved(String path) {
+    return 'Сохранено: $path';
+  }
 
   @override
   String get chatNotExchangeFolder =>
@@ -2927,7 +2952,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get chatSettingsHelp =>
-      'Кнопка «Чат» на главном экране работает при любых настройках. Чтобы «Перевести всё» само открывало обмен, выберите «Вручную через чат» в разделе «Переводчик» и/или в «Инструменты → Распознавание».';
+      'Кнопка «Чат» на главном экране работает при любых настройках. Чтобы «Перевести всё» само открывало обмен, выберите «Вручную через чат» в разделе «Переводчик» и/или в разделе «Распознавание и очистка».';
 
   @override
   String get chatTogether => 'Распознавать и переводить одним сообщением';

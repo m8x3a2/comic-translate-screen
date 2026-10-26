@@ -28,6 +28,7 @@ import '../../state/project.dart';
 import '../../state/steps.dart';
 import '../../state/window_mode.dart';
 import '../../state/workspace.dart';
+import '../common/help_dialog.dart';
 import '../common/key_bindings.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
@@ -982,6 +983,12 @@ class _TopBar extends ConsumerWidget {
             leadingIcon: const Icon(Icons.notes),
             onPressed: hasPages ? () => showTextExportDialog(context) : null,
             child: Text(l.textExportMenu),
+          ),
+          const Divider(),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.help_outline),
+            onPressed: () => showHelp(context, HelpTopic.exchange),
+            child: Text(l.chatHelpMenu),
           ),
         ];
         return Padding(

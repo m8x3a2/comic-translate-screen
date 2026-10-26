@@ -16,6 +16,7 @@ import '../../render/text_renderer.dart' show defaultFontFamily;
 import '../common/content_kind_switch.dart';
 import '../common/fonts.dart';
 import '../shell_full/font_suggest.dart';
+import '../common/help_dialog.dart';
 import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../common/plugin_form.dart';
@@ -1197,6 +1198,15 @@ class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
         SettingsGroup(
           children: [
             Text(l.chatSettingsHelp, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                onPressed: () => showHelp(context, HelpTopic.exchange),
+                icon: const Icon(Icons.help_outline),
+                label: Text(l.chatHelpSettings),
+              ),
+            ),
             const SizedBox(height: 8),
             _switch(l.chatTogether, e.together, (v) => set((e) => e.copyWith(together: v)), help: l.chatTogetherHelp),
             _switch(l.chatApart, e.apart, (v) => set((e) => e.copyWith(apart: v)), help: l.chatApartHelp),

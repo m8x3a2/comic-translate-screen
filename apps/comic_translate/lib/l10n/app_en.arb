@@ -2039,10 +2039,31 @@
   "chatMenuBoth": "Read and translate through a chat…",
   "chatMenuRecognize": "Read through a chat…",
   "chatMenuTranslate": "Translate through a chat…",
-  "chatMenuFolder": "Answer for an earlier exchange…",
+  "chatMenuFolder": "Open an earlier exchange…",
+  "chatHelpMenu": "Help on the exchange…",
+  "chatHelpTooltip": "Help on the exchange with a chat AI",
+  "chatHelpSettings": "Help on the exchange",
+  "helpTitle": "Help",
+  "helpOpenElsewhere": "Open in another app",
+  "helpOpenFailed": "Could not open it in another app. The help file: {path}",
+  "@helpOpenFailed": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "helpSaved": "Saved: {path}",
+  "@helpSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
   "chatNotExchangeFolder": "This folder has no exchange.json: it is not an exchange folder.",
   "stageExchange": "Waiting for the chat's answer",
-  "chatSettingsHelp": "The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Tools → Reading.",
+  "chatSettingsHelp": "The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Recognition and cleaning.",
   "chatTogether": "Read and translate in one message",
   "chatTogetherHelp": "When both go through the chat. Off: first the reading, then a second round with the text to translate.",
   "chatPicturesTitle": "Pictures",

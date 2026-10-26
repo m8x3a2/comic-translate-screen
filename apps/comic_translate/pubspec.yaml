@@ -28,6 +28,7 @@ dependencies:
   pdfium_dart: ^0.3.1
   ffi: ^2.2.0
   url_launcher: ^6.3.3
+  flutter_markdown_plus: ^1.0.12
 
 dev_dependencies:
   flutter_test:
@@ -114,6 +115,8 @@ flutter:
   assets:
     - assets/fonts/
     - assets/samples/speed_test_page.jpg
+    # Help pages, one per topic and language (lib/ui/common/help_dialog.dart).
+    - assets/help/
     # English words for splitting glued words after OCR (MIT, see the licence file).
     - assets/dict/en_words.txt
     - assets/dict/en_words-LICENSE.txt
