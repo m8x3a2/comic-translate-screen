@@ -2165,6 +2165,18 @@
   "fontSuggestTitle": "Similar fonts",
   "fontSuggestHint": "Compared with the original letters on this page. The font is not changed by itself: pick one.",
   "fontSuggestNoText": "No recognized text on this page: press Recognize first.",
+  "fontSuggestTooSmall": "The original letters on this page are too small to find a similar font: about {px} pixels, at least {min} are needed. Take a larger screenshot (zoom the page or the window in first).",
+  "@fontSuggestTooSmall": {
+    "placeholders": {
+      "px": {
+        "type": "int"
+      },
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "fontSuggestUnmeasured": "The original letters on this page are not measured: press Recognize again.",
   "fontSuggestForAll": "For all bubbles",
   "fontSuggestForBlock": "For this bubble only",
   "fontSuggestOriginal": "Original",

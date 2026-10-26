@@ -5456,6 +5456,18 @@ abstract class AppLocalizations {
   /// **'No recognized text on this page: press Recognize first.'**
   String get fontSuggestNoText;
 
+  /// No description provided for @fontSuggestTooSmall.
+  ///
+  /// In en, this message translates to:
+  /// **'The original letters on this page are too small to find a similar font: about {px} pixels, at least {min} are needed. Take a larger screenshot (zoom the page or the window in first).'**
+  String fontSuggestTooSmall(int px, int min);
+
+  /// No description provided for @fontSuggestUnmeasured.
+  ///
+  /// In en, this message translates to:
+  /// **'The original letters on this page are not measured: press Recognize again.'**
+  String get fontSuggestUnmeasured;
+
   /// No description provided for @fontSuggestForAll.
   ///
   /// In en, this message translates to:

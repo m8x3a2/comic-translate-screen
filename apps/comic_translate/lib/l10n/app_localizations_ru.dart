@@ -3181,6 +3181,15 @@ class AppLocalizationsRu extends AppLocalizations {
       'На странице нет распознанного текста: сначала нажмите «Распознать».';
 
   @override
+  String fontSuggestTooSmall(int px, int min) {
+    return 'Буквы оригинала на этой странице слишком мелкие, чтобы подобрать похожий шрифт: около $px точек, а нужно хотя бы $min. Сделайте снимок крупнее (сначала увеличьте масштаб страницы или окна).';
+  }
+
+  @override
+  String get fontSuggestUnmeasured =>
+      'Буквы оригинала на этой странице не измерены: нажмите «Распознать» ещё раз.';
+
+  @override
   String get fontSuggestForAll => 'Для всех пузырей';
 
   @override

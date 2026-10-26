@@ -411,4 +411,44 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('"Suggest a font" opens the fonts, or tells why it cannot', (tester) async {
+    final container = await openTranslatedPage(tester);
+    final block = container.read(workspaceProvider).currentPage!.blocks.single;
+    await tester.tap(find.textContaining('[ru] HELLO'));
+    await tester.pump();
+    // The bubble's look is open from the start.
+    Future<void> suggest() async {
+      await tester.ensureVisible(find.byTooltip('Подобрать шрифт…'));
+      await tester.tap(find.byTooltip('Подобрать шрифт…'));
+      await tester.pump();
+    }
+
+    // The letters were never measured.
+    await suggest();
+    expect(find.textContaining('не измерены'), findsOneWidget);
+    ScaffoldMessenger.of(tester.element(find.byType(TextPanel))).removeCurrentSnackBar();
+    await tester.pump();
+
+    // Too small to measure the strokes: the size is said.
+    block.sourceStyle = const SourceStyle(letterPx: 6, inkWidthPx: 40);
+    await suggest();
+    expect(find.textContaining('около 6 точек, а нужно хотя бы 10'), findsOneWidget);
+    ScaffoldMessenger.of(tester.element(find.byType(TextPanel))).removeCurrentSnackBar();
+    await tester.pump();
+
+    // Measured: the original is cut out in another isolate (the window's
+    // state cannot go there) and the fonts are ranked.
+    block.sourceStyle = const SourceStyle(letterPx: 14, strokePx: 2.5, inkWidthPx: 50);
+    await suggest();
+    expect(find.text('Похожие шрифты'), findsOneWidget);
+    final crop = find.descendant(of: find.byType(AlertDialog), matching: find.byType(Image));
+    for (var i = 0; i < 200 && (find.byType(Card).evaluate().isEmpty || crop.evaluate().isEmpty); i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    expect(find.byType(Card), findsWidgets);
+    expect(crop, findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

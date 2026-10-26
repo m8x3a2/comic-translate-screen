@@ -3181,6 +3181,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'No recognized text on this page: press Recognize first.';
 
   @override
+  String fontSuggestTooSmall(int px, int min) {
+    return 'The original letters on this page are too small to find a similar font: about $px pixels, at least $min are needed. Take a larger screenshot (zoom the page or the window in first).';
+  }
+
+  @override
+  String get fontSuggestUnmeasured =>
+      'The original letters on this page are not measured: press Recognize again.';
+
+  @override
   String get fontSuggestForAll => 'For all bubbles';
 
   @override

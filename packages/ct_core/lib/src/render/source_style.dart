@@ -189,10 +189,12 @@ SourceStyle? measureSourceStyle(RgbImage image, TextBlock block) {
       ? npMedian([for (final l in lines) l.w])
       : (letterPx ?? npMedian([for (final l in lines) l.h]));
   // Strokes and slant of tiny letters are a pixel or two either way.
-  final reliable = letterPx != null && letterPx >= _minMeasuredPx;
+  final reliable = letterPx != null && letterPx >= minMeasuredLetterPx;
   // Text in a speech bubble has its background around it, not an outline
   // (a bubble's edge close to the letters would look like one).
-  final ring = block.textClass != TextClass.bubble && across >= _minMeasuredPx ? _outline(image, lines, across) : null;
+  final ring = block.textClass != TextClass.bubble && across >= minMeasuredLetterPx
+      ? _outline(image, lines, across)
+      : null;
   return SourceStyle(
     letterPx: letterPx,
     // Each stroke shows two sides: its width is the area per side length.
@@ -205,7 +207,7 @@ SourceStyle? measureSourceStyle(RgbImage image, TextBlock block) {
 }
 
 /// Letters smaller than this give no stroke weight or slant.
-const _minMeasuredPx = 10.0;
+const minMeasuredLetterPx = 10.0;
 
 double _luma(Uint8List d, int o) => 0.299 * d[o] + 0.587 * d[o + 1] + 0.114 * d[o + 2];
 

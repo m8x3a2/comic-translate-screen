@@ -10,6 +10,7 @@ import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../render/bundled_fonts.dart';
 import '../../render/text_renderer.dart';
 import '../../state/app_state.dart';
@@ -54,6 +55,28 @@ Future<List<_Candidate>> _rank(LetteringShape target, String sample, List<String
   return out..sort((a, b) => a.distance.compareTo(b.distance));
 }
 
+/// [box] of the page at [path], as PNG, cut in another isolate. A function of
+/// its own: a closure takes along every variable of the function it is made
+/// in, and a widget ref cannot be sent to an isolate.
+Future<Uint8List> _cropPng(String path, BBox box) => Isolate.run(() async {
+  final image = await ImageCodec.readFile(path);
+  return ImageCodec.encodePng(image.crop(box.inflate(8, 8).clampTo(image.width, image.height)));
+});
+
+/// Why [blocks] give no lettering to compare fonts with.
+String _noShapeReason(AppLocalizations l, List<TextBlock> blocks) {
+  final read = [
+    for (final b in blocks)
+      if (b.text.trim().isNotEmpty) b,
+  ];
+  if (read.isEmpty) return l.fontSuggestNoText;
+  final sizes = [for (final b in read) ?b.sourceStyle?.letterPx];
+  if (sizes.isNotEmpty && sizes.every((px) => px < minMeasuredLetterPx)) {
+    return l.fontSuggestTooSmall(npMedian(sizes).round(), minMeasuredLetterPx.round());
+  }
+  return l.fontSuggestUnmeasured;
+}
+
 /// Opens the suggestions for the current page; with [block], the choice can
 /// be for that bubble only.
 Future<void> showFontSuggestions(BuildContext context, WidgetRef ref, {int? block}) async {
@@ -61,7 +84,8 @@ Future<void> showFontSuggestions(BuildContext context, WidgetRef ref, {int? bloc
   final page = ref.read(workspaceProvider).currentPage;
   final target = page == null ? null : LetteringShape.ofPage(page.blocks);
   if (page == null || target == null) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.fontSuggestNoText)));
+    final reason = _noShapeReason(l, page?.blocks ?? const []);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(reason)));
     return;
   }
   // The longest text read on the page shows the lettering best.
@@ -78,11 +102,7 @@ Future<void> showFontSuggestions(BuildContext context, WidgetRef ref, {int? bloc
     for (final f in bundledFonts) f.family == defaultFontFamily ? '' : f.family,
     ...ref.read(addedFontsProvider),
   ];
-  final path = page.path, box = shown.xyxy;
-  final crop = Isolate.run(() async {
-    final image = await ImageCodec.readFile(path);
-    return ImageCodec.encodePng(image.crop(box.inflate(8, 8).clampTo(image.width, image.height)));
-  });
+  final crop = _cropPng(page.path, shown.xyxy);
   final ranked = _rank(target, sample, settings);
   if (!context.mounted) return;
   await showDialog<void>(
