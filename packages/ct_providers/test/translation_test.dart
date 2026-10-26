@@ -383,6 +383,47 @@ void main() {
     expect(off[1].untranslated, isTrue);
   });
 
+  test('an answer that stopped at the length limit, or a provider error inside it: told, the reply kept', () async {
+    final kept = <HistoryEntry>[];
+    final context = PluginContext(log: EventLog.silent(), onHistory: kept.add);
+    final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', retryDelays: const []);
+    // OpenRouter sends blank lines while a model thinks; this one thought until the limit.
+    final cut = jsonEncode({
+      'choices': [
+        {
+          'message': {'content': null, 'reasoning': 'Let me think...'},
+          'finish_reason': 'length',
+        },
+      ],
+    });
+    server.handler = (body) => (200, '\n         \n\n$cut');
+    await expectLater(
+      t.translate(request([block('Hello')]), context),
+      throwsA(isA<TranslationException>().having((e) => e.kind, 'kind', TranslationErrorKind.cutOff)),
+    );
+    expect(kept.last.reply, cut, reason: 'what came, for the history');
+
+    server.handler = (body) => (
+      200,
+      jsonEncode({
+        'choices': [
+          {
+            'error': {'code': 502, 'message': 'Upstream error'},
+            'finish_reason': 'error',
+          },
+        ],
+      }),
+    );
+    await expectLater(
+      t.translate(request([block('Hello')]), context),
+      throwsA(
+        isA<TranslationException>()
+            .having((e) => e.kind, 'kind', TranslationErrorKind.server)
+            .having((e) => e.message, 'message', contains('Upstream error')),
+      ),
+    );
+  });
+
   test('each answered request is counted: tokens and cost from the reply, else estimated', () async {
     final counted = <ServiceUsage>[];
     final context = PluginContext(log: EventLog.silent(), onUsage: counted.add);

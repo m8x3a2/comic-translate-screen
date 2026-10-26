@@ -390,7 +390,8 @@ class StepsNotifier extends Notifier<StepState> {
           };
           final pages = ref.read(workspaceProvider).pages;
           final sw = Stopwatch()..start();
-          final done = await active.translatePack(
+          final done = await translatePackSplitting(
+            active,
             [
               for (final page in pack)
                 PackJob(page.name, page.path, pages.indexWhere((p) => p.id == page.id) + 1, [

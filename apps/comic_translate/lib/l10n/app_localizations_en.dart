@@ -368,6 +368,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'the translator answered in a form the program cannot read';
 
   @override
+  String get trErrCutOff =>
+      'the answer was cut off: the model ran out of \"Maximum answer length\" (translator settings → \"More settings\"). Raise it or lower \"Pages in one request\"; models that think first spend the length on thinking too';
+
+  @override
   String get trErrOther => 'translation failed';
 
   @override

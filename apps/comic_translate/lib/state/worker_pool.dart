@@ -96,6 +96,41 @@ int pagesPerRequest(PluginRegistry registry, AppSettings settings) {
   return PluginConfig.resolve(info.settings, settings.pluginValues(id)).value<int>('pages_per_request');
 }
 
+/// [PipelineWorker.translatePack]; an answer cut off at the length limit
+/// (a model that thinks first runs out of it on many pages): the pages again
+/// in two halves, down to one page, before giving up. [onSplit] is told the
+/// size of each pack that was split.
+Future<List<List<TextBlock>>> translatePackSplitting(
+  PipelineWorker worker,
+  List<PackJob> pages, {
+  required String sourceLanguage,
+  required String targetLanguage,
+  CancelToken? cancel,
+  void Function(int pages)? onSplit,
+}) async {
+  try {
+    return await worker.translatePack(
+      pages,
+      sourceLanguage: sourceLanguage,
+      targetLanguage: targetLanguage,
+      cancel: cancel,
+    );
+  } on TranslationException catch (e) {
+    if (pages.length < 2 || e.kind != TranslationErrorKind.cutOff) rethrow;
+    onSplit?.call(pages.length);
+    final half = pages.length ~/ 2;
+    Future<List<List<TextBlock>>> part(List<PackJob> some) => translatePackSplitting(
+      worker,
+      some,
+      sourceLanguage: sourceLanguage,
+      targetLanguage: targetLanguage,
+      cancel: cancel,
+      onSplit: onSplit,
+    );
+    return [...await part(pages.sublist(0, half)), ...await part(pages.sublist(half))];
+  }
+}
+
 /// Pages that may go together in one request: in order, at most [size],
 /// never across a chapter (another archive or folder, as [chapterOf] tells).
 List<List<T>> packsOf<T>(List<T> pages, int size, String Function(T page) chapterOf) {

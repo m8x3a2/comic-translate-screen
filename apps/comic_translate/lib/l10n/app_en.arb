@@ -304,6 +304,7 @@
   "trErrNetwork": "no connection to the translator's server; check the internet connection",
   "trErrTimeout": "the translator's server did not answer in time",
   "trErrBadReply": "the translator answered in a form the program cannot read",
+  "trErrCutOff": "the answer was cut off: the model ran out of \"Maximum answer length\" (translator settings → \"More settings\"). Raise it or lower \"Pages in one request\"; models that think first spend the length on thinking too",
   "trErrOther": "translation failed",
   "needsArchiveTool": "CBR, RAR, CB7 and 7Z need 7-Zip (7-zip.org) or WinRAR installed",
   "exportFailed": "Could not save the pages: {error}",

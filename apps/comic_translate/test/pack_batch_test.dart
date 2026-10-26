@@ -55,7 +55,8 @@ void main() {
   late HttpServer server;
   // The user messages the server got, and what it answers to each.
   final asked = <String>[];
-  late String Function(int n) answer;
+  // Null: the answer stopped at the length limit before any text.
+  late String? Function(int n) answer;
 
   setUp(() async {
     asked.clear();
@@ -64,13 +65,15 @@ void main() {
       final body = jsonDecode(await utf8.decoder.bind(req).join()) as Map;
       final user = (body['messages'] as List).last as Map;
       asked.add(((user['content'] as List).first as Map)['text'] as String);
+      final content = answer(asked.length);
       req.response
         ..headers.contentType = ContentType.json
         ..write(
           jsonEncode({
             'choices': [
               {
-                'message': {'content': answer(asked.length)},
+                'message': {'content': content},
+                if (content == null) 'finish_reason': 'length',
               },
             ],
           }),
@@ -163,6 +166,20 @@ void main() {
       ['Привет', null, 'Ну'],
     );
     expect(container.read(stepsProvider).last!.count, 2);
+  });
+
+  test('an answer cut off at the length limit: the pages again in two halves', () async {
+    answer = (n) => switch (n) {
+      1 => null,
+      2 => '{"01-001": "Раз", "02-001": "Два"}',
+      _ => '{"03-001": "Три", "04-001": "Четыре"}',
+    };
+    await start(pages: 4, perRequest: 4);
+    await container.read(batchProvider.notifier).run(_Ui());
+    expect(asked.length, 3);
+    expect(asked[1], allOf(contains('01-001'), contains('02-001'), isNot(contains('03-001'))));
+    expect([for (final page in pages()) page.blocks.single.translation], ['Раз', 'Два', 'Три', 'Четыре']);
+    expect(pages().every((page) => page.isDone), isTrue);
   });
 
   test('one page in a request: as before, the keys of the original', () async {

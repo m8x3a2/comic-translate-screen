@@ -572,7 +572,8 @@ class BatchNotifier extends Notifier<BatchState> {
       final sw = Stopwatch()..start();
       final List<List<TextBlock>> done;
       try {
-        done = await worker.translatePack(
+        done = await translatePackSplitting(
+          worker,
           [
             for (final (_, page, blocks) in pack)
               PackJob(page.name, page.path, pages.indexWhere((p) => p.id == page.id) + 1, [
@@ -582,6 +583,7 @@ class BatchNotifier extends Notifier<BatchState> {
           sourceLanguage: pack.first.$2.sourceOf(settings),
           targetLanguage: pack.first.$2.targetOf(settings),
           cancel: cancel,
+          onSplit: (n) => log.info('batch_pack_split', {'pages': n}),
         );
       } on CancelledException {
         for (final (_, page, _) in pack) {

@@ -306,7 +306,8 @@ class OpenAiCompatibleTranslator implements Translator {
         ));
     try {
       final Map<String, Object?>? usage;
-      (reply, usage) = await _postWithRetries(uri, payload, context.cancel, log);
+      final String? finish;
+      (reply, usage, finish) = await _postWithRetries(uri, payload, context.cancel, log);
       used = usageOf(usage, payload, reply, host: uri.host);
       log.info('translate_response', {
         'ms': sw.elapsedMilliseconds,
@@ -324,7 +325,7 @@ class OpenAiCompatibleTranslator implements Translator {
         warnings = applyTranslationsJson(request.blocks, reply, keys: request.keys);
       } on FormatException catch (e) {
         throw TranslationException('the model reply has broken JSON (${e.message}): ${_clip(reply)}',
-            kind: TranslationErrorKind.badReply);
+            kind: finish == 'length' ? TranslationErrorKind.cutOff : TranslationErrorKind.badReply);
       }
       for (final w in warnings) {
         log.warn('translate_reply_warning', {'warning': w});
@@ -332,6 +333,8 @@ class OpenAiCompatibleTranslator implements Translator {
       await keep();
       return reply;
     } on TranslationException catch (e) {
+      // What the server sent, even when it could not be read.
+      if (e.reply case final raw? when reply.isEmpty) reply = raw;
       await keep(e.message);
       rethrow;
     }
@@ -355,7 +358,7 @@ class OpenAiCompatibleTranslator implements Translator {
   /// Sends again after temporary failures (rate limit, server error, lost
   /// connection), waiting [retryDelays] (or the server's Retry-After, up to
   /// 30 s) in between. Not in the original, which fails the page at once.
-  Future<(String, Map<String, Object?>?)> _postWithRetries(Uri uri, Map<String, Object?> payload, CancelToken cancel, EventLog log) async {
+  Future<(String, Map<String, Object?>?, String?)> _postWithRetries(Uri uri, Map<String, Object?> payload, CancelToken cancel, EventLog log) async {
     for (var attempt = 0;; attempt++) {
       try {
         return await _post(uri, payload, cancel);
@@ -379,7 +382,7 @@ class OpenAiCompatibleTranslator implements Translator {
     return done.future;
   }
 
-  Future<(String, Map<String, Object?>?)> _post(Uri uri, Map<String, Object?> payload, CancelToken cancel) async {
+  Future<(String, Map<String, Object?>?, String?)> _post(Uri uri, Map<String, Object?> payload, CancelToken cancel) async {
     final client = _httpClientFactory()..connectionTimeout = timeout;
     if (!identical(cancel, CancelToken.none)) cancel.onCancel(() => client.close(force: true));
     try {
@@ -452,24 +455,44 @@ class OpenAiCompatibleTranslator implements Translator {
   }
 
   /// `response["choices"][0]["message"]["content"]` (text parts joined when
-  /// a server returns structured content) and the reply's `usage`.
-  static (String, Map<String, Object?>?) _content(String body) {
+  /// a server returns structured content), the reply's `usage` and why it
+  /// ended (`length`: at the length limit). OpenRouter sends blank lines
+  /// while the model works; an error of the provider may come inside the
+  /// choice. Errors carry the whole [body] for the history.
+  static (String, Map<String, Object?>?, String?) _content(String body) {
     final Object? json;
     try {
       json = jsonDecode(body);
     } on FormatException {
-      throw TranslationException('the server reply is not JSON: ${_clip(body)}', kind: TranslationErrorKind.badReply);
+      throw TranslationException('the server reply is not JSON: ${_clip(body.trim())}',
+          kind: TranslationErrorKind.badReply, reply: body.trim());
     }
     final choices = json is Map ? json['choices'] : null;
-    final message = choices is List && choices.isNotEmpty && choices.first is Map ? (choices.first as Map)['message'] : null;
+    final choice = choices is List && choices.isNotEmpty && choices.first is Map ? choices.first as Map : null;
+    final message = choice?['message'];
     final content = message is Map ? message['content'] : null;
+    final finish = choice?['finish_reason'] as String?;
     final usage = json is Map && json['usage'] is Map ? (json['usage'] as Map).cast<String, Object?>() : null;
-    if (content is String) return (content, usage);
-    if (content is List) {
-      final text = [for (final part in content) if (part is Map && part['text'] is String) part['text'] as String].join();
-      return (text, usage);
+    final text = switch (content) {
+      final String text => text,
+      final List parts => [for (final part in parts) if (part is Map && part['text'] is String) part['text'] as String].join(),
+      _ => null,
+    };
+    if (text != null && text.trim().isNotEmpty) return (text, usage, finish);
+    final error = choice?['error'] ?? (json is Map ? json['error'] : null);
+    if (error is Map) {
+      final code = (error['code'] as num?)?.toInt() ?? 0;
+      final detail = '${error['message'] ?? ''}';
+      throw TranslationException('the provider failed: $detail',
+          kind: TranslationErrorKind.forStatus(code, detail), statusCode: code == 0 ? null : code, reply: body.trim());
     }
-    throw TranslationException('unexpected reply format: ${_clip(body)}', kind: TranslationErrorKind.badReply);
+    if (finish == 'length') {
+      throw TranslationException('the answer stopped at the length limit before any text (finish_reason: length)',
+          kind: TranslationErrorKind.cutOff, reply: body.trim());
+    }
+    if (text != null) return (text, usage, finish);
+    throw TranslationException('unexpected reply format: ${_clip(body.trim())}',
+        kind: TranslationErrorKind.badReply, reply: body.trim());
   }
 
   static String _errorDetail(String body) {

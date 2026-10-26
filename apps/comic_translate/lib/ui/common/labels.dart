@@ -58,6 +58,7 @@ String translationErrorLabel(AppLocalizations l, TranslationErrorKind kind) => s
   TranslationErrorKind.network => l.trErrNetwork,
   TranslationErrorKind.timeout => l.trErrTimeout,
   TranslationErrorKind.badReply => l.trErrBadReply,
+  TranslationErrorKind.cutOff => l.trErrCutOff,
   TranslationErrorKind.other => l.trErrOther,
 };
 

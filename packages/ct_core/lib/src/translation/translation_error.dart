@@ -30,6 +30,10 @@ enum TranslationErrorKind {
   /// The reply could not be read (not JSON, unexpected format).
   badReply,
 
+  /// The answer stopped at the length limit before it was complete (a model
+  /// that thinks first can use it all up thinking).
+  cutOff,
+
   other;
 
   /// Every following page would fail the same way: a batch run stops at
@@ -54,7 +58,7 @@ enum TranslationErrorKind {
 }
 
 class TranslationException implements Exception {
-  TranslationException(this.message, {this.kind = TranslationErrorKind.other, this.statusCode});
+  TranslationException(this.message, {this.kind = TranslationErrorKind.other, this.statusCode, this.reply});
 
   /// Technical details (server answer, host), in English.
   final String message;
@@ -62,6 +66,9 @@ class TranslationException implements Exception {
 
   /// HTTP status, when the server answered.
   final int? statusCode;
+
+  /// What the server sent, when it could not be read (for the history).
+  final String? reply;
 
   @override
   String toString() => 'Translation failed: $message';
