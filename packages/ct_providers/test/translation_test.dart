@@ -403,6 +403,24 @@ void main() {
     );
     expect(kept.last.reply, cut, reason: 'what came, for the history');
 
+    // Cut off in the middle of the JSON (no closing brace): the same, and not
+    // sent once more as if bubbles were left out.
+    server.requests.clear();
+    final half = jsonEncode({
+      'choices': [
+        {
+          'message': {'content': '{"block_0": "Привет", "block_1": "Пок'},
+          'finish_reason': 'length',
+        },
+      ],
+    });
+    server.handler = (body) => (200, half);
+    await expectLater(
+      t.translate(request([block('Hello'), block('Bye')]), context),
+      throwsA(isA<TranslationException>().having((e) => e.kind, 'kind', TranslationErrorKind.cutOff)),
+    );
+    expect(server.requests.length, 1, reason: 'no second request');
+
     server.handler = (body) => (
       200,
       jsonEncode({

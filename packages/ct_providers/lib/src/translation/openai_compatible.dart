@@ -327,6 +327,12 @@ class OpenAiCompatibleTranslator implements Translator {
         throw TranslationException('the model reply has broken JSON (${e.message}): ${_clip(reply)}',
             kind: finish == 'length' ? TranslationErrorKind.cutOff : TranslationErrorKind.badReply);
       }
+      // Cut off before the closing brace: no JSON at all. Not asked again
+      // (the same request would stop at the same place); a pack is split.
+      if (finish == 'length' && warnings.contains(noJsonWarning)) {
+        throw TranslationException('the answer stopped at the length limit (finish_reason: length): ${_clip(reply)}',
+            kind: TranslationErrorKind.cutOff);
+      }
       for (final w in warnings) {
         log.warn('translate_reply_warning', {'warning': w});
       }
