@@ -236,7 +236,7 @@ ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String sep
   final replies = <ExchangeLabel, ExchangeReply>{};
   final repeated = <ExchangeLabel>[];
   for (final (i, (_, end, label)) in marks.indexed) {
-    final stop = i + 1 < marks.length ? marks[i + 1].$1 : text.length;
+    final stop = i + 1 < marks.length ? _lineStartBefore(text, marks[i + 1].$1, end) : text.length;
     final body = _cleanBody(text.substring(end, stop));
     if (replies.containsKey(label)) {
       repeated.add(label);
@@ -251,6 +251,18 @@ ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String sep
     }
   }
   return ExchangeAnswer(replies, repeated: repeated);
+}
+
+// Only list marks before a label on its line: `2. `, `- `, `### `.
+final _listMarks = RegExp(r'^[ \t>•*_#-]*(?:\d+[.)])?[ \t>•*_#-]*$');
+
+/// Where the piece before the label at [start] ends: before the numbering
+/// or the list mark of the label's line (not before [after], the end of the
+/// previous label).
+int _lineStartBefore(String text, int start, int after) {
+  final line = text.lastIndexOf('\n', start - 1) + 1;
+  if (line <= after) return start;
+  return _listMarks.hasMatch(text.substring(line, start)) ? line : start;
 }
 
 /// `[m]`, `[f]`, `[n]` (also `[м]`, `[ж]`, `[ср]`), or `[-]` for nobody.

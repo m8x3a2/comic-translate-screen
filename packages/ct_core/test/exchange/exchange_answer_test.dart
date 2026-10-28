@@ -48,6 +48,21 @@ Let me know if you need anything else.''';
       expect(a.replies[l21]!.translation, 'Беги!');
     });
 
+    test('a numbered or bulleted list: the number or mark before the next label is not part of the answer', () {
+      for (final mark in ['1.', '2)', '-', '*', '•', '###', '>', '**']) {
+        final a = parseExchangeAnswer(
+          '$mark [01-003] Hi --> Привет\n$mark [01-004] Bye --> Пока\n$mark [02-001] Run! --> Беги!',
+          ExchangeMode.both,
+        );
+        expect([for (final r in a.replies.values) r.translation], ['Привет', 'Пока', 'Беги!'], reason: mark);
+      }
+      final numbered = parseExchangeAnswer('1. [01-003] Привет\n2. [01-004] Пока', ExchangeMode.translate);
+      expect(numbered.replies[l13]!.translation, 'Привет');
+      // Two labels on one line: the first keeps its text.
+      final oneLine = parseExchangeAnswer('[01-003] Привет [01-004] Пока', ExchangeMode.translate);
+      expect([oneLine.replies[l13]!.translation, oneLine.replies[l14]!.translation], ['Привет', 'Пока']);
+    });
+
     test('a piece over several lines becomes one line; the label may stand on its own line', () {
       final a = parseExchangeAnswer('[01-003]\nI\'M\nLATE!\n[01-004] ok', ExchangeMode.recognize);
       expect(a.replies[l13]!.original, "I'M LATE!");
