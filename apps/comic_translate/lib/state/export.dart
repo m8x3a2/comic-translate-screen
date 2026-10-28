@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 
 import '../pipeline/psd_page.dart';
 import 'app_state.dart';
+import 'background.dart';
 import 'page_render.dart';
 import 'workspace.dart';
 
@@ -66,9 +67,9 @@ Future<ExportResult> exportOpenPages(
 /// [buildPagePsd]); with the bundled fonts it uses (see [bundledFontsUsed]).
 Future<(String, Set<String>)> writePagePsd(Reader read, PageEntry page, String dir) async {
   final settings = read(settingsProvider);
-  final path = page.path, cleanPath = page.cleanPath;
-  final original = await Isolate.run(() => ImageCodec.readFile(path));
-  final clean = cleanPath == null ? original : await Isolate.run(() => ImageCodec.readFile(cleanPath));
+  final cleanPath = page.cleanPath;
+  final original = await readImageInBackground(page.path);
+  final clean = cleanPath == null ? original : await readImageInBackground(cleanPath);
   final doc = await buildPagePsd(
     original,
     clean,
@@ -78,7 +79,7 @@ Future<(String, Set<String>)> writePagePsd(Reader read, PageEntry page, String d
     above: await pageAbove(read(workspaceProvider), page, settings),
   );
   final file = p.join(dir, '${page.id}${doc.large ? '.psb' : '.psd'}');
-  await Isolate.run(() => writePsdFile(file, doc));
+  await writePsdInBackground(file, doc);
   return (file, bundledFontsUsed(doc));
 }
 

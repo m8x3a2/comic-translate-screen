@@ -8,9 +8,6 @@
 /// `seams.dart` in ct_core).
 library;
 
-import 'dart:io';
-import 'dart:isolate';
-
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +16,7 @@ import 'package:path/path.dart' as p;
 import '../pipeline/pipeline_worker.dart';
 import '../render/mask_raster.dart';
 import 'app_state.dart';
+import 'background.dart';
 import 'batch.dart';
 import 'editor.dart';
 import 'exchange.dart';
@@ -485,9 +483,7 @@ class StepsNotifier extends Notifier<StepState> {
   /// webtoon page whose mask reaches into the page below).
   Future<GrayImage> _currentMask(PageEntry page) async {
     final maskPath = page.maskPath;
-    final base = maskPath == null
-        ? null
-        : await Isolate.run(() async => ImageCodec.decodeGray(await File(maskPath).readAsBytes()));
+    final base = maskPath == null ? null : await readGrayInBackground(maskPath);
     final (w, h) = base == null ? await imageFileSize(page.path) : (base.width, base.height);
     return rasterizeMask(w, h, base: base, strokes: page.strokes);
   }

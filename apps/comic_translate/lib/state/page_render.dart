@@ -4,7 +4,6 @@
 library;
 
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
@@ -13,6 +12,7 @@ import 'package:path/path.dart' as p;
 import '../pipeline/page_pipeline.dart';
 import '../render/mask_raster.dart';
 import 'app_state.dart';
+import 'background.dart';
 import 'workspace.dart';
 
 /// `ref.read` of a widget or a provider.
@@ -34,8 +34,7 @@ Future<List<PageEntry>> drawMissingPages(
   ];
   for (final (i, page) in todo.indexed) {
     onProgress?.call(i, todo.length);
-    final base = page.basePath;
-    final image = await Isolate.run(() => ImageCodec.readFile(base));
+    final image = await readImageInBackground(page.basePath);
     final render = await renderPage(
       image,
       page.blocks,
@@ -44,8 +43,7 @@ Future<List<PageEntry>> drawMissingPages(
       above: await pageAbove(read(workspaceProvider), page, settings),
     );
     final file = p.join(workspace.pageDir(page.id).path, 'translated_${DateTime.now().microsecondsSinceEpoch}.png');
-    final rendered = render.image;
-    await Isolate.run(() => File(file).writeAsBytes(ImageCodec.encodePng(rendered), flush: true));
+    await writePngInBackground(file, render.image);
     // Only if nothing changed meanwhile (the page above included: it does
     // not take the drawn page away, see [WorkspaceNotifier.edit]).
     workspace.updatePage(
@@ -86,7 +84,7 @@ Future<PageAbove?> pageAbove(WorkspaceState ws, PageEntry page, AppSettings sett
   if (file == null && overflowOf(prev.blocks, h) <= 0) return null;
   SeamPatch? patch;
   if (file != null && File(file).existsSync()) {
-    final (rgb, alpha) = await Isolate.run(() async => ImageCodec.decodeRgba(await File(file).readAsBytes()));
+    final (rgb, alpha) = await readRgbaInBackground(file);
     patch = SeamPatch(rgb, alpha);
   }
   return PageAbove(width: w, height: h, blocks: prev.blocks, targetLanguage: prev.targetOf(settings), patch: patch);
