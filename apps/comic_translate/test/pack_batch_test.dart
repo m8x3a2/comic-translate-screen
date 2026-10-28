@@ -58,13 +58,17 @@ void main() {
   late HttpServer server;
   // The user messages the server got, and what it answers to each.
   final asked = <String>[];
+  // The Authorization headers it got.
+  final keys = <String?>[];
   // Null: the answer stopped at the length limit before any text.
   late String? Function(int n) answer;
 
   setUp(() async {
     asked.clear();
+    keys.clear();
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen((req) async {
+      keys.add(req.headers.value(HttpHeaders.authorizationHeader));
       final body = jsonDecode(await utf8.decoder.bind(req).join()) as Map;
       final user = (body['messages'] as List).last as Map;
       asked.add(((user['content'] as List).first as Map)['text'] as String);
@@ -101,6 +105,7 @@ void main() {
     int perRequest = 2,
     bool resend = true,
     bool slow = false,
+    bool testMode = false,
     String translator = 'openai_compatible',
   }) async {
     dir = Directory.systemTemp.createTempSync('cts_pack_batch_');
@@ -108,6 +113,7 @@ void main() {
     services = AppServices.create(dataDirOverride: dir.path, secretStore: MemorySecretStore(), registry: registry());
     services.appLog.info('test_start');
     final settings = fakeSettings()
+      ..testMode = testMode
       ..translator = translator
       ..plugins['openai_compatible'] = {
         'api_url': 'http://127.0.0.1:${server.port}/v1',
@@ -214,6 +220,31 @@ void main() {
     answer = (n) => '{}';
     await start(pages: 3, slow: true, translator: chatTranslatorId);
     await stopWhileWaiting('exchange');
+  });
+
+  test('the API key goes to the server only: not in the log, the run, the history or a bug report', () async {
+    const key = 'sk-test-KEYMARK-1234567890';
+    // The second request is the one asked again: the answer left out page 2.
+    answer = (n) => n == 1 ? '{"01-001": "Привет"}' : '{"02-001": "Пока"}';
+    await start(pages: 2, testMode: true);
+    await services.secrets.write(pluginSecretKey('openai_compatible', 'api_key'), key);
+    await container.read(batchProvider.notifier).run(_Ui());
+    expect(keys, ['Bearer $key', 'Bearer $key'], reason: 'the key was used');
+    expect(pages().every((page) => page.isDone), isTrue);
+    final zip = await services.buildBugReport(note: 'check');
+    final unpacked = Directory(p.join(dir.path, 'report_unpacked'))..createSync();
+    final tar = await Process.run('tar', ['-xf', zip.path, '-C', unpacked.path]);
+    expect(tar.exitCode, 0, reason: '${tar.stderr}');
+    final files = dir.listSync(recursive: true).whereType<File>().toList();
+    expect(
+      files.map((f) => p.basename(f.path)),
+      containsAll(['app.jsonl', 'translator_history.json', 'request.redacted.json']),
+    );
+    expect(files.where((f) => f.path.startsWith(unpacked.path)), isNotEmpty);
+    for (final file in files) {
+      final text = latin1.decode(file.readAsBytesSync());
+      expect(text.contains('KEYMARK'), isFalse, reason: file.path);
+    }
   });
 
   test('one page in a request: as before, the keys of the original', () async {
