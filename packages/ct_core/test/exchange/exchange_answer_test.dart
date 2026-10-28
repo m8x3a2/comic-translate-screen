@@ -81,6 +81,26 @@ Let me know if you need anything else.''';
       expect([for (final r in bare.replies.values) r.translation], ['Привет', 'Пока']);
     });
 
+    test('a heading between pieces (a page of several) is not part of the piece above', () {
+      for (final heading in ['**Страница 2**', '## Page 2', '### **Page 2:**', '__Page 2__']) {
+        final a = parseExchangeAnswer('[01-003] Привет\n$heading\n[02-001] Беги!', ExchangeMode.translate);
+        expect([a.replies[l13]!.translation, a.replies[l21]!.translation], ['Привет', 'Беги!'], reason: heading);
+      }
+      // A piece over several lines still comes whole.
+      final a = parseExchangeAnswer('[01-003] I\'M\n**LATE!** Run\n[01-004] ok', ExchangeMode.recognize);
+      expect(a.replies[l13]!.original, "I'M **LATE!** Run");
+    });
+
+    test('an answer as JSON: the keys are the labels', () {
+      for (final json in [
+        '```json\n{\n  "01-003": "Привет",\n  "01-004": "Пока \\"друг\\""\n}\n```',
+        '{"[01-003]": "Привет", "[01-004]": "Пока \\"друг\\""}',
+      ]) {
+        final a = parseExchangeAnswer(json, ExchangeMode.translate);
+        expect([for (final r in a.replies.values) r.translation], ['Привет', 'Пока "друг"'], reason: json);
+      }
+    });
+
     test('a piece over several lines becomes one line; the label may stand on its own line', () {
       final a = parseExchangeAnswer('[01-003]\nI\'M\nLATE!\n[01-004] ok', ExchangeMode.recognize);
       expect(a.replies[l13]!.original, "I'M LATE!");

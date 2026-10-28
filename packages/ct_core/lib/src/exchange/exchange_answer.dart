@@ -9,6 +9,8 @@
 /// ```
 library;
 
+import 'dart:convert';
+
 import '../model/geometry.dart';
 import '../model/text_block.dart';
 import 'glossary.dart';
@@ -217,6 +219,15 @@ RegExp _arrow(String separator) {
 
 final _fence = RegExp(r'^[ \t]*```.*$', multiLine: true);
 
+/// A key of an answer given as JSON: `"01-003": "Привет"`.
+final _jsonKey = RegExp(r'"(\d{1,4})[-–—](\d{1,4})"(?=\s*:)');
+
+/// The value after a JSON key (`: "Привет",`), up to what closes it.
+final _jsonValue = RegExp(r'^"?\s*:\s*"((?:[^"\\]|\\.)*)"[\s,}\]"]*$');
+
+/// A heading on a line of its own: `## Page 2`, `**Page 2**`, `__Page 2:__`.
+final _heading = RegExp(r'^\s*(?:#{1,6}\s.*|(\*\*|__)[^*_]+\1:?)\s*$');
+
 /// Reads the chat's [answer]. Text before the first label and after a blank
 /// line that ends a piece (the chat's own remarks) is left out; lines of one
 /// piece are joined with spaces.
@@ -228,7 +239,7 @@ ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String sep
   for (final m in _bracketed.allMatches(text)) {
     marks.add((m.start, m.end, ExchangeLabel(int.parse(m[1]!), int.parse(m[2]!))));
   }
-  for (final m in _bare.allMatches(text)) {
+  for (final m in [..._jsonKey.allMatches(text), ..._bare.allMatches(text)]) {
     if (marks.any((k) => m.start < k.$2 && k.$1 < m.end)) continue;
     marks.add((m.start, m.end, ExchangeLabel(int.parse(m[1]!), int.parse(m[2]!))));
   }
@@ -255,7 +266,7 @@ ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String sep
 
 // Only list marks before a label on its line: `2. `, `- `, `### `, the
 // bar of a table row.
-final _listMarks = RegExp(r'^[ \t>•*_#|-]*(?:\d+[.)])?[ \t>•*_#|-]*$');
+final _listMarks = RegExp(r'^[ \t>•*_#|"-]*(?:\d+[.)])?[ \t>•*_#|"-]*$');
 
 /// A row of a table (chats like to answer so): `| [01-003] | Hi | Привет |`
 /// gives the cells after the label, the first one the original and the last
@@ -314,11 +325,25 @@ ExchangeReply _reply(String body, ExchangeMode mode, RegExp arrows) {
 }
 
 String _cleanBody(String raw) {
+  if (_jsonValue.firstMatch(raw.trim()) case final m?) {
+    try {
+      return (jsonDecode('"${m[1]}"') as String).trim();
+    } on FormatException {
+      // Not JSON after all: read as text.
+    }
+  }
   var s = raw.replaceFirst(RegExp(r'^[ \t]*[:：)\]-]?[ \t]*'), '');
   // A blank line ends the piece: what follows is the chat talking.
   final blank = RegExp(r'\n[ \t]*\n').firstMatch(s.trimLeft());
   if (blank != null) s = s.trimLeft().substring(0, blank.start);
-  s = s.split('\n').map((l) => l.trim().replaceFirst(RegExp(r'^[>•]\s*'), '')).where((l) => l.isNotEmpty).join(' ');
+  final lines = s.split('\n');
+  // So does a heading (pages of several): not on the label's own line.
+  final heading = lines.indexed.skip(1).where((e) => _heading.hasMatch(e.$2)).firstOrNull?.$1;
+  s = lines
+      .take(heading ?? lines.length)
+      .map((l) => l.trim().replaceFirst(RegExp(r'^[>•]\s*'), ''))
+      .where((l) => l.isNotEmpty)
+      .join(' ');
   s = s.replaceAll(RegExp(r'^\*\*|\*\*$'), '').trim();
   return _unquote(s);
 }
