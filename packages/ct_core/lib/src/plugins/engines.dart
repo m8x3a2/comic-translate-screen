@@ -82,7 +82,8 @@ class TranslationRequest {
     targetLanguage: targetLanguage,
     pageImage: pageImage,
     extraContext: extraContext,
-    keys: keys == null ? null : [for (final b in some) keys![blocks.indexOf(b)]],
+    // `block_N` too: who speaks in [extraContext] names the blocks so.
+    keys: [for (final b in some) keyOf(blocks.indexOf(b))],
     pageImages: pageImages,
   );
 }

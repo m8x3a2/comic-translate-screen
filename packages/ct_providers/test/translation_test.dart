@@ -305,6 +305,22 @@ void main() {
     expect(plain, isNot(contains('Who speaks')));
   });
 
+  test('the bubbles asked once more keep their numbers: who speaks still names the right one', () async {
+    final asked = <String>[];
+    server.handler = (body) {
+      asked.add(((((body['messages'] as List).last as Map)['content'] as List).first as Map)['text'] as String);
+      return (200, chatReply(asked.length == 1 ? '{"block_0": "Я пришёл"}' : '{"block_1": "Я пришла"}'));
+    };
+    final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', retryDelays: const []);
+    final blocks = [block('I came')..speaker = Speaker.male, block('I came too')..speaker = Speaker.female];
+    await translateBlocks(t, request(blocks), PluginContext(log: EventLog.silent()));
+    expect(asked.length, 2);
+    // The woman is block_1 in the instructions, and so is her line.
+    expect(asked.last, allOf(contains('block_1: a woman'), contains('"block_1": "I came too"')));
+    expect(asked.last, isNot(contains('"block_0"')));
+    expect([for (final b in blocks) b.translation], ['Я пришёл', 'Я пришла']);
+  });
+
   test('every request goes into the history: what was sent, the answer as it came, what went wrong', () async {
     final kept = <HistoryEntry>[];
     final context = PluginContext(log: EventLog.silent(), page: 'p1.png', onHistory: kept.add);
@@ -352,7 +368,7 @@ void main() {
     final kept = <HistoryEntry>[];
     final context = PluginContext(log: EventLog.silent(), page: 'p1.png', onHistory: kept.add);
     final asked = <String>[];
-    var second = '{"block_0": "Пока"}';
+    var second = '{"block_1": "Пока"}';
     server.handler = (body) {
       final user = ((((body['messages'] as List).last as Map)['content'] as List).first as Map)['text'] as String;
       asked.add(user);
@@ -363,7 +379,8 @@ void main() {
     await t.translate(request(blocks), context);
     expect([for (final b in blocks) b.translation], ['Привет', 'Пока', 'Ну']);
     expect(blocks.any((b) => b.untranslated), isFalse);
-    expect(asked.last, allOf(contains('"block_0": "Bye"'), isNot(contains('Hello'))), reason: 'only the missing one');
+    // Under its own number (who speaks names the blocks so).
+    expect(asked.last, allOf(contains('"block_1": "Bye"'), isNot(contains('Hello'))), reason: 'only the missing one');
     expect([for (final e in kept) e.again], [false, true]);
 
     // Left out again: marked, the first answer stays.
