@@ -421,6 +421,11 @@ class OpenAiCompatibleTranslator implements Translator {
     } on HttpException catch (e) {
       cancel.throwIfCancelled();
       throw TranslationException('connection to ${uri.host} failed: ${e.message}', kind: TranslationErrorKind.network);
+    } on TlsException catch (e) {
+      // An antivirus or a proxy in between, a wrong clock.
+      cancel.throwIfCancelled();
+      throw TranslationException('the secure connection to ${uri.host} broke off: ${e.message}',
+          kind: TranslationErrorKind.network);
     } finally {
       client.close(force: true);
     }
@@ -683,6 +688,9 @@ Future<Object?> _openRouterGet(
         kind: TranslationErrorKind.network);
   } on HttpException catch (e) {
     throw TranslationException('connection to ${uri.host} failed: ${e.message}', kind: TranslationErrorKind.network);
+  } on TlsException catch (e) {
+    throw TranslationException('the secure connection to ${uri.host} broke off: ${e.message}',
+        kind: TranslationErrorKind.network);
   } finally {
     client.close(force: true);
   }

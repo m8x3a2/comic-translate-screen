@@ -206,6 +206,17 @@ void main() {
       ),
     );
 
+    // The secure connection breaks off (an antivirus or a proxy in between).
+    final cut = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(cut.close);
+    cut.listen((s) => s.destroy());
+    final broken = TypeMatcher<TranslationException>()
+        .having((e) => e.message, 'message', contains('secure connection'))
+        .having((e) => e.kind, 'kind', TranslationErrorKind.network);
+    final https = OpenAiCompatibleTranslator(apiUrl: 'https://127.0.0.1:${cut.port}/v1', model: 'm');
+    await expectLater(https.translate(request([block('a')]), PluginContext(log: EventLog.silent())), throwsA(broken));
+    await expectLater(fetchOpenRouterModels(Uri.parse('https://127.0.0.1:${cut.port}/api/v1/models')), throwsA(broken));
+
     expect(
       () => OpenAiCompatibleTranslator(
         apiUrl: '',
