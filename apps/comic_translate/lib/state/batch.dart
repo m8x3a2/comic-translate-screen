@@ -521,10 +521,13 @@ class BatchNotifier extends Notifier<BatchState> {
         workspace.edit(page.id, (p) => p.copyWith(blocks: blocks, stage: waitStage), byHand: false);
         ready.add(page);
       } on CancelledException {
-        workspace.updatePage(
-          page.id,
-          (p) => p.copyWith(status: p.isDone ? PageStatus.done : PageStatus.pending, stage: null),
-        );
+        // The pages found before it wait no more either.
+        for (final stopped in [...ready, page]) {
+          workspace.updatePage(
+            stopped.id,
+            (p) => p.copyWith(status: p.isDone ? PageStatus.done : PageStatus.pending, stage: null),
+          );
+        }
         rethrow;
       } catch (e, st) {
         log.error('page_failed', e, st, {'page': page.name});
@@ -607,24 +610,34 @@ class BatchNotifier extends Notifier<BatchState> {
       return true;
     }
 
-    for (final (i, page) in todo.indexed) {
-      if (cancel.isCancelled) return;
-      if (waiting.isNotEmpty && together(waiting.first.$2) != together(page) && !await send()) return;
-      // Found and read now; translated with the pages after it.
-      if ((await _findText(worker, [page], settings, cancel, skipped, log, waitStage: '03_translate')).isEmpty) {
-        _update((b) => b.copyWith(done: i + 1));
-        continue;
+    try {
+      for (final (i, page) in todo.indexed) {
+        if (cancel.isCancelled) return;
+        if (waiting.isNotEmpty && together(waiting.first.$2) != together(page) && !await send()) return;
+        // Found and read now; translated with the pages after it.
+        if ((await _findText(worker, [page], settings, cancel, skipped, log, waitStage: '03_translate')).isEmpty) {
+          _update((b) => b.copyWith(done: i + 1));
+          continue;
+        }
+        final blocks = ref.read(workspaceProvider).byId(page.id)?.blocks ?? const <TextBlock>[];
+        if (!blocks.any((b) => hasTranslatableContent(b.text))) {
+          // Nothing to translate: cleaned and drawn at once.
+          if (!await finish(i, page, found: [for (final b in blocks) b.copy()], read: false, translate: false)) return;
+          continue;
+        }
+        waiting.add((i, page, blocks));
+        if (waiting.length >= size && !await send()) return;
       }
-      final blocks = ref.read(workspaceProvider).byId(page.id)?.blocks ?? const <TextBlock>[];
-      if (!blocks.any((b) => hasTranslatableContent(b.text))) {
-        // Nothing to translate: cleaned and drawn at once.
-        if (!await finish(i, page, found: [for (final b in blocks) b.copy()], read: false, translate: false)) return;
-        continue;
+      if (!cancel.isCancelled) await send();
+    } finally {
+      // Stopped: the pages found for the next request wait no more.
+      for (final (_, page, _) in waiting) {
+        workspace.updatePage(
+          page.id,
+          (p) => p.copyWith(status: p.isDone ? PageStatus.done : PageStatus.pending, stage: null),
+        );
       }
-      waiting.add((i, page, blocks));
-      if (waiting.length >= size && !await send()) return;
     }
-    if (!cancel.isCancelled) await send();
   }
 
   /// Writes the original's automatic exports for [page]; returns the folder.

@@ -23,6 +23,9 @@ import 'support/fake_plugins.dart';
 /// The fake engines with the real "own server" translator (in the worker too).
 PluginRegistry packRegistry() => fakeRegistry()..register(openAiCompatibleFactory);
 
+/// The same with a slow text detector (time to stop a run in the middle).
+PluginRegistry slowPackRegistry() => slowFakeRegistry()..register(openAiCompatibleFactory);
+
 class _Ui implements BatchUi {
   @override
   Future<bool> exchange(ExchangeRequest request) async => false;
@@ -93,16 +96,19 @@ void main() {
     }
   });
 
-  Future<void> start({required int pages, int perRequest = 2, bool resend = true}) async {
+  Future<void> start({
+    required int pages,
+    int perRequest = 2,
+    bool resend = true,
+    bool slow = false,
+    String translator = 'openai_compatible',
+  }) async {
     dir = Directory.systemTemp.createTempSync('cts_pack_batch_');
-    services = AppServices.create(
-      dataDirOverride: dir.path,
-      secretStore: MemorySecretStore(),
-      registry: packRegistry(),
-    );
+    final registry = slow ? slowPackRegistry : packRegistry;
+    services = AppServices.create(dataDirOverride: dir.path, secretStore: MemorySecretStore(), registry: registry());
     services.appLog.info('test_start');
     final settings = fakeSettings()
-      ..translator = 'openai_compatible'
+      ..translator = translator
       ..plugins['openai_compatible'] = {
         'api_url': 'http://127.0.0.1:${server.port}/v1',
         'model': 'test-model',
@@ -113,7 +119,7 @@ void main() {
       overrides: [
         servicesProvider.overrideWithValue(services),
         initialSettingsProvider.overrideWithValue(settings),
-        workerRegistryProvider.overrideWithValue(packRegistry),
+        workerRegistryProvider.overrideWithValue(registry),
       ],
     );
     final files = [for (var n = 0; n < pages; n++) p.join(dir.path, 'page_$n.png')];
@@ -180,6 +186,34 @@ void main() {
     expect(asked[1], allOf(contains('01-001'), contains('02-001'), isNot(contains('03-001'))));
     expect([for (final page in pages()) page.blocks.single.translation], ['Раз', 'Два', 'Три', 'Четыре']);
     expect(pages().every((page) => page.isDone), isTrue);
+  });
+
+  /// Stops "Translate all" once the first page waits ([waitStage]) while the
+  /// second is being found; then no page may be left running (busy pages
+  /// cannot be edited).
+  Future<void> stopWhileWaiting(String waitStage) async {
+    final batch = container.read(batchProvider.notifier);
+    final run = batch.run(_Ui());
+    while (pages().first.stage != waitStage || pages()[1].status != PageStatus.running) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    batch.stop();
+    await run;
+    expect(asked, isEmpty);
+    expect([for (final page in pages()) page.status], everyElement(PageStatus.pending));
+    expect([for (final page in pages()) page.stage], everyElement(isNull));
+  }
+
+  test('stopped while pages wait for their request: none is left busy', () async {
+    answer = (n) => '{}';
+    await start(pages: 3, perRequest: 3, slow: true);
+    await stopWhileWaiting('03_translate');
+  });
+
+  test('stopped while pages wait for the exchange with a chat: none is left busy', () async {
+    answer = (n) => '{}';
+    await start(pages: 3, slow: true, translator: chatTranslatorId);
+    await stopWhileWaiting('exchange');
   });
 
   test('one page in a request: as before, the keys of the original', () async {
