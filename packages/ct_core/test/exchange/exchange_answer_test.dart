@@ -63,6 +63,24 @@ Let me know if you need anything else.''';
       expect([oneLine.replies[l13]!.translation, oneLine.replies[l14]!.translation], ['Привет', 'Пока']);
     });
 
+    test('an answer as a table: the cells, not the bars; the first is the original, the last the translation', () {
+      const table =
+          '| Label | Original | Translation |\n|---|---|---|\n'
+          '| [01-003] | Hi | Привет |\n| **[01-004]** | Bye | [f] Пока |\n|[02-001]|Run!|Беги!|';
+      final both = parseExchangeAnswer(table, ExchangeMode.both);
+      expect(
+        [for (final r in both.replies.values) (r.original, r.translation)],
+        [('Hi', 'Привет'), ('Bye', 'Пока'), ('Run!', 'Беги!')],
+      );
+      expect(both.replies[l14]!.speaker, Speaker.female);
+      final translate = parseExchangeAnswer(table, ExchangeMode.translate);
+      expect([for (final r in translate.replies.values) r.translation], ['Привет', 'Пока', 'Беги!']);
+      final recognize = parseExchangeAnswer('| [01-003] | Hi |\n| [01-004] | Bye |', ExchangeMode.recognize);
+      expect([for (final r in recognize.replies.values) r.original], ['Hi', 'Bye']);
+      final bare = parseExchangeAnswer('| 01-003 | Привет |\n| 01-004 | Пока |', ExchangeMode.translate);
+      expect([for (final r in bare.replies.values) r.translation], ['Привет', 'Пока']);
+    });
+
     test('a piece over several lines becomes one line; the label may stand on its own line', () {
       final a = parseExchangeAnswer('[01-003]\nI\'M\nLATE!\n[01-004] ok', ExchangeMode.recognize);
       expect(a.replies[l13]!.original, "I'M LATE!");

@@ -204,7 +204,7 @@ ExchangeAnswer mergeExchangeAnswers(ExchangeAnswer originals, ExchangeAnswer tra
 // at the start of a line and followed by ':' / ')' / '.' / '-' or a space:
 // "01-003: text", "**01-003** text".
 final _bracketed = RegExp(r'[\[【]\s*(\d{1,4})\s*[-–—]\s*(\d{1,4})\s*[\]】]');
-final _bare = RegExp(r'^[ \t>•*_#-]*(?:\d+[.)]\s+)?[*_]*(\d{1,4})[-–—](\d{1,4})[*_]*(?=[\s:.)]|$)', multiLine: true);
+final _bare = RegExp(r'^[ \t>•*_#|-]*(?:\d+[.)]\s+)?[*_]*(\d{1,4})[-–—](\d{1,4})[*_]*(?=[\s:.)]|$)', multiLine: true);
 
 /// `-->`, `->`, `→`, `=>`, `⟶`, `—>` between the original and the translation.
 const _arrows = r'-{1,3}>|=>|→|⟶|—>|–>';
@@ -237,7 +237,7 @@ ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String sep
   final repeated = <ExchangeLabel>[];
   for (final (i, (_, end, label)) in marks.indexed) {
     final stop = i + 1 < marks.length ? _lineStartBefore(text, marks[i + 1].$1, end) : text.length;
-    final body = _cleanBody(text.substring(end, stop));
+    final body = _fromTableRow(_cleanBody(text.substring(end, stop)), separator);
     if (replies.containsKey(label)) {
       repeated.add(label);
       continue;
@@ -253,8 +253,31 @@ ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String sep
   return ExchangeAnswer(replies, repeated: repeated);
 }
 
-// Only list marks before a label on its line: `2. `, `- `, `### `.
-final _listMarks = RegExp(r'^[ \t>•*_#-]*(?:\d+[.)])?[ \t>•*_#-]*$');
+// Only list marks before a label on its line: `2. `, `- `, `### `, the
+// bar of a table row.
+final _listMarks = RegExp(r'^[ \t>•*_#|-]*(?:\d+[.)])?[ \t>•*_#|-]*$');
+
+/// A row of a table (chats like to answer so): `| [01-003] | Hi | Привет |`
+/// gives the cells after the label, the first one the original and the last
+/// one the translation, put as `Hi --> Привет`; a speaker tag in a cell goes
+/// to the front. Anything else is [body] as it is.
+String _fromTableRow(String body, String separator) {
+  final row = body.replaceFirst(RegExp(r'^[*_ \t]*'), '');
+  if (!row.startsWith('|')) return body;
+  String? tag;
+  final cells = <String>[];
+  for (var cell in row.split('|')) {
+    if (_speakerTag.firstMatch(cell.trim()) case final m?) {
+      tag ??= m[0]!.trim();
+      cell = cell.trim().substring(m.end);
+    }
+    cell = _unquote(cell);
+    if (cell.isNotEmpty) cells.add(cell);
+  }
+  if (cells.isEmpty) return tag ?? '';
+  final text = cells.length == 1 ? cells.single : '${cells.first} $separator ${cells.last}';
+  return tag == null ? text : '$tag $text';
+}
 
 /// Where the piece before the label at [start] ends: before the numbering
 /// or the list mark of the label's line (not before [after], the end of the
