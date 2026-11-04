@@ -240,7 +240,13 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   reported as an error instead of leaving the page silently untranslated.
 - Translation: a reply with stray braces after its JSON is still read (the
   original fails the page); the Authorization header is omitted when no API key
-  is set; the length-limit field name is configurable for older servers.
+  is set; the length-limit field name is configurable for older servers. A
+  value that is not text or a number (null, a list, an object) counts as no
+  translation (asked again, then listed as untranslated); the original stores
+  it as it is.
+- Lettering: text far larger than its box even at the smallest size (a
+  translator that repeated itself) is set at that size at once, without
+  trying every size; the original tries them all.
 - Usage and key balance (new, M8.1): every answered request is reported through
   `PluginContext.reportUsage` (tokens and cost from the reply's `usage`, or about
   4 characters per token when a server sends none) and counted in `usage.json`

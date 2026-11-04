@@ -37,7 +37,8 @@ void main() {
         expect(got, ['a', 'old', 'c'], reason: reply);
         continue;
       }
-      final expected = [for (final v in r['translations'] as List) v == null ? '' : '$v'];
+      // A null value is no translation here: the block keeps what it had.
+      final expected = [for (final v in r['translations'] as List) v == null ? 'old' : '$v'];
       expect(got, expected, reason: reply);
     }
     expect(() => applyTranslationsJson([TextBlock(xyxy: const BBox(0, 0, 1, 1))], '{"block_0": }'),

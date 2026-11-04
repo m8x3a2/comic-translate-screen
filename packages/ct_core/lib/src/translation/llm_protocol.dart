@@ -35,8 +35,9 @@ String llmSystemPrompt(String sourceLanguage, String targetLanguage) =>
 /// `get_raw_text`: `{"block_0": text, ...}` as Python's
 /// `json.dumps(..., ensure_ascii=False, indent=4)`; with [keys], those
 /// instead of `block_N` (several pages in one request).
-String blocksToJson(List<TextBlock> blocks, {List<String>? keys}) => const JsonEncoder.withIndent('    ')
-    .convert({for (final (i, b) in blocks.indexed) (keys?[i] ?? 'block_$i'): b.text});
+String blocksToJson(List<TextBlock> blocks, {List<String>? keys}) =>
+    const JsonEncoder.withIndent('    ')
+        .convert({for (final (i, b) in blocks.indexed) (keys?[i] ?? 'block_$i'): b.text});
 
 /// The user message of `BaseLLMTranslation.translate`.
 String llmUserPrompt(String extraContext, String blocksJson) =>
@@ -56,7 +57,8 @@ const noJsonWarning = 'No JSON found in the reply.';
 /// object is used instead of failing the whole page.
 ///
 /// Blocks the reply has nothing for are marked [TextBlock.untranslated] (the
-/// others unmarked).
+/// others unmarked); so are those whose value is not text or a number (the
+/// original stores null, lists and objects as they are).
 List<String> applyTranslationsJson(List<TextBlock> blocks, String reply, {List<String>? keys}) {
   final match = _jsonObject.firstMatch(reply);
   if (match == null) {
@@ -76,10 +78,15 @@ List<String> applyTranslationsJson(List<TextBlock> blocks, String reply, {List<S
   final warnings = <String>[];
   for (final (i, b) in blocks.indexed) {
     final key = keys?[i] ?? 'block_$i';
-    if (decoded.containsKey(key)) {
-      final v = decoded[key];
-      b.translation = v is String ? v : (v == null ? '' : '$v');
+    final v = decoded[key];
+    if (v is String || v is num) {
+      b.translation = '$v';
       b.untranslated = false;
+    } else if (decoded.containsKey(key)) {
+      // Null, a list or an object is no translation: the bubble was blank
+      // (and its lettering cleaned) or showed "[a, b]".
+      b.untranslated = true;
+      warnings.add('$key in the reply is not text.');
     } else {
       b.untranslated = true;
       warnings.add('$key not found in the reply.');
@@ -207,9 +214,7 @@ Future<List<TextBlock>> translatePack(
       for (final page in pages)
         for (var i = 0; i < page.blocks.length; i++) ExchangeLabel(page.number, i + 1).code,
     ],
-    pageImages: [
-      for (final page in pages) ?page.image,
-    ],
+    pageImages: [for (final page in pages) ?page.image],
   ),
   context,
 );

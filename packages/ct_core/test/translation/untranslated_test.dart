@@ -21,6 +21,24 @@ void main() {
     expect(blocks.every((b) => b.untranslated), isTrue);
   });
 
+  test('a value that is not text is no translation; a number is', () {
+    final blocks = [
+      for (final t in ['A', 'B', 'C', 'D', 'E']) block(t, 'old'),
+    ];
+    final warnings = applyTranslationsJson(
+      blocks,
+      '{"block_0": 5, "block_1": null, "block_2": ["a", "b"], "block_3": {"a": 1}, "block_4": true}',
+    );
+    expect([for (final b in blocks) b.translation], ['5', 'old', 'old', 'old', 'old']);
+    expect([for (final b in blocks) b.untranslated], [false, true, true, true, true]);
+    expect(warnings, [
+      'block_1 in the reply is not text.',
+      'block_2 in the reply is not text.',
+      'block_3 in the reply is not text.',
+      'block_4 in the reply is not text.',
+    ]);
+  });
+
   test('kept in the project file and in copies', () {
     final b = block('Hi')..untranslated = true;
     expect(TextBlock.fromJson(b.toJson()).untranslated, isTrue);
