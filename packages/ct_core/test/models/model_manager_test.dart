@@ -185,6 +185,28 @@ void main() {
     await server.start();
   });
 
+  test('a secure connection that breaks off is tried again, as a network error', () async {
+    // An antivirus or a proxy in between drops the connection mid-handshake.
+    final cut = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(cut.close);
+    var tries = 0;
+    cut.listen((s) {
+      tries++;
+      s.destroy();
+    });
+    final spec = specFor(Uri.parse('https://127.0.0.1:${cut.port}/model.bin'), payload);
+    final manager = ModelManager(tmp, retryDelay: const Duration(milliseconds: 10));
+    await expectLater(
+      manager.download(spec),
+      throwsA(
+        isA<ModelDownloadException>()
+            .having((e) => e.network, 'network', isTrue)
+            .having((e) => e.message, 'message', contains('Secure connection')),
+      ),
+    );
+    expect(tries, manager.downloadAttempts);
+  });
+
   test('checksum mismatch deletes the file and fails', () async {
     final manager = ModelManager(tmp);
     final spec = specFor(server.url, payload, sha: '0' * 64);
