@@ -155,4 +155,72 @@ void main() {
     await tester.pump();
     expect(find.byType(WebtoonStrip), findsNothing);
   });
+
+  // The owner's reports of 2026-11-03: a page came into view while the button
+  // was held, the page under the mouse was built anew, and letting go threw
+  // "Using ref when a widget is unmounted"; the stroke was lost and the
+  // current page no longer followed the scrolling.
+  testWidgets('a page coming into view while the button is held keeps the drag', (tester) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final files = [for (var i = 0; i < 6; i++) p.join(dir.path, 'p$i.png')];
+    await tester.runAsync(() async {
+      for (final f in files) {
+        await ImageCodec.writeFile(f, RgbImage.filled(800, 400, 255, 255, 255));
+      }
+    });
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          servicesProvider.overrideWithValue(services),
+          initialSettingsProvider.overrideWithValue(fakeSettings()),
+          workerRegistryProvider.overrideWithValue(fakeRegistry),
+        ],
+        child: const ComicTranslateApp(),
+      ),
+    );
+    final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    await tester.runAsync(() => container.read(workspaceProvider.notifier).addInputs(files));
+    await tester.pump();
+    await tester.tap(find.text('Вебтун'));
+    for (var i = 0; i < 5; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+    }
+    container.read(editorProvider.notifier).setTool(EditorTool.boxes);
+    await tester.pump();
+    final first = find.byKey(ValueKey(container.read(workspaceProvider).pages[0].id));
+    final canvas = tester.state(find.descendant(of: first, matching: find.byType(PageCanvas)));
+
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.down(tester.getTopLeft(first) + const Offset(150, 40));
+    await gesture.moveBy(const Offset(60, 40));
+    await tester.pump();
+    // Another pointer scrolls a little: a page further down comes into view.
+    final wheel = TestPointer(99, PointerDeviceKind.mouse);
+    final strip = tester.getCenter(find.byType(WebtoonStrip));
+    await tester.sendEventToBinding(wheel.hover(strip));
+    final built = find.byType(PageCanvas).evaluate().length;
+    for (var i = 0; i < 10 && find.byType(PageCanvas).evaluate().length == built; i++) {
+      await tester.sendEventToBinding(wheel.scroll(const Offset(0, 100)));
+      await tester.pump();
+    }
+    expect(find.byType(PageCanvas), findsNWidgets(built + 1), reason: 'one more page is built');
+    expect(first, findsOneWidget);
+    expect(tester.state(find.descendant(of: first, matching: find.byType(PageCanvas))), same(canvas));
+    await gesture.moveBy(const Offset(20, 20));
+    await tester.pump();
+    await gesture.up();
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(container.read(workspaceProvider).pages[0].blocks, hasLength(1));
+
+    // The current page follows the scrolling again.
+    for (var i = 0; i < 12; i++) {
+      await tester.sendEventToBinding(wheel.scroll(const Offset(0, 300)));
+    }
+    await tester.pump();
+    expect(container.read(workspaceProvider).current, greaterThan(0));
+  });
 }

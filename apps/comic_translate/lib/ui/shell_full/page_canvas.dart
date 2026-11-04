@@ -289,7 +289,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
 
   void _move(PointerMoveEvent e) {
     final d = _drag;
-    if (d == null) return;
+    if (d == null || !mounted) return;
     if (d.mode == _Mode.pan) {
       widget.transform.value = Matrix4.translationValues(e.delta.dx, e.delta.dy, 0)..multiply(widget.transform.value);
       return;
@@ -324,7 +324,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   void _up(PointerUpEvent e) {
     final d = _drag;
     _drag = null;
-    if (d == null) return;
+    // The button is let go on the listener it was pressed on, even when this
+    // page has left the window since.
+    if (d == null || !mounted) return;
     final ws = ref.read(workspaceProvider.notifier);
     switch (d.mode) {
       case _Mode.pan:

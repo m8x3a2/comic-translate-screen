@@ -224,11 +224,14 @@ class WebtoonStripState extends ConsumerState<WebtoonStrip> {
                 children: [
                   // Upper pages last: what reaches below a page is drawn over
                   // the page under it.
+                  // The key sits on the Stack's own child: keyed one level
+                  // down, a page coming into view shifted the others and each
+                  // was built anew, even under a held mouse button.
                   for (final i in shown.reversed)
                     Positioned.fromRect(
+                      key: ValueKey(pages[i].id),
                       rect: layout.rects[i],
                       child: _StripPage(
-                        key: ValueKey(pages[i].id),
                         page: pages[i],
                         size: layout.rects[i].size,
                         transform: widget.transform,
@@ -264,7 +267,6 @@ class _DragCount extends Notifier<int> {
 
 class _StripPage extends ConsumerWidget {
   const _StripPage({
-    super.key,
     required this.page,
     required this.size,
     required this.transform,
@@ -283,19 +285,24 @@ class _StripPage extends ConsumerWidget {
   final VoidCallback onActivate;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Listener(
-    onPointerDown: (_) => ref.read(_dragging.notifier).add(1),
-    onPointerUp: (_) => ref.read(_dragging.notifier).add(-1),
-    onPointerCancel: (_) => ref.read(_dragging.notifier).add(-1),
-    child: PageCanvas(
-      page: page,
-      size: size,
-      transform: transform,
-      readOnly: readOnly,
-      active: active,
-      onActivate: onActivate,
-      strip: true,
-      reachBelow: reachBelow,
-    ),
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Kept here: the button may be let go after this page left the strip,
+    // and the count must still go down.
+    final dragging = ref.read(_dragging.notifier);
+    return Listener(
+      onPointerDown: (_) => dragging.add(1),
+      onPointerUp: (_) => dragging.add(-1),
+      onPointerCancel: (_) => dragging.add(-1),
+      child: PageCanvas(
+        page: page,
+        size: size,
+        transform: transform,
+        readOnly: readOnly,
+        active: active,
+        onActivate: onActivate,
+        strip: true,
+        reachBelow: reachBelow,
+      ),
+    );
+  }
 }
