@@ -18,11 +18,11 @@ void main() {
   }
 
   TextBlock block(String text, {String? font}) => TextBlock(
-        xyxy: const BBox(10, 20, 110, 80),
-        text: text,
-        translation: '[ru] $text',
-        style: font == null ? null : BlockStyle(fontFamily: font, bold: true),
-      );
+    xyxy: const BBox(10, 20, 110, 80),
+    text: text,
+    translation: '[ru] $text',
+    style: font == null ? null : BlockStyle(fontFamily: font, bold: true),
+  );
 
   ProjectData chapter({String translation = 'Hello'}) {
     final font = file('Lettering.ttf', List.filled(300, 7));
@@ -35,7 +35,10 @@ void main() {
           image: file('001.png', [1, 2, 3, 4]),
           cleanImage: file('a_clean.png', [5, 6, 7]),
           mask: file('a_mask.png', [8, 9]),
-          blocks: [block(translation, font: font), block('Bye')],
+          blocks: [
+            block(translation, font: font),
+            block('Bye'),
+          ],
           strokes: const [
             MaskStroke(points: [Point2(1, 2), Point2(3, 4)], width: 12),
             MaskStroke(points: [Point2(5, 6)], width: 4, erase: true),
@@ -52,7 +55,11 @@ void main() {
   test('a project keeps pages, boxes, styles, strokes and files, and fonts', () {
     final path = p.join(dir.path, 'My chapter.ctsproj');
     final first = ProjectFile.save(path, chapter(), appVersion: '0.1.0');
-    expect((first.pagesWritten, first.filesAdded), (2, 4), reason: 'image, clean, mask, font; the copy is not stored again');
+    expect(
+      (first.pagesWritten, first.filesAdded),
+      (2, 4),
+      reason: 'image, clean, mask, font; the copy is not stored again',
+    );
 
     final info = ProjectFile.info(path);
     expect((info.pages, info.appVersion), (2, '0.1.0'));
@@ -68,8 +75,11 @@ void main() {
     expect(File(a.mask!).readAsBytesSync(), [8, 9]);
     expect(a.strokes.map((s) => s.toJson()), chapter().pages.first.strokes.map((s) => s.toJson()));
     expect(a.state, {'status': 'done', 'render_scale': 1.5});
-    expect(a.blocks.map((b) => b.toJson()), chapter().pages.first.blocks.map((b) => b.toJson()),
-        reason: 'the font file is still where it was, so its path stays');
+    expect(
+      a.blocks.map((b) => b.toJson()),
+      chapter().pages.first.blocks.map((b) => b.toJson()),
+      reason: 'the font file is still where it was, so its path stays',
+    );
     expect(File(data.pages.last.image).readAsBytesSync(), [1, 2, 3, 4]);
 
     // On another computer the font comes out of the project.
@@ -153,5 +163,35 @@ void main() {
       throwsA(isA<ProjectFormatException>().having((e) => e.newerVersion, 'newer', isTrue)),
     );
     expect(jsonEncode(const ProjectFormatException('x').toString()), contains('x'));
+  });
+
+  // The program stops in the middle of a save (a crash, the power, the task
+  // manager): what is on disk is the file half written plus SQLite's journal
+  // of the pages it had before. The next look at the file, even a read-only
+  // one (the recovery offer at start), sees the project as it was.
+  test('a save cut off in the middle leaves the project as it was', () {
+    final path = p.join(dir.path, 'cut.ctsproj');
+    ProjectFile.save(path, chapter());
+    final cut = p.join(dir.path, 'crashed', 'cut.ctsproj');
+    Directory(p.dirname(cut)).createSync();
+    final db = sqlite3.open(path);
+    db.execute('PRAGMA cache_size = 10');
+    db.execute('BEGIN');
+    // Enough to spill into the file itself before the commit.
+    db.execute("INSERT INTO blobs(hash, ext, size, data) VALUES('x', '.png', 4000000, randomblob(4000000))");
+    db.execute("UPDATE pages SET json = '{}'");
+    db.execute('DELETE FROM meta');
+    expect(File('$path-journal').existsSync(), isTrue);
+    File(path).copySync(cut);
+    File('$path-journal').copySync('$cut-journal');
+    db.execute('ROLLBACK');
+    db.close();
+    expect(File(cut).lengthSync(), greaterThan(File(path).lengthSync()), reason: 'the half-written file differs');
+
+    final info = ProjectFile.info(cut);
+    expect(info.pages, 2);
+    final data = ProjectFile.load(cut, Directory(p.join(dir.path, 'out')));
+    expect(data.pages.first.blocks.first.text, 'Hello');
+    expect(File('$cut-journal').existsSync(), isFalse, reason: 'rolled back on opening');
   });
 }

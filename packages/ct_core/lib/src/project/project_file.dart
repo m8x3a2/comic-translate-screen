@@ -150,7 +150,11 @@ class ProjectFile {
         final abs = p.normalize(p.absolute(file));
         final mtime = stat.modified.microsecondsSinceEpoch;
         String? hash;
-        final known = db.select('SELECT hash FROM fingerprints WHERE path = ? AND size = ? AND mtime = ?', [abs, stat.size, mtime]);
+        final known = db.select('SELECT hash FROM fingerprints WHERE path = ? AND size = ? AND mtime = ?', [
+          abs,
+          stat.size,
+          mtime,
+        ]);
         if (known.isNotEmpty) {
           final h = known.first['hash'] as String;
           if (db.select('SELECT 1 FROM blobs WHERE hash = ?', [h]).isNotEmpty) hash = h;
@@ -247,15 +251,8 @@ class ProjectFile {
   /// (a page's files in `pages/<id>/`, fonts in `fonts/`). A font file that
   /// is still at its old place with the same size is used from there.
   static ProjectData load(String path, Directory filesDir) {
-    Database db;
-    var writable = true;
-    try {
-      db = _open(path, writable: true);
-    } on ProjectFormatException {
-      // A read-only file (or folder): open it without remembering the files.
-      db = _open(path);
-      writable = false;
-    }
+    // A read-only file (or folder): the files are not remembered.
+    final (db, writable) = _openToRead(path);
     try {
       _checkVersion(db);
       final blobCache = <String, String>{};
@@ -299,20 +296,23 @@ class ProjectFile {
           }
           blocks.add(TextBlock.fromJson(bj));
         }
-        pages.add(ProjectPage(
-          id: id,
-          name: j['name'] as String? ?? id,
-          source: j['source'] as String?,
-          image: materialize(j['image'], dir),
-          cleanImage: j['clean'] == null ? null : materialize(j['clean'], dir),
-          mask: j['mask'] == null ? null : materialize(j['mask'], dir),
-          overflow: j['overflow'] == null ? null : materialize(j['overflow'], dir),
-          blocks: blocks,
-          strokes: [
-            for (final s in (j['strokes'] as List? ?? const [])) MaskStroke.fromJson((s as Map).cast<String, Object?>()),
-          ],
-          state: ((j['state'] as Map?) ?? const {}).cast<String, Object?>(),
-        ));
+        pages.add(
+          ProjectPage(
+            id: id,
+            name: j['name'] as String? ?? id,
+            source: j['source'] as String?,
+            image: materialize(j['image'], dir),
+            cleanImage: j['clean'] == null ? null : materialize(j['clean'], dir),
+            mask: j['mask'] == null ? null : materialize(j['mask'], dir),
+            overflow: j['overflow'] == null ? null : materialize(j['overflow'], dir),
+            blocks: blocks,
+            strokes: [
+              for (final s in (j['strokes'] as List? ?? const []))
+                MaskStroke.fromJson((s as Map).cast<String, Object?>()),
+            ],
+            state: ((j['state'] as Map?) ?? const {}).cast<String, Object?>(),
+          ),
+        );
       }
       // The next save knows these files without reading them again.
       if (writable && unpacked.isNotEmpty) {
@@ -339,7 +339,7 @@ class ProjectFile {
   }
 
   static ProjectInfo info(String path) {
-    final db = _open(path);
+    final (db, _) = _openToRead(path);
     try {
       _checkVersion(db);
       return ProjectInfo(
@@ -350,6 +350,18 @@ class ProjectFile {
       );
     } finally {
       db.close();
+    }
+  }
+
+  /// Opens [path] for reading, writable when it can be: a save cut off in the
+  /// middle left SQLite's journal next to the file, and only a writable
+  /// connection puts the file back as it was. Read-only, the half-written
+  /// file is read as it is (the recovery offer at start lost its work).
+  static (Database, bool writable) _openToRead(String path) {
+    try {
+      return (_open(path, writable: true), true);
+    } on ProjectFormatException {
+      return (_open(path), false);
     }
   }
 
@@ -391,7 +403,9 @@ class ProjectFile {
         db.execute('PRAGMA synchronous = NORMAL');
         db.execute('CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL)');
         db.execute('CREATE TABLE IF NOT EXISTS project(id INTEGER PRIMARY KEY CHECK (id = 1), json TEXT NOT NULL)');
-        db.execute('CREATE TABLE IF NOT EXISTS pages(id TEXT PRIMARY KEY, position INTEGER NOT NULL, json TEXT NOT NULL)');
+        db.execute(
+          'CREATE TABLE IF NOT EXISTS pages(id TEXT PRIMARY KEY, position INTEGER NOT NULL, json TEXT NOT NULL)',
+        );
         db.execute(
           'CREATE TABLE IF NOT EXISTS blobs(hash TEXT PRIMARY KEY, ext TEXT NOT NULL, size INTEGER NOT NULL, data BLOB NOT NULL)',
         );
@@ -422,8 +436,10 @@ class ProjectFile {
     if (app != _app) throw const ProjectFormatException('not a Comic Translate Screen project');
     final version = int.tryParse(_meta(db, 'format_version') ?? '') ?? 0;
     if (version > formatVersion) {
-      throw ProjectFormatException('the project was saved by a newer version of the program (format $version)',
-          newerVersion: true);
+      throw ProjectFormatException(
+        'the project was saved by a newer version of the program (format $version)',
+        newerVersion: true,
+      );
     }
   }
 
