@@ -110,50 +110,49 @@ class RenderSettings {
     bool? shapeFit,
     Map<String, BlockStyle>? presets,
     List<RunStyle>? runs,
-  }) =>
-      RenderSettings(
-        fontFamily: fontFamily ?? this.fontFamily,
-        minFontSize: minFontSize ?? this.minFontSize,
-        maxFontSize: maxFontSize ?? this.maxFontSize,
-        color: color ?? this.color,
-        textCase: textCase ?? this.textCase,
-        outline: outline ?? this.outline,
-        outlineColor: outlineColor ?? this.outlineColor,
-        outlineWidth: outlineWidth ?? this.outlineWidth,
-        bold: bold ?? this.bold,
-        italic: italic ?? this.italic,
-        underline: underline ?? this.underline,
-        lineSpacing: lineSpacing ?? this.lineSpacing,
-        alignment: alignment ?? this.alignment,
-        placeInBlock: placeInBlock ?? this.placeInBlock,
-        matchSource: matchSource ?? this.matchSource,
-        hyphenate: hyphenate ?? this.hyphenate,
-        shapeFit: shapeFit ?? this.shapeFit,
-        presets: presets ?? this.presets,
-        runs: runs ?? this.runs,
-      );
+  }) => RenderSettings(
+    fontFamily: fontFamily ?? this.fontFamily,
+    minFontSize: minFontSize ?? this.minFontSize,
+    maxFontSize: maxFontSize ?? this.maxFontSize,
+    color: color ?? this.color,
+    textCase: textCase ?? this.textCase,
+    outline: outline ?? this.outline,
+    outlineColor: outlineColor ?? this.outlineColor,
+    outlineWidth: outlineWidth ?? this.outlineWidth,
+    bold: bold ?? this.bold,
+    italic: italic ?? this.italic,
+    underline: underline ?? this.underline,
+    lineSpacing: lineSpacing ?? this.lineSpacing,
+    alignment: alignment ?? this.alignment,
+    placeInBlock: placeInBlock ?? this.placeInBlock,
+    matchSource: matchSource ?? this.matchSource,
+    hyphenate: hyphenate ?? this.hyphenate,
+    shapeFit: shapeFit ?? this.shapeFit,
+    presets: presets ?? this.presets,
+    runs: runs ?? this.runs,
+  );
 
   Map<String, Object?> toJson() => {
-        'font_family': fontFamily,
-        'min_font_size': minFontSize,
-        'max_font_size': maxFontSize,
-        'color': _hex(color),
-        'text_case': textCase.name,
-        'outline': outline,
-        'outline_color': _hex(outlineColor),
-        'outline_width': outlineWidth,
-        'bold': bold,
-        'italic': italic,
-        'underline': underline,
-        'line_spacing': lineSpacing,
-        'alignment': alignment.name,
-        'place_in_block': placeInBlock,
-        'match_source': matchSource,
-        'hyphenate': hyphenate,
-        'shape_fit': shapeFit,
-        if (presets.isNotEmpty) 'presets': {for (final e in presets.entries) e.key: e.value.toJson()},
-        if (runs.isNotEmpty) 'runs': [for (final r in runs) r.toJson()],
-      };
+    'font_family': fontFamily,
+    'min_font_size': minFontSize,
+    'max_font_size': maxFontSize,
+    'color': _hex(color),
+    'text_case': textCase.name,
+    'outline': outline,
+    'outline_color': _hex(outlineColor),
+    'outline_width': outlineWidth,
+    'bold': bold,
+    'italic': italic,
+    'underline': underline,
+    'line_spacing': lineSpacing,
+    'alignment': alignment.name,
+    'place_in_block': placeInBlock,
+    'match_source': matchSource,
+    'hyphenate': hyphenate,
+    'shape_fit': shapeFit,
+    if (presets.isNotEmpty) 'presets': {for (final e in presets.entries) e.key: e.value.toJson()},
+    if (runs.isNotEmpty) 'runs': [for (final r in runs) r.toJson()],
+  };
 
   factory RenderSettings.fromJson(Map<String, Object?> j) {
     const d = RenderSettings();
@@ -164,8 +163,7 @@ class RenderSettings {
       maxFontSize: pick<num>('max_font_size', d.maxFontSize).toInt(),
       color: parseColor(pick('color', '')) ?? d.color,
       // Older settings had one switch: on = all capitals.
-      textCase: TextCase.values.asNameMap()[j['text_case']] ??
-          (j['upper_case'] == true ? TextCase.upper : d.textCase),
+      textCase: TextCase.values.asNameMap()[j['text_case']] ?? (j['upper_case'] == true ? TextCase.upper : d.textCase),
       outline: pick('outline', d.outline),
       outlineColor: parseColor(pick('outline_color', '')) ?? d.outlineColor,
       outlineWidth: pick<num>('outline_width', d.outlineWidth).toDouble(),
@@ -272,16 +270,16 @@ class TextItem {
   );
 
   Map<String, Object?> toJson() => {
-        'text': unmarkRuns(text),
-        'font_size_pt': fontSizePt,
-        'x': x,
-        'y': y,
-        'width': width,
-        'height': height,
-        'color': '#${(color & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}',
-        'vertical': vertical,
-        if (angle != 0) 'angle': angle,
-      };
+    'text': unmarkRuns(text),
+    'font_size_pt': fontSizePt,
+    'x': x,
+    'y': y,
+    'width': width,
+    'height': height,
+    'color': '#${(color & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}',
+    'vertical': vertical,
+    if (angle != 0) 'angle': angle,
+  };
 }
 
 /// `_split_at_fitting_hyphen`: the longest prefix ending at a hyphen inside
@@ -335,15 +333,18 @@ List<String> _wrapWords(
 }) {
   final words = text.trim().isEmpty ? <String>[] : text.trim().split(_whitespace);
   final lines = <String>[];
-  while (words.isNotEmpty) {
+  // The next word to place (taking words off the front of the list made a
+  // long text slow: each took the time of all the words after it).
+  var w = 0;
+  while (w < words.length) {
     final maxSide = maxSideOf(lines.length);
     var line = '';
-    while (words.isNotEmpty) {
-      final next = words.first;
+    while (w < words.length) {
+      final next = words[w];
       final candidate = line.isEmpty ? next : '$line $next';
       if (measure(candidate) <= maxSide) {
         line = candidate;
-        words.removeAt(0);
+        w++;
         continue;
       }
       final split =
@@ -353,11 +354,11 @@ List<String> _wrapWords(
               : null);
       if (split != null) {
         line = line.isEmpty ? split.$1 : '$line ${split.$1}';
-        words[0] = split.$2;
+        words[w] = split.$2;
         break;
       }
       if (line.isNotEmpty) break;
-      line = words.removeAt(0);
+      line = words[w++];
       break;
     }
     lines.add(line);
@@ -444,6 +445,22 @@ FittedText fitText(
   bool noSpaceLanguage = false,
   ({double a, double b})? ellipse,
 }) {
+  // Far more text than the box holds even at the smallest size (a translator
+  // that repeated itself): only that size, words whole. Trying every size
+  // and way of breaking words took minutes and hung the window.
+  if (_hopeless(text, measurer, roiWidth, roiHeight, settings, vertical: vertical)) {
+    return _fitInBox(
+      text,
+      measurer,
+      roiWidth,
+      roiHeight,
+      settings: settings.copyWith(maxFontSize: settings.minFontSize),
+      vertical: vertical,
+      noSpaceLanguage: noSpaceLanguage,
+      breaks: _Breaks.none,
+    );
+  }
+
   FittedText fit(_Breaks breaks) {
     final box = _fitInBox(
       text,
@@ -480,6 +497,24 @@ FittedText fitText(
 }
 
 bool _breakable(String word) => hyphenationPoints(word).isNotEmpty;
+
+/// Text this long is checked by [_hopeless] (a bubble's text is shorter).
+const _longText = 500;
+
+/// [text] needs more than twice the box even at the smallest size, laid as
+/// one line: wrapping only adds to that.
+bool _hopeless(
+  String text,
+  TextMeasurer measurer,
+  double roiWidth,
+  double roiHeight,
+  RenderSettings settings, {
+  required bool vertical,
+}) {
+  if (text.length < _longText) return false;
+  final m = _metrics(measurer, settings, text.replaceAll(_whitespace, ' '), settings.minFontSize, vertical: vertical);
+  return m.width * m.height > 2 * roiWidth * roiHeight;
+}
 
 /// Width and height of [t] at [size] with the outline around it (or
 /// without).
@@ -735,19 +770,21 @@ List<TextItem> layoutPage(
       };
       y += spareH / 2;
     }
-    items.add(TextItem(
-      text: fit.text,
-      fontSizePt: fit.fontSizePt,
-      x: x,
-      y: y,
-      width: fit.width,
-      height: fit.height,
-      color: style?.color ?? _preset(style, settings)?.color ?? smartTextColor(b.fontColor, settings.color),
-      vertical: vertical,
-      block: b,
-      angle: style?.angle ?? b.angle,
-      settings: identical(s, settings) ? null : s,
-    ));
+    items.add(
+      TextItem(
+        text: fit.text,
+        fontSizePt: fit.fontSizePt,
+        x: x,
+        y: y,
+        width: fit.width,
+        height: fit.height,
+        color: style?.color ?? _preset(style, settings)?.color ?? smartTextColor(b.fontColor, settings.color),
+        vertical: vertical,
+        block: b,
+        angle: style?.angle ?? b.angle,
+        settings: identical(s, settings) ? null : s,
+      ),
+    );
   }
   return items;
 }
@@ -773,7 +810,9 @@ RenderSettings blockRenderSettings(TextBlock block, RenderSettings settings, Pag
   if (style == null) return s;
   if (_preset(style, settings) case final preset?) s = preset.applyTo(s);
   s = style.applyTo(s);
-  if (style.runs.isNotEmpty) s = s.copyWith(runs: [for (final r in style.runs) resolveRunStyle(r.style, settings.presets)]);
+  if (style.runs.isNotEmpty) {
+    s = s.copyWith(runs: [for (final r in style.runs) resolveRunStyle(r.style, settings.presets)]);
+  }
   return s;
 }
 

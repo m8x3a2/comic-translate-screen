@@ -26,7 +26,9 @@ void main() {
   test('greedy wrapping matches the original', () {
     for (final c in (loadReference('render.json')['wrap'] as List).cast<Map>()) {
       final text = c['text'] as String, max = (c['max'] as num).toDouble();
-      final out = c['no_space'] as bool ? wrapNoSpaceTextGreedily(text, measure, max) : wrapTextGreedily(text, measure, max);
+      final out = c['no_space'] as bool
+          ? wrapNoSpaceTextGreedily(text, measure, max)
+          : wrapTextGreedily(text, measure, max);
       expect(out, c['out'], reason: '"$text" max=$max');
     }
   });
@@ -39,10 +41,19 @@ void main() {
     expect(m.width + 2, lessThanOrEqualTo(200));
     expect(m.height + 2, lessThanOrEqualTo(120));
     final bigger = FakeMeasurer().measure(
-        wrapTextGreedily('Hello there, how are you today?', (t) => FakeMeasurer().measure(t, fit.fontSizePt + 1, vertical: false).width + 2, 200),
-        fit.fontSizePt + 1,
-        vertical: false);
-    expect(bigger.width + 2 > 200 || bigger.height + 2 > 120 || fit.fontSizePt == 40, isTrue, reason: 'next size must not fit');
+      wrapTextGreedily(
+        'Hello there, how are you today?',
+        (t) => FakeMeasurer().measure(t, fit.fontSizePt + 1, vertical: false).width + 2,
+        200,
+      ),
+      fit.fontSizePt + 1,
+      vertical: false,
+    );
+    expect(
+      bigger.width + 2 > 200 || bigger.height + 2 > 120 || fit.fontSizePt == 40,
+      isTrue,
+      reason: 'next size must not fit',
+    );
     expect(fit.width, m.width, reason: 'metrics exclude the outline');
   });
 
@@ -50,6 +61,18 @@ void main() {
     const s = RenderSettings(minFontSize: 9, maxFontSize: 40);
     final fit = fitText('Unbreakablewordthatisverylong indeed', FakeMeasurer(), 30, 20, settings: s);
     expect(fit.fontSizePt, 9);
+  });
+
+  test('a translator that repeated itself: the smallest size at once, the same lines', () {
+    const s = RenderSettings(minFontSize: 9, maxFontSize: 40, hyphenate: true);
+    final measurer = _Counting();
+    final text = 'Очень длинный перевод. ' * 3000;
+    final fit = fitText(text, measurer, 200, 120, settings: s, ellipse: (a: 100, b: 60));
+    expect((fit.fontSizePt, fit.fits), (9, false));
+    expect(fit.text, wrapTextGreedily(text, (t) => FakeMeasurer().measure(t, 9, vertical: false).width, 200));
+    // Each word measured a few times, not once for every size and way of
+    // breaking words.
+    expect(measurer.calls, lessThan(5 * 9000));
   });
 
   test('render areas shrink by 5% except for Korean and Chinese sources', () {
@@ -68,36 +91,82 @@ void main() {
       TextBlock(xyxy: const BBox(0, 300, 300, 500), translation: '...'),
       TextBlock(xyxy: const BBox(400, 0, 500, 400), translation: '縦書き', direction: TextDirection.vertical),
     ];
-    final items = layoutPage(blocks, 1000, 1000, FakeMeasurer(),
-        settings: const RenderSettings(textCase: TextCase.upper), targetLanguage: 'Russian');
+    final items = layoutPage(
+      blocks,
+      1000,
+      1000,
+      FakeMeasurer(),
+      settings: const RenderSettings(textCase: TextCase.upper),
+      targetLanguage: 'Russian',
+    );
     expect(items.length, 2, reason: 'punctuation-only translation is not drawn');
     expect(items.first.text, 'ПРИВЕТ');
     expect(items.first.color, 0xFF0A141E);
     expect(items.last.vertical, isFalse, reason: 'Russian is not written vertically');
-    final ja = layoutPage([blocks.last], 1000, 1000, FakeMeasurer(), settings: const RenderSettings(), targetLanguage: 'Japanese');
+    final ja = layoutPage(
+      [blocks.last],
+      1000,
+      1000,
+      FakeMeasurer(),
+      settings: const RenderSettings(),
+      targetLanguage: 'Japanese',
+    );
     expect(ja.single.vertical, isTrue);
   });
 
   test('fitted text is placed inside its area (original: top-left corner)', () {
     TextBlock block() => TextBlock(xyxy: const BBox(0, 0, 400, 300), translation: 'Hi')..sourceLang = 'ko';
-    final placed = layoutPage([block()], 1000, 1000, FakeMeasurer(), settings: const RenderSettings(), targetLanguage: 'English').single;
+    final placed = layoutPage(
+      [block()],
+      1000,
+      1000,
+      FakeMeasurer(),
+      settings: const RenderSettings(),
+      targetLanguage: 'English',
+    ).single;
     expect(placed.x, closeTo((400 - placed.width) / 2, 1e-9));
     expect(placed.y, closeTo((300 - placed.height) / 2, 1e-9));
-    final right = layoutPage([block()], 1000, 1000, FakeMeasurer(),
-            settings: const RenderSettings(alignment: TextAlignment.right), targetLanguage: 'English')
-        .single;
+    final right = layoutPage(
+      [block()],
+      1000,
+      1000,
+      FakeMeasurer(),
+      settings: const RenderSettings(alignment: TextAlignment.right),
+      targetLanguage: 'English',
+    ).single;
     expect(right.x, closeTo(400 - right.width, 1e-9));
-    final original = layoutPage([block()], 1000, 1000, FakeMeasurer(),
-            settings: const RenderSettings(placeInBlock: false), targetLanguage: 'English')
-        .single;
+    final original = layoutPage(
+      [block()],
+      1000,
+      1000,
+      FakeMeasurer(),
+      settings: const RenderSettings(placeInBlock: false),
+      targetLanguage: 'English',
+    ).single;
     expect((original.x, original.y), (0.0, 0.0));
   });
 
   test('render settings survive a JSON round trip', () {
-    const s = RenderSettings(fontFamily: 'Pangolin', color: 0xFF112233, outlineWidth: 1.5, alignment: TextAlignment.right, placeInBlock: false);
+    const s = RenderSettings(
+      fontFamily: 'Pangolin',
+      color: 0xFF112233,
+      outlineWidth: 1.5,
+      alignment: TextAlignment.right,
+      placeInBlock: false,
+    );
     final back = RenderSettings.fromJson(s.toJson());
     expect(back.toJson(), s.toJson());
     expect(parseColor('#ff0000'), 0xFFFF0000);
     expect(parseColor('nope'), isNull);
   });
+}
+
+class _Counting extends FakeMeasurer {
+  var calls = 0;
+
+  @override
+  ({double width, double height}) measure(String text, int fontSizePt, {required bool vertical}) {
+    calls++;
+    return super.measure(text, fontSizePt, vertical: vertical);
+  }
 }
