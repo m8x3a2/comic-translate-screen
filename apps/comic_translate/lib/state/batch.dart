@@ -597,10 +597,13 @@ class BatchNotifier extends Notifier<BatchState> {
         }
         return false;
       } catch (e, st) {
+        // Every page of the request failed, even when the first one already
+        // stops the run: those after it were left busy.
+        var stop = false;
         for (final (i, page, _) in pack) {
-          if (failed(i, page, e, st, sw.elapsedMilliseconds ~/ pack.length)) return false;
+          if (failed(i, page, e, st, sw.elapsedMilliseconds ~/ pack.length)) stop = true;
         }
-        return true;
+        return !stop;
       }
       translated(sw.elapsedMilliseconds);
       for (final ((i, page, _), blocks) in [for (var n = 0; n < pack.length; n++) (pack[n], done[n])]) {
