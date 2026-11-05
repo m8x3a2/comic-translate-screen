@@ -2838,6 +2838,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.';
 
   @override
+  String chatUntranslated(String labels) {
+    return 'The chat seems to have left these untranslated: $labels';
+  }
+
+  @override
+  String get chatUntranslatedAsk => 'Ask again';
+
+  @override
   String get chatPreset => 'Instructions preset';
 
   @override

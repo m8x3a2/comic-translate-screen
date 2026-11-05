@@ -2840,6 +2840,14 @@ class AppLocalizationsRu extends AppLocalizations {
       'В инструкции остались пузыри всех страниц: её изменили вручную, или это прошлый обмен.';
 
   @override
+  String chatUntranslated(String labels) {
+    return 'Похоже, чат не перевёл: $labels';
+  }
+
+  @override
+  String get chatUntranslatedAsk => 'Спросить ещё раз';
+
+  @override
   String get chatPreset => 'Заготовка инструкции';
 
   @override

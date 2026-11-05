@@ -103,7 +103,9 @@ Under the field the app tells what it found:
 - **"No answer: …"**: bubbles the chat did not answer (you can send them again, see "Another round");
 - **"Unchanged"**: lines that match what the bubble has already;
 - **"Not sent"**: labels that were not in the exchange (the chat made a mistake);
-- **"Answered twice"**: the first one counts.
+- **"Answered twice"**: the first one counts;
+- **"The chat seems to have left these untranslated: …"**: the translation is the original again or written in
+  its letters. **"Ask again"** puts these labels into the "Ask again" field (see "Another round").
 
 You can turn on **"Offer the answer from the clipboard"** (Settings → Exchange with a chat AI, off by default):
 you copy the answer in the chat, come back to the window, and the app offers to paste it.

@@ -272,6 +272,19 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     await _rebuild();
   }
 
+  /// The answers of [match] the chat seems to have left untranslated (the
+  /// modes that translate).
+  List<ExchangeLabel> _untranslated(ExchangeMatch match) {
+    if (_mode == ExchangeMode.recognize || _items.isEmpty) return const [];
+    final settings = ref.read(settingsProvider);
+    final page = ref.read(workspaceProvider).byId(_items.first.pageId);
+    return untranslatedReplies(
+      _items,
+      match.replies,
+      targetLanguage: page?.targetOf(settings) ?? settings.targetLanguage,
+    );
+  }
+
   /// For a request of many pieces on several pages sent at once: how many
   /// pages at a time keep each part within [bigRequestPieces] (one page at
   /// least); null when the request is not big.
@@ -1409,6 +1422,17 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
               if (match.unchanged.isNotEmpty) Text(l.chatUnchanged(match.unchanged.length)),
               if (match.unknown.isNotEmpty) Text(l.chatUnknown(_codes(match.unknown)), style: warn),
               if (match.missingArrow.isNotEmpty) Text(l.chatNoArrow(sep, _codes(match.missingArrow)), style: warn),
+              if (_untranslated(match) case final left when left.isNotEmpty)
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(l.chatUntranslated(_codes(left)), style: warn),
+                    TextButton(
+                      onPressed: () => setState(() => _askAgain.text = [for (final x in left) x.code].join(', ')),
+                      child: Text(l.chatUntranslatedAsk),
+                    ),
+                  ],
+                ),
               if (match.repeated.isNotEmpty) Text(l.chatRepeated(_codes(match.repeated))),
               const SizedBox(height: 8),
               // In another round: once its answer is there.

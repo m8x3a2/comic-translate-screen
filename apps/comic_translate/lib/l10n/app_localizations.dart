@@ -4892,6 +4892,18 @@ abstract class AppLocalizations {
   /// **'The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.'**
   String get chatPromptAllPages;
 
+  /// No description provided for @chatUntranslated.
+  ///
+  /// In en, this message translates to:
+  /// **'The chat seems to have left these untranslated: {labels}'**
+  String chatUntranslated(String labels);
+
+  /// No description provided for @chatUntranslatedAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask again'**
+  String get chatUntranslatedAsk;
+
   /// No description provided for @chatPreset.
   ///
   /// In en, this message translates to:

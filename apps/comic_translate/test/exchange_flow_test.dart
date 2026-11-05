@@ -656,6 +656,22 @@ void main() {
     expect(await copiedPrompt(), isNot(contains('MY OWN PRESET')));
   });
 
+  testWidgets('lines the chat left untranslated are told and can be asked again', (tester) async {
+    await tester.runAsync(() => start(fakeSettings()));
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [pages().first.id], mode: ExchangeMode.translate),
+      'Копировать инструкцию',
+      ['Hello there', 'Bye'],
+    );
+    await tester.enterText(find.byType(TextField).last, '[01-001] Hello there\n[01-002] Пока');
+    await tester.pump();
+    expect(find.text('Похоже, чат не перевёл: 01-001'), findsOneWidget);
+    await tester.tap(find.text('Спросить ещё раз'));
+    await tester.pump();
+    expect(find.text('Спросить ещё раз (1)'), findsOneWidget);
+  });
+
   testWidgets('a big request: the window advises parts and turns them on', (tester) async {
     await tester.runAsync(() => start(fakeSettings()));
     await openWindow(
