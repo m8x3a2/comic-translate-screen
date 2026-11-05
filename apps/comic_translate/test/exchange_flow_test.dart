@@ -672,6 +672,66 @@ void main() {
     expect(find.text('Спросить ещё раз (1)'), findsOneWidget);
   });
 
+  testWidgets('a translation too long for its bubble is told; the chat is asked for a shorter one', (tester) async {
+    String? clipboard;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') clipboard = (call.arguments as Map)['text'] as String?;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    await tester.runAsync(() => start(fakeSettings()));
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [pages().first.id], mode: ExchangeMode.translate),
+      'Копировать инструкцию',
+      ['Wait!', 'Bye'],
+    );
+    const long = 'Подождите, пожалуйста, одну минуточку, я сейчас всё объясню по порядку и очень подробно!';
+    // The test font is wider than real ones: only one line, so only it is told.
+    await tester.enterText(find.byType(TextField).last, '[01-001] $long');
+    Future<void> waitFor(Finder f) async {
+      for (var i = 0; i < 60 && f.evaluate().isEmpty; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      }
+    }
+
+    final told = find.text('Не помещаются в пузырь (буквы стали бы самыми мелкими): 01-001');
+    await waitFor(told);
+    expect(told, findsOneWidget);
+    await tester.tap(find.text('Попросить короче (1)'));
+    await waitFor(find.textContaining('Досылка: пузырей — 1'));
+    // The folder of the round is written in the background.
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+    await tester.ensureVisible(find.text('Копировать инструкцию'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Копировать инструкцию'));
+    await tester.pump();
+    expect(clipboard, allOf(contains('too long for their speech bubbles'), contains('[01-001] '), contains(long)));
+    expect(clipboard, isNot(contains('[01-002] Bye')));
+  });
+
+  testWidgets('the fit check can be turned off', (tester) async {
+    final settings = fakeSettings();
+    settings.exchange = settings.exchange.copyWith(checkFit: false);
+    await tester.runAsync(() => start(settings));
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [pages().first.id], mode: ExchangeMode.translate),
+      'Копировать инструкцию',
+      ['Wait!'],
+    );
+    await tester.enterText(find.byType(TextField).last, '[01-001] ${'Очень длинный перевод ' * 6}');
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    }
+    expect(find.textContaining('Не помещаются в пузырь'), findsNothing);
+  });
+
   testWidgets('a big request: the window advises parts and turns them on', (tester) async {
     await tester.runAsync(() => start(fakeSettings()));
     await openWindow(

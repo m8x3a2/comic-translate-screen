@@ -2846,6 +2846,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatUntranslatedAsk => 'Ask again';
 
   @override
+  String chatTooLong(String labels) {
+    return 'Too long for the bubble (the letters would be the smallest): $labels';
+  }
+
+  @override
+  String chatAskShorter(int count) {
+    return 'Ask for shorter ones ($count)';
+  }
+
+  @override
+  String get chatCheckFit => 'Check that translations fit';
+
+  @override
+  String get chatCheckFitHelp =>
+      'After an answer is pasted, the app tries the translations in their bubbles and offers to ask the chat to shorten those too long.';
+
+  @override
   String get chatPreset => 'Instructions preset';
 
   @override

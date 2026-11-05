@@ -2848,6 +2848,23 @@ class AppLocalizationsRu extends AppLocalizations {
   String get chatUntranslatedAsk => 'Спросить ещё раз';
 
   @override
+  String chatTooLong(String labels) {
+    return 'Не помещаются в пузырь (буквы стали бы самыми мелкими): $labels';
+  }
+
+  @override
+  String chatAskShorter(int count) {
+    return 'Попросить короче ($count)';
+  }
+
+  @override
+  String get chatCheckFit => 'Проверять, помещается ли перевод';
+
+  @override
+  String get chatCheckFitHelp =>
+      'После вставки ответа программа примеряет переводы к пузырям и предлагает попросить чат сократить слишком длинные.';
+
+  @override
   String get chatPreset => 'Заготовка инструкции';
 
   @override

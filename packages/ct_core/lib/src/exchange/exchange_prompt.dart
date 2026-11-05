@@ -140,13 +140,32 @@ String exchangeSpeakers(List<ExchangeItem> items, {required bool inLines}) {
   return 'Who speaks: ${[for (final i in told) '${i.label} ${i.speaker!.words}'].join('; ')}. $use';
 }
 
+/// A translation too long for its speech bubble: [now], to be replaced by
+/// one of at most [limit] characters.
+class ShorterAsk {
+  const ShorterAsk(this.label, this.limit, this.now);
+
+  final ExchangeLabel label;
+  final int limit;
+  final String now;
+}
+
 /// Before the instructions of another round for some pieces: the ones the
-/// previous answer had nothing for ([missing]) and the ones the user asks
-/// again ([again]). The chat answers only for them, as it did before.
-String exchangeResendLead({List<ExchangeLabel> missing = const [], List<ExchangeLabel> again = const []}) => [
+/// previous answer had nothing for ([missing]), the ones the user asks
+/// again ([again]) and the translations too long for their bubbles
+/// ([shorter]). The chat answers only for them, as it did before.
+String exchangeResendLead({
+  List<ExchangeLabel> missing = const [],
+  List<ExchangeLabel> again = const [],
+  List<ShorterAsk> shorter = const [],
+}) => [
   if (missing.isNotEmpty) 'Your previous answer had nothing for these labels: ${missing.join(', ')}.',
   if (again.isNotEmpty) 'Answer again for these labels, the previous answer was not good: ${again.join(', ')}.',
-  'Answer only for ${missing.length + again.length == 1 ? 'it' : 'them'}, in the same form as asked below.',
+  if (shorter.isNotEmpty)
+    'These translations are too long for their speech bubbles; give shorter ones that keep the meaning and '
+        'the tone, at most: ${[for (final s in shorter) '${s.label} ${s.limit} characters (now: "${_oneLine(s.now)}")'].join('; ')}.',
+  'Answer only for ${missing.length + again.length + shorter.length == 1 ? 'it' : 'them'}, '
+      'in the same form as asked below.',
 ].join(' ');
 
 String _oneLine(String s) => s.replaceAll(RegExp(r'\s*\n\s*'), ' ').trim();

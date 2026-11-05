@@ -37,7 +37,7 @@ const _overflowShare = 0.2;
 /// not enlarge the page, which would resize every other bubble. Lines along
 /// the bubble's oval may be wider than the text box: they are measured
 /// against the bubble.
-bool _overflows(TextItem i, RenderSettings base) {
+bool textOverflows(TextItem i, RenderSettings base) {
   if (i.block.style != null) return false;
   final bubble = i.block.bubbleXyxy;
   final box = (i.settings ?? base).shapeFit && bubble != null ? bubble : i.block.xyxy;
@@ -135,7 +135,7 @@ RenderLayout layoutRender(
   if (!fixed && upscale.mode == UpscaleMode.auto && items.isNotEmpty) {
     final limit = (items.length * _overflowShare).ceil();
     for (final more in const [1.5, 2.0]) {
-      if (items.where((i) => _overflows(i, settings.render)).length < limit) break;
+      if (items.where((i) => textOverflows(i, settings.render)).length < limit) break;
       final next = limitUpscaleFactor(f * more, w0, h0);
       if (next <= f) break;
       f = next;

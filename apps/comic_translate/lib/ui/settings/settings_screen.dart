@@ -1327,6 +1327,7 @@ class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
               (v) => set((e) => e.copyWith(answerFromClipboard: v)),
               help: l.chatAnswerFromClipboardHelp,
             ),
+            _switch(l.chatCheckFit, e.checkFit, (v) => set((e) => e.copyWith(checkFit: v)), help: l.chatCheckFitHelp),
             DebouncedTextField(
               key: const ValueKey('exchange.separator'),
               value: e.separator,

@@ -1908,6 +1908,24 @@
     }
   },
   "chatUntranslatedAsk": "Ask again",
+  "chatTooLong": "Too long for the bubble (the letters would be the smallest): {labels}",
+  "@chatTooLong": {
+    "placeholders": {
+      "labels": {
+        "type": "String"
+      }
+    }
+  },
+  "chatAskShorter": "Ask for shorter ones ({count})",
+  "@chatAskShorter": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatCheckFit": "Check that translations fit",
+  "chatCheckFitHelp": "After an answer is pasted, the app tries the translations in their bubbles and offers to ask the chat to shorten those too long.",
   "chatPreset":"Instructions preset",
   "chatPresetStandard": "Standard",
   "chatPresetOwn": "Own (no name)",

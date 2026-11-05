@@ -367,6 +367,15 @@ Let me know if you need anything else.''';
   });
 
   group('instructions', () {
+    test('another round may ask for shorter translations, each with its limit', () {
+      final lead = exchangeResendLead(again: [l21], shorter: [const ShorterAsk(l13, 9, 'Подождите,\nпожалуйста!')]);
+      expect(lead, contains('Answer again for these labels, the previous answer was not good: [02-001].'));
+      expect(lead, contains('too long for their speech bubbles'));
+      expect(lead, contains('[01-003] 9 characters (now: "Подождите, пожалуйста!")'));
+      expect(lead, endsWith('Answer only for them, in the same form as asked below.'));
+      expect(exchangeResendLead(shorter: [const ShorterAsk(l13, 9, 'x')]), contains('Answer only for it,'));
+    });
+
     final items = [
       ExchangeItem(label: l13, pageId: 'a', blockIndex: 2, box: const BBox(0, 0, 1, 1), text: 'Hello\nthere'),
       ExchangeItem(label: l14, pageId: 'a', blockIndex: 3, box: const BBox(0, 0, 1, 1), text: 'Bye'),

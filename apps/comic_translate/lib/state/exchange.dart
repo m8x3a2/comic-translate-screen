@@ -10,6 +10,8 @@ import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
 import 'package:path/path.dart' as p;
 
+import '../pipeline/page_pipeline.dart';
+import '../render/mask_raster.dart' show imageFileSize;
 import 'background.dart';
 import 'workspace.dart';
 
@@ -194,4 +196,64 @@ Future<({int changed, List<ExchangeLabel> lost})> applyExchange(
     if (any) workspace.edit(id, (p) => p.copyWith(blocks: blocks), byHand: false);
   }
   return (changed: changed, lost: lost);
+}
+
+/// Share of the length that fits a bubble well once letters at the size
+/// they came out are made 1.3 times larger (the area grows with its square).
+const _roomierShare = 1 / (1.3 * 1.3);
+
+/// The translations of [match] that would come out at the smallest font
+/// size or not fit their bubbles, each with how many characters would fit
+/// well. They are laid out as export draws them, with the page enlarged as
+/// usual (not further, as it would be for many that do not fit).
+Future<List<ShorterAsk>> tooLongReplies(
+  WorkspaceState ws,
+  AppSettings settings,
+  List<ExchangeItem> items,
+  ExchangeMatch match,
+  ExchangeMode mode,
+) async {
+  final byPage = <String, List<ExchangeItem>>{};
+  for (final it in items) {
+    if (match.replies[it.label]?.translation?.trim().isNotEmpty ?? false) (byPage[it.pageId] ??= []).add(it);
+  }
+  final found = <ShorterAsk>[];
+  for (final MapEntry(key: id, value: own) in byPage.entries) {
+    final page = ws.byId(id);
+    if (page == null) continue;
+    final blocks = [for (final b in page.blocks) b.copy()];
+    final asked = <int, ExchangeLabel>{};
+    for (final it in own) {
+      final i = findExchangeBlock(blocks, it);
+      if (i == null) continue;
+      applyExchangeReply(blocks[i], match.replies[it.label], mode);
+      asked[i] = it.label;
+    }
+    if (asked.isEmpty) continue;
+    final target = page.targetOf(settings);
+    final (w, h) = await imageFileSize(page.path);
+    final engines = await loadTextEngines(settings, target, blocks);
+    final up = settings.upscale;
+    final scale = up.mode == UpscaleMode.auto ? autoUpscaleFactor(blocks, w, h) : fixedUpscaleFactor(up, w, h);
+    final layout = layoutRender(w, h, blocks, settings, engines, targetLanguage: target, scale: scale);
+    for (final (k, item) in layout.items.indexed) {
+      if (k >= layout.blockIndex.length) break;
+      final i = layout.blockIndex[k];
+      final label = asked[i];
+      if (label == null) continue;
+      final s = item.settings ?? settings.render;
+      final over = textOverflows(item, settings.render);
+      // A size set by hand (the smallest and the largest the same) is no sign.
+      final smallest = s.minFontSize < s.maxFontSize && item.fontSizePt <= s.minFontSize;
+      if (!over && !smallest) continue;
+      final box = blocks[i].xyxy;
+      final spill = box.width * box.height <= 0
+          ? 1.0
+          : (item.width * item.height / (box.width * box.height)).clamp(1.0, double.infinity);
+      final text = blocks[i].translation;
+      final limit = (text.length * _roomierShare / spill).floor().clamp(2, text.length);
+      found.add(ShorterAsk(label, limit, text));
+    }
+  }
+  return found..sort((a, b) => a.label.compareTo(b.label));
 }

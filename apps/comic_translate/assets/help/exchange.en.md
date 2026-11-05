@@ -105,7 +105,11 @@ Under the field the app tells what it found:
 - **"Not sent"**: labels that were not in the exchange (the chat made a mistake);
 - **"Answered twice"**: the first one counts;
 - **"The chat seems to have left these untranslated: …"**: the translation is the original again or written in
-  its letters. **"Ask again"** puts these labels into the "Ask again" field (see "Another round").
+  its letters. **"Ask again"** puts these labels into the "Ask again" field (see "Another round");
+- **"Too long for the bubble: …"**: the app tried the translations in their bubbles, and these would come out
+  at the smallest size (or not fit). **"Ask for shorter ones (N)"** prepares another round for them only: the
+  chat gets the translation it gave and how many characters fit. Turned off in the settings: **"Check that
+  translations fit"**.
 
 You can turn on **"Offer the answer from the clipboard"** (Settings → Exchange with a chat AI, off by default):
 you copy the answer in the chat, come back to the window, and the app offers to paste it.

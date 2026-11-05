@@ -135,6 +135,13 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   List<ExchangeItem>? _round;
   var _roundMissing = <ExchangeLabel>[];
   var _roundAgain = <ExchangeLabel>[];
+  var _roundShorter = <ShorterAsk>[];
+
+  /// Translations of the answer too long for their bubbles (tried a moment
+  /// after the answer changes; [_fitRun] tells the latest try).
+  var _tooLong = <ShorterAsk>[];
+  Timer? _fitTimer;
+  var _fitRun = 0;
   Directory? _roundDir;
   var _rounds = 0;
 
@@ -184,6 +191,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _debounce?.cancel();
+    _fitTimer?.cancel();
     _shown.dispose();
     _page.dispose();
     _groups.dispose();
@@ -260,6 +268,8 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       _first = null;
       _roundMissing = [];
       _roundAgain = [];
+      _roundShorter = [];
+      _tooLong = [];
       _resetPrompt();
       _match = null;
       _fromFiles = null;
@@ -352,7 +362,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
         groups: groups,
         keepTexts: textsKey == _textsKey,
         promptText: _promptChanged ? _prompt.text : null,
-        lead: round ? exchangeResendLead(missing: _roundMissing, again: _roundAgain) : '',
+        lead: round ? exchangeResendLead(missing: _roundMissing, again: _roundAgain, shorter: _roundShorter) : '',
       );
       _textsKey = textsKey;
       if (!mounted) return;
@@ -421,6 +431,33 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       _match = answer == null ? null : matchExchangeAnswer(_items, answer, export.mode);
       _suggest('${_answer.text}\n${_answer2.text}');
     });
+    _checkFitSoon();
+  }
+
+  /// Tries the translations of the answer in their bubbles shortly after it
+  /// changes ([ExchangeSettings.checkFit]).
+  void _checkFitSoon() {
+    _fitTimer?.cancel();
+    _fitRun++;
+    final match = _shownMatch;
+    if (!_options.checkFit || _mode == ExchangeMode.recognize || match == null || match.replies.isEmpty) {
+      if (_tooLong.isNotEmpty) setState(() => _tooLong = []);
+      return;
+    }
+    _fitTimer = Timer(const Duration(milliseconds: 400), () => unawaited(_checkFit()));
+  }
+
+  Future<void> _checkFit() async {
+    final run = ++_fitRun;
+    final match = _shownMatch;
+    if (match == null) return;
+    try {
+      final found = await tooLongReplies(ref.read(workspaceProvider), ref.read(settingsProvider), _items, match, _mode);
+      if (!mounted || run != _fitRun) return;
+      setState(() => _tooLong = found);
+    } catch (e, st) {
+      ref.read(servicesProvider).appLog.error('exchange_fit_check_failed', e, st);
+    }
   }
 
   /// Words the chat suggests in [answer] (`NEW: Kai --> Кай`) that the
@@ -486,6 +523,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       _fromFiles = {...match.sources.values}.toList()..sort();
       _suggest(allText);
     });
+    _checkFitSoon();
   }
 
   Future<void> _openTxt() async {
@@ -652,11 +690,16 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     }
   }
 
-  /// Another round for the pieces the answer had nothing for ([missing]) and
-  /// the ones asked again ([again]): what was answered so far is kept, the
-  /// answer fields are for the new answer.
-  Future<void> _startRound(List<ExchangeLabel> missing, List<ExchangeLabel> again) async {
-    final labels = {...missing, ...again};
+  /// Another round for the pieces the answer had nothing for ([missing]),
+  /// the ones asked again ([again]) and the translations too long for their
+  /// bubbles ([shorter]): what was answered so far is kept, the answer fields
+  /// are for the new answer.
+  Future<void> _startRound(
+    List<ExchangeLabel> missing,
+    List<ExchangeLabel> again, {
+    List<ShorterAsk> shorter = const [],
+  }) async {
+    final labels = {...missing, ...again, for (final s in shorter) s.label};
     _clearAnswer();
     setState(() {
       _acceptShown();
@@ -668,6 +711,8 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       ];
       _roundMissing = missing;
       _roundAgain = again;
+      _roundShorter = shorter;
+      _tooLong = [];
       _roundDir = Directory(p.join(_first!.dir, 'again_$_rounds'));
       _resetPrompt();
       _match = null;
@@ -1432,6 +1477,26 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                       child: Text(l.chatUntranslatedAsk),
                     ),
                   ],
+                ),
+              if ([
+                    for (final s in _tooLong)
+                      if (shownHere(s.label)) s,
+                  ]
+                  case final tooLong when tooLong.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(l.chatTooLong(_codes([for (final s in tooLong) s.label])), style: warn),
+                      FilledButton.tonalIcon(
+                        onPressed: _exporting ? null : () => _startRound(const [], const [], shorter: tooLong),
+                        icon: const Icon(Icons.compress),
+                        label: Text(l.chatAskShorter(tooLong.length)),
+                      ),
+                    ],
+                  ),
                 ),
               if (match.repeated.isNotEmpty) Text(l.chatRepeated(_codes(match.repeated))),
               const SizedBox(height: 8),

@@ -4904,6 +4904,30 @@ abstract class AppLocalizations {
   /// **'Ask again'**
   String get chatUntranslatedAsk;
 
+  /// No description provided for @chatTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Too long for the bubble (the letters would be the smallest): {labels}'**
+  String chatTooLong(String labels);
+
+  /// No description provided for @chatAskShorter.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for shorter ones ({count})'**
+  String chatAskShorter(int count);
+
+  /// No description provided for @chatCheckFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Check that translations fit'**
+  String get chatCheckFit;
+
+  /// No description provided for @chatCheckFitHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'After an answer is pasted, the app tries the translations in their bubbles and offers to ask the chat to shorten those too long.'**
+  String get chatCheckFitHelp;
+
   /// No description provided for @chatPreset.
   ///
   /// In en, this message translates to:

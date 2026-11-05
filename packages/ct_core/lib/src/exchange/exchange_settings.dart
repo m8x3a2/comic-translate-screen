@@ -104,6 +104,7 @@ class ExchangeSettings {
     this.prompts = const {},
     this.presets = const {},
     this.answerFromClipboard = false,
+    this.checkFit = true,
     this.sharedTexts = true,
     this.ownStyles = const [],
     this.activeStyles = const [],
@@ -164,6 +165,11 @@ class ExchangeSettings {
   /// Back in the exchange window with an answer of the chat in the clipboard
   /// (lines with labels): offer to paste it.
   final bool answerFromClipboard;
+
+  /// The translations of a pasted answer are tried in their bubbles: those
+  /// that come out at the smallest size or do not fit are told, and the chat
+  /// can be asked for shorter ones.
+  final bool checkFit;
 
   /// What the user wrote into the text files stays when the mode changes
   /// (one set of files for every mode); off: each mode starts from fresh
@@ -249,6 +255,7 @@ class ExchangeSettings {
     Map<ExchangePrompt, String>? prompts,
     Map<ExchangePrompt, List<PromptPreset>>? presets,
     bool? answerFromClipboard,
+    bool? checkFit,
     bool? sharedTexts,
     List<PromptStyle>? ownStyles,
     List<String>? activeStyles,
@@ -272,6 +279,7 @@ class ExchangeSettings {
     prompts: prompts ?? this.prompts,
     presets: presets ?? this.presets,
     answerFromClipboard: answerFromClipboard ?? this.answerFromClipboard,
+    checkFit: checkFit ?? this.checkFit,
     sharedTexts: sharedTexts ?? this.sharedTexts,
     ownStyles: ownStyles ?? this.ownStyles,
     activeStyles: activeStyles ?? this.activeStyles,
@@ -310,6 +318,7 @@ class ExchangeSettings {
         if (e.value.isNotEmpty) e.key.key: [for (final p in e.value) p.toJson()],
     },
     'answer_from_clipboard': answerFromClipboard,
+    'check_fit': checkFit,
     'shared_texts': sharedTexts,
     'own_styles': [for (final s in ownStyles) s.toJson()],
     'active_styles': activeStyles,
@@ -347,6 +356,7 @@ class ExchangeSettings {
           : d.answerMarks,
       placeholder: text('placeholder'),
       answerFromClipboard: flag('answer_from_clipboard', d.answerFromClipboard),
+      checkFit: flag('check_fit', d.checkFit),
       sharedTexts: flag('shared_texts', d.sharedTexts),
       ownStyles: [
         for (final s in (json['own_styles'] is List ? json['own_styles'] as List : const [])) ?PromptStyle.fromJson(s),
