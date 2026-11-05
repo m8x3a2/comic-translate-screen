@@ -134,6 +134,19 @@ Let me know if you need anything else.''';
       expect(a.replies[l13]!.original, "I'M **LATE!** Run");
     });
 
+    test('a reply in bold under its label is text, not a heading', () {
+      for (final mode in ExchangeMode.values) {
+        final a = parseExchangeAnswer('[01-003]\n**Привет**\n[01-004] Пока', mode);
+        final r = a.replies[l13]!;
+        expect(mode == ExchangeMode.recognize ? r.original : r.translation, 'Привет', reason: '$mode');
+      }
+      final lines = parseExchangeAnswer('[01-003]\n**I\'M**\nLATE!\n[01-004] ok', ExchangeMode.recognize);
+      expect(lines.replies[l13]!.original, "I'M LATE!");
+      // A heading after such a reply still ends it.
+      final paged = parseExchangeAnswer('[01-003]\n**Привет**\n**Страница 2**\n[02-001] Беги!', ExchangeMode.translate);
+      expect([paged.replies[l13]!.translation, paged.replies[l21]!.translation], ['Привет', 'Беги!']);
+    });
+
     test('an answer as JSON: the keys are the labels', () {
       for (final json in [
         '```json\n{\n  "01-003": "Привет",\n  "01-004": "Пока \\"друг\\""\n}\n```',

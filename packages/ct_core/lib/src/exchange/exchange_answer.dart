@@ -349,15 +349,42 @@ String _cleanBody(String raw, List<String> marks) {
   final blank = RegExp(r'\n[ \t]*\n').firstMatch(s.trimLeft());
   if (blank != null) s = s.trimLeft().substring(0, blank.start);
   final lines = s.split('\n');
-  // So does a heading (pages of several): not on the label's own line.
-  final heading = lines.indexed.skip(1).where((e) => _heading.hasMatch(e.$2)).firstOrNull?.$1;
+  // So does a heading (pages of several).
+  final heading = _headingAt(lines);
   s = lines
       .take(heading ?? lines.length)
       .map((l) => l.trim().replaceFirst(RegExp(r'^[>•]\s*'), ''))
       .where((l) => l.isNotEmpty)
+      // Each line in bold of its own: the bold goes, not only around all.
+      .map((l) => lines.length > 1 ? l.replaceFirstMapped(_boldLine, (m) => m[2]!.trim()) : l)
       .join(' ');
   return _plain(s, marks);
 }
+
+/// The line of [lines] (those of one piece) where a heading ends it; not the
+/// label's own line. `## Page 2` anywhere; a line in bold (`**Page 2**`) only
+/// after text of the piece and with nothing but headings after it: a reply
+/// the chat put in bold under the label (`[01-003]` / `**Привет**`) is text.
+/// (A reply of two lines both in bold reads as a reply and a heading: chats
+/// give one line per label.)
+int? _headingAt(List<String> lines) {
+  bool hasText(String l) => l.replaceAll(RegExp(r'[*_\s:：)\]-]'), '').isNotEmpty;
+  for (var i = 1; i < lines.length; i++) {
+    final line = lines[i];
+    if (_markdownHeading.hasMatch(line)) return i;
+    if (!_heading.hasMatch(line)) continue;
+    final textBefore = lines.take(i).any(hasText);
+    final headingsAfter = lines.skip(i + 1).every((l) => !hasText(l) || _heading.hasMatch(l));
+    if (textBefore && headingsAfter) return i;
+  }
+  return null;
+}
+
+/// A whole line in bold: `**Привет**`.
+final _boldLine = RegExp(r'^(\*\*|__)([^*_]+)\1$');
+
+/// A Markdown heading: `## Page 2`.
+final _markdownHeading = RegExp(r'^\s*#{1,6}\s');
 
 const _closers = {
   '«': '»',
