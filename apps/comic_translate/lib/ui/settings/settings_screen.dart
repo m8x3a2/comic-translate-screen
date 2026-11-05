@@ -24,6 +24,7 @@ import '../common/plugin_form.dart';
 import '../common/plugin_strings.dart';
 import '../common/translator_history_dialog.dart';
 import '../shell_full/main_screen.dart' show showInExplorer;
+import '../shell_full/prompt_presets.dart';
 import 'gpu_section.dart';
 import 'keys_section.dart';
 import 'models_section.dart';
@@ -1401,6 +1402,38 @@ class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
             ),
             const SizedBox(height: 8),
             for (final m in kinds.entries) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  PromptPresetPicker(
+                    settings: e,
+                    kind: m.key,
+                    onPick: (text) {
+                      set((e) => e.withPrompt(m.key, text));
+                      setState(() => _promptResets++);
+                    },
+                  ),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final name = await askPresetName(context, initial: e.activePreset(m.key)?.name ?? '');
+                      if (name == null) return;
+                      final text = e.promptFor(m.key).isEmpty ? defaultExchangePrompts[m.key]! : e.promptFor(m.key);
+                      set((e) => e.withPreset(m.key, PromptPreset(name, text)));
+                    },
+                    icon: const Icon(Icons.bookmark_add_outlined),
+                    label: Text(l.chatPresetSave),
+                  ),
+                  if (e.activePreset(m.key) case final active?)
+                    TextButton.icon(
+                      onPressed: () => set((e) => e.withoutPreset(m.key, active.name)),
+                      icon: const Icon(Icons.delete_outline),
+                      label: Text(l.chatPresetDelete),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
               DebouncedTextField(
                 key: ValueKey('exchange.prompt.${m.key.name}.$_promptResets'),
                 value: e.promptFor(m.key).isEmpty ? defaultExchangePrompts[m.key]! : e.promptFor(m.key),

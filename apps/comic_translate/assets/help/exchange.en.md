@@ -221,7 +221,9 @@ Settings → Exchange with a chat AI:
 - **"Pictures"**: sheets, a picture for each bubble, or both; the sheet size; pictures in a folder.
 - **"Text files"**: `ALL.txt`, a file for each page, or both.
 - **"Instructions for the chat"**: your own instructions for each mode (in English; "Back to the built-in one"
-  undoes them).
+  undoes them). **"Save as a preset…"** keeps them under a name; each mode has its own list of presets, with
+  "Standard" always in it. A preset can be picked in the exchange window too: the **"Instructions preset"** list
+  shows above the instructions when there are presets.
 
 ## Tips
 

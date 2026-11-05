@@ -4892,6 +4892,48 @@ abstract class AppLocalizations {
   /// **'The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.'**
   String get chatPromptAllPages;
 
+  /// No description provided for @chatPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions preset'**
+  String get chatPreset;
+
+  /// No description provided for @chatPresetStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard'**
+  String get chatPresetStandard;
+
+  /// No description provided for @chatPresetOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Own (no name)'**
+  String get chatPresetOwn;
+
+  /// No description provided for @chatPresetSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save as a preset…'**
+  String get chatPresetSave;
+
+  /// No description provided for @chatPresetDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the preset'**
+  String get chatPresetDelete;
+
+  /// No description provided for @chatPresetName.
+  ///
+  /// In en, this message translates to:
+  /// **'Preset name'**
+  String get chatPresetName;
+
+  /// No description provided for @chatPresetNameHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The same name replaces that preset.'**
+  String get chatPresetNameHelp;
+
   /// No description provided for @chatAnswerMarks.
   ///
   /// In en, this message translates to:

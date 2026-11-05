@@ -2838,6 +2838,27 @@ class AppLocalizationsEn extends AppLocalizations {
       'The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.';
 
   @override
+  String get chatPreset => 'Instructions preset';
+
+  @override
+  String get chatPresetStandard => 'Standard';
+
+  @override
+  String get chatPresetOwn => 'Own (no name)';
+
+  @override
+  String get chatPresetSave => 'Save as a preset…';
+
+  @override
+  String get chatPresetDelete => 'Delete the preset';
+
+  @override
+  String get chatPresetName => 'Preset name';
+
+  @override
+  String get chatPresetNameHelp => 'The same name replaces that preset.';
+
+  @override
   String get chatAnswerMarks => 'Take off around the answer';
 
   @override

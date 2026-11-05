@@ -550,6 +550,25 @@ void main() {
     expect(ExchangeLabel.parseList(' '), isEmpty);
   });
 
+  test('presets of instructions: saved under a name and in use, replaced by name, deleted', () {
+    const t = ExchangePrompt.translate;
+    var s = const ExchangeSettings();
+    expect(s.activePreset(t), isNull);
+    s = s.withPreset(t, const PromptPreset('Short', 'Be short.'));
+    expect((s.promptFor(t), s.activePreset(t)?.name), ('Be short.', 'Short'));
+    s = s.withPreset(t, const PromptPreset('Polite', 'Be polite.'));
+    s = s.withPreset(t, const PromptPreset('Short', 'Be very short.'));
+    expect([for (final p in s.presetsFor(t)) '${p.name}: ${p.text}'], ['Polite: Be polite.', 'Short: Be very short.']);
+    expect(s.presetsFor(ExchangePrompt.both), isEmpty, reason: 'each kind has its own');
+    // Edited by hand: own instructions without a name.
+    s = s.withPrompt(t, 'Be very short!');
+    expect(s.activePreset(t), isNull);
+    s = s.withPrompt(t, 'Be polite.').withoutPreset(t, 'Polite');
+    expect(s.promptFor(t), 'Be polite.');
+    expect([for (final p in s.presetsFor(t)) p.name], ['Short']);
+    expect(PromptPreset.fromJson({'name': ' ', 'text': 'x'}), isNull);
+  });
+
   test('settings survive a round trip and wrong values fall back', () {
     const s = ExchangeSettings(
       together: false,
@@ -563,10 +582,15 @@ void main() {
       apart: true,
       splitFiles: false,
       separator: '|',
+      partPages: 3,
       prompts: {ExchangePrompt.both: 'mine'},
+      presets: {
+        ExchangePrompt.both: [PromptPreset('Mine', 'mine'), PromptPreset('Short', 'short')],
+      },
     );
     final back = ExchangeSettings.fromJson(jsonDecode(jsonEncode(s.toJson())) as Map<String, Object?>);
     expect(back.toJson(), s.toJson());
+    expect(back.activePreset(ExchangePrompt.both)?.name, 'Mine');
     final wrong = ExchangeSettings.fromJson({'sheet_max_px': 10, 'grouping': 'x', 'per_sheet': -3});
     expect((wrong.sheetMaxPx, wrong.grouping, wrong.perSheet), (ExchangeSettings.minSheetPx, SheetGrouping.size, 1));
     final app = AppSettings.fromJson(AppSettings(exchange: s).toJson());

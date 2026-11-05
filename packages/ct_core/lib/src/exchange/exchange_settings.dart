@@ -102,6 +102,7 @@ class ExchangeSettings {
     this.answerMarks = defaultAnswerMarks,
     this.placeholder = '',
     this.prompts = const {},
+    this.presets = const {},
     this.answerFromClipboard = false,
     this.sharedTexts = true,
     this.ownStyles = const [],
@@ -156,6 +157,10 @@ class ExchangeSettings {
   /// built-in ones.
   final Map<ExchangePrompt, String> prompts;
 
+  /// Instructions of the user's own kept under names, for each kind; the
+  /// one in use is in [prompts] (see [activePreset]).
+  final Map<ExchangePrompt, List<PromptPreset>> presets;
+
   /// Back in the exchange window with an answer of the chat in the clipboard
   /// (lines with labels): offer to paste it.
   final bool answerFromClipboard;
@@ -189,6 +194,42 @@ class ExchangeSettings {
   /// The user's own instructions for [kind] ('' = the built-in ones).
   String promptFor(ExchangePrompt kind) => prompts[kind] ?? '';
 
+  /// The presets of [kind], in the order they were saved.
+  List<PromptPreset> presetsFor(ExchangePrompt kind) => presets[kind] ?? const [];
+
+  /// The preset of [kind] in use (the instructions are its text); null: the
+  /// built-in instructions, or own ones not saved under a name.
+  PromptPreset? activePreset(ExchangePrompt kind) {
+    final now = promptFor(kind).trim();
+    if (now.isEmpty) return null;
+    return presetsFor(kind).where((p) => p.text.trim() == now).firstOrNull;
+  }
+
+  /// [copyWith] with [preset] kept for [kind] (one of the same name is
+  /// replaced) and in use.
+  ExchangeSettings withPreset(ExchangePrompt kind, PromptPreset preset) => copyWith(
+    presets: {
+      ...presets,
+      kind: [
+        for (final p in presetsFor(kind))
+          if (p.name != preset.name) p,
+        preset,
+      ],
+    },
+  ).withPrompt(kind, preset.text);
+
+  /// [copyWith] without the preset [name] of [kind] (the instructions in use
+  /// stay as they are).
+  ExchangeSettings withoutPreset(ExchangePrompt kind, String name) => copyWith(
+    presets: {
+      ...presets,
+      kind: [
+        for (final p in presetsFor(kind))
+          if (p.name != name) p,
+      ],
+    },
+  );
+
   ExchangeSettings copyWith({
     bool? together,
     bool? apart,
@@ -206,6 +247,7 @@ class ExchangeSettings {
     List<String>? answerMarks,
     String? placeholder,
     Map<ExchangePrompt, String>? prompts,
+    Map<ExchangePrompt, List<PromptPreset>>? presets,
     bool? answerFromClipboard,
     bool? sharedTexts,
     List<PromptStyle>? ownStyles,
@@ -228,6 +270,7 @@ class ExchangeSettings {
     answerMarks: answerMarks ?? this.answerMarks,
     placeholder: placeholder ?? this.placeholder,
     prompts: prompts ?? this.prompts,
+    presets: presets ?? this.presets,
     answerFromClipboard: answerFromClipboard ?? this.answerFromClipboard,
     sharedTexts: sharedTexts ?? this.sharedTexts,
     ownStyles: ownStyles ?? this.ownStyles,
@@ -262,6 +305,10 @@ class ExchangeSettings {
     'answer_marks': answerMarks,
     'placeholder': placeholder,
     for (final kind in ExchangePrompt.values) kind.key: promptFor(kind),
+    'prompt_presets': {
+      for (final e in presets.entries)
+        if (e.value.isNotEmpty) e.key.key: [for (final p in e.value) p.toJson()],
+    },
     'answer_from_clipboard': answerFromClipboard,
     'shared_texts': sharedTexts,
     'own_styles': [for (final s in ownStyles) s.toJson()],
@@ -310,8 +357,31 @@ class ExchangeSettings {
         for (final kind in ExchangePrompt.values)
           if (text(kind.key).trim().isNotEmpty) kind: text(kind.key),
       },
+      presets: {
+        if (json['prompt_presets'] case final Map<Object?, Object?> all)
+          for (final kind in ExchangePrompt.values)
+            if (all[kind.key] case final List<Object?> list) kind: [for (final p in list) ?PromptPreset.fromJson(p)],
+      },
     );
   }
+}
+
+/// Instructions of the user's own kept under a name, to pick from.
+class PromptPreset {
+  const PromptPreset(this.name, this.text);
+
+  final String name;
+  final String text;
+
+  Map<String, Object?> toJson() => {'name': name, 'text': text};
+
+  static PromptPreset? fromJson(Object? json) => switch (json) {
+    {'name': final String name, 'text': final String text} when name.trim().isNotEmpty => PromptPreset(
+      name.trim(),
+      text,
+    ),
+    _ => null,
+  };
 }
 
 /// The instructions for the chat: one per mode, and reading with

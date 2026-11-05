@@ -27,6 +27,7 @@ import '../settings/settings_screen.dart';
 import 'exchange_gallery.dart';
 import 'glossary_dialog.dart';
 import 'main_screen.dart' show showInExplorer;
+import 'prompt_presets.dart';
 
 /// More pieces than this in one request: chats tend to skip some in a long
 /// answer, so the window advises sending the pages in parts.
@@ -1159,6 +1160,19 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                 Text(_note!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
               ],
               if (pictures.isNotEmpty) ...[const SizedBox(height: 12), _pictureStrip(l, export, pictures)],
+              // The user's presets of instructions, when there are.
+              if (ref.watch(settingsProvider.select((s) => s.exchange)) case final s
+                  when s.presetsFor(s.promptKind(_mode)).isNotEmpty) ...[
+                const SizedBox(height: 12),
+                PromptPresetPicker(
+                  settings: s,
+                  kind: s.promptKind(_mode),
+                  onPick: (text) {
+                    setState(_resetPrompt);
+                    unawaited(_changeOptions((e) => e.withPrompt(e.promptKind(_mode), text)));
+                  },
+                ),
+              ],
               const SizedBox(height: 4),
               ExpansionTile(
                 tilePadding: EdgeInsets.zero,

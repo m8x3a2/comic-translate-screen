@@ -2840,6 +2840,27 @@ class AppLocalizationsRu extends AppLocalizations {
       'В инструкции остались пузыри всех страниц: её изменили вручную, или это прошлый обмен.';
 
   @override
+  String get chatPreset => 'Заготовка инструкции';
+
+  @override
+  String get chatPresetStandard => 'Стандартная';
+
+  @override
+  String get chatPresetOwn => 'Своя (без названия)';
+
+  @override
+  String get chatPresetSave => 'Сохранить как заготовку…';
+
+  @override
+  String get chatPresetDelete => 'Удалить заготовку';
+
+  @override
+  String get chatPresetName => 'Название заготовки';
+
+  @override
+  String get chatPresetNameHelp => 'То же название — заготовка заменится.';
+
+  @override
   String get chatAnswerMarks => 'Убирать вокруг ответа';
 
   @override

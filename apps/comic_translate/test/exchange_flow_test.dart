@@ -610,6 +610,52 @@ void main() {
     );
   });
 
+  testWidgets('a preset of instructions picked in the window is the instructions', (tester) async {
+    String? clipboard;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') clipboard = (call.arguments as Map)['text'] as String?;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final settings = fakeSettings();
+    settings.exchange = settings.exchange.copyWith(
+      presets: {
+        ExchangePrompt.translate: [const PromptPreset('Short', 'MY OWN PRESET\n{lines}')],
+      },
+    );
+    await tester.runAsync(() => start(settings));
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [pages().first.id], mode: ExchangeMode.translate),
+      'Копировать инструкцию',
+      ['Hello'],
+    );
+    Future<String?> copiedPrompt() async {
+      await tester.tap(find.text('Копировать инструкцию'));
+      await tester.pump();
+      return clipboard;
+    }
+
+    Future<void> pick(String shown, String preset) async {
+      await tester.tap(find.text(shown));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(preset).last);
+      await tester.pumpAndSettle();
+      // The folder is written again after a moment.
+      for (var i = 0; i < 30; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    expect(await copiedPrompt(), isNot(contains('MY OWN PRESET')));
+    await pick('Стандартная', 'Short');
+    expect(container.read(settingsProvider).exchange.promptFor(ExchangePrompt.translate), 'MY OWN PRESET\n{lines}');
+    expect(await copiedPrompt(), allOf(startsWith('MY OWN PRESET'), contains('[01-001] Hello')));
+    await pick('Short', 'Стандартная');
+    expect(await copiedPrompt(), isNot(contains('MY OWN PRESET')));
+  });
+
   testWidgets('a big request: the window advises parts and turns them on', (tester) async {
     await tester.runAsync(() => start(fakeSettings()));
     await openWindow(
