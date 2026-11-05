@@ -491,7 +491,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final current = ws.currentPage;
     final choice = await showExportDialog(
       context,
-      initial: ref.read(settingsProvider).export,
+      initial: ref.read(settingsProvider).export.forWindow,
       pageCount: done.length,
       chapters: chapterCount(done),
       currentAvailable: current != null && current.isDone,
@@ -511,7 +511,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       onExportText: () => showTextExportDialog(context),
     );
     if (choice == null || !mounted) return;
-    await ref.read(settingsProvider.notifier).change((s) => s.export = choice.settings);
+    // Not remembered: the window opens with the defaults next time.
+    await ref
+        .read(settingsProvider.notifier)
+        .change((s) => s.export = choice.settings.remember ? choice.settings : s.export.copyWith(remember: false));
     final numbers = choice.numbers;
     final pages = choice.currentOnly
         ? [current!]
@@ -571,10 +574,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       'files': result.outputs.length,
     });
     if (options.translated) ref.read(workspaceProvider.notifier).markExported(ids);
+    if (choice.removeFromProject) ref.read(workspaceProvider.notifier).removePages(ids.toSet());
     if (mounted) {
       final shown = result.outputs.length == 1 ? result.outputs.single : target;
       _snack(
-        l.exportSaved(shown),
+        choice.removeFromProject ? l.exportSavedRemoved(shown, '${ids.length}') : l.exportSaved(shown),
         action: SnackBarAction(label: l.showInFolder, onPressed: () => showInExplorer(shown)),
       );
     }

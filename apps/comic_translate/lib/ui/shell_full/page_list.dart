@@ -229,7 +229,11 @@ Future<void> removePickedPages(BuildContext context, WidgetRef ref) async {
       ],
     ),
   );
-  if (yes ?? false) ref.read(workspaceProvider.notifier).removePages(ids);
+  if (!(yes ?? false)) return;
+  ref.read(workspaceProvider.notifier).removePages(ids);
+  if (context.mounted) {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(l.pagesRemoved('${ids.length}'))));
+  }
 }
 
 /// The right-click menu of a page in the list and in the grid: pages from

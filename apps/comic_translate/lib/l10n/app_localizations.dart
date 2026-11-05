@@ -6317,7 +6317,7 @@ abstract class AppLocalizations {
   /// No description provided for @removePagesBody.
   ///
   /// In en, this message translates to:
-  /// **'The files on disk stay. The translation and edits of these pages are lost unless saved in a project or exported.'**
+  /// **'The files on disk stay. Ctrl+Z right after brings the pages back, with their translation and edits.'**
   String get removePagesBody;
 
   /// No description provided for @removePagesYes.
@@ -6325,6 +6325,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove'**
   String get removePagesYes;
+
+  /// No description provided for @pagesRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Taken out of the list: {count}. Ctrl+Z brings them back.'**
+  String pagesRemoved(String count);
+
+  /// No description provided for @exportRemember.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember these settings'**
+  String get exportRemember;
+
+  /// No description provided for @exportRememberHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Off: the window opens with the usual settings each time.'**
+  String get exportRememberHelp;
+
+  /// No description provided for @exportRemovePages.
+  ///
+  /// In en, this message translates to:
+  /// **'Take the exported pages out of the project'**
+  String get exportRemovePages;
+
+  /// No description provided for @exportRemovePagesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The files on disk stay; Ctrl+Z right after brings the pages back.'**
+  String get exportRemovePagesHelp;
+
+  /// No description provided for @exportSavedRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved: {path}. Taken out of the project: {count} (Ctrl+Z brings them back).'**
+  String exportSavedRemoved(String path, String count);
 }
 
 class _AppLocalizationsDelegate

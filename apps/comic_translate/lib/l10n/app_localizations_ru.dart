@@ -3707,8 +3707,32 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get removePagesBody =>
-      'Файлы на диске останутся. Перевод и правки этих страниц пропадут, если они не сохранены в проект или не экспортированы.';
+      'Файлы на диске останутся. Ctrl+Z сразу после этого вернёт страницы вместе с переводом и правками.';
 
   @override
   String get removePagesYes => 'Убрать';
+
+  @override
+  String pagesRemoved(String count) {
+    return 'Убрано из списка: $count. Ctrl+Z — вернуть.';
+  }
+
+  @override
+  String get exportRemember => 'Запоминать эти настройки';
+
+  @override
+  String get exportRememberHelp =>
+      'Выключено — окно каждый раз открывается с обычными настройками.';
+
+  @override
+  String get exportRemovePages => 'Убрать выгруженные страницы из проекта';
+
+  @override
+  String get exportRemovePagesHelp =>
+      'Файлы на диске останутся; Ctrl+Z сразу после этого вернёт страницы.';
+
+  @override
+  String exportSavedRemoved(String path, String count) {
+    return 'Сохранено: $path. Убрано из проекта: $count (Ctrl+Z — вернуть).';
+  }
 }

@@ -456,8 +456,8 @@ class AppSettings {
 /// How results are saved. As in the original, a batch run can also save the
 /// recognized text, the translations and the cleaned pages automatically, to
 /// `comic_translate_<timestamp>` next to the input ([rawText],
-/// [translatedText], [cleanedImage]). The other fields remember the last
-/// choices of the Export window.
+/// [translatedText], [cleanedImage]). The other fields keep the last
+/// choices of the Export window, when it is told to [remember] them.
 class ExportSettings {
   const ExportSettings({
     this.imageFormat = 'source',
@@ -475,6 +475,7 @@ class ExportSettings {
     this.namesByTemplate = false,
     this.namePrefix = '',
     this.nameStart = '001',
+    this.remember = false,
   });
 
   static const formats = ['source', 'png', 'jpg', 'webp', 'psd'];
@@ -504,6 +505,15 @@ class ExportSettings {
   final bool namesByTemplate;
   final String namePrefix;
   final String nameStart;
+
+  /// The Export window opens with these choices; off: with the defaults
+  /// (new, 2026-11-05).
+  final bool remember;
+
+  /// What the Export window opens with: these choices when [remember] is
+  /// on, else the defaults (the automatic export keeps its own).
+  ExportSettings get forWindow =>
+      remember ? this : ExportSettings(rawText: rawText, translatedText: translatedText, cleanedImage: cleanedImage);
 
   bool get anyAutomatic => rawText || translatedText || cleanedImage;
 
@@ -537,6 +547,7 @@ class ExportSettings {
     bool? namesByTemplate,
     String? namePrefix,
     String? nameStart,
+    bool? remember,
   }) => ExportSettings(
     imageFormat: imageFormat ?? this.imageFormat,
     rawText: rawText ?? this.rawText,
@@ -553,6 +564,7 @@ class ExportSettings {
     namesByTemplate: namesByTemplate ?? this.namesByTemplate,
     namePrefix: namePrefix ?? this.namePrefix,
     nameStart: nameStart ?? this.nameStart,
+    remember: remember ?? this.remember,
   );
 
   Map<String, Object?> toJson() => {
@@ -571,6 +583,7 @@ class ExportSettings {
     'names_by_template': namesByTemplate,
     'name_prefix': namePrefix,
     'name_start': nameStart,
+    'remember': remember,
   };
 
   factory ExportSettings.fromJson(Map<String, Object?> json) {
@@ -595,6 +608,7 @@ class ExportSettings {
       nameStart: json['name_start'] is String && NameTemplate.validStart(json['name_start'] as String)
           ? json['name_start'] as String
           : d.nameStart,
+      remember: flag('remember', d.remember),
     );
   }
 }

@@ -3708,8 +3708,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get removePagesBody =>
-      'The files on disk stay. The translation and edits of these pages are lost unless saved in a project or exported.';
+      'The files on disk stay. Ctrl+Z right after brings the pages back, with their translation and edits.';
 
   @override
   String get removePagesYes => 'Remove';
+
+  @override
+  String pagesRemoved(String count) {
+    return 'Taken out of the list: $count. Ctrl+Z brings them back.';
+  }
+
+  @override
+  String get exportRemember => 'Remember these settings';
+
+  @override
+  String get exportRememberHelp =>
+      'Off: the window opens with the usual settings each time.';
+
+  @override
+  String get exportRemovePages => 'Take the exported pages out of the project';
+
+  @override
+  String get exportRemovePagesHelp =>
+      'The files on disk stay; Ctrl+Z right after brings the pages back.';
+
+  @override
+  String exportSavedRemoved(String path, String count) {
+    return 'Saved: $path. Taken out of the project: $count (Ctrl+Z brings them back).';
+  }
 }

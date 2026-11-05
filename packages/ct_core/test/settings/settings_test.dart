@@ -107,6 +107,23 @@ void main() {
     expect(s.inpaint.resizeLimit, 1280);
   });
 
+  test('the Export window opens with its last choices only when told to remember them', () {
+    const chosen = ExportSettings(container: ExportContainer.cbz, imageFormat: 'png', cleanedImage: true);
+    // Not remembered (as before this switch existed): defaults, the
+    // automatic export of a batch run kept.
+    final fresh = chosen.forWindow;
+    expect(fresh.container, ExportContainer.folder);
+    expect(fresh.imageFormat, 'source');
+    expect(fresh.cleanedImage, isTrue);
+    expect(fresh.remember, isFalse);
+
+    final kept = chosen.copyWith(remember: true);
+    expect(identical(kept.forWindow, kept), isTrue);
+    final back = ExportSettings.fromJson(kept.toJson());
+    expect((back.remember, back.container, back.imageFormat), (true, ExportContainer.cbz, 'png'));
+    expect(ExportSettings.fromJson(const {}).remember, isFalse);
+  });
+
   test('files from before the cleaning levels move from the old default to High', () {
     AppSettings read(String tools) => AppSettings.fromJson(jsonDecode('{"tools": $tools}') as Map<String, Object?>);
     expect(CleanLevel.of(read('{"inpainter": "aot"}')), CleanLevel.high);

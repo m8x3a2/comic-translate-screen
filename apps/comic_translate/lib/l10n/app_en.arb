@@ -2587,6 +2587,29 @@
       }
     }
   },
-  "removePagesBody": "The files on disk stay. The translation and edits of these pages are lost unless saved in a project or exported.",
-  "removePagesYes": "Remove"
+  "removePagesBody": "The files on disk stay. Ctrl+Z right after brings the pages back, with their translation and edits.",
+  "removePagesYes": "Remove",
+  "pagesRemoved": "Taken out of the list: {count}. Ctrl+Z brings them back.",
+  "@pagesRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "exportRemember": "Remember these settings",
+  "exportRememberHelp": "Off: the window opens with the usual settings each time.",
+  "exportRemovePages": "Take the exported pages out of the project",
+  "exportRemovePagesHelp": "The files on disk stay; Ctrl+Z right after brings the pages back.",
+  "exportSavedRemoved": "Saved: {path}. Taken out of the project: {count} (Ctrl+Z brings them back).",
+  "@exportSavedRemoved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  }
 }

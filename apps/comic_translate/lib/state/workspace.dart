@@ -254,7 +254,12 @@ class WorkspaceState {
     this.selectedPages = const {},
     this.webtoon = false,
     this.glossary = '',
+    this.removed,
   });
+
+  /// The pages just taken out of the list, for Ctrl+Z (new); forgotten at
+  /// the next change of a page.
+  final RemovedPages? removed;
 
   /// Webtoon mode: the pages are shown as one strip, and bubbles cut by the
   /// edge between two pages are handled as one (original `webtoon_mode`).
@@ -304,7 +309,7 @@ class WorkspaceState {
     return page == null || i == null || i < 0 || i >= page.blocks.length ? null : page.blocks[i];
   }
 
-  bool get canUndo => history[currentPage?.id]?.undo.isNotEmpty ?? false;
+  bool get canUndo => removed != null || (history[currentPage?.id]?.undo.isNotEmpty ?? false);
   bool get canRedo => history[currentPage?.id]?.redo.isNotEmpty ?? false;
 
   PageEntry? byId(String id) {
@@ -324,6 +329,8 @@ class WorkspaceState {
     Set<String>? selectedPages,
     bool? webtoon,
     String? glossary,
+    RemovedPages? removed,
+    bool clearRemoved = false,
   }) => WorkspaceState(
     pages: pages ?? this.pages,
     current: current ?? this.current,
@@ -333,7 +340,22 @@ class WorkspaceState {
     selectedPages: selectedPages ?? this.selectedPages,
     webtoon: webtoon ?? this.webtoon,
     glossary: glossary ?? this.glossary,
+    removed: clearRemoved ? null : (removed ?? this.removed),
   );
+}
+
+/// Pages taken out of the list, with where they were and their undo
+/// history, until Ctrl+Z brings them back.
+class RemovedPages {
+  const RemovedPages(this.pages, this.indexes, this.history, this.current);
+
+  /// In page order, with their places in the list before.
+  final List<PageEntry> pages;
+  final List<int> indexes;
+  final Map<String, PageHistory> history;
+
+  /// The page open before.
+  final String? current;
 }
 
 /// What opening files produced, for messages to the user.
@@ -735,11 +757,27 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   void remove(String id) => removePages({id});
 
   /// Takes pages [ids] out of the list (their files stay on disk). The open
-  /// page stays open unless it goes; then the page after it opens.
+  /// page stays open unless it goes; then the page after it opens. Ctrl+Z
+  /// before the next change brings them back ([undo]).
   void removePages(Set<String> ids) {
     if (ids.isEmpty) return;
     final old = state.pages;
     final open = state.currentPage?.id;
+    final removed = RemovedPages(
+      [
+        for (final p in old)
+          if (ids.contains(p.id)) p,
+      ],
+      [
+        for (final (i, p) in old.indexed)
+          if (ids.contains(p.id)) i,
+      ],
+      {
+        for (final e in state.history.entries)
+          if (ids.contains(e.key)) e.key: e.value,
+      },
+      open,
+    );
     final pages = [
       for (final p in old)
         if (!ids.contains(p.id)) p,
@@ -758,6 +796,24 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
       clearBlock: true,
       history: {...state.history}..removeWhere((id, _) => ids.contains(id)),
       selectedPages: picked.length < 2 ? const {} : picked,
+      removed: removed.pages.isEmpty ? null : removed,
+      clearRemoved: removed.pages.isEmpty,
+    );
+  }
+
+  /// Puts the pages of the last [removePages] back where they were.
+  void _restoreRemoved(RemovedPages r) {
+    final pages = [...state.pages];
+    for (final (k, page) in r.pages.indexed) {
+      pages.insert(r.indexes[k].clamp(0, pages.length), page);
+    }
+    final open = pages.indexWhere((p) => p.id == r.current);
+    state = state.copyWith(
+      pages: pages,
+      current: open < 0 ? state.current : open,
+      history: {...state.history, ...r.history},
+      clearBlock: true,
+      clearRemoved: true,
     );
   }
 
@@ -827,6 +883,7 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
           if (p.id == id) next else if (i == below && p.translatedPath != null) p.copyWith(translatedPath: null) else p,
       ],
       history: {...state.history, id: history},
+      clearRemoved: true,
     );
   }
 
@@ -959,13 +1016,22 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     if (page != null && page.hasMask) edit(page.id, (p) => p.copyWith(maskPath: null, strokes: const []));
   }
 
-  void undo() => _step(back: true);
+  /// Brings back the pages just removed, else undoes a change of the open
+  /// page.
+  void undo() {
+    if (state.removed case final r?) {
+      _restoreRemoved(r);
+    } else {
+      _step(back: true);
+    }
+  }
 
   void redo() => _step(back: false);
 
   void _step({required bool back}) {
     final page = state.currentPage;
     if (page == null) return;
+    if (state.removed != null) state = state.copyWith(clearRemoved: true);
     final h = state.history[page.id] ?? PageHistory.empty;
     final from = back ? h.undo : h.redo;
     if (from.isEmpty) return;

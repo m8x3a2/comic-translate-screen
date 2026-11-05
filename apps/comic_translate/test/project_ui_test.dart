@@ -140,11 +140,22 @@ void main() {
     final cb7 = tester.widget<ChoiceChip>(find.widgetWithText(ChoiceChip, 'CB7'));
     expect(cb7.onSelected, isNull, reason: '7-Zip is not installed');
 
+    // Both off at first; ticked, they come back with the choice.
+    for (final label in ['Убрать выгруженные страницы из проекта', 'Запоминать эти настройки']) {
+      final box = find.widgetWithText(CheckboxListTile, label);
+      expect(tester.widget<CheckboxListTile>(box).value, isFalse);
+      await tester.ensureVisible(box);
+      await tester.tap(box);
+      await tester.pumpAndSettle();
+    }
+
     await tester.tap(find.text('Экспортировать…'));
     await tester.pumpAndSettle();
     expect(closed, isTrue);
     expect(choice!.settings.container, ExportContainer.cbz);
     expect(choice!.currentOnly, isFalse);
+    expect(choice!.removeFromProject, isTrue);
+    expect(choice!.settings.remember, isTrue);
   });
 
   testWidgets('the export window of a webtoon: one picture or cut again, with the part height', (tester) async {

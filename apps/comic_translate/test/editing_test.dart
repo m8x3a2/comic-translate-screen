@@ -480,5 +480,44 @@ void main() {
     expect(names(), ['p5.png']);
     expect(page().name, 'p5.png', reason: 'the open page went: the next one opens');
     expect(container.read(workspaceProvider).selectedPages, isEmpty);
+
+    // Ctrl+Z brings back the last pages taken out, where they were, with
+    // the page that was open.
+    expect(container.read(workspaceProvider).canUndo, isTrue);
+    ws().undo();
+    expect(names(), ['p2.png', 'p4.png', 'p5.png']);
+    expect(page().name, 'p4.png');
+  });
+
+  test('pages taken out come back with their undo history; a change of a page forgets them', () async {
+    final more = [
+      for (final n in ['p2.png', 'p3.png']) p.join(dir.path, n),
+    ];
+    for (final f in more) {
+      await ImageCodec.writeFile(f, RgbImage.filled(100, 60, 255, 255, 255));
+    }
+    await ws().addInputs(more);
+    List<String> names() => [for (final x in container.read(workspaceProvider).pages) x.name];
+    String id(String name) => container.read(workspaceProvider).pages.firstWhere((x) => x.name == name).id;
+
+    final p2 = id('p2.png');
+    ws().edit(
+      p2,
+      (x) => x.copyWith(
+        blocks: [TextBlock(xyxy: const BBox(1, 1, 9, 9), translation: 'Привет')],
+      ),
+    );
+    ws().removePages({p2});
+    ws().undo();
+    expect(names(), ['page.png', 'p2.png', 'p3.png']);
+    ws().select(1);
+    expect(container.read(workspaceProvider).canUndo, isTrue, reason: 'its own history came back');
+    ws().undo();
+    expect(page().blocks, isEmpty);
+
+    ws().removePages({id('p3.png')});
+    ws().edit(id('page.png'), (x) => x.copyWith(blocks: [TextBlock(xyxy: const BBox(1, 1, 9, 9))]));
+    ws().undo();
+    expect(names(), ['page.png', 'p2.png'], reason: 'the undo went to the change, not to the removal');
   });
 }

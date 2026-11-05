@@ -10,14 +10,18 @@ import 'package:flutter/services.dart';
 import '../common/labels.dart';
 
 class ExportChoice {
-  const ExportChoice(this.settings, {required this.currentOnly, this.numbers});
+  const ExportChoice(this.settings, {required this.currentOnly, this.numbers, this.removeFromProject = false});
 
-  /// The window's choices, remembered for next time.
+  /// The window's choices, remembered for next time when
+  /// [ExportSettings.remember] is on.
   final ExportSettings settings;
   final bool currentOnly;
 
   /// The pages written by number (0-based among all pages), if chosen so.
   final Set<int>? numbers;
+
+  /// The exported pages leave the project afterwards (never remembered).
+  final bool removeFromProject;
 }
 
 /// Which pages the Export window saves.
@@ -103,6 +107,9 @@ class _ExportDialogState extends State<_ExportDialog> {
   late final _slice = TextEditingController(text: '${widget.initial.sliceHeight}');
   late final _prefix = TextEditingController(text: widget.initial.namePrefix);
   late final _start = TextEditingController(text: widget.initial.nameStart);
+
+  /// "Take the exported pages out of the project": off each time.
+  var _remove = false;
 
   /// The first names the template gives, as files.
   String get _example {
@@ -399,6 +406,26 @@ class _ExportDialogState extends State<_ExportDialog> {
                   padding: const EdgeInsets.only(top: 8),
                   child: check(l.exportByChapter('${widget.chapters}'), _s.byChapter, (v) => _s.copyWith(byChapter: v)),
                 ),
+              const SizedBox(height: 8),
+              const Divider(),
+              CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(l.exportRemovePages),
+                subtitle: Text(l.exportRemovePagesHelp),
+                value: _remove,
+                onChanged: (v) => setState(() => _remove = v ?? false),
+              ),
+              CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(l.exportRemember),
+                subtitle: Text(l.exportRememberHelp),
+                value: _s.remember,
+                onChanged: (v) => setState(() => _s = _s.copyWith(remember: v ?? false)),
+              ),
             ],
           ),
         ),
@@ -422,6 +449,7 @@ class _ExportDialogState extends State<_ExportDialog> {
                     _s,
                     currentOnly: _which == _Which.current,
                     numbers: _which == _Which.numbers ? _numbered : null,
+                    removeFromProject: _remove,
                   ),
                 )
               : null,
