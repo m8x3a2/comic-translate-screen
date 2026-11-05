@@ -289,6 +289,17 @@
     }
   },
   "openSettings": "Open settings",
+  "missingKeyBodyReading": "\"{name}\" sends the pictures of the bubbles to {host}, which needs an API key. It is the key of the translator of the same service: enter it in Settings → Recognition and cleaning or Settings → Translator (it is stored in Windows secure storage), or choose a local recognition.",
+  "@missingKeyBodyReading": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
   "showInFolder": "Show in folder",
   "goToPage": "Go to page",
   "reasonModelMissing": "model \"{name}\" is not downloaded",
@@ -368,6 +379,20 @@
   "networkWhereLan": "a computer on your local network",
   "networkWhereCloud": "an internet service",
   "networkBodyImage": "Page images are sent too (setting \"Send page image\").",
+  "networkBodyReading": "\"{name}\" sends the pictures of the bubbles to {host} ({where}) to read their text.",
+  "@networkBodyReading": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      },
+      "where": {
+        "type": "String"
+      }
+    }
+  },
   "networkOffline": "To work fully offline, choose a local translator in Settings.",
   "allowOnce": "Allow this time",
   "allowAlways": "Always allow for this server",

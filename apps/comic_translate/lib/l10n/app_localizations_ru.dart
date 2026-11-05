@@ -348,6 +348,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get openSettings => 'Открыть настройки';
 
   @override
+  String missingKeyBodyReading(String name, String host) {
+    return '«$name» отправляет картинки пузырей на $host, а там нужен ключ API. Это ключ переводчика того же сервиса: укажите его в «Настройки → Распознавание и очистка» или «Настройки → Переводчик» (он хранится в защищённом хранилище Windows) или выберите локальное распознавание.';
+  }
+
+  @override
   String get showInFolder => 'Показать в папке';
 
   @override
@@ -453,6 +458,11 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get networkBodyImage =>
       'Картинки страниц тоже отправляются (настройка «Отправлять картинку страницы»).';
+
+  @override
+  String networkBodyReading(String name, String host, String where) {
+    return '«$name» отправляет картинки пузырей на $host ($where), чтобы прочитать их текст.';
+  }
 
   @override
   String get networkOffline =>

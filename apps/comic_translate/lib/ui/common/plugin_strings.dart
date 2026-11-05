@@ -48,6 +48,39 @@ const _ru = <String, String>{
   'windows_ocr.min_text_height.help':
       'Мелкий текст увеличивается перед распознаванием; Windows плохо читает текст '
       'меньше примерно 20 px.',
+  'openrouter_ocr': 'Нейросеть по ключу: OpenRouter',
+  'openrouter_ocr.desc':
+      'Пузыри читает языковая модель, которая видит картинки, через OpenRouter (openrouter.ai): туда уходят '
+      'картинки пузырей каждой страницы. Ключ — тот же, что у переводчика OpenRouter.',
+  'openrouter_ocr.model': 'Модель',
+  'openrouter_ocr.model.help':
+      'Модель, которая видит картинки (в списке они отмечены), например google/gemini-2.5-flash.',
+  'openrouter_ocr.api_key': 'Ключ API',
+  'openrouter_ocr.api_key.help': 'Тот же ключ, что у переводчика OpenRouter: указали один раз — работает для обоих.',
+  'openrouter_ocr.resend_missing': 'Досылать недостающее',
+  'openrouter_ocr.resend_missing.help': 'Если в ответе нет текста части пузырей — один раз спросить только про них.',
+  'openrouter_ocr.max_tokens': 'Наибольшая длина ответа (токены)',
+  'openrouter_ocr.max_tokens.help': 'Хватает на текст страницы.',
+  'openrouter_ocr.timeout': 'Время ожидания (секунды)',
+  'openrouter_ocr.timeout.help': 'Сколько ждать ответа на одну страницу.',
+  'openai_compatible_ocr': 'Нейросеть по ключу: свой сервер',
+  'openai_compatible_ocr.desc':
+      'Пузыри читает языковая модель, которая видит картинки, через любой OpenAI-совместимый сервер (локальный '
+      'LM Studio / Ollama, OpenAI и другие). Ключ — тот же, что у переводчика «Свой сервер».',
+  'openai_compatible_ocr.api_url': 'Адрес API',
+  'openai_compatible_ocr.api_url.help': 'Адрес, оканчивающийся на /v1, например http://localhost:1234/v1 (LM Studio).',
+  'openai_compatible_ocr.model': 'Модель',
+  'openai_compatible_ocr.model.help': 'Модель, которая видит картинки, например qwen2.5-vl-7b-instruct.',
+  'openai_compatible_ocr.api_key': 'Ключ API',
+  'openai_compatible_ocr.api_key.help':
+      'Для локальных серверов обычно не нужен. Тот же ключ, что у переводчика «Свой сервер».',
+  'openai_compatible_ocr.resend_missing': 'Досылать недостающее',
+  'openai_compatible_ocr.resend_missing.help':
+      'Если в ответе нет текста части пузырей — один раз спросить только про них.',
+  'openai_compatible_ocr.max_tokens': 'Наибольшая длина ответа (токены)',
+  'openai_compatible_ocr.max_tokens.help': 'Хватает на текст страницы.',
+  'openai_compatible_ocr.timeout': 'Время ожидания (секунды)',
+  'openai_compatible_ocr.timeout.help': 'Сколько ждать ответа на одну страницу.',
   'chat_ocr': 'Вручную через чат (ChatGPT, Gemini, Claude…)',
   'chat_ocr.desc':
       'Вы сами отправляете картинки с пузырями в чат и вставляете его ответ: «Перевести всё» и «Распознать» '
@@ -129,7 +162,8 @@ const _ru = <String, String>{
       'Больше 1 — соседние страницы уходят вместе: модель лучше держит имена и сюжет, запросов меньше.',
   'openai_compatible.pages_per_request.info': _pagesInfo,
   'openai_compatible.resend_missing': 'Досылать недостающее',
-  'openai_compatible.resend_missing.help': 'Если в ответе нет перевода части пузырей — один раз спросить только про них.',
+  'openai_compatible.resend_missing.help':
+      'Если в ответе нет перевода части пузырей — один раз спросить только про них.',
   'openai_compatible.resend_missing.info': _resendInfo,
   'openai_compatible.temperature': 'Температура',
   'openai_compatible.temperature.info':

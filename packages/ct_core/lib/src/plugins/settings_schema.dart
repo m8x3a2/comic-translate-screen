@@ -1,13 +1,11 @@
 /// Declarative settings of a plugin. The settings page is generated from this
 /// schema; values are validated and defaulted through it.
+library;
+
+import '../settings/secret_store.dart' show pluginSecretKey;
+
 sealed class SettingField {
-  const SettingField({
-    required this.key,
-    required this.label,
-    this.help = '',
-    this.info = '',
-    this.advanced = false,
-  });
+  const SettingField({required this.key, required this.label, this.help = '', this.info = '', this.advanced = false});
 
   final String key;
   final String label;
@@ -31,7 +29,8 @@ class TextSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
-    super.info, super.advanced,
+    super.info,
+    super.advanced,
     this.defaultValue = '',
     this.placeholder = '',
     this.multiline = false,
@@ -51,9 +50,24 @@ class TextSetting extends SettingField {
 /// A secret (API key, token). Never stored in settings.json: values live in
 /// the OS secure storage under `plugin.<pluginId>.<key>`.
 class SecretSetting extends SettingField {
-  const SecretSetting({required super.key, required super.label, super.help, super.info, super.advanced, this.optional = false});
+  const SecretSetting({
+    required super.key,
+    required super.label,
+    super.help,
+    super.info,
+    super.advanced,
+    this.optional = false,
+    this.sharedWith,
+  });
 
   final bool optional;
+
+  /// The secret is the one of this other plugin (one key for both: the
+  /// reading and the translating of the same service).
+  final String? sharedWith;
+
+  /// Where the secret of plugin [pluginId] is kept (see [pluginSecretKey]).
+  String storeKey(String pluginId) => pluginSecretKey(sharedWith ?? pluginId, key);
 
   @override
   Object? get defaultValue => null;
@@ -67,7 +81,8 @@ class ChoiceSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
-    super.info, super.advanced,
+    super.info,
+    super.advanced,
     required this.options,
     required this.defaultValue,
   });
@@ -87,7 +102,8 @@ class IntSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
-    super.info, super.advanced,
+    super.info,
+    super.advanced,
     required this.defaultValue,
     this.min,
     this.max,
@@ -113,7 +129,8 @@ class DoubleSetting extends SettingField {
     required super.key,
     required super.label,
     super.help,
-    super.info, super.advanced,
+    super.info,
+    super.advanced,
     required this.defaultValue,
     this.min,
     this.max,
@@ -135,7 +152,14 @@ class DoubleSetting extends SettingField {
 }
 
 class BoolSetting extends SettingField {
-  const BoolSetting({required super.key, required super.label, super.help, super.info, super.advanced, this.defaultValue = false});
+  const BoolSetting({
+    required super.key,
+    required super.label,
+    super.help,
+    super.info,
+    super.advanced,
+    this.defaultValue = false,
+  });
 
   @override
   final bool defaultValue;

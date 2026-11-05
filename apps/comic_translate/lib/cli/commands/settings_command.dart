@@ -78,7 +78,8 @@ class _SettingsSet extends CtsCommand {
   String get name => 'set';
 
   @override
-  String get description => 'Change one setting. The value is parsed as JSON when possible (true, 3, [..]), '
+  String get description =>
+      'Change one setting. The value is parsed as JSON when possible (true, 3, [..]), '
       'otherwise taken as text. Examples: tools.translator openai_compatible; languages.target Russian; '
       'plugins.openai_compatible.model openai/gpt-4.1-mini.';
 
@@ -148,7 +149,9 @@ class _SettingsPlugins extends CtsCommand {
         'sends_data_to': endpoint == null ? null : {'privacy': endpoint.privacy.name, 'host': endpoint.host},
         'settings': {
           for (final f in info.settings)
-            f.key: f is SecretSetting ? (config.secret(f.key) != null ? '<stored>' : '<not set>') : config.values[f.key],
+            f.key: f is SecretSetting
+                ? (config.secret(f.key) != null ? '<stored>' : '<not set>')
+                : config.values[f.key],
         },
       });
       if (!ctx.json) {
@@ -158,7 +161,7 @@ class _SettingsPlugins extends CtsCommand {
         ctx.say('${info.kind.name.padRight(10)} ${info.id.padRight(18)} [$privacy] ${info.displayName}');
         for (final f in info.settings) {
           final v = f is SecretSetting
-              ? (config.secret(f.key) != null ? '<stored>' : '<not set>  (cts secrets set ${pluginSecretKey(info.id, f.key)})')
+              ? (config.secret(f.key) != null ? '<stored>' : '<not set>  (cts secrets set ${f.storeKey(info.id)})')
               : jsonEncode(config.values[f.key]);
           ctx.say('    plugins.${info.id}.${f.key} = $v');
         }

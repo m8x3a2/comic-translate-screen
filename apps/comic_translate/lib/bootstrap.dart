@@ -58,7 +58,7 @@ class AppServices {
     final info = registry.info(id);
     final secrets = <String, String>{};
     for (final field in info.settings.whereType<SecretSetting>()) {
-      final value = await this.secrets.read(pluginSecretKey(id, field.key));
+      final value = await this.secrets.read(field.storeKey(id));
       if (value != null && value.isNotEmpty) secrets[field.key] = value;
     }
     return PluginConfig.resolve(info.settings, {...settings.pluginValues(id), ...overrides}, secrets: secrets);

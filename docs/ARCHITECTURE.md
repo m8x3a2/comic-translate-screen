@@ -73,6 +73,14 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 - Chat exchange: the instructions ask for stressed words between stars
   (`*НЕ*`) where the chat sees pictures; a reply's starred words become bold
   runs (the old runs of the block go with the old translation).
+- Reading by a model by key (new, `model_ocr.dart`, `model_reading.dart`): the
+  exchange without hands. A `PageOcr` gets the page's blocks at once, sends a
+  vision model (OpenRouter or an OpenAI-compatible server) the exchange's
+  labelled sheets and "Read" instructions, reads the answer like a pasted one
+  and asks once more for the bubbles left out. No text preparation, line
+  check or recognition level. The key is the translator's of the same service
+  (`SecretSetting.sharedWith`); the model is its own. Checked on two English
+  pages: gemini-3.1-flash-lite read every bubble right at about $0.0005 a page.
 - New translations (the Translate step) drop a block's hand-made look and keep
   only its text box. Fonts: 16 OFL families with Cyrillic come with the
   program (`bundled_fonts.dart`); "Suggest a font" ranks them (and added

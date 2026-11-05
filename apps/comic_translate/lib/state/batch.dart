@@ -248,7 +248,9 @@ class BatchNotifier extends Notifier<BatchState> {
     final pool = ref.read(workerPoolProvider);
     PipelineWorker? worker;
     try {
-      if (!await checkTranslatorKey(ref, ui) || !await approveTranslatorNetwork(ref, ui)) {
+      if (!await checkTranslatorKey(ref, ui) ||
+          !await approveTranslatorNetwork(ref, ui) ||
+          !await checkReaderNetwork(ref, ui)) {
         state = BatchIdle(last);
         return;
       }
@@ -683,11 +685,30 @@ class BatchNotifier extends Notifier<BatchState> {
 
 /// An internet translator without its key would fail every page: explains
 /// where to enter it and returns false.
-Future<bool> checkTranslatorKey(Ref ref, BatchUi ui) async {
+Future<bool> checkTranslatorKey(Ref ref, BatchUi ui) => checkPluginKey(ref, ui, ref.read(settingsProvider).translator);
+
+/// Asks before the translator sends data off the device (once, or always
+/// for this translator and address).
+Future<bool> approveTranslatorNetwork(Ref ref, BatchUi ui) {
+  final settings = ref.read(settingsProvider);
+  return approvePluginNetwork(ref, ui, settings.translator, sendsImage: settings.sendPageImage);
+}
+
+/// [checkTranslatorKey] and [approveTranslatorNetwork] for the reading, when
+/// a model reads through the network (it is sent the pictures).
+Future<bool> checkReaderNetwork(Ref ref, BatchUi ui) async {
+  final id = ref.read(settingsProvider).ocr;
+  return await checkPluginKey(ref, ui, id) && await approvePluginNetwork(ref, ui, id, sendsImage: true);
+}
+
+/// Plugin [id] that sends data to a service without its key would fail
+/// every page: explains where to enter it and returns false.
+Future<bool> checkPluginKey(Ref ref, BatchUi ui, String id) async {
   final services = ref.read(servicesProvider);
   final settings = ref.read(settingsProvider);
-  final info = services.registry.info(settings.translator);
-  final config = await services.pluginConfig(settings.translator, settings);
+  if (!services.registry.contains(id)) return true;
+  final info = services.registry.info(id);
+  final config = await services.pluginConfig(id, settings);
   final endpoint = info.endpointFor(config);
   // No server address at all: say that, not "sends to (nothing)".
   if (endpoint != null && endpoint.host.isEmpty) {
@@ -701,17 +722,18 @@ Future<bool> checkTranslatorKey(Ref ref, BatchUi ui) async {
   return false;
 }
 
-/// Asks before the translator sends data off the device (once, or always
-/// for this translator and address).
-Future<bool> approveTranslatorNetwork(Ref ref, BatchUi ui) async {
+/// Asks before plugin [id] sends data off the device (once, or always for
+/// this plugin and address).
+Future<bool> approvePluginNetwork(Ref ref, BatchUi ui, String id, {required bool sendsImage}) async {
   final services = ref.read(servicesProvider);
   final settings = ref.read(settingsProvider);
-  final info = services.registry.info(settings.translator);
-  final endpoint = info.endpointFor(await services.pluginConfig(settings.translator, settings));
+  if (!services.registry.contains(id)) return true;
+  final info = services.registry.info(id);
+  final endpoint = info.endpointFor(await services.pluginConfig(id, settings));
   if (endpoint == null) return true;
   final key = endpoint.approvalKey(info.id);
   if (settings.approvedNetworkPlugins.contains(key)) return true;
-  switch (await ui.confirmNetwork(info, endpoint, sendsImage: settings.sendPageImage)) {
+  switch (await ui.confirmNetwork(info, endpoint, sendsImage: sendsImage)) {
     case NetworkChoice.cancel:
       return false;
     case NetworkChoice.once:

@@ -23,8 +23,14 @@ class _YesUi implements BatchUi {
 
   final errors = <Object>[];
 
+  /// Plugins said to have no key, and the ones asked to send data (with or
+  /// without pictures); what to answer.
+  final missingKey = <String>[];
+  final networkAsked = <(String, bool)>[];
+  NetworkChoice network = NetworkChoice.once;
+
   @override
-  Future<void> explainMissingKey(PluginInfo translator, String host) async {}
+  Future<void> explainMissingKey(PluginInfo translator, String host) async => missingKey.add(translator.id);
 
   @override
   Future<bool> confirmDownload(List<ModelSpec> models) async => true;
@@ -34,7 +40,10 @@ class _YesUi implements BatchUi {
     PluginInfo translator,
     PluginEndpoint endpoint, {
     required bool sendsImage,
-  }) async => NetworkChoice.once;
+  }) async {
+    networkAsked.add((translator.id, sendsImage));
+    return network;
+  }
 
   @override
   void showError(Object error) => errors.add(error);
@@ -337,6 +346,23 @@ void main() {
     await steps.run(ManualStep.translate, ui, block: 1);
     expect(ui.emptyAsked, 1);
     expect(read(), [('Hi', false), ('HELLO', true), ('', false)]);
+  });
+
+  test('reading by a model through the network: its key first, then the question about sending pictures', () async {
+    await container.read(settingsProvider.notifier).change((s) => s.ocr = 'openrouter_ocr');
+    ws().edit(page().id, (p) => p.copyWith(blocks: [TextBlock(xyxy: const BBox(5, 5, 45, 25))]));
+    final ui = _YesUi()..network = NetworkChoice.cancel;
+    await container.read(stepsProvider.notifier).run(ManualStep.recognize, ui);
+    expect(ui.missingKey, ['openrouter_ocr']);
+    expect(ui.networkAsked, isEmpty);
+
+    // The key of the OpenRouter translator serves the reading too.
+    await services.secrets.write(pluginSecretKey('openrouter', 'api_key'), 'sk-or-test');
+    ui.missingKey.clear();
+    await container.read(stepsProvider.notifier).run(ManualStep.recognize, ui);
+    expect(ui.missingKey, isEmpty);
+    expect(ui.networkAsked, [('openrouter_ocr', true)]);
+    expect(page().blocks.single.text, '', reason: 'sending was not allowed: nothing read');
   });
 
   test('a page without frames is found and read with no question', () async {

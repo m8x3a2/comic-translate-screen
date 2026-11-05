@@ -211,6 +211,10 @@ class StepsNotifier extends Notifier<StepState> {
         (!await checkTranslatorKey(ref, ui) || !await approveTranslatorNetwork(ref, ui))) {
       return;
     }
+    if (plans.values.any((s) => s.any((x) => x == ManualStep.recognize && !viaChat(x))) &&
+        !await checkReaderNetwork(ref, ui)) {
+      return;
+    }
     final cancel = _cancel = CancelToken();
     state = StepState(pageId: start.id, step: step, stage: 'loading', pages: targets.length);
     final pool = ref.read(workerPoolProvider);

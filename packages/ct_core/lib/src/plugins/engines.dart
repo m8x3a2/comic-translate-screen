@@ -28,6 +28,12 @@ abstract interface class OcrEngine implements Plugin {
   });
 }
 
+/// An [OcrEngine] that reads all the blocks of a page at once from the page
+/// image by itself (a language model through the network): the text is not
+/// prepared, the lines are not checked, no recognition level applies. New
+/// in this project.
+abstract interface class PageOcr implements OcrEngine {}
+
 /// Prepares small text for reading: enlarges the pieces of a page where the
 /// lines are thin (see `reading_scale.dart`). New in this project.
 abstract interface class TextUpscaler implements Plugin {

@@ -15,6 +15,11 @@ Why:
 How it differs from the "OpenRouter" translator: OpenRouter works by itself, over the network, with an API key
 (Settings → Translator). The exchange is by hand, with no key, through the chat in your browser.
 
+Reading can do the same without hands: Settings → Recognition and cleaning → **"Model by key: OpenRouter"** (or
+"own server"). The app sends the model the labelled sheets and these same instructions and puts the answer
+into the bubbles. The key is the translator's; the model is chosen apart and must see pictures (for example
+google/gemini-3.1-flash-lite: about $0.0005 a page). The app asks before it first sends anything.
+
 ## How to open it
 
 - The **"Chat"** button on the main screen (or its menu): **"Read and translate through a chat…"**,

@@ -662,6 +662,12 @@ abstract class AppLocalizations {
   /// **'Open settings'**
   String get openSettings;
 
+  /// No description provided for @missingKeyBodyReading.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" sends the pictures of the bubbles to {host}, which needs an API key. It is the key of the translator of the same service: enter it in Settings → Recognition and cleaning or Settings → Translator (it is stored in Windows secure storage), or choose a local recognition.'**
+  String missingKeyBodyReading(String name, String host);
+
   /// No description provided for @showInFolder.
   ///
   /// In en, this message translates to:
@@ -829,6 +835,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Page images are sent too (setting \"Send page image\").'**
   String get networkBodyImage;
+
+  /// No description provided for @networkBodyReading.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" sends the pictures of the bubbles to {host} ({where}) to read their text.'**
+  String networkBodyReading(String name, String host, String where);
 
   /// No description provided for @networkOffline.
   ///

@@ -640,6 +640,15 @@ Future<void> recognizeBlocks(
   LineDetector? lineChecker,
 }) async {
   final code = Languages.byName(sourceLanguage)?.code ?? '';
+  // A model reads the whole page itself: nothing is prepared; the letters
+  // are measured as after any reading.
+  if (ocr is PageOcr) {
+    await ocr.recognize(image, blocks, sourceLanguage: sourceLanguage, context: context);
+    for (final b in blocks) {
+      b.sourceStyle = measureSourceStyle(image, b);
+    }
+    return;
+  }
   await readBlocks(
     ocr,
     image,

@@ -347,6 +347,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openSettings => 'Open settings';
 
   @override
+  String missingKeyBodyReading(String name, String host) {
+    return '\"$name\" sends the pictures of the bubbles to $host, which needs an API key. It is the key of the translator of the same service: enter it in Settings → Recognition and cleaning or Settings → Translator (it is stored in Windows secure storage), or choose a local recognition.';
+  }
+
+  @override
   String get showInFolder => 'Show in folder';
 
   @override
@@ -452,6 +457,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get networkBodyImage =>
       'Page images are sent too (setting \"Send page image\").';
+
+  @override
+  String networkBodyReading(String name, String host, String where) {
+    return '\"$name\" sends the pictures of the bubbles to $host ($where) to read their text.';
+  }
 
   @override
   String get networkOffline =>

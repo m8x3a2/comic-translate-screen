@@ -77,6 +77,7 @@ PluginRegistry fakeRegistryWith({Duration detectDelay = Duration.zero}) => Plugi
   ..register(PluginFactory<OcrEngine>(fakeInfo('fake_ocr', PluginKind.ocr), (c, e) async => _FakeOcr()))
   ..register(PluginFactory<Inpainter>(fakeInfo('fake_inpaint', PluginKind.inpainter), (c, e) async => _FakeInpainter()))
   ..register(chatOcrFactory)
+  ..register(openRouterOcrFactory)
   ..register(textPrepOffFactory)
   ..register(plainX15Factory)
   ..register(plainX2Factory)

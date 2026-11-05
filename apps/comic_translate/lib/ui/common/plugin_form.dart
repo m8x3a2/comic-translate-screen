@@ -275,7 +275,7 @@ class _SecretFieldState extends ConsumerState<_SecretField> {
   String? _revealed;
   Timer? _hide;
 
-  String get _key => pluginSecretKey(widget.info.id, widget.field.key);
+  String get _key => widget.field.storeKey(widget.info.id);
 
   @override
   void initState() {

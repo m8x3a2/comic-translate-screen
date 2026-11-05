@@ -89,8 +89,15 @@ class DialogBatchUi implements BatchUi {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l.networkBody(pluginName(context, translator), endpoint.host, where)),
-              if (sendsImage) ...[const SizedBox(height: 8), Text(l.networkBodyImage)],
+              Text(
+                translator.kind == PluginKind.ocr
+                    ? l.networkBodyReading(pluginName(context, translator), endpoint.host, where)
+                    : l.networkBody(pluginName(context, translator), endpoint.host, where),
+              ),
+              if (sendsImage && translator.kind != PluginKind.ocr) ...[
+                const SizedBox(height: 8),
+                Text(l.networkBodyImage),
+              ],
               const SizedBox(height: 8),
               Text(l.networkOffline, style: Theme.of(c).textTheme.bodySmall),
             ],
@@ -120,6 +127,8 @@ class DialogBatchUi implements BatchUi {
           child: Text(
             host.isEmpty
                 ? l.missingAddressBody(pluginName(context, translator))
+                : translator.kind == PluginKind.ocr
+                ? l.missingKeyBodyReading(pluginName(context, translator), host)
                 : l.missingKeyBody(pluginName(context, translator), host),
           ),
         ),
@@ -130,8 +139,13 @@ class DialogBatchUi implements BatchUi {
       ),
     );
     if ((open ?? false) && context.mounted) {
-      await Navigator.of(context)
-          .push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen(initial: SettingsSection.translator)));
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => SettingsScreen(
+            initial: translator.kind == PluginKind.ocr ? SettingsSection.tools : SettingsSection.translator,
+          ),
+        ),
+      );
     }
   }
 

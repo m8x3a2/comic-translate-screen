@@ -361,6 +361,16 @@ class OpenAiCompatibleTranslator implements Translator {
           }}',
       ].join('\n\n');
 
+  /// One chat request of [payload] to [uri], sent again after temporary
+  /// failures: the answer's text, its `usage` and why it ended. For other
+  /// plugins of the same service (reading by the model).
+  Future<(String, Map<String, Object?>?, String?)> postChat(
+    Uri uri,
+    Map<String, Object?> payload,
+    CancelToken cancel,
+    EventLog log,
+  ) => _postWithRetries(uri, payload, cancel, log);
+
   /// Sends again after temporary failures (rate limit, server error, lost
   /// connection), waiting [retryDelays] (or the server's Retry-After, up to
   /// 30 s) in between. Not in the original, which fails the page at once.
