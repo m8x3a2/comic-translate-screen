@@ -14,7 +14,8 @@ import 'package:ct_core/ct_core.dart';
 const llmTemperatureSetting = DoubleSetting(
   key: 'temperature',
   label: 'Temperature',
-  info: 'How freely the model picks words. Lower is more exact and repeatable, higher more varied but with '
+  info:
+      'How freely the model picks words. Lower is more exact and repeatable, higher more varied but with '
       'more mistakes. For translation usually 0 to 1.',
   defaultValue: llmDefaultTemperature,
   min: 0,
@@ -24,8 +25,9 @@ const llmTemperatureSetting = DoubleSetting(
 const llmMaxTokensSetting = IntSetting(
   key: 'max_tokens',
   label: 'Maximum answer length (tokens)',
-  info: 'The longest answer the model may give. Raise it if a page translation is cut off. '
-      'A token is about 3-4 letters.',
+  info:
+      'The longest answer the model may give. Raise it if a page translation is cut off. '
+      'A token is about 3-4 letters. Left at 5000, a request with several pages asks for up to 16000.',
   defaultValue: llmDefaultMaxTokens,
   min: 64,
   max: 200000,
@@ -47,10 +49,11 @@ const llmPagesSetting = IntSetting(
   key: 'pages_per_request',
   label: 'Pages in one request',
   help: 'More than 1: neighbouring pages go together, so the model keeps names and the story; fewer requests.',
-  info: 'Only pages with text count, and pages of different chapters (archives, folders) never go together. '
+  info:
+      'Only pages with text count, and pages of different chapters (archives, folders) never go together. '
       'Each line carries a label like 02-005 (page 2, bubble 5), so the model sees where a page ends. With '
       '"Send the page image", the pictures of all the pages of a request go along: it costs more, and the model '
-      'must take pictures. Long requests may be cut off: raise "Maximum answer length" if they are.',
+      'must take pictures. Left at 5000, "Maximum answer length" is raised to 16000 for several pages; raise it if answers are still cut off.',
   defaultValue: 1,
   min: 1,
   max: 30,
@@ -60,7 +63,8 @@ const llmResendSetting = BoolSetting(
   key: 'resend_missing',
   label: 'Send the missing ones',
   help: 'When the answer has nothing for some bubbles, ask once more for them alone.',
-  info: 'Models sometimes skip bubbles, especially on long pages. Then the program sends one more short '
+  info:
+      'Models sometimes skip bubbles, especially on long pages. Then the program sends one more short '
       'request with only the skipped bubbles. A bubble still without a translation keeps its original lettering '
       '(it is not cleaned) and is marked "no translation" in the text panel and the report.',
   defaultValue: true,
@@ -72,7 +76,8 @@ const llmResendSetting = BoolSetting(
 const openAiCompatibleInfo = PluginInfo(
   id: 'openai_compatible',
   displayName: 'Own server (OpenAI-compatible)',
-  description: 'Translates with a large language model through any OpenAI-compatible server you name: '
+  description:
+      'Translates with a large language model through any OpenAI-compatible server you name: '
       'a local LM Studio / Ollama / llama.cpp server, OpenAI, DeepSeek and others.',
   kind: PluginKind.translator,
   privacy: Privacy.cloud,
@@ -94,7 +99,8 @@ const openAiCompatibleInfo = PluginInfo(
       key: 'token_limit_param',
       label: 'Length limit parameter',
       help: 'Name of the length limit field the server expects. Use max_tokens for older servers, none to omit it.',
-      info: 'With each request the program tells the server the longest answer it wants ("Maximum answer '
+      info:
+          'With each request the program tells the server the longest answer it wants ("Maximum answer '
           'length" above). Servers expect it under different names: max_completion_tokens is the new one '
           '(OpenRouter, OpenAI), max_tokens the old one (many local servers and older models), none leaves it '
           'out. Change it only when the server answers with an error about this parameter.',
@@ -142,7 +148,8 @@ Privacy privacyOfHost(String host) {
     if (ip.isLoopback) return Privacy.local;
     final b = ip.rawAddress;
     if (ip.type == InternetAddressType.IPv4) {
-      final private = b[0] == 10 ||
+      final private =
+          b[0] == 10 ||
           (b[0] == 172 && b[1] >= 16 && b[1] <= 31) ||
           (b[0] == 192 && b[1] == 168) ||
           (b[0] == 169 && b[1] == 254);
@@ -193,8 +200,17 @@ class OpenAiCompatibleTranslator implements Translator {
   @override
   final PluginInfo info;
 
-  /// Request body (`GPTTranslation._perform_translation`).
-  Map<String, Object?> buildPayload(TranslationRequest request) {
+  /// The longest answer to ask for [request]: [llmBatchMaxTokens] for several
+  /// pages while [maxTokens] is left at its default, else [maxTokens].
+  int answerLength(TranslationRequest request) {
+    if (maxTokens != llmDefaultMaxTokens) return maxTokens;
+    final pages = {for (var i = 0; i < request.blocks.length; i++) request.keyOf(i).split('-').first};
+    return pages.length > 1 && request.keys != null ? llmBatchMaxTokens : maxTokens;
+  }
+
+  /// Request body (`GPTTranslation._perform_translation`); [length] instead
+  /// of [answerLength].
+  Map<String, Object?> buildPayload(TranslationRequest request, {int? length}) {
     final system = llmSystemPrompt(request.sourceLanguage, request.targetLanguage);
     final user = llmUserPrompt(request.extraContext, blocksToJson(request.blocks, keys: request.keys));
     final images = [?request.pageImage, ...request.pageImages];
@@ -214,13 +230,15 @@ class OpenAiCompatibleTranslator implements Translator {
             for (final image in images)
               {
                 'type': 'image_url',
-                'image_url': {'url': 'data:image/jpeg;base64,${base64Encode(ImageCodec.encodeJpeg(image, quality: 75))}'},
+                'image_url': {
+                  'url': 'data:image/jpeg;base64,${base64Encode(ImageCodec.encodeJpeg(image, quality: 75))}',
+                },
               },
           ],
         },
       ],
       'temperature': temperature,
-      if (tokenLimitParam != 'none') tokenLimitParam: maxTokens,
+      if (tokenLimitParam != 'none') tokenLimitParam: length ?? answerLength(request),
     };
   }
 
@@ -229,11 +247,16 @@ class OpenAiCompatibleTranslator implements Translator {
     final base = apiUrl.trim().replaceAll(RegExp(r'/+$'), '');
     final uri = Uri.tryParse('$base/chat/completions');
     if (base.isEmpty || uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      throw TranslationException('set the API URL of the OpenAI-compatible translator (e.g. https://openrouter.ai/api/v1)',
-          kind: TranslationErrorKind.config);
+      throw TranslationException(
+        'set the API URL of the OpenAI-compatible translator (e.g. https://openrouter.ai/api/v1)',
+        kind: TranslationErrorKind.config,
+      );
     }
     if (model.trim().isEmpty) {
-      throw TranslationException('set the model name of the OpenAI-compatible translator', kind: TranslationErrorKind.config);
+      throw TranslationException(
+        'set the model name of the OpenAI-compatible translator',
+        kind: TranslationErrorKind.config,
+      );
     }
 
     final reply = await _ask(request, context, uri);
@@ -257,8 +280,10 @@ class OpenAiCompatibleTranslator implements Translator {
     // The original only warns; a page with no translation at all would look
     // done but keep its text, so it is reported instead.
     if (request.blocks.isNotEmpty && request.blocks.every((b) => b.untranslated)) {
-      throw TranslationException('the model reply has no translations: ${_clip(reply)}',
-          kind: TranslationErrorKind.badReply);
+      throw TranslationException(
+        'the model reply has no translations: ${_clip(reply)}',
+        kind: TranslationErrorKind.badReply,
+      );
     }
   }
 
@@ -267,7 +292,7 @@ class OpenAiCompatibleTranslator implements Translator {
   /// second request for the ones the first answer left out. Returns the
   /// answer.
   Future<String> _ask(TranslationRequest request, PluginContext context, Uri uri, {bool again = false}) async {
-    final payload = buildPayload(request);
+    var payload = buildPayload(request);
     final log = context.log.child(stage: 'translate');
     log.info('translate_request', {
       'host': uri.host,
@@ -278,36 +303,51 @@ class OpenAiCompatibleTranslator implements Translator {
       if (again) 'again': true,
     });
     final artifact = again ? 'request_again' : 'request';
-    await context.recorder?.writeJsonArtifact('03_translate', '$artifact.redacted.json', _forArtifact(payload, uri),
-        page: context.page);
+    await context.recorder?.writeJsonArtifact(
+      '03_translate',
+      '$artifact.redacted.json',
+      _forArtifact(payload, uri),
+      page: context.page,
+    );
 
     final sw = Stopwatch()..start();
     // What the history keeps of this request, whatever comes of it.
     var reply = '';
     var warnings = const <String>[];
     ServiceUsage? used;
-    Future<void> keep([String error = '']) => context.reportHistory(HistoryEntry(
-          time: DateTime.now(),
-          plugin: info.id,
-          host: uri.host,
-          model: model,
-          page: context.page ?? '',
-          again: again,
-          ms: sw.elapsedMilliseconds,
-          sent: sentText(payload),
-          image: request.pageImage != null || request.pageImages.isNotEmpty,
-          reply: reply,
-          blocks: request.blocks.length,
-          warnings: warnings,
-          error: error,
-          inputTokens: used?.inputTokens ?? 0,
-          outputTokens: used?.outputTokens ?? 0,
-          cost: used?.cost,
-        ));
+    Future<void> keep([String error = '']) => context.reportHistory(
+      HistoryEntry(
+        time: DateTime.now(),
+        plugin: info.id,
+        host: uri.host,
+        model: model,
+        page: context.page ?? '',
+        again: again,
+        ms: sw.elapsedMilliseconds,
+        sent: sentText(payload),
+        image: request.pageImage != null || request.pageImages.isNotEmpty,
+        reply: reply,
+        blocks: request.blocks.length,
+        warnings: warnings,
+        error: error,
+        inputTokens: used?.inputTokens ?? 0,
+        outputTokens: used?.outputTokens ?? 0,
+        cost: used?.cost,
+      ),
+    );
     try {
-      final Map<String, Object?>? usage;
-      final String? finish;
-      (reply, usage, finish) = await _postWithRetries(uri, payload, context.cancel, log);
+      Map<String, Object?>? usage;
+      String? finish;
+      try {
+        (reply, usage, finish) = await _postWithRetries(uri, payload, context.cancel, log);
+      } on TranslationException catch (e) {
+        // Some servers cap the answer lower (DeepSeek: 8192) and refuse the
+        // raised length of a pack: asked once more with the setting's own.
+        if (payload[tokenLimitParam] != llmBatchMaxTokens || !_refusesLength(e)) rethrow;
+        log.warn('translate_length_refused', {'tokens': llmBatchMaxTokens, 'error': e.message});
+        payload = buildPayload(request, length: maxTokens);
+        (reply, usage, finish) = await _postWithRetries(uri, payload, context.cancel, log);
+      }
       used = usageOf(usage, payload, reply, host: uri.host);
       log.info('translate_response', {
         'ms': sw.elapsedMilliseconds,
@@ -318,20 +358,25 @@ class OpenAiCompatibleTranslator implements Translator {
         if (used.estimated) 'tokens_estimated': true,
       });
       await context.reportUsage(used);
-      await context.recorder?.writeJsonArtifact('03_translate', again ? 'response_again.json' : 'response.json',
-          {'content': reply}, page: context.page);
+      await context.recorder?.writeJsonArtifact('03_translate', again ? 'response_again.json' : 'response.json', {
+        'content': reply,
+      }, page: context.page);
 
       try {
         warnings = applyTranslationsJson(request.blocks, reply, keys: request.keys);
       } on FormatException catch (e) {
-        throw TranslationException('the model reply has broken JSON (${e.message}): ${_clip(reply)}',
-            kind: finish == 'length' ? TranslationErrorKind.cutOff : TranslationErrorKind.badReply);
+        throw TranslationException(
+          'the model reply has broken JSON (${e.message}): ${_clip(reply)}',
+          kind: finish == 'length' ? TranslationErrorKind.cutOff : TranslationErrorKind.badReply,
+        );
       }
       // Cut off before the closing brace: no JSON at all. Not asked again
       // (the same request would stop at the same place); a pack is split.
       if (finish == 'length' && warnings.contains(noJsonWarning)) {
-        throw TranslationException('the answer stopped at the length limit (finish_reason: length): ${_clip(reply)}',
-            kind: TranslationErrorKind.cutOff);
+        throw TranslationException(
+          'the answer stopped at the length limit (finish_reason: length): ${_clip(reply)}',
+          kind: TranslationErrorKind.cutOff,
+        );
       }
       for (final w in warnings) {
         log.warn('translate_reply_warning', {'warning': w});
@@ -346,20 +391,20 @@ class OpenAiCompatibleTranslator implements Translator {
     }
   }
 
+  /// A refusal of the requested answer length: a 400/422 about tokens.
+  static bool _refusesLength(TranslationException e) =>
+      (e.statusCode == 400 || e.statusCode == 422) && e.message.toLowerCase().contains('token');
 
   /// The messages of [payload] as text, for the history: each with its role,
   /// a picture as a note (the picture itself is not kept).
   static String sentText(Map<String, Object?> payload) => [
-        for (final m in (payload['messages'] as List? ?? const []).whereType<Map>())
-          '[${m['role']}]\n${switch (m['content']) {
-            final String text => text,
-            final List parts => [
-                for (final part in parts.whereType<Map>())
-                  part['type'] == 'text' ? '${part['text']}' : '<${part['type']}>',
-              ].join('\n'),
-            _ => '',
-          }}',
-      ].join('\n\n');
+    for (final m in (payload['messages'] as List? ?? const []).whereType<Map>())
+      '[${m['role']}]\n${switch (m['content']) {
+        final String text => text,
+        final List parts => [for (final part in parts.whereType<Map>()) part['type'] == 'text' ? '${part['text']}' : '<${part['type']}>'].join('\n'),
+        _ => '',
+      }}',
+  ].join('\n\n');
 
   /// One chat request of [payload] to [uri], sent again after temporary
   /// failures: the answer's text, its `usage` and why it ended. For other
@@ -374,8 +419,13 @@ class OpenAiCompatibleTranslator implements Translator {
   /// Sends again after temporary failures (rate limit, server error, lost
   /// connection), waiting [retryDelays] (or the server's Retry-After, up to
   /// 30 s) in between. Not in the original, which fails the page at once.
-  Future<(String, Map<String, Object?>?, String?)> _postWithRetries(Uri uri, Map<String, Object?> payload, CancelToken cancel, EventLog log) async {
-    for (var attempt = 0;; attempt++) {
+  Future<(String, Map<String, Object?>?, String?)> _postWithRetries(
+    Uri uri,
+    Map<String, Object?> payload,
+    CancelToken cancel,
+    EventLog log,
+  ) async {
+    for (var attempt = 0; ; attempt++) {
       try {
         return await _post(uri, payload, cancel);
       } on TranslationException catch (e) {
@@ -398,7 +448,11 @@ class OpenAiCompatibleTranslator implements Translator {
     return done.future;
   }
 
-  Future<(String, Map<String, Object?>?, String?)> _post(Uri uri, Map<String, Object?> payload, CancelToken cancel) async {
+  Future<(String, Map<String, Object?>?, String?)> _post(
+    Uri uri,
+    Map<String, Object?> payload,
+    CancelToken cancel,
+  ) async {
     final client = _httpClientFactory()..connectionTimeout = timeout;
     if (!identical(cancel, CancelToken.none)) cancel.onCancel(() => client.close(force: true));
     try {
@@ -423,19 +477,26 @@ class OpenAiCompatibleTranslator implements Translator {
       return _content(body);
     } on TimeoutException {
       cancel.throwIfCancelled();
-      throw TranslationException('${uri.host} did not answer within ${timeout.inSeconds} s', kind: TranslationErrorKind.timeout);
+      throw TranslationException(
+        '${uri.host} did not answer within ${timeout.inSeconds} s',
+        kind: TranslationErrorKind.timeout,
+      );
     } on SocketException catch (e) {
       cancel.throwIfCancelled();
-      throw TranslationException('cannot connect to ${uri.host}: ${e.osError?.message ?? e.message}',
-          kind: TranslationErrorKind.network);
+      throw TranslationException(
+        'cannot connect to ${uri.host}: ${e.osError?.message ?? e.message}',
+        kind: TranslationErrorKind.network,
+      );
     } on HttpException catch (e) {
       cancel.throwIfCancelled();
       throw TranslationException('connection to ${uri.host} failed: ${e.message}', kind: TranslationErrorKind.network);
     } on TlsException catch (e) {
       // An antivirus or a proxy in between, a wrong clock.
       cancel.throwIfCancelled();
-      throw TranslationException('the secure connection to ${uri.host} broke off: ${e.message}',
-          kind: TranslationErrorKind.network);
+      throw TranslationException(
+        'the secure connection to ${uri.host} broke off: ${e.message}',
+        kind: TranslationErrorKind.network,
+      );
     } finally {
       client.close(force: true);
     }
@@ -444,7 +505,12 @@ class OpenAiCompatibleTranslator implements Translator {
   /// What a request used: the `usage` of the reply (tokens, and the cost on
   /// OpenRouter), or about 4 characters per token when the server sent none
   /// (some local servers).
-  ServiceUsage usageOf(Map<String, Object?>? usage, Map<String, Object?> payload, String reply, {required String host}) {
+  ServiceUsage usageOf(
+    Map<String, Object?>? usage,
+    Map<String, Object?> payload,
+    String reply, {
+    required String host,
+  }) {
     int? count(String key) => (usage?[key] as num?)?.toInt();
     final input = count('prompt_tokens'), output = count('completion_tokens');
     final cost = (usage?['cost'] as num?)?.toDouble();
@@ -485,8 +551,11 @@ class OpenAiCompatibleTranslator implements Translator {
     try {
       json = jsonDecode(body);
     } on FormatException {
-      throw TranslationException('the server reply is not JSON: ${_clip(body.trim())}',
-          kind: TranslationErrorKind.badReply, reply: body.trim());
+      throw TranslationException(
+        'the server reply is not JSON: ${_clip(body.trim())}',
+        kind: TranslationErrorKind.badReply,
+        reply: body.trim(),
+      );
     }
     final choices = json is Map ? json['choices'] : null;
     final choice = choices is List && choices.isNotEmpty && choices.first is Map ? choices.first as Map : null;
@@ -496,7 +565,10 @@ class OpenAiCompatibleTranslator implements Translator {
     final usage = json is Map && json['usage'] is Map ? (json['usage'] as Map).cast<String, Object?>() : null;
     final text = switch (content) {
       final String text => text,
-      final List parts => [for (final part in parts) if (part is Map && part['text'] is String) part['text'] as String].join(),
+      final List parts => [
+        for (final part in parts)
+          if (part is Map && part['text'] is String) part['text'] as String,
+      ].join(),
       _ => null,
     };
     if (text != null && text.trim().isNotEmpty) return (text, usage, finish);
@@ -504,16 +576,26 @@ class OpenAiCompatibleTranslator implements Translator {
     if (error is Map) {
       final code = (error['code'] as num?)?.toInt() ?? 0;
       final detail = '${error['message'] ?? ''}';
-      throw TranslationException('the provider failed: $detail',
-          kind: TranslationErrorKind.forStatus(code, detail), statusCode: code == 0 ? null : code, reply: body.trim());
+      throw TranslationException(
+        'the provider failed: $detail',
+        kind: TranslationErrorKind.forStatus(code, detail),
+        statusCode: code == 0 ? null : code,
+        reply: body.trim(),
+      );
     }
     if (finish == 'length') {
-      throw TranslationException('the answer stopped at the length limit before any text (finish_reason: length)',
-          kind: TranslationErrorKind.cutOff, reply: body.trim());
+      throw TranslationException(
+        'the answer stopped at the length limit before any text (finish_reason: length)',
+        kind: TranslationErrorKind.cutOff,
+        reply: body.trim(),
+      );
     }
     if (text != null) return (text, usage, finish);
-    throw TranslationException('unexpected reply format: ${_clip(body.trim())}',
-        kind: TranslationErrorKind.badReply, reply: body.trim());
+    throw TranslationException(
+      'unexpected reply format: ${_clip(body.trim())}',
+      kind: TranslationErrorKind.badReply,
+      reply: body.trim(),
+    );
   }
 
   static String _errorDetail(String body) {
@@ -586,8 +668,10 @@ Future<KeyStatus> fetchOpenRouterKeyStatus(
 }) async {
   final data = await _openRouterGet(uri, apiKey: apiKey, timeout: timeout, httpClientFactory: httpClientFactory);
   if (data is! Map) {
-    throw TranslationException('unexpected reply format: ${OpenAiCompatibleTranslator._clip('$data')}',
-        kind: TranslationErrorKind.badReply);
+    throw TranslationException(
+      'unexpected reply format: ${OpenAiCompatibleTranslator._clip('$data')}',
+      kind: TranslationErrorKind.badReply,
+    );
   }
   return parseOpenRouterKeyStatus(data.cast<String, Object?>());
 }
@@ -614,8 +698,10 @@ Future<List<CatalogModel>> fetchOpenRouterModels(
 }) async {
   final data = await _openRouterGet(uri, timeout: timeout, httpClientFactory: httpClientFactory);
   if (data is! List) {
-    throw TranslationException('unexpected reply format: ${OpenAiCompatibleTranslator._clip('$data')}',
-        kind: TranslationErrorKind.badReply);
+    throw TranslationException(
+      'unexpected reply format: ${OpenAiCompatibleTranslator._clip('$data')}',
+      kind: TranslationErrorKind.badReply,
+    );
   }
   return parseOpenRouterModels(data);
 }
@@ -676,31 +762,45 @@ Future<Object?> _openRouterGet(
     final body = await res.transform(utf8.decoder).join().timeout(timeout);
     if (res.statusCode < 200 || res.statusCode >= 300) {
       final detail = OpenAiCompatibleTranslator._errorDetail(body);
-      throw TranslationException('${uri.host} answered HTTP ${res.statusCode}$detail',
-          kind: TranslationErrorKind.forStatus(res.statusCode, detail), statusCode: res.statusCode);
+      throw TranslationException(
+        '${uri.host} answered HTTP ${res.statusCode}$detail',
+        kind: TranslationErrorKind.forStatus(res.statusCode, detail),
+        statusCode: res.statusCode,
+      );
     }
     final Object? json;
     try {
       json = jsonDecode(body);
     } on FormatException {
-      throw TranslationException('the server reply is not JSON: ${OpenAiCompatibleTranslator._clip(body)}',
-          kind: TranslationErrorKind.badReply);
+      throw TranslationException(
+        'the server reply is not JSON: ${OpenAiCompatibleTranslator._clip(body)}',
+        kind: TranslationErrorKind.badReply,
+      );
     }
     if (json is! Map || !json.containsKey('data')) {
-      throw TranslationException('unexpected reply format: ${OpenAiCompatibleTranslator._clip(body)}',
-          kind: TranslationErrorKind.badReply);
+      throw TranslationException(
+        'unexpected reply format: ${OpenAiCompatibleTranslator._clip(body)}',
+        kind: TranslationErrorKind.badReply,
+      );
     }
     return json['data'];
   } on TimeoutException {
-    throw TranslationException('${uri.host} did not answer within ${timeout.inSeconds} s', kind: TranslationErrorKind.timeout);
+    throw TranslationException(
+      '${uri.host} did not answer within ${timeout.inSeconds} s',
+      kind: TranslationErrorKind.timeout,
+    );
   } on SocketException catch (e) {
-    throw TranslationException('cannot connect to ${uri.host}: ${e.osError?.message ?? e.message}',
-        kind: TranslationErrorKind.network);
+    throw TranslationException(
+      'cannot connect to ${uri.host}: ${e.osError?.message ?? e.message}',
+      kind: TranslationErrorKind.network,
+    );
   } on HttpException catch (e) {
     throw TranslationException('connection to ${uri.host} failed: ${e.message}', kind: TranslationErrorKind.network);
   } on TlsException catch (e) {
-    throw TranslationException('the secure connection to ${uri.host} broke off: ${e.message}',
-        kind: TranslationErrorKind.network);
+    throw TranslationException(
+      'the secure connection to ${uri.host} broke off: ${e.message}',
+      kind: TranslationErrorKind.network,
+    );
   } finally {
     client.close(force: true);
   }

@@ -362,17 +362,23 @@ void main() {
     await expectLater(t.translate(request([block('Hello')]), context), throwsA(isA<TranslationException>()));
     expect((kept.last.failed, kept.last.reply), (true, ''));
     expect(kept.last.error, contains('User not found'));
-    expect(OpenAiCompatibleTranslator.sentText({
-      'messages': [
-        {
-          'role': 'user',
-          'content': [
-            {'type': 'text', 'text': 'Hi'},
-            {'type': 'image_url', 'image_url': {'url': 'data:...'}},
-          ],
-        },
-      ],
-    }), '[user]\nHi\n<image_url>');
+    expect(
+      OpenAiCompatibleTranslator.sentText({
+        'messages': [
+          {
+            'role': 'user',
+            'content': [
+              {'type': 'text', 'text': 'Hi'},
+              {
+                'type': 'image_url',
+                'image_url': {'url': 'data:...'},
+              },
+            ],
+          },
+        ],
+      }),
+      '[user]\nHi\n<image_url>',
+    );
   });
 
   test('bubbles the answer left out are asked once more on their own; still none: marked, kept', () async {
@@ -404,7 +410,12 @@ void main() {
 
     // Turned off: one request only.
     asked.clear();
-    final once = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', retryDelays: const [], resendMissing: false);
+    final once = OpenAiCompatibleTranslator(
+      apiUrl: server.url,
+      model: 'm',
+      retryDelays: const [],
+      resendMissing: false,
+    );
     final off = [block('Hello'), block('Bye'), block('Well')];
     await once.translate(request(off), context);
     expect(asked.length, 1);
@@ -468,6 +479,49 @@ void main() {
             .having((e) => e.message, 'message', contains('Upstream error')),
       ),
     );
+  });
+
+  test('several pages in a request: a longer answer is asked for, unless the length was set by hand', () async {
+    TranslationRequest pages(List<String> keys) => TranslationRequest(
+      blocks: [for (final _ in keys) block('Hi')],
+      sourceLanguage: 'English',
+      targetLanguage: 'Russian',
+      keys: keys,
+    );
+    String reply(List<String> keys) => chatReply(jsonEncode({for (final k in keys) k: 'Привет'}));
+    final context = PluginContext(log: EventLog.silent());
+    final two = ['01-001', '01-002', '02-001'], one = ['01-001', '01-002'];
+
+    server.handler = (body) => (200, reply(two));
+    final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm');
+    await t.translate(pages(two), context);
+    expect(server.requests.last.body['max_completion_tokens'], llmBatchMaxTokens);
+
+    server.handler = (body) => (200, reply(one));
+    await t.translate(pages(one), context);
+    expect(server.requests.last.body['max_completion_tokens'], llmDefaultMaxTokens);
+
+    server.handler = (body) => (200, reply(two));
+    await OpenAiCompatibleTranslator(apiUrl: server.url, model: 'm', maxTokens: 8000).translate(pages(two), context);
+    expect(server.requests.last.body['max_completion_tokens'], 8000);
+
+    // A server with a lower cap refuses 16000: asked once more with 5000.
+    server.requests.clear();
+    server.handler = (body) => body['max_completion_tokens'] == llmBatchMaxTokens
+        ? (
+            400,
+            jsonEncode({
+              'error': {'message': 'Invalid max_tokens value, the valid range of max_tokens is [1, 8192]'},
+            }),
+          )
+        : (200, reply(two));
+    final blocks = pages(two);
+    await t.translate(blocks, context);
+    expect(
+      [for (final r in server.requests) r.body['max_completion_tokens']],
+      [llmBatchMaxTokens, llmDefaultMaxTokens],
+    );
+    expect(blocks.blocks.every((b) => b.translation == 'Привет'), isTrue);
   });
 
   test('each answered request is counted: tokens and cost from the reply, else estimated', () async {
@@ -594,7 +648,13 @@ void main() {
       'max_tokens',
       'timeout',
     ]);
-    expect([for (final f in openRouterInfo.settings) if (f.advanced) f.key], ['temperature', 'max_tokens', 'timeout']);
+    expect(
+      [
+        for (final f in openRouterInfo.settings)
+          if (f.advanced) f.key,
+      ],
+      ['temperature', 'max_tokens', 'timeout'],
+    );
     expect(openRouterInfo.modelCatalog!(own)!.host, 'openrouter.ai');
     expect((openRouterInfo.keyStatus!(own)!.host, openRouterInfo.keyStatus!(own)!.hasKey), ('openrouter.ai', true));
     expect(openRouterInfo.endpointFor(own)!.approvalKey('openrouter'), 'openrouter@openrouter.ai');

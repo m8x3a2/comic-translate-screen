@@ -20,6 +20,11 @@ part 'py_case_tables.g.dart';
 const llmDefaultTemperature = 1.0;
 const llmDefaultMaxTokens = 5000;
 
+/// The answer length of a request with several pages while the setting is
+/// left at [llmDefaultMaxTokens] (new): "thinking" models spend much of 5000
+/// tokens on their thoughts, and the answer for a pack was cut off.
+const llmBatchMaxTokens = 16000;
+
 /// `LLMTranslation.get_system_prompt`, verbatim (including its indentation).
 /// An unresolved "Auto" source (Latin-script or mixed pages) is worded as
 /// "text in any language" rather than the original's literal "Auto".
