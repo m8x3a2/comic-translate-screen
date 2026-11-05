@@ -24,6 +24,13 @@ Future<GrayImage> readGrayInBackground(String path) =>
 Future<(RgbImage, GrayImage)> readRgbaInBackground(String path) =>
     Isolate.run(() async => ImageCodec.decodeRgba(await File(path).readAsBytes()));
 
+/// The letters of [blocks] measured on the image in [path] (as after our
+/// own reading), in order.
+Future<List<SourceStyle?>> measureStylesInBackground(String path, List<TextBlock> blocks) => Isolate.run(() async {
+  final image = await ImageCodec.readFile(path);
+  return [for (final b in blocks) measureSourceStyle(image, b)];
+});
+
 /// Writes [image] to [path] as PNG.
 Future<void> writePngInBackground(String path, RgbImage image) =>
     Isolate.run(() => File(path).writeAsBytes(ImageCodec.encodePng(image), flush: true));

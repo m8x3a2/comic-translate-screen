@@ -42,7 +42,7 @@ class _ChatUi implements BatchUi {
     final ws = container.read(workspaceProvider);
     final items = exchangeItems(exchangePages(ws, request), request.mode);
     final match = matchExchangeAnswer(items, parseExchangeAnswer(text, request.mode), request.mode);
-    applyExchange(container.read(workspaceProvider.notifier), ws, items, match, request.mode);
+    await applyExchange(container.read(workspaceProvider.notifier), ws, items, match, request.mode);
     return true;
   }
 
@@ -72,7 +72,8 @@ void main() {
   late AppServices services;
   late ProviderContainer container;
 
-  Future<void> start(AppSettings settings) async {
+  /// [image]: the pages' picture (white by default).
+  Future<void> start(AppSettings settings, {RgbImage? image}) async {
     dir = Directory.systemTemp.createTempSync('cts_exchange_flow_');
     services = AppServices.create(
       dataDirOverride: dir.path,
@@ -90,7 +91,7 @@ void main() {
       for (final n in ['a.png', 'b.png']) p.join(dir.path, n),
     ];
     for (final page in pages) {
-      await ImageCodec.writeFile(page, RgbImage.filled(100, 60, 255, 255, 255));
+      await ImageCodec.writeFile(page, image ?? RgbImage.filled(100, 60, 255, 255, 255));
     }
     await container.read(workspaceProvider.notifier).addInputs(pages);
   }
@@ -156,6 +157,28 @@ void main() {
     expect([for (final r in ui.requests) r.mode], [ExchangeMode.recognize, ExchangeMode.translate]);
     expect(pages().first.blocks.single.text, 'Hi');
     expect(pages().last.blocks.single.translation, 'Пока');
+  });
+
+  test('read through the chat: the letters are measured, as after our own reading', () async {
+    // Black strokes 3 px wide and 14 px high in the found box.
+    final image = RgbImage.filled(100, 60, 255, 255, 255);
+    for (var x = 16; x < 84; x += 8) {
+      for (var y = 18; y < 32; y++) {
+        for (var dx = 0; dx < 3; dx++) {
+          image.data.fillRange(image.offset(x + dx, y), image.offset(x + dx, y) + 3, 0);
+        }
+      }
+    }
+    await start(fakeSettings()..ocr = chatOcrId, image: image);
+    final ui = _ChatUi(container, (r) => '[01-001] HI THERE\n[02-001] BYE NOW');
+    await container.read(batchProvider.notifier).run(ui);
+    expect(ui.errors, isEmpty);
+    expect(ui.requests.first.mode, ExchangeMode.recognize);
+    for (final page in pages()) {
+      final style = page.blocks.single.sourceStyle;
+      expect(style, isNotNull, reason: page.name);
+      expect(style!.letterPx, closeTo(14, 1));
+    }
   });
 
   test('closing the exchange window stops "Translate all"; the found boxes stay', () async {
@@ -302,6 +325,11 @@ void main() {
     expect(find.text('Найдено ответов: 2 из 2'), findsOneWidget);
 
     await tester.tap(find.text('Применить'));
+    // New originals: their letters are measured in the background.
+    for (var i = 0; i < 50 && find.text('Применить').evaluate().isNotEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+    }
     await tester.pumpAndSettle();
     expect([for (final b in pages().first.blocks) (b.text, b.translation)], [('Hi', 'Привет'), ('Bye', '')]);
   });

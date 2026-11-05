@@ -10,6 +10,7 @@ import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
 import 'package:path/path.dart' as p;
 
+import 'background.dart';
 import 'workspace.dart';
 
 /// What the exchange window works on.
@@ -136,15 +137,18 @@ Future<ExchangeExport> exportExchange(
 }
 
 /// Writes the chat's answers into the pages (one undo step per page).
-/// Returns how many blocks changed and the pieces whose block is gone.
-({int changed, List<ExchangeLabel> lost}) applyExchange(
+/// Blocks whose original text the chat gave anew get their letters measured
+/// on the page, as after our own reading ("Pick a font", "Style as in the
+/// original"). Returns how many blocks changed and the pieces whose block is
+/// gone.
+Future<({int changed, List<ExchangeLabel> lost})> applyExchange(
   WorkspaceNotifier workspace,
   WorkspaceState ws,
   List<ExchangeItem> items,
   ExchangeMatch match,
   ExchangeMode mode, {
   String placeholder = '',
-}) {
+}) async {
   var changed = 0;
   final lost = <ExchangeLabel>[];
   final byPage = <String, List<ExchangeItem>>{};
@@ -158,6 +162,7 @@ Future<ExchangeExport> exportExchange(
       continue;
     }
     final blocks = [...page.blocks];
+    final read = <int>{};
     var any = false;
     for (final it in own) {
       // Left as it was in the text files: the bubble stays (no placeholder).
@@ -169,9 +174,21 @@ Future<ExchangeExport> exportExchange(
       }
       final b = blocks[i].copy();
       if (applyExchangeReply(b, match.replies[it.label], mode, placeholder: placeholder)) {
+        if (b.text != blocks[i].text) read.add(i);
         blocks[i] = b;
         changed++;
         any = true;
+      }
+    }
+    if (read.isNotEmpty) {
+      final which = read.toList()..sort();
+      try {
+        final styles = await measureStylesInBackground(page.path, [for (final i in which) blocks[i]]);
+        for (final (k, i) in which.indexed) {
+          blocks[i].sourceStyle = styles[k];
+        }
+      } on Object {
+        // The page image is gone or unreadable: the text is still the chat's.
       }
     }
     if (any) workspace.edit(id, (p) => p.copyWith(blocks: blocks), byHand: false);

@@ -58,6 +58,9 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   Object? _exportError;
   var _exporting = false;
   var _again = false;
+
+  /// The answer is being written into the pages (letters measured).
+  var _applying = false;
   Timer? _debounce;
 
   /// One folder for this window: the pictures are made again in it when
@@ -553,11 +556,12 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     });
   }
 
-  void _apply() {
+  Future<void> _apply() async {
     final export = _export, match = _shownMatch;
-    if (export == null || match == null) return;
+    if (export == null || match == null || _applying) return;
     final settings = ref.read(settingsProvider);
-    final result = applyExchange(
+    setState(() => _applying = true);
+    final result = await applyExchange(
       ref.read(workspaceProvider.notifier),
       ref.read(workspaceProvider),
       _items,
@@ -565,6 +569,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       export.mode,
       placeholder: settings.exchange.placeholder,
     );
+    if (!mounted) return;
     ref.read(servicesProvider).appLog.child(stage: 'exchange').info('exchange_applied', {
       'mode': export.mode.name,
       'found': match.replies.length,
@@ -689,7 +694,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                   TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.cancel)),
                   const SizedBox(width: 8),
                   FilledButton.icon(
-                    onPressed: canApply ? _apply : null,
+                    onPressed: canApply && !_applying ? _apply : null,
                     icon: const Icon(Icons.check),
                     label: Text(widget.request.fromRun ? l.chatApplyContinue : l.chatApply),
                   ),
