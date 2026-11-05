@@ -50,6 +50,11 @@ The chat answers with lines like:
 The mark between the original and the translation (`-->` by default) is set in the settings: **"Between the
 original and the translation"**. Plain arrows `->`, `→` are understood too.
 
+Bold and quotes the chat put around a whole original or translation (`**Привет**`, `«Привет»`) are taken off
+by the app. Which marks go is the setting **"Take off around the answer"**: add your own (for example `<`) or
+remove some; **"Back to the standard ones"** returns them. Marks inside a line stay: `Я *НЕ* пойду` is a
+stressed word.
+
 ## Step by step
 
 ### 1. Send to the chat

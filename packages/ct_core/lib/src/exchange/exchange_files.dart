@@ -608,7 +608,11 @@ ExchangeReply? _filledIn(ExchangeItem item, ExchangeReply reply, ExchangeMode mo
 
 /// Reads the answers written into the text files of [dir]: `ALL.txt` first,
 /// then each page's file for what is still missing.
-Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifest) async {
+Future<ExchangeMatch> readExchangeFolder(
+  Directory dir,
+  ExchangeManifest manifest, {
+  List<String> marks = defaultAnswerMarks,
+}) async {
   final merged = <ExchangeLabel, ExchangeReply>{};
   final sources = <ExchangeLabel, String>{};
   final repeated = <ExchangeLabel>[];
@@ -620,10 +624,10 @@ Future<ExchangeMatch> readExchangeFolder(Directory dir, ExchangeManifest manifes
   Future<ExchangeAnswer?> parse(String name, ExchangeMode as) async {
     final file = File(p.join(dir.path, name));
     if (!await file.exists()) return null;
-    final answer = parseExchangeAnswer(await file.readAsString(), as, separator: manifest.separator);
+    final answer = parseExchangeAnswer(await file.readAsString(), as, separator: manifest.separator, marks: marks);
     final template = manifest.templates[name];
     if (template == null) return answer;
-    final before = parseExchangeAnswer(template, as, separator: manifest.separator).replies;
+    final before = parseExchangeAnswer(template, as, separator: manifest.separator, marks: marks).replies;
     String? changed(String? now, String? was) => now != null && now.trim() == (was ?? '').trim() ? null : now;
     return ExchangeAnswer({
       for (final MapEntry(key: label, value: reply) in answer.replies.entries)

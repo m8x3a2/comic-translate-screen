@@ -238,24 +238,29 @@ final _heading = RegExp(r'^\s*(?:#{1,6}\s.*|(\*\*|__)[^*_]+\1:?)\s*$');
 /// Reads the chat's [answer]. Text before the first label and after a blank
 /// line that ends a piece (the chat's own remarks) is left out; lines of one
 /// piece are joined with spaces.
-ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String separator = defaultExchangeSeparator}) {
+ExchangeAnswer parseExchangeAnswer(
+  String answer,
+  ExchangeMode mode, {
+  String separator = defaultExchangeSeparator,
+  List<String> marks = defaultAnswerMarks,
+}) {
   final arrow = _arrow(separator);
   // Words suggested for the glossary are no answer for a piece.
   final text = withoutNewTerms(answer).replaceAll(_fence, '');
-  final marks = <(int start, int end, ExchangeLabel label)>[];
+  final found = <(int start, int end, ExchangeLabel label)>[];
   for (final m in _bracketed.allMatches(text)) {
-    marks.add((m.start, m.end, ExchangeLabel(int.parse(m[1]!), int.parse(m[2]!))));
+    found.add((m.start, m.end, ExchangeLabel(int.parse(m[1]!), int.parse(m[2]!))));
   }
   for (final m in [..._jsonKey.allMatches(text), ..._bare.allMatches(text)]) {
-    if (marks.any((k) => m.start < k.$2 && k.$1 < m.end)) continue;
-    marks.add((m.start, m.end, ExchangeLabel(int.parse(m[1]!), int.parse(m[2]!))));
+    if (found.any((k) => m.start < k.$2 && k.$1 < m.end)) continue;
+    found.add((m.start, m.end, ExchangeLabel(int.parse(m[1]!), int.parse(m[2]!))));
   }
-  marks.sort((a, b) => a.$1 - b.$1);
+  found.sort((a, b) => a.$1 - b.$1);
   final replies = <ExchangeLabel, ExchangeReply>{};
   final repeated = <ExchangeLabel>[];
-  for (final (i, (_, end, label)) in marks.indexed) {
-    final stop = i + 1 < marks.length ? _lineStartBefore(text, marks[i + 1].$1, end) : text.length;
-    final body = _fromTableRow(_cleanBody(text.substring(end, stop)), separator);
+  for (final (i, (_, end, label)) in found.indexed) {
+    final stop = i + 1 < found.length ? _lineStartBefore(text, found[i + 1].$1, end) : text.length;
+    final body = _fromTableRow(_cleanBody(text.substring(end, stop), marks), separator, marks);
     if (replies.containsKey(label)) {
       repeated.add(label);
       continue;
@@ -263,9 +268,9 @@ ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String sep
     // Who speaks, before the text: `[f] Я опоздала`.
     if (_speakerTag.firstMatch(body) case final tag?) {
       final speaker = Speaker.parse(tag[1]);
-      replies[label] = _reply(_plain(body.substring(tag.end)), mode, arrow).withSpeaker(speaker);
+      replies[label] = _reply(_plain(body.substring(tag.end), marks), mode, arrow, marks).withSpeaker(speaker);
     } else {
-      replies[label] = _reply(body, mode, arrow);
+      replies[label] = _reply(body, mode, arrow, marks);
     }
   }
   return ExchangeAnswer(replies, repeated: repeated);
@@ -279,7 +284,7 @@ final _listMarks = RegExp(r'^[ \t>•*_#|"-]*(?:\d+[.)])?[ \t>•*_#|"-]*$');
 /// gives the cells after the label, the first one the original and the last
 /// one the translation, put as `Hi --> Привет`; a speaker tag in a cell goes
 /// to the front. Anything else is [body] as it is.
-String _fromTableRow(String body, String separator) {
+String _fromTableRow(String body, String separator, List<String> marks) {
   final row = body.replaceFirst(RegExp(r'^[*_ \t]*'), '');
   if (!row.startsWith('|')) return body;
   String? tag;
@@ -289,7 +294,7 @@ String _fromTableRow(String body, String separator) {
       tag ??= m[0]!.trim();
       cell = cell.trim().substring(m.end);
     }
-    cell = _unquote(cell);
+    cell = _plain(cell, marks);
     if (cell.isNotEmpty) cells.add(cell);
   }
   if (cells.isEmpty) return tag ?? '';
@@ -309,29 +314,29 @@ int _lineStartBefore(String text, int start, int after) {
 /// `[m]`, `[f]`, `[n]` (also `[м]`, `[ж]`, `[ср]`), or `[-]` for nobody.
 final _speakerTag = RegExp(r'^\[\s*(m|f|n|м|ж|ср|-|—)\s*\]\s*', caseSensitive: false);
 
-ExchangeReply _reply(String body, ExchangeMode mode, RegExp arrows) {
+ExchangeReply _reply(String body, ExchangeMode mode, RegExp arrows, List<String> marks) {
   final arrow = arrows.firstMatch(body);
   switch (mode) {
     case ExchangeMode.recognize:
       // The translation may come along: `original --> translation`.
       if (arrow == null) return ExchangeReply(original: body);
       return ExchangeReply(
-        original: _plain(body.substring(0, arrow.start)),
-        translation: _plain(body.substring(arrow.end)),
+        original: _plain(body.substring(0, arrow.start), marks),
+        translation: _plain(body.substring(arrow.end), marks),
       );
     case ExchangeMode.translate:
       // The chat repeated the original before the translation.
-      return ExchangeReply(translation: arrow == null ? body : _plain(body.substring(arrow.end)));
+      return ExchangeReply(translation: arrow == null ? body : _plain(body.substring(arrow.end), marks));
     case ExchangeMode.both:
       if (arrow == null) return ExchangeReply(translation: body, missingArrow: body.isNotEmpty);
       return ExchangeReply(
-        original: _plain(body.substring(0, arrow.start)),
-        translation: _plain(body.substring(arrow.end)),
+        original: _plain(body.substring(0, arrow.start), marks),
+        translation: _plain(body.substring(arrow.end), marks),
       );
   }
 }
 
-String _cleanBody(String raw) {
+String _cleanBody(String raw, List<String> marks) {
   if (_jsonValue.firstMatch(raw.trim()) case final m?) {
     try {
       return (jsonDecode('"${m[1]}"') as String).trim();
@@ -351,13 +356,38 @@ String _cleanBody(String raw) {
       .map((l) => l.trim().replaceFirst(RegExp(r'^[>•]\s*'), ''))
       .where((l) => l.isNotEmpty)
       .join(' ');
-  return _plain(s);
+  return _plain(s, marks);
 }
 
-/// [s] without the bold marks of a bold label (`**[01-003]** Привет`,
-/// `**[01-003] Привет**`) and those a chat put around all of it
-/// (`**Привет**`); marks around single words stay (stressed words).
-String _unbold(String s) {
+const _closers = {
+  '«': '»',
+  '“': '”',
+  '„': '“',
+  '‹': '›',
+  '「': '」',
+  '『': '』',
+  '【': '】',
+  '（': '）',
+  '(': ')',
+  '[': ']',
+  '{': '}',
+  '<': '>',
+};
+
+/// The mark that closes [open]: `»` for `«`, `**` for `**`.
+String closingMark(String open) => [for (final c in open.split('').reversed) _closers[c] ?? c].join();
+
+/// Marks as the user writes them, separated by spaces; a lone `*` is left
+/// out (it stresses a word: `Я *НЕ* пойду`).
+List<String> parseAnswerMarks(String text) => [
+  for (final m in text.trim().split(RegExp(r'\s+')))
+    if (m.isNotEmpty && m != '*') m,
+];
+
+/// [s] without the bold mark of a bold label (`**[01-003]** Привет`,
+/// `**[01-003] Привет**`) and without [marks] around all of it, in any order
+/// (`**«Привет»**`); marks inside stay (`Я **НЕ** пойду`, `"Hi" and "bye"`).
+String _plain(String s, List<String> marks) {
   var t = s.trim();
   if ('**'.allMatches(t).length.isOdd) {
     if (t.startsWith('**')) {
@@ -366,24 +396,16 @@ String _unbold(String s) {
       t = t.substring(0, t.length - 2).trim();
     }
   }
-  if (t.length > 4 && t.startsWith('**') && t.endsWith('**') && !t.substring(2, t.length - 2).contains('**')) {
-    t = t.substring(2, t.length - 2).trim();
-  }
-  return t;
-}
-
-/// [s] without bold marks and quotes around all of it, in either order.
-String _plain(String s) => _unbold(_unquote(_unbold(s)));
-
-const _quotes = {'"': '"', '“': '”', '«': '»', '„': '“', '「': '」', '『': '』'};
-
-/// Takes off quotes around all of [s] (chats like to add them).
-String _unquote(String s) {
-  final t = s.trim();
-  if (t.length >= 2) {
-    final close = _quotes[t[0]];
-    if (close != null && t.endsWith(close) && !t.substring(1, t.length - 1).contains(close)) {
-      return t.substring(1, t.length - 1).trim();
+  for (var changed = true; changed;) {
+    changed = false;
+    for (final open in marks) {
+      final close = closingMark(open);
+      if (open.isEmpty || open == '*' || t.length < open.length + close.length) continue;
+      if (!t.startsWith(open) || !t.endsWith(close)) continue;
+      final inner = t.substring(open.length, t.length - close.length);
+      if (inner.contains(close)) continue;
+      t = inner.trim();
+      changed = true;
     }
   }
   return t;

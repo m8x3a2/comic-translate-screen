@@ -11,6 +11,11 @@ import 'text_export.dart';
 /// the user chose another one.
 const defaultExchangeSeparator = '-->';
 
+/// Taken off around all of an original or a translation in the chat's
+/// answer by default: bold and quotes (chats like to add them). Each closes
+/// with its own pair (see `closingMark`): `«` with `»`.
+const defaultAnswerMarks = ['**', '"', '«', '“', '„', '「', '『'];
+
 enum ExchangeMode {
   /// Write down the text of each piece.
   recognize,
@@ -94,6 +99,7 @@ class ExchangeSettings {
     this.textFiles = ExchangeTextFiles.all,
     this.splitFiles = true,
     this.separator = defaultExchangeSeparator,
+    this.answerMarks = defaultAnswerMarks,
     this.placeholder = '',
     this.prompts = const {},
     this.answerFromClipboard = false,
@@ -138,6 +144,9 @@ class ExchangeSettings {
 
   /// Between the original and the translation in the chat's answer.
   final String separator;
+
+  /// Taken off around all of an original or a translation of the answer.
+  final List<String> answerMarks;
 
   /// Put into pieces the answer has nothing for; empty leaves them as they
   /// are.
@@ -194,6 +203,7 @@ class ExchangeSettings {
     ExchangeTextFiles? textFiles,
     bool? splitFiles,
     String? separator,
+    List<String>? answerMarks,
     String? placeholder,
     Map<ExchangePrompt, String>? prompts,
     bool? answerFromClipboard,
@@ -215,6 +225,7 @@ class ExchangeSettings {
     textFiles: textFiles ?? this.textFiles,
     splitFiles: splitFiles ?? this.splitFiles,
     separator: separator ?? this.separator,
+    answerMarks: answerMarks ?? this.answerMarks,
     placeholder: placeholder ?? this.placeholder,
     prompts: prompts ?? this.prompts,
     answerFromClipboard: answerFromClipboard ?? this.answerFromClipboard,
@@ -248,6 +259,7 @@ class ExchangeSettings {
     'text_files': textFiles.name,
     'split_files_too': splitFiles,
     'separator': separator,
+    'answer_marks': answerMarks,
     'placeholder': placeholder,
     for (final kind in ExchangePrompt.values) kind.key: promptFor(kind),
     'answer_from_clipboard': answerFromClipboard,
@@ -280,6 +292,12 @@ class ExchangeSettings {
       textFiles: ExchangeTextFiles.parse(json['text_files'] as String?),
       splitFiles: flag('split_files_too', d.splitFiles),
       separator: text('separator').trim().isEmpty ? d.separator : text('separator').trim(),
+      answerMarks: json['answer_marks'] is List
+          ? [
+              for (final m in (json['answer_marks'] as List).whereType<String>())
+                if (m.trim().isNotEmpty && m.trim() != '*') m.trim(),
+            ]
+          : d.answerMarks,
       placeholder: text('placeholder'),
       answerFromClipboard: flag('answer_from_clipboard', d.answerFromClipboard),
       sharedTexts: flag('shared_texts', d.sharedTexts),

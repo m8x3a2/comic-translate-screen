@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -1333,6 +1334,22 @@ class _ExchangeSectionState extends ConsumerState<_ExchangeSection> {
               onChanged: (v) =>
                   set((e) => e.copyWith(separator: v.trim().isEmpty ? defaultExchangeSeparator : v.trim())),
             ),
+            const SizedBox(height: 12),
+            DebouncedTextField(
+              key: const ValueKey('exchange.answer_marks'),
+              value: e.answerMarks.join(' '),
+              label: l.chatAnswerMarks,
+              help: l.chatAnswerMarksHelp,
+              onChanged: (v) => set((e) => e.copyWith(answerMarks: parseAnswerMarks(v))),
+            ),
+            if (!listEquals(e.answerMarks, defaultAnswerMarks))
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  onPressed: () => set((e) => e.copyWith(answerMarks: defaultAnswerMarks)),
+                  child: Text(l.chatAnswerMarksDefault),
+                ),
+              ),
           ],
         ),
         SettingsGroup(

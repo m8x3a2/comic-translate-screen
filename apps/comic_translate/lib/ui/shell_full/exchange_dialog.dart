@@ -388,17 +388,19 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   void _parse() {
     final export = _export;
     if (export == null) return;
-    final sep = _separator;
+    final sep = _separator, marks = _options.answerMarks;
     final ExchangeAnswer? answer;
     if (_twoFields) {
       answer = _answer.text.trim().isEmpty && _answer2.text.trim().isEmpty
           ? null
           : mergeExchangeAnswers(
-              parseExchangeAnswer(_answer.text, ExchangeMode.recognize, separator: sep),
-              parseExchangeAnswer(_answer2.text, ExchangeMode.translate, separator: sep),
+              parseExchangeAnswer(_answer.text, ExchangeMode.recognize, separator: sep, marks: marks),
+              parseExchangeAnswer(_answer2.text, ExchangeMode.translate, separator: sep, marks: marks),
             );
     } else {
-      answer = _answer.text.trim().isEmpty ? null : parseExchangeAnswer(_answer.text, export.mode, separator: sep);
+      answer = _answer.text.trim().isEmpty
+          ? null
+          : parseExchangeAnswer(_answer.text, export.mode, separator: sep, marks: marks);
     }
     setState(() {
       _fromFiles = null;
@@ -458,7 +460,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     final export = _export;
     if (export == null) return;
     final dir = Directory(export.dir);
-    final match = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
+    final match = await readExchangeFolder(dir, await ExchangeManifest.read(dir), marks: _options.answerMarks);
     if (!mounted) return;
     _clearAnswer();
     // The chat's answer pasted into ALL.txt may suggest words too.
@@ -499,13 +501,13 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     if (export == null || !_options.answerFromClipboard) return;
     final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text ?? '';
     if (!mounted || text.trim().isEmpty || text == _seen || text == _copied || text == _answer.text) return;
-    final sep = _separator;
+    final sep = _separator, marks = _options.answerMarks;
     final lists = splitExchangeLists(text);
     final answer = lists == null
-        ? parseExchangeAnswer(text, export.mode, separator: sep)
+        ? parseExchangeAnswer(text, export.mode, separator: sep, marks: marks)
         : mergeExchangeAnswers(
-            parseExchangeAnswer(lists.$1, ExchangeMode.recognize, separator: sep),
-            parseExchangeAnswer(lists.$2, ExchangeMode.translate, separator: sep),
+            parseExchangeAnswer(lists.$1, ExchangeMode.recognize, separator: sep, marks: marks),
+            parseExchangeAnswer(lists.$2, ExchangeMode.translate, separator: sep, marks: marks),
           );
     // Lines still as they were sent (the text to translate) are no answer.
     final found = matchExchangeAnswer(_items, answer, export.mode, ignoreUnchanged: true).replies.length;

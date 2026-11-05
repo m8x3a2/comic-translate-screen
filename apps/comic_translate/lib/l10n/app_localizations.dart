@@ -4892,6 +4892,24 @@ abstract class AppLocalizations {
   /// **'The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.'**
   String get chatPromptAllPages;
 
+  /// No description provided for @chatAnswerMarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Take off around the answer'**
+  String get chatAnswerMarks;
+
+  /// No description provided for @chatAnswerMarksHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Separated by spaces. Taken off only when it stands both at the start and at the end of an original or a translation; the end is found by itself (« → »). A lone * stays: the chat stresses a word with it.'**
+  String get chatAnswerMarksHelp;
+
+  /// No description provided for @chatAnswerMarksDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to the standard ones'**
+  String get chatAnswerMarksDefault;
+
   /// No description provided for @chatFoundInPart.
   ///
   /// In en, this message translates to:

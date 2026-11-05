@@ -2840,6 +2840,16 @@ class AppLocalizationsRu extends AppLocalizations {
       'В инструкции остались пузыри всех страниц: её изменили вручную, или это прошлый обмен.';
 
   @override
+  String get chatAnswerMarks => 'Убирать вокруг ответа';
+
+  @override
+  String get chatAnswerMarksHelp =>
+      'Через пробел. Убирается, только если стоит и в начале, и в конце оригинала или перевода; конец подбирается сам (« → »). Одиночная * не убирается: так чат выделяет слово.';
+
+  @override
+  String get chatAnswerMarksDefault => 'Вернуть стандартные';
+
+  @override
   String chatFoundInPart(int found, int total) {
     return 'Найдено ответов в этой части: $found из $total';
   }

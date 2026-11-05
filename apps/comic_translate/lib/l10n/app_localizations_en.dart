@@ -2838,6 +2838,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.';
 
   @override
+  String get chatAnswerMarks => 'Take off around the answer';
+
+  @override
+  String get chatAnswerMarksHelp =>
+      'Separated by spaces. Taken off only when it stands both at the start and at the end of an original or a translation; the end is found by itself (« → »). A lone * stays: the chat stresses a word with it.';
+
+  @override
+  String get chatAnswerMarksDefault => 'Back to the standard ones';
+
+  @override
   String chatFoundInPart(int found, int total) {
     return 'Answers found in this part: $found of $total';
   }

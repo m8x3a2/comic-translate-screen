@@ -74,6 +74,23 @@ Let me know if you need anything else.''';
       );
     });
 
+    test('the marks taken off around the answer are the user\'s: own pairs, or none', () {
+      expect(closingMark('«'), '»');
+      expect(closingMark('**'), '**');
+      expect(closingMark('<<'), '>>');
+      expect(parseAnswerMarks('  ** « * <  '), ['**', '«', '<'], reason: 'a lone * stresses a word');
+      const answer = '[01-003] <Привет>\n[01-004] «**Пока**»\n[02-001] "Беги!"';
+      List<String?> read(List<String> marks) => [
+        for (final r in parseExchangeAnswer(answer, ExchangeMode.translate, marks: marks).replies.values) r.translation,
+      ];
+      expect(read(defaultAnswerMarks), ['<Привет>', 'Пока', 'Беги!']);
+      expect(read(['<', '**']), ['Привет', '«**Пока**»', '"Беги!"']);
+      expect(read(const []), ['<Привет>', '«**Пока**»', '"Беги!"']);
+      final settings = ExchangeSettings.fromJson(const ExchangeSettings(answerMarks: ['<', '__']).toJson());
+      expect(settings.answerMarks, ['<', '__']);
+      expect(ExchangeSettings.fromJson(const {}).answerMarks, defaultAnswerMarks);
+    });
+
     test('a numbered or bulleted list: the number or mark before the next label is not part of the answer', () {
       for (final mark in ['1.', '2)', '-', '*', '•', '###', '>', '**']) {
         final a = parseExchangeAnswer(
