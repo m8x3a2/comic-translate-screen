@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import '../../pipeline/page_pipeline.dart';
 import '../cli.dart';
 import '../cli_context.dart';
+import 'translate_command.dart' show checkReaderNetwork;
 
 /// `cts exchange export|import`: the exchange with a chat AI by hand.
 class ExchangeCommand extends Command<int> {
@@ -44,7 +45,13 @@ class _ExchangeExport extends CtsCommand {
         'images',
         allowed: [for (final i in ExchangeImages.values) i.name],
         help: 'Sheets, single crops or both.',
-      );
+      )
+      ..addFlag(
+        'allow-network',
+        negatable: false,
+        help: 'With --mode translate: allow sending the pictures to an OCR model by key.',
+      )
+      ..addFlag('remember', negatable: false, help: 'With --allow-network: remember the approval for this server.');
   }
 
   @override
@@ -158,14 +165,28 @@ class _ExchangeExport extends CtsCommand {
     OcrEngine? ocr;
     TextUpscaler? textPrep;
     LineDetector? lineChecker;
+    // Reading through the chat makes no sense here: the usual engine reads.
+    final id = settings.ocr == chatOcrId ? AppSettings().ocr : settings.ocr;
+    final args = argResults!;
+    if (mode == ExchangeMode.translate &&
+        !await checkReaderNetwork(
+          ctx,
+          id,
+          settings,
+          allowNetwork: args.flag('allow-network'),
+          remember: args.flag('remember'),
+        )) {
+      return null;
+    }
     try {
       detector = await services.plugin<TextDetector>(settings.activeDetector, settings, log: log);
       if (mode == ExchangeMode.translate) {
-        // Reading through the chat makes no sense here: the usual engine reads.
-        final id = settings.ocr == chatOcrId ? AppSettings().ocr : settings.ocr;
+        final wholePage = services.registry.readsWholePage(id);
         ocr = await services.plugin<OcrEngine>(id, settings, log: log);
-        textPrep = await services.textPrep(settings, log: log);
-        lineChecker = await services.lineChecker(settings, log: log);
+        if (!wholePage) {
+          textPrep = await services.textPrep(settings, log: log);
+          lineChecker = await services.lineChecker(settings, log: log);
+        }
       }
     } on ModelNotInstalledException catch (e) {
       ctx.err.writeln(e);

@@ -359,5 +359,21 @@ void main() {
       expect(r.code, ExitCodes.failure);
       expect(r.err, contains('Nothing was sent'));
     });
+
+    test('a model by key that reads needs permission too, even with an offline translator', () async {
+      final png = writePng('page.png', RgbImage.filled(50, 50, 255, 255, 255));
+      await cts(['settings', 'set', 'tools.ocr', 'openai_compatible_ocr'], dataDir);
+      await cts(['settings', 'set', 'plugins.openai_compatible_ocr.api_url', 'https://example.invalid/v1'], dataDir);
+      await cts(['settings', 'set', 'plugins.openai_compatible_ocr.model', 'm'], dataDir);
+      for (final args in [
+        ['process', png, '--translator', 'mock'],
+        ['ocr', png],
+        ['exchange', 'export', png, '--mode', 'translate', '-o', p.join(dataDir.path, 'ex')],
+      ]) {
+        final r = await cts(args, dataDir);
+        expect(r.code, ExitCodes.failure, reason: args.first);
+        expect(r.err, allOf(contains('Nothing was sent'), contains('pictures')), reason: args.first);
+      }
+    });
   });
 }

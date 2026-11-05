@@ -133,7 +133,9 @@ class TranslateCommand extends CtsCommand {
           'file': input,
           'json': file.path,
           'translate_ms': ms,
-          'pairs': [for (final b in ordered) {'text': b.text, 'translation': b.translation}],
+          'pairs': [
+            for (final b in ordered) {'text': b.text, 'translation': b.translation},
+          ],
         });
         ctx.say('$page: ${blocks.length} block(s), $ms ms → ${file.path}');
         for (final b in ordered) {
@@ -163,29 +165,65 @@ Future<bool> checkTranslatorNetwork(
   required bool remember,
   required Never Function(String) usageException,
 }) async {
-  final services = ctx.services;
   final PluginInfo info;
   try {
-    info = services.registry.info(translatorId);
+    info = ctx.services.registry.info(translatorId);
   } on UnknownPluginException {
     usageException('Unknown translator "$translatorId". See `cts settings plugins`.');
   }
   if (info.kind != PluginKind.translator) usageException('"$translatorId" is not a translator.');
-  final config = await services.pluginConfig(translatorId, settings);
+  return checkPluginNetwork(ctx, info, settings, allowNetwork: allowNetwork, remember: remember);
+}
+
+/// The same for the OCR [ocrId] (a model by key gets the pictures of the
+/// bubbles).
+Future<bool> checkReaderNetwork(
+  CliContext ctx,
+  String ocrId,
+  AppSettings settings, {
+  required bool allowNetwork,
+  required bool remember,
+}) async {
+  if (!ctx.services.registry.contains(ocrId)) return true;
+  return checkPluginNetwork(
+    ctx,
+    ctx.services.registry.info(ocrId),
+    settings,
+    allowNetwork: allowNetwork,
+    remember: remember,
+  );
+}
+
+/// Refuses the plugin [info] when it sends data off this computer, unless the
+/// user allowed it for this run or approved the server before; prints where
+/// the data goes.
+Future<bool> checkPluginNetwork(
+  CliContext ctx,
+  PluginInfo info,
+  AppSettings settings, {
+  required bool allowNetwork,
+  required bool remember,
+}) async {
+  final services = ctx.services;
+  final config = await services.pluginConfig(info.id, settings);
   final endpoint = info.endpointFor(config);
   if (endpoint == null) return true;
-  final key = endpoint.approvalKey(translatorId);
+  final key = endpoint.approvalKey(info.id);
   final where = endpoint.privacy == Privacy.lan ? 'a computer on your local network' : 'the internet';
+  final reads = info.kind == PluginKind.ocr;
+  final what = reads ? 'the pictures of the bubbles' : 'the recognized text';
   if (!settings.approvedNetworkPlugins.contains(key) && !allowNetwork) {
-    ctx.err.writeln('"${info.displayName}" sends the recognized text to ${endpoint.host} ($where). '
-        'Nothing was sent. Re-run with --allow-network (add --remember to approve this server permanently), '
-        'or use --translator mock to test offline.');
+    ctx.err.writeln(
+      '"${info.displayName}" sends $what to ${endpoint.host} ($where). '
+      'Nothing was sent. Re-run with --allow-network (add --remember to approve this server permanently), '
+      '${reads ? 'or choose another OCR (--ocr ppocr)' : 'or use --translator mock to test offline'}.',
+    );
     return false;
   }
   if (remember && allowNetwork) {
     settings.approvedNetworkPlugins.add(key);
     await services.settingsStore.save(settings);
   }
-  ctx.err.writeln('Sending text to ${endpoint.host} ($where).');
+  ctx.err.writeln('Sending ${reads ? 'pictures' : 'text'} to ${endpoint.host} ($where).');
   return true;
 }

@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../../pipeline/word_list.dart';
 import '../cli.dart';
 import '../cli_context.dart';
+import 'translate_command.dart' show checkReaderNetwork;
 
 class OcrCommand extends CtsCommand {
   OcrCommand(super.holder) {
@@ -55,6 +56,8 @@ class OcrCommand extends CtsCommand {
         help: 'Split English words glued together by the OCR (default from settings: off).',
         defaultsTo: null,
       )
+      ..addFlag('allow-network', negatable: false, help: 'Allow this run to send the pictures to an OCR model by key.')
+      ..addFlag('remember', negatable: false, help: 'With --allow-network: remember the approval for this server.')
       ..addFlag('debug', negatable: false, help: 'Test mode: save a run folder with artifacts and timings.');
   }
 
@@ -93,9 +96,21 @@ class OcrCommand extends CtsCommand {
     }
     final log = recorder?.log ?? services.appLog.child(stage: 'ocr');
 
+    final ocrId = args.option('ocr') ?? settings.ocr;
+    if (!await checkReaderNetwork(
+      ctx,
+      ocrId,
+      settings,
+      allowNetwork: args.flag('allow-network'),
+      remember: args.flag('remember'),
+    )) {
+      return ExitCodes.failure;
+    }
+    // A model that reads the page by itself gets the page as it is.
+    final wholePage = services.registry.readsWholePage(ocrId);
     final OcrEngine ocr;
     TextDetector? detector;
-    final prepId = args.wasParsed('upscale') && !args.flag('upscale')
+    final prepId = wholePage || (args.wasParsed('upscale') && !args.flag('upscale'))
         ? textPrepOffId
         : args.option('prep') ?? settings.activeTextPrep;
     if (!services.registry.contains(prepId) || services.registry.info(prepId).kind != PluginKind.textPrep) {
@@ -109,7 +124,7 @@ class OcrCommand extends CtsCommand {
     LineDetector? lineChecker;
     try {
       ocr = await services.leveledOcr(
-        await services.plugin<OcrEngine>(args.option('ocr') ?? settings.ocr, settings, useGpu: useGpu, log: log),
+        await services.plugin<OcrEngine>(ocrId, settings, useGpu: useGpu, log: log),
         settings,
         level: ReadLevel.values.asNameMap()[args.option('level')],
         useGpu: useGpu,
@@ -119,7 +134,7 @@ class OcrCommand extends CtsCommand {
       if (textPrep.info.id != prepId) {
         ctx.err.writeln('"$prepId" is not downloaded: plain ×2 instead (cts models download).');
       }
-      if (args.wasParsed('check-lines') ? args.flag('check-lines') : settings.checksLines) {
+      if (!wholePage && (args.wasParsed('check-lines') ? args.flag('check-lines') : settings.checksLines)) {
         lineChecker = await services.plugin<LineDetector>(lineCheckerId, settings, useGpu: useGpu, log: log);
       }
       if (blocksPath == null) {

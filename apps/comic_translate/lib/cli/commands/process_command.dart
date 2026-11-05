@@ -10,7 +10,7 @@ import '../../pipeline/page_pipeline.dart';
 import '../cli.dart';
 import '../cli_context.dart';
 import 'inpaint_command.dart' show loadBlocksJson;
-import 'translate_command.dart' show checkTranslatorNetwork;
+import 'translate_command.dart' show checkReaderNetwork, checkTranslatorNetwork;
 
 /// `cts render`: draws translations onto a (cleaned) page.
 class RenderCommand extends CtsCommand {
@@ -85,7 +85,7 @@ class ProcessCommand extends CtsCommand {
       ..addFlag(
         'allow-network',
         negatable: false,
-        help: 'Allow this run to send the text to the configured translator.',
+        help: 'Allow this run to send the text to the configured translator (and the pictures to an OCR model by key).',
       )
       ..addFlag('remember', negatable: false, help: 'With --allow-network: remember the approval for this server.')
       ..addFlag('gpu', help: 'Use the GPU (DirectML). Default from settings.', defaultsTo: null)
@@ -130,6 +130,16 @@ class ProcessCommand extends CtsCommand {
       allowNetwork: args.flag('allow-network'),
       remember: args.flag('remember'),
       usageException: usageException,
+    )) {
+      return ExitCodes.failure;
+    }
+    // A model by key reads: the pictures go out too.
+    if (!await checkReaderNetwork(
+      ctx,
+      settings.ocr,
+      settings,
+      allowNetwork: args.flag('allow-network'),
+      remember: args.flag('remember'),
     )) {
       return ExitCodes.failure;
     }
