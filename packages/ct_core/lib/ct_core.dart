@@ -4,6 +4,7 @@ library;
 export 'src/app_paths.dart';
 export 'src/cancel.dart';
 export 'src/page_numbers.dart';
+export 'src/detection/column_gaps.dart';
 export 'src/detection/foreground_color.dart';
 export 'src/detection/geometry.dart';
 export 'src/detection/heuristic_lines.dart'

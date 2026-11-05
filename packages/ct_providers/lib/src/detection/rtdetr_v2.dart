@@ -98,13 +98,15 @@ class RtDetrV2Detector implements TextDetector {
       return detectSingle(slice);
     });
     await context.cancel.checkpoint();
-    return createTextBlocks(
+    final blocks = createTextBlocks(
       image,
       boxes.texts,
       boxes.bubbles,
       annotateLines: annotateLines,
       onAnnotateError: (e, st) => context.log.error('heuristic_lines_failed', e, st),
     );
+    // New: one block over two columns (names and descriptions) is split.
+    return splitColumnBlocks(image, blocks, annotateLines: annotateLines);
   }
 
   /// `_detect_single_image`: one model pass on [image] without slicing.

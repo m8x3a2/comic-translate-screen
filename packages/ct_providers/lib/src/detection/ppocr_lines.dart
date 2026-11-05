@@ -89,7 +89,7 @@ class PpocrLineDetector implements LineDetector {
 
   @override
   Future<List<TextBlock>> detect(RgbImage image, PluginContext context) async =>
-      groupLinesIntoBlocks(await findLines(image, context));
+      splitColumnBlocks(image, groupLinesIntoBlocks(await findLines(image, context)));
 
   @override
   Future<List<BBox>> findLines(RgbImage image, PluginContext context) async {

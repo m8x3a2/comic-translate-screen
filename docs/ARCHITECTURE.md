@@ -133,6 +133,18 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   runs out of memory at 2842×3200. A lone spot gets the original's crop; an
   image of at most 1536² px is cleaned in one pass when the crops together
   would be larger.
+- Columns inside one block (`splitColumnBlocks` in `column_gaps.dart`, after
+  both detectors): a list of names and descriptions came as one block, and
+  the line finder joined a name and its description into one line. A block is
+  split where an empty stripe crosses it top to bottom, at least 1.5 letter
+  heights wide (median height of the ink spots), with at least 3 letters and
+  two letters' width on each side; the stripe must separate text in two rows
+  of the block, or be met at the same place (letters of about the same size)
+  in two other blocks. Blocks of the line finder get their lines cut and
+  grouped again; comic blocks are cut into columns, the columns at empty bands
+  two letters tall, and get new heuristic lines (cut to the block: the
+  splitter looks beyond it). On 84 test pages only the two-column page and
+  two text-like pieces of drawing in the screens mode change.
 - No ghosts of removed text on flat paper. LaMa's output is rounded, not
   truncated (`astype("uint8")` in the original): it gives ≈254.7 for white, and
   at 254 the removed letters showed faintly on white paper; the high-resolution
