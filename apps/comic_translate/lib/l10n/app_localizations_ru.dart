@@ -251,6 +251,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get stepDoneClean => 'Очистка готова';
 
   @override
+  String stepDoneEmpty(String count) {
+    return 'без текста: $count';
+  }
+
+  @override
   String stepDoneTime(String what, String time) {
     return '$what — за $time';
   }
@@ -1515,6 +1520,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get reportUntranslated =>
       'Пузыри без перевода (оригинальный текст остался):';
+
+  @override
+  String get reportUnread =>
+      'Пузыри, которые модель не прочитала (остались без текста; «Распознать» на пузыре — ещё раз):';
 
   @override
   String reportUntranslatedCount(int count) {

@@ -11,14 +11,18 @@ void main() {
   late HttpServer server;
   final requests = <({Map<String, Object?> body, String? auth})>[];
   late List<String> replies;
+  // finish_reason of each answer (none when left out).
+  var finishes = <String?>[];
 
   setUp(() async {
     requests.clear();
+    finishes = [];
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     server.listen((req) async {
       final body = (jsonDecode(await utf8.decoder.bind(req).join()) as Map).cast<String, Object?>();
       requests.add((body: body, auth: req.headers.value('authorization')));
       final content = replies.removeAt(0);
+      final finish = finishes.isEmpty ? null : finishes.removeAt(0);
       req.response
         ..headers.contentType = ContentType.json
         ..write(
@@ -26,6 +30,7 @@ void main() {
             'choices': [
               {
                 'message': {'role': 'assistant', 'content': content},
+                'finish_reason': ?finish,
               },
             ],
             'usage': {'prompt_tokens': 1000, 'completion_tokens': 20, 'cost': 0.0004},
@@ -90,6 +95,46 @@ void main() {
       [for (final h in history) (h.plugin, h.image, h.again)],
       [('openai_compatible_ocr', true, false), ('openai_compatible_ocr', true, true)],
     );
+  });
+
+  test('an answer cut at the length limit: its last piece is asked again', () async {
+    replies = ['[01-001] HELLO\n[01-002] THIS IS CU', '[01-002] THIS IS CUT SHORT\n[01-003] END'];
+    finishes = ['length'];
+    final history = <HistoryEntry>[];
+    final b = blocks();
+    await ocr().recognize(
+      page,
+      b,
+      sourceLanguage: 'English',
+      context: PluginContext(log: EventLog.silent(), onHistory: (h) async => history.add(h)),
+    );
+    expect([for (final x in b) x.text], ['HELLO', 'THIS IS CUT SHORT', 'END']);
+    expect(texts(requests.last.body).single, contains('Labels: [01-002] [01-003]\n'));
+    expect(history.first.warnings.single, contains('length limit'));
+    // Cut before a whole piece came: a clear error.
+    replies = ['[01-001] HEL'];
+    finishes = ['length'];
+    await expectLater(
+      ocr().recognize(
+        page,
+        [blocks().first],
+        sourceLanguage: 'English',
+        context: PluginContext(log: EventLog.silent()),
+      ),
+      throwsA(isA<TranslationException>().having((e) => e.kind, 'kind', TranslationErrorKind.cutOff)),
+    );
+  });
+
+  test('bubbles left out after asking again are left without text, not with the old one', () async {
+    replies = ['[01-001] NEW', 'I cannot read it.'];
+    final b = blocks()..forEach((x) => x.text = 'OLD');
+    await ocr().recognize(
+      page,
+      b,
+      sourceLanguage: 'English',
+      context: PluginContext(log: EventLog.silent()),
+    );
+    expect([for (final x in b) x.text], ['NEW', '', '']);
   });
 
   test('no text for any bubble is an error; no model is told before anything is sent', () async {

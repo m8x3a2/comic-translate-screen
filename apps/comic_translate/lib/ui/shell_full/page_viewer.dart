@@ -607,8 +607,9 @@ class _StepStrip extends ConsumerWidget {
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
-                  // Translated over the network: what the model answered.
-                  if (last.ms.containsKey(ManualStep.translate) && _translatesOverNetwork(ref))
+                  // Translated or read over the network: what the model answered.
+                  if ((last.ms.containsKey(ManualStep.translate) && _overNetwork(ref)) ||
+                      (last.ms.containsKey(ManualStep.recognize) && _overNetwork(ref, reader: true)))
                     TextButton.icon(
                       onPressed: () => showTranslatorHistory(context, page: page.name),
                       icon: const Icon(Icons.history, size: 16),
@@ -624,11 +625,11 @@ class _StepStrip extends ConsumerWidget {
   }
 }
 
-/// The chosen translator sends the text over the network (its requests go
-/// into the history).
-bool _translatesOverNetwork(WidgetRef ref) {
+/// The chosen translator (or OCR, [reader]) sends data over the network (its
+/// requests go into the history).
+bool _overNetwork(WidgetRef ref, {bool reader = false}) {
   final registry = ref.read(servicesProvider).registry;
-  final id = ref.watch(settingsProvider.select((s) => s.translator));
+  final id = ref.watch(settingsProvider.select((s) => reader ? s.ocr : s.translator));
   return registry.contains(id) && registry.info(id).privacy.sendsData;
 }
 
@@ -680,6 +681,7 @@ String stepResultLine(BuildContext context, StepResult r) {
   final parts = [
     l.stepDoneTime(what, formatStepTime(context, r.totalMs)),
     if (r.pages > 1) l.stepDonePages('${r.pages}', formatStepTime(context, r.totalMs ~/ r.pages)),
+    if (r.empty > 0) l.stepDoneEmpty('${r.empty}'),
   ];
   var line = parts.join(', ');
   if (r.ms.length > 1) {

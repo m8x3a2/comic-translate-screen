@@ -506,6 +506,12 @@ abstract class AppLocalizations {
   /// **'Cleaning done'**
   String get stepDoneClean;
 
+  /// No description provided for @stepDoneEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'without text: {count}'**
+  String stepDoneEmpty(String count);
+
   /// No description provided for @stepDoneTime.
   ///
   /// In en, this message translates to:
@@ -2701,6 +2707,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bubbles without a translation (their lettering stays):'**
   String get reportUntranslated;
+
+  /// No description provided for @reportUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles the model left unread (they have no text; \"Recognize\" on the bubble reads it again):'**
+  String get reportUnread;
 
   /// No description provided for @reportUntranslatedCount.
   ///

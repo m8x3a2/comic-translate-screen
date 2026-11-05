@@ -29,7 +29,7 @@ enum ManualStep { detect, recognize, translate, mask, clean }
 
 /// How long a finished run of a step took, for the line under the step buttons.
 class StepResult {
-  const StepResult({required this.step, required this.pages, required this.count, required this.ms});
+  const StepResult({required this.step, required this.pages, required this.count, required this.ms, this.empty = 0});
 
   /// The step asked for (the steps before it it had to do are in [ms] too).
   final ManualStep step;
@@ -42,6 +42,10 @@ class StepResult {
 
   /// Time of each step that ran, all pages together (milliseconds).
   final Map<ManualStep, int> ms;
+
+  /// Blocks read that came back without text (a model by key left them out,
+  /// or there was nothing to read).
+  final int empty;
 
   int get totalMs => ms.values.fold(0, (a, b) => a + b);
 }
@@ -221,7 +225,7 @@ class StepsNotifier extends Notifier<StepState> {
     // What the run took, for the line under the step buttons (the wait for a
     // chat's answer is not counted).
     final times = <ManualStep, int>{};
-    var count = 0;
+    var count = 0, empty = 0;
     final timedPages = <String>{};
     StepResult? result;
     PipelineWorker? worker;
@@ -298,6 +302,7 @@ class StepsNotifier extends Notifier<StepState> {
                   below: seams.below,
                   cancel: cancel,
                 );
+                empty += read.where((b) => b.text.trim().isEmpty).length;
                 timed(which.length);
                 commit(
                   (p) => p.copyWith(
@@ -493,7 +498,9 @@ class StepsNotifier extends Notifier<StepState> {
             e.key: e.value.skipWhile((s) => !viaChat(s)).where((s) => !viaChat(s)).toList(),
         });
       }
-      if (timedPages.isNotEmpty) result = StepResult(step: step, pages: timedPages.length, count: count, ms: times);
+      if (timedPages.isNotEmpty) {
+        result = StepResult(step: step, pages: timedPages.length, count: count, ms: times, empty: empty);
+      }
       log.info('step_done', {
         'step': step.name,
         'pages': targets.length,

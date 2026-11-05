@@ -60,6 +60,7 @@ const openRouterOcrInfo = PluginInfo(
   keyStatus: openRouterKeyStatus,
   modelCatalog: openRouterModelCatalog,
   keyUrl: 'https://openrouter.ai/settings/keys',
+  readsWholePage: true,
 );
 
 const openAiCompatibleOcrInfo = PluginInfo(
@@ -94,6 +95,7 @@ const openAiCompatibleOcrInfo = PluginInfo(
   endpoint: openAiCompatibleEndpoint,
   keyStatus: openAiCompatibleKeyStatus,
   modelCatalog: openAiCompatibleModelCatalog,
+  readsWholePage: true,
 );
 
 final openRouterOcrFactory = PluginFactory<OcrEngine>(
@@ -152,26 +154,40 @@ class ModelOcr implements PageOcr {
         kind: TranslationErrorKind.config,
       );
     }
-    var missing = await _ask(image, blocks, null, sourceLanguage, context, uri);
-    if (resendMissing && missing.isNotEmpty && missing.length < blocks.length) {
-      context.log.child(stage: 'ocr').info('model_ocr_resend', {'blocks': missing.length, 'of': blocks.length});
+    final log = context.log.child(stage: 'ocr');
+    var (missing, cut) = await _ask(image, blocks, null, sourceLanguage, context, uri);
+    if (missing.length == blocks.length) {
+      throw cut
+          ? TranslationException(
+              'the answer stopped at the length limit (finish_reason: length): raise "Maximum answer length"',
+              kind: TranslationErrorKind.cutOff,
+            )
+          : TranslationException(
+              'the model answered with no text for the bubbles',
+              kind: TranslationErrorKind.badReply,
+            );
+    }
+    if (resendMissing && missing.isNotEmpty) {
+      log.info('model_ocr_resend', {'blocks': missing.length, 'of': blocks.length});
       try {
-        missing = await _ask(image, blocks, missing, sourceLanguage, context, uri);
+        (missing, _) = await _ask(image, blocks, missing, sourceLanguage, context, uri);
       } on TranslationException catch (e) {
-        context.log.child(stage: 'ocr').warn('model_ocr_resend_failed', {'error': e.message});
+        log.warn('model_ocr_resend_failed', {'error': e.message});
       }
     }
-    if (missing.length == blocks.length) {
-      throw TranslationException(
-        'the model answered with no text for the bubbles',
-        kind: TranslationErrorKind.badReply,
-      );
+    // Not read: no text rather than the text of an earlier reading, which
+    // would look read anew ("Frames without text" offers to read them).
+    if (missing.isNotEmpty) {
+      log.warn('model_ocr_unread', {'blocks': missing.length, 'of': blocks.length});
+      for (final i in missing) {
+        blocks[i].text = '';
+      }
     }
   }
 
   /// One request for the blocks [only] (all when null); returns those the
-  /// answer had nothing for.
-  Future<List<int>> _ask(
+  /// answer had nothing for, and whether it stopped at the length limit.
+  Future<(List<int>, bool)> _ask(
     RgbImage image,
     List<TextBlock> blocks,
     List<int>? only,
@@ -214,7 +230,7 @@ class ModelOcr implements PageOcr {
     final sw = Stopwatch()..start();
     var reply = '';
     ServiceUsage? used;
-    Future<void> keep([String error = '']) => context.reportHistory(
+    Future<void> keep([String error = '', List<String> warnings = const []]) => context.reportHistory(
       HistoryEntry(
         time: DateTime.now(),
         plugin: info.id,
@@ -227,6 +243,7 @@ class ModelOcr implements PageOcr {
         image: true,
         reply: reply,
         blocks: request.items.length,
+        warnings: warnings,
         error: error,
         inputTokens: used?.inputTokens ?? 0,
         outputTokens: used?.outputTokens ?? 0,
@@ -235,18 +252,21 @@ class ModelOcr implements PageOcr {
     );
     try {
       final Map<String, Object?>? usage;
-      (reply, usage, _) = await client.postChat(uri, payload, context.cancel, log);
+      final String? finish;
+      (reply, usage, finish) = await client.postChat(uri, payload, context.cancel, log);
       used = client.usageOf(usage, payload, reply, host: uri.host);
       await context.reportUsage(used);
-      final missing = applyReadingAnswer(blocks, request, reply);
+      final cut = finish == 'length';
+      final missing = applyReadingAnswer(blocks, request, reply, cut: cut);
       log.info('model_ocr_response', {
         'ms': sw.elapsedMilliseconds,
         'read': request.items.length - missing.length,
         'missing': missing.length,
+        if (cut) 'cut': true,
         if (used.cost != null) 'cost': used.cost,
       });
-      await keep();
-      return missing;
+      await keep('', [if (cut) 'the answer stopped at the length limit (finish_reason: length)']);
+      return (missing, cut);
     } on TranslationException catch (e) {
       if (e.reply case final raw? when reply.isEmpty) reply = raw;
       await keep(e.message);

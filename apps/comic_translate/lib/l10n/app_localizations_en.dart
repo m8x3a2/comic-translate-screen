@@ -250,6 +250,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stepDoneClean => 'Cleaning done';
 
   @override
+  String stepDoneEmpty(String count) {
+    return 'without text: $count';
+  }
+
+  @override
   String stepDoneTime(String what, String time) {
     return '$what in $time';
   }
@@ -1514,6 +1519,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get reportUntranslated =>
       'Bubbles without a translation (their lettering stays):';
+
+  @override
+  String get reportUnread =>
+      'Bubbles the model left unread (they have no text; \"Recognize\" on the bubble reads it again):';
 
   @override
   String reportUntranslatedCount(int count) {

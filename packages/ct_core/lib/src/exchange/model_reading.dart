@@ -50,12 +50,15 @@ ReadingRequest readingRequest(
 }
 
 /// Writes the model's [answer] to [request] into [blocks]; returns the
-/// indexes of the blocks it had nothing for.
-List<int> applyReadingAnswer(List<TextBlock> blocks, ReadingRequest request, String answer) {
+/// indexes of the blocks it had nothing for. An answer [cut] at the length
+/// limit may end in the middle of its last piece: that one counts as
+/// missing.
+List<int> applyReadingAnswer(List<TextBlock> blocks, ReadingRequest request, String answer, {bool cut = false}) {
   final replies = parseExchangeAnswer(answer, ExchangeMode.recognize).replies;
+  final last = cut && replies.isNotEmpty ? replies.keys.last : null;
   final missing = <int>[];
   for (final it in request.items) {
-    final text = replies[it.label]?.original;
+    final text = it.label == last ? null : replies[it.label]?.original;
     if (text == null) {
       missing.add(it.blockIndex);
     } else {

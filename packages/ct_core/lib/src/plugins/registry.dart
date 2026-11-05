@@ -5,11 +5,7 @@ import 'settings_schema.dart';
 
 /// Shared services a plugin may need when it is created.
 class PluginEnvironment {
-  PluginEnvironment({
-    required this.models,
-    required this.log,
-    this.useGpu = false,
-  });
+  PluginEnvironment({required this.models, required this.log, this.useGpu = false});
 
   final ModelManager models;
   final EventLog log;
@@ -60,13 +56,16 @@ class PluginRegistry {
 
   /// Plugins of [kind] available on [platform] (all platforms when null).
   List<PluginInfo> available(PluginKind kind, {PlatformId? platform}) => [
-        for (final f in _factories.values)
-          if (f.info.kind == kind && (platform == null || f.info.platforms.contains(platform))) f.info,
-      ];
+    for (final f in _factories.values)
+      if (f.info.kind == kind && (platform == null || f.info.platforms.contains(platform))) f.info,
+  ];
 
   PluginInfo info(String id) => (_factories[id] ?? (throw UnknownPluginException(id, null))).info;
 
   bool contains(String id) => _factories.containsKey(id);
+
+  /// [id] is an OCR that reads a page by itself ([PluginInfo.readsWholePage]).
+  bool readsWholePage(String id) => contains(id) && info(id).readsWholePage;
 
   /// Returns a cached or new instance of plugin [id] for [config].
   Future<T> instance<T extends Plugin>(String id, PluginConfig config, PluginEnvironment env) async {

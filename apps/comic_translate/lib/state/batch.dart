@@ -74,6 +74,7 @@ class BatchReport {
     this.stoppedBy,
     this.stageMs = const {},
     this.untranslated = const [],
+    this.unread = const [],
   });
 
   final int total;
@@ -95,6 +96,10 @@ class BatchReport {
   /// Pages done with bubbles the translator had nothing for (they keep their
   /// lettering): page id, name and how many.
   final List<(String id, String name, int count)> untranslated;
+
+  /// Pages read by a model by key with bubbles it left out (they have no
+  /// text): page id, name and how many.
+  final List<(String id, String name, int count)> unread;
 }
 
 sealed class BatchState {
@@ -244,6 +249,7 @@ class BatchNotifier extends Notifier<BatchState> {
     SkipReason? stoppedBy;
     final skipped = <SkippedPage>[];
     final untranslated = <(String, String, int)>[];
+    final unread = <(String, String, int)>[];
     final exportDirs = <String>{};
     final pool = ref.read(workerPoolProvider);
     PipelineWorker? worker;
@@ -410,6 +416,10 @@ class BatchNotifier extends Notifier<BatchState> {
           failuresInARow = 0;
           final left = cleaned.blocks.where((b) => b.untranslated).length;
           if (left > 0) untranslated.add((page.id, page.name, left));
+          if (ref.read(servicesProvider).registry.readsWholePage(settings.ocr)) {
+            final empty = cleaned.blocks.where((b) => b.text.trim().isEmpty).length;
+            if (empty > 0) unread.add((page.id, page.name, empty));
+          }
           if (settings.export.anyAutomatic) {
             final out = await _autoExport(active, page, cleaned, settings.export, stamp, log);
             if (out != null) exportDirs.add(out);
@@ -477,6 +487,7 @@ class BatchNotifier extends Notifier<BatchState> {
           stoppedBy: stoppedBy,
           stageMs: stageMs,
           untranslated: untranslated,
+          unread: unread,
         );
         log.info('batch_end', {'done': done, 'skipped': skipped.length, 'cancelled': cancelled});
         state = BatchIdle(report);
@@ -789,10 +800,12 @@ Future<List<ModelSpec>> missingModels(
   Set<PipelinePart> parts = const {...PipelinePart.values},
   Set<String>? sourceLanguages,
 }) async {
+  // A model that reads the page by itself needs no preparation of the text.
+  final prepares = !registry.readsWholePage(settings.ocr);
   final chosen = [
     if (parts.contains(PipelinePart.detector)) settings.activeDetector,
-    if (parts.contains(PipelinePart.ocr)) ...[settings.ocr, settings.activeTextPrep],
-    if (parts.contains(PipelinePart.ocr) && settings.checksLines) lineCheckerId,
+    if (parts.contains(PipelinePart.ocr)) ...[settings.ocr, if (prepares) settings.activeTextPrep],
+    if (parts.contains(PipelinePart.ocr) && prepares && settings.checksLines) lineCheckerId,
     if (parts.contains(PipelinePart.translator)) settings.translator,
     if (parts.contains(PipelinePart.inpainter)) settings.inpainter,
     if (parts.contains(PipelinePart.textMask)) settings.textMask,

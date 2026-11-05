@@ -35,13 +35,13 @@ enum PlatformId {
   ios;
 
   static PlatformId? fromOperatingSystem(String os) => switch (os) {
-        'windows' => windows,
-        'android' => android,
-        'linux' => linux,
-        'macos' => macos,
-        'ios' => ios,
-        _ => null,
-      };
+    'windows' => windows,
+    'android' => android,
+    'linux' => linux,
+    'macos' => macos,
+    'ios' => ios,
+    _ => null,
+  };
 }
 
 /// Where a configured plugin sends data, for the privacy warning and the
@@ -74,6 +74,7 @@ class PluginInfo {
     this.keyStatus,
     this.modelCatalog,
     this.keyUrl = '',
+    this.readsWholePage = false,
   });
 
   /// Stable identifier stored in settings and logs, e.g. `openai_compatible`.
@@ -127,6 +128,10 @@ class PluginInfo {
   /// empty: none.
   final String keyUrl;
 
+  /// An OCR that reads the blocks of a page by itself (a `PageOcr`): no text
+  /// preparation, line check or recognition level, so none of their models.
+  final bool readsWholePage;
+
   SettingField? field(String key) {
     for (final f in settings) {
       if (f.key == key) return f;
@@ -137,14 +142,8 @@ class PluginInfo {
 
 /// Runtime context passed to every plugin call.
 class PluginContext {
-  PluginContext({
-    required this.log,
-    CancelToken? cancel,
-    this.recorder,
-    this.page,
-    this.onUsage,
-    this.onHistory,
-  }) : cancel = cancel ?? CancelToken.none;
+  PluginContext({required this.log, CancelToken? cancel, this.recorder, this.page, this.onUsage, this.onHistory})
+    : cancel = cancel ?? CancelToken.none;
 
   final EventLog log;
   final CancelToken cancel;
@@ -183,12 +182,13 @@ class PluginContext {
   }
 
   PluginContext forPage(String page) => PluginContext(
-      log: log.child(page: page),
-      cancel: cancel,
-      recorder: recorder,
-      page: page,
-      onUsage: onUsage,
-      onHistory: onHistory);
+    log: log.child(page: page),
+    cancel: cancel,
+    recorder: recorder,
+    page: page,
+    onUsage: onUsage,
+    onHistory: onHistory,
+  );
 }
 
 /// Base interface of all plugin instances.

@@ -463,8 +463,13 @@ class PagePipeline {
       ),
       translator: await make<Translator>(spec.translatorId),
       inpainter: await make<Inpainter>(s.inpainter),
-      textPrep: await loadTextPrep(registry, s.activeTextPrep, spec.configs[s.activeTextPrep], env),
-      lineChecker: await loadLineChecker(registry, s, spec.configs[lineCheckerId], env),
+      // A model that reads the page by itself prepares nothing.
+      textPrep: registry.readsWholePage(s.ocr)
+          ? null
+          : await loadTextPrep(registry, s.activeTextPrep, spec.configs[s.activeTextPrep], env),
+      lineChecker: registry.readsWholePage(s.ocr)
+          ? null
+          : await loadLineChecker(registry, s, spec.configs[lineCheckerId], env),
       textMasker: await loadTextMasker(registry, s, spec.configs[s.textMask], env),
     );
   }
@@ -757,18 +762,24 @@ class LazyPlugins {
   );
   Future<Translator> get translator => _make(spec.translatorId);
   Future<Inpainter> get inpainter => _make(spec.settings.inpainter);
-  Future<TextUpscaler> get textPrep => loadTextPrep(
-    registry,
-    spec.settings.activeTextPrep,
-    spec.configs[spec.settings.activeTextPrep],
-    PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
-  );
-  Future<LineDetector?> get lineChecker => loadLineChecker(
-    registry,
-    spec.settings,
-    spec.configs[lineCheckerId],
-    PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
-  );
+
+  /// None when a model reads the page by itself (see [PluginInfo.readsWholePage]).
+  Future<TextUpscaler?> get textPrep async => registry.readsWholePage(spec.settings.ocr)
+      ? null
+      : loadTextPrep(
+          registry,
+          spec.settings.activeTextPrep,
+          spec.configs[spec.settings.activeTextPrep],
+          PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
+        );
+  Future<LineDetector?> get lineChecker async => registry.readsWholePage(spec.settings.ocr)
+      ? null
+      : loadLineChecker(
+          registry,
+          spec.settings,
+          spec.configs[lineCheckerId],
+          PluginEnvironment(models: models, log: log, useGpu: spec.useGpu),
+        );
   Future<TextMasker?> get textMasker => loadTextMasker(
     registry,
     spec.settings,

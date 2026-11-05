@@ -458,7 +458,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final report = lastReport();
     // Not run (cancelled before starting): no report of an earlier run.
     if (report == null || identical(report, before)) return;
-    if (report.skipped.isNotEmpty || report.cancelled || report.exportDirs.isNotEmpty) {
+    if (report.skipped.isNotEmpty || report.unread.isNotEmpty || report.cancelled || report.exportDirs.isNotEmpty) {
       await showBatchReport(context, report);
     } else {
       _snack(l.reportSummary('${report.done}', '${report.total}', formatDuration(report.duration)));
@@ -1108,7 +1108,7 @@ class _TopBar extends ConsumerWidget {
                 const SizedBox(width: 8),
                 _ToolButton(
                   compact: compact,
-                  icon: last.skipped.isEmpty && last.untranslated.isEmpty
+                  icon: last.skipped.isEmpty && last.untranslated.isEmpty && last.unread.isEmpty
                       ? Icons.fact_check_outlined
                       : Icons.warning_amber,
                   label: l.report,
