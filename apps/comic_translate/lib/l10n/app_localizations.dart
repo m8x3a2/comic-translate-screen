@@ -4826,6 +4826,18 @@ abstract class AppLocalizations {
   /// **'\"Each page on a new sheet\" is on: the sheets show the bubbles of one page only.'**
   String get chatSheetPerPageOn;
 
+  /// No description provided for @chatPromptAllPages.
+  ///
+  /// In en, this message translates to:
+  /// **'The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.'**
+  String get chatPromptAllPages;
+
+  /// No description provided for @chatFoundOnPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Answers found on page {page}: {found} of {total}'**
+  String chatFoundOnPage(int page, int found, int total);
+
   /// No description provided for @chatOpenTxt.
   ///
   /// In en, this message translates to:

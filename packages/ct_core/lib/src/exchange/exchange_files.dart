@@ -112,6 +112,7 @@ class ExchangeExport {
     required this.mode,
     required this.items,
     required this.prompt,
+    this.pagePrompts = const {},
     this.sheets = const [],
     this.contexts = const [],
     this.crops = const [],
@@ -123,6 +124,11 @@ class ExchangeExport {
   final ExchangeMode mode;
   final List<ExchangeItem> items;
   final String prompt;
+
+  /// The instructions with the pieces of one page only (page number →
+  /// instructions), when the pieces are on several pages and the
+  /// instructions were made here.
+  final Map<int, String> pagePrompts;
 
   /// Files in [dir] to send, in order.
   final List<String> sheets;
@@ -282,25 +288,35 @@ Future<ExchangeExport> writeExchange(
   }
 
   final kind = settings.promptKind(mode);
-  final prompt =
-      promptText ??
-      [
-        if (lead.isNotEmpty) lead,
-        exchangePrompt(
-          kind,
-          items,
-          sourceLanguage: sourceLanguage,
-          targetLanguage: targetLanguage,
-          template: settings.promptFor(kind),
-          extraContext: extraContext,
-          screens: screens,
-          contextPictures: contextWanted,
-          separator: settings.separator,
-          glossary: glossary,
-          styles: settings.chosenStyles,
-        ),
-      ].join('\n\n');
+  String promptOf(List<ExchangeItem> list) => [
+    if (lead.isNotEmpty) lead,
+    exchangePrompt(
+      kind,
+      list,
+      sourceLanguage: sourceLanguage,
+      targetLanguage: targetLanguage,
+      template: settings.promptFor(kind),
+      extraContext: extraContext,
+      screens: screens,
+      contextPictures: contextWanted,
+      separator: settings.separator,
+      glossary: glossary,
+      styles: settings.chosenStyles,
+    ),
+  ].join('\n\n');
+  final prompt = promptText ?? promptOf(items);
   await File(p.join(dir.path, exchangePromptName)).writeAsString(prompt);
+  // The instructions for one page at a time (the app's page picker).
+  final numbers = {for (final it in items) it.label.page};
+  final pagePrompts = promptText != null || numbers.length < 2
+      ? const <int, String>{}
+      : {
+          for (final n in numbers)
+            n: promptOf([
+              for (final it in items)
+                if (it.label.page == n) it,
+            ]),
+        };
 
   // The text files show what the bubbles have now, the same in every mode:
   // `[01-003] text --> translation` in the one file (the arrow when there
@@ -382,6 +398,7 @@ Future<ExchangeExport> writeExchange(
     mode: mode,
     items: items,
     prompt: prompt,
+    pagePrompts: pagePrompts,
     sheets: sheets,
     contexts: contexts,
     crops: crops,

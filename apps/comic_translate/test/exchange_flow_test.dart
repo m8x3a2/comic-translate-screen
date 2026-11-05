@@ -466,6 +466,74 @@ void main() {
     expect(offset(window), before);
   });
 
+  testWidgets('one page picked: its own instructions, text and answer count', (tester) async {
+    String? clipboard;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') clipboard = (call.arguments as Map)['text'] as String?;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final settings = fakeSettings();
+    // Only translating, with a picture of each page.
+    settings.exchange = settings.exchange.copyWith(contextImage: ContextImage.separate);
+    await tester.runAsync(() => start(settings));
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [for (final p in pages()) p.id], mode: ExchangeMode.translate),
+      'Копировать текст',
+      ['Hello', 'Bye'],
+    );
+    Future<String?> copied(String button) async {
+      clipboard = null;
+      await tester.ensureVisible(find.text(button));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(button));
+      await tester.pump();
+      return clipboard;
+    }
+
+    Future<void> pick(String shown, String page) async {
+      await tester.ensureVisible(find.text(shown));
+      await tester.tap(find.text(shown));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(page).last);
+      await tester.pumpAndSettle();
+    }
+
+    expect(await copied('Копировать инструкцию'), allOf(contains('[01-001] Hello'), contains('[02-002] Bye')));
+
+    await pick('Все страницы (2)', 'Страница 2 (1)');
+    expect(
+      await copied('Копировать инструкцию'),
+      allOf(contains('[02-001] Hello'), contains('[02-002] Bye'), isNot(contains('[01-001]'))),
+    );
+    expect(await copied('Копировать текст'), '[02-001] Hello\n[02-002] Bye');
+    expect(find.textContaining('остались пузыри всех страниц'), findsNothing);
+
+    await tester.enterText(find.byType(TextField).last, '[02-001] Привет');
+    await tester.pump();
+    expect(find.text('Найдено ответов на странице 2: 1 из 2'), findsOneWidget);
+    expect(find.text('Нет ответа: 02-002'), findsOneWidget);
+
+    await pick('Страница 2 (1)', 'Все страницы (2)');
+    expect(find.text('Найдено ответов: 1 из 4'), findsOneWidget);
+    expect(find.text('Нет ответа: 01-001, 01-002, 02-002'), findsOneWidget);
+    expect(await copied('Копировать текст'), contains('[01-001] Hello'));
+
+    // Instructions changed by hand stay as they are.
+    await tester.ensureVisible(find.text('Инструкция для чата'));
+    await tester.tap(find.text('Инструкция для чата'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(of: find.byType(ExpansionTile), matching: find.byType(TextField)),
+      'My own: [01-001] Hello [02-001] Hello',
+    );
+    await tester.pump();
+    await pick('Все страницы (2)', 'Страница 1 (1)');
+    expect(find.textContaining('остались пузыри всех страниц'), findsOneWidget);
+    expect(await copied('Копировать инструкцию'), 'My own: [01-001] Hello [02-001] Hello');
+  });
+
   testWidgets('the pictures of one page: the list of pages over the pictures', (tester) async {
     final settings = fakeSettings();
     settings.exchange = settings.exchange.copyWith(sheetPerPage: true);

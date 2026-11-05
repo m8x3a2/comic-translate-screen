@@ -2801,6 +2801,15 @@ class AppLocalizationsRu extends AppLocalizations {
       'Включено «Каждая страница с нового листа» — на листах будут пузыри только одной страницы.';
 
   @override
+  String get chatPromptAllPages =>
+      'В инструкции остались пузыри всех страниц: её изменили вручную, или это прошлый обмен.';
+
+  @override
+  String chatFoundOnPage(int page, int found, int total) {
+    return 'Найдено ответов на странице $page: $found из $total';
+  }
+
+  @override
   String get chatOpenTxt => 'Открыть txt-файл…';
 
   @override

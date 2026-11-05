@@ -245,7 +245,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
         _note = _keepNote ? _note : null;
         _keepNote = false;
         _selected.removeWhere((f) => !out.pictures.contains(f));
-        if (!_promptChanged) _prompt.text = out.prompt;
+        if (!_promptChanged) _prompt.text = _promptOf(out);
       });
       _parse();
     } catch (e, st) {
@@ -414,6 +414,16 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     if (paste) _setAnswer(text);
   }
 
+  /// The page picked, when the exchange has pieces on it (null: all pages).
+  int? get _pickedPage {
+    final page = _page.value;
+    return page != null && _items.any((it) => it.label.page == page) ? page : null;
+  }
+
+  /// The instructions of [export] for the page picked (all pages when it has
+  /// none of its own).
+  String _promptOf(ExchangeExport export) => export.pagePrompts[_pickedPage] ?? export.prompt;
+
   /// Shows the pictures of [page] (null: all). A sheet with pieces of
   /// several pages would bring other pages along, so each page then starts
   /// a sheet of its own; true when that was switched on.
@@ -423,9 +433,17 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     final perPage = page != null && mixed && !_options.sheetPerPage;
     setState(() {
       _page.value = page;
-      if (perPage) {
-        _note = context.l10n.chatSheetPerPageOn;
-        _keepNote = true;
+      // The instructions and the answer of the page too.
+      if (export != null && !_promptChanged) _prompt.text = _promptOf(export);
+      final picked = _pickedPage;
+      final notes = [
+        if (perPage) context.l10n.chatSheetPerPageOn,
+        if (picked != null && (_promptChanged || !(export?.pagePrompts.containsKey(picked) ?? false)))
+          context.l10n.chatPromptAllPages,
+      ];
+      if (notes.isNotEmpty) {
+        _note = notes.join('\n');
+        _keepNote = perPage;
       }
     });
     if (perPage) unawaited(_changeOptions((e) => e.copyWith(sheetPerPage: true)));
@@ -435,7 +453,11 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   Future<void> _copyText() async {
     final export = _export;
     if (export == null) return;
-    final text = exchangeTextLines(export.items);
+    final page = _pickedPage;
+    final text = exchangeTextLines([
+      for (final it in export.items)
+        if (page == null || it.label.page == page) it,
+    ]);
     await Clipboard.setData(ClipboardData(text: text));
     _copied = text;
     if (mounted) setState(() => _note = context.l10n.chatCopiedText);
@@ -977,7 +999,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                           onPressed: () {
                             setState(() {
                               _resetPrompt();
-                              _prompt.text = export.prompt;
+                              _prompt.text = _promptOf(export);
                             });
                             unawaited(_rebuild());
                           },
@@ -1058,8 +1080,12 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   }
 
   Widget _answerCard(AppLocalizations l, ThemeData theme) {
-    final match = _shownMatch;
-    final total = _items.length;
+    // With a page picked, what the answer has for that page.
+    final page = _pickedPage;
+    final shown = _shownMatch;
+    final match = shown == null || page == null ? shown : _matchOnPage(shown, page);
+    final total = page == null ? _items.length : _items.where((it) => it.label.page == page).length;
+    final accepted = _accepted.keys.where((x) => page == null || x.page == page).length;
     final warn = TextStyle(color: theme.colorScheme.error);
     final s = ref.watch(settingsProvider.select((s) => s.exchange));
     final two = _mode == ExchangeMode.both && s.apart;
@@ -1109,7 +1135,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        l.chatClipboardOffer(_offerFound, total),
+                        l.chatClipboardOffer(_offerFound, _items.length),
                         style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
                       ),
                     ),
@@ -1163,10 +1189,12 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
               Text(_glossaryNote!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
               const SizedBox(height: 8),
             ],
-            if (_accepted.isNotEmpty) Text(l.chatAccepted(_accepted.length, total)),
+            if (accepted > 0) Text(l.chatAccepted(accepted, total)),
             if (match != null) ...[
               Text(
-                l.chatFound(match.replies.length, total),
+                page == null
+                    ? l.chatFound(match.replies.length, total)
+                    : l.chatFoundOnPage(page, match.replies.length, total),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: match.replies.length == total ? Colors.green.shade600 : null,
@@ -1284,6 +1312,27 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       ],
     );
   }
+}
+
+/// What [match] has for the pieces of [page]; labels that were not sent
+/// stay (they belong to no page of the exchange).
+ExchangeMatch _matchOnPage(ExchangeMatch match, int page) {
+  List<ExchangeLabel> own(List<ExchangeLabel> labels) => [
+    for (final x in labels)
+      if (x.page == page) x,
+  ];
+  return ExchangeMatch(
+    replies: {
+      for (final e in match.replies.entries)
+        if (e.key.page == page) e.key: e.value,
+    },
+    missing: own(match.missing),
+    unknown: match.unknown,
+    missingArrow: own(match.missingArrow),
+    repeated: own(match.repeated),
+    sources: match.sources,
+    unchanged: own(match.unchanged),
+  );
 }
 
 String _codes(List<ExchangeLabel> labels) {

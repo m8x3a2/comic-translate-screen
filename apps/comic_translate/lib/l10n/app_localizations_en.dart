@@ -2799,6 +2799,15 @@ class AppLocalizationsEn extends AppLocalizations {
       '\"Each page on a new sheet\" is on: the sheets show the bubbles of one page only.';
 
   @override
+  String get chatPromptAllPages =>
+      'The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.';
+
+  @override
+  String chatFoundOnPage(int page, int found, int total) {
+    return 'Answers found on page $page: $found of $total';
+  }
+
+  @override
   String get chatOpenTxt => 'Open a txt file…';
 
   @override

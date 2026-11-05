@@ -188,6 +188,27 @@ void main() {
       expect(File(p.join(dir.path, 'ALL.txt')).readAsStringSync(), '[01-001] Hello -->\n[02-001] Bye -->\n');
     });
 
+    test('the instructions of each page alone; none when they were changed by hand', () async {
+      Future<ExchangeExport> write({String? promptText}) => writeExchange(
+        dir,
+        pages(),
+        ExchangeMode.translate,
+        const ExchangeSettings(),
+        sourceLanguage: 'English',
+        targetLanguage: 'Russian',
+        promptText: promptText,
+        lead: 'Again:',
+      );
+      final out = await write();
+      expect(out.pagePrompts.keys, [1, 2]);
+      expect(out.pagePrompts[2], startsWith('Again:'));
+      expect(out.pagePrompts[2], endsWith('[02-001] Bye\n'));
+      expect(out.pagePrompts[2], isNot(contains('[01-001] Hello')));
+      expect(out.pagePrompts[1], contains('[01-001] Hello'));
+      expect(out.pagePrompts[1], isNot(contains('[02-001] Bye')));
+      expect((await write(promptText: 'Mine')).pagePrompts, isEmpty);
+    });
+
     test('single cut-outs in folders of ten', () async {
       final many = [for (var i = 0; i < 12; i++) BBox(10 + i * 30, 10, 35 + i * 30, 40)];
       await writeExchange(

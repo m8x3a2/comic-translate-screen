@@ -1881,6 +1881,21 @@
   },
   "chatFromFilesInfoBoth": "Takes the answer from the txt files of the exchange folder (Open the folder, below). The files are the same in every mode and show what the bubbles have now:\nALL.txt: [01-001] text {separator} translation\nALL_original.txt: the text alone, ALL_translation.txt: the translation alone; page_01.txt… the same by pages.\nChange any lines in any file and save it: what you changed goes into the bubble, lines left as they are change nothing. [f] after a label tells who speaks. You can also replace the whole of ALL.txt with the chat's answer.\n\n\"Recognize and translate\": both the text from the picture and the translation, in ALL.txt with \"{separator}\" between them, or apart in ALL_original.txt and ALL_translation.txt.",
   "chatSheetPerPageOn": "\"Each page on a new sheet\" is on: the sheets show the bubbles of one page only.",
+  "chatPromptAllPages": "The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.",
+  "chatFoundOnPage": "Answers found on page {page}: {found} of {total}",
+  "@chatFoundOnPage": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "found": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "@chatFromFilesInfoBoth": {
     "placeholders": {
       "separator": {
