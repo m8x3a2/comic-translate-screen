@@ -48,6 +48,32 @@ Let me know if you need anything else.''';
       expect(a.replies[l21]!.translation, 'Беги!');
     });
 
+    test('wide brackets and other dashes of Chinese and Japanese chats', () {
+      final a = parseExchangeAnswer('［01-003］ Привет\n〔01－004〕 Пока\n[02−001] Беги!', ExchangeMode.translate);
+      expect(
+        {for (final e in a.replies.entries) e.key: e.value.translation},
+        {l13: 'Привет', l14: 'Пока', l21: 'Беги!'},
+      );
+      expect(ExchangeLabel.tryParse('［1－3］'), l13);
+    });
+
+    test('bold around a whole part goes; bold words inside stay', () {
+      final both = parseExchangeAnswer(
+        '[01-003] **HELLO** --> **Привет**\n**[01-004]** **"Bye"** → «**Пока**»',
+        ExchangeMode.both,
+      );
+      expect((both.replies[l13]!.original, both.replies[l13]!.translation), ('HELLO', 'Привет'));
+      expect((both.replies[l14]!.original, both.replies[l14]!.translation), ('Bye', 'Пока'));
+      final translate = parseExchangeAnswer(
+        '**[01-003] Я **НЕ** пойду**\n[01-004] **Я** не **пойду**\n[02-001] HI --> **Привет**',
+        ExchangeMode.translate,
+      );
+      expect(
+        [for (final r in translate.replies.values) r.translation],
+        ['Я **НЕ** пойду', '**Я** не **пойду**', 'Привет'],
+      );
+    });
+
     test('a numbered or bulleted list: the number or mark before the next label is not part of the answer', () {
       for (final mark in ['1.', '2)', '-', '*', '•', '###', '>', '**']) {
         final a = parseExchangeAnswer(

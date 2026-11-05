@@ -30,7 +30,7 @@ class ExchangeLabel implements Comparable<ExchangeLabel> {
   @override
   String toString() => '[$code]';
 
-  static final _code = RegExp(r'^\s*\[?\s*(\d{1,4})\s*[-–—]\s*(\d{1,4})\s*\]?\s*$');
+  static final _code = RegExp(r'^\s*[\[［]?\s*(\d{1,4})\s*' + _dash + r'\s*(\d{1,4})\s*[\]］]?\s*$');
 
   /// `01-003`, `[1-3]` …; null when [text] is not a label.
   static ExchangeLabel? tryParse(String text) {
@@ -202,11 +202,18 @@ ExchangeAnswer mergeExchangeAnswers(ExchangeAnswer originals, ExchangeAnswer tra
   );
 }
 
-// A label in brackets anywhere: [01-003], 【01-003】; without brackets only
-// at the start of a line and followed by ':' / ')' / '.' / '-' or a space:
-// "01-003: text", "**01-003** text".
-final _bracketed = RegExp(r'[\[【]\s*(\d{1,4})\s*[-–—]\s*(\d{1,4})\s*[\]】]');
-final _bare = RegExp(r'^[ \t>•*_#|-]*(?:\d+[.)]\s+)?[*_]*(\d{1,4})[-–—](\d{1,4})[*_]*(?=[\s:.)]|$)', multiLine: true);
+/// The dashes between the page and the piece: the hyphen, the dashes and the
+/// minus, also the wide one of Chinese and Japanese text.
+const _dash = '[-‐‑–—−－]';
+
+// A label in brackets anywhere: [01-003], 【01-003】, ［01-003］; without
+// brackets only at the start of a line and followed by ':' / ')' / '.' / '-'
+// or a space: "01-003: text", "**01-003** text".
+final _bracketed = RegExp(r'[\[【［〔]\s*(\d{1,4})\s*' + _dash + r'\s*(\d{1,4})\s*[\]】］〕]');
+final _bare = RegExp(
+  r'^[ \t>•*_#|-]*(?:\d+[.)]\s+)?[*_]*(\d{1,4})' + _dash + r'(\d{1,4})[*_]*(?=[\s:.)]|$)',
+  multiLine: true,
+);
 
 /// `-->`, `->`, `→`, `=>`, `⟶`, `—>` between the original and the translation.
 const _arrows = r'-{1,3}>|=>|→|⟶|—>|–>';
@@ -220,7 +227,7 @@ RegExp _arrow(String separator) {
 final _fence = RegExp(r'^[ \t]*```.*$', multiLine: true);
 
 /// A key of an answer given as JSON: `"01-003": "Привет"`.
-final _jsonKey = RegExp(r'"(\d{1,4})[-–—](\d{1,4})"(?=\s*:)');
+final _jsonKey = RegExp(r'"(\d{1,4})' + _dash + r'(\d{1,4})"(?=\s*:)');
 
 /// The value after a JSON key (`: "Привет",`), up to what closes it.
 final _jsonValue = RegExp(r'^"?\s*:\s*"((?:[^"\\]|\\.)*)"[\s,}\]"]*$');
@@ -256,7 +263,7 @@ ExchangeAnswer parseExchangeAnswer(String answer, ExchangeMode mode, {String sep
     // Who speaks, before the text: `[f] Я опоздала`.
     if (_speakerTag.firstMatch(body) case final tag?) {
       final speaker = Speaker.parse(tag[1]);
-      replies[label] = _reply(_unquote(body.substring(tag.end)), mode, arrow).withSpeaker(speaker);
+      replies[label] = _reply(_plain(body.substring(tag.end)), mode, arrow).withSpeaker(speaker);
     } else {
       replies[label] = _reply(body, mode, arrow);
     }
@@ -309,17 +316,17 @@ ExchangeReply _reply(String body, ExchangeMode mode, RegExp arrows) {
       // The translation may come along: `original --> translation`.
       if (arrow == null) return ExchangeReply(original: body);
       return ExchangeReply(
-        original: _unquote(body.substring(0, arrow.start)),
-        translation: _unquote(body.substring(arrow.end)),
+        original: _plain(body.substring(0, arrow.start)),
+        translation: _plain(body.substring(arrow.end)),
       );
     case ExchangeMode.translate:
       // The chat repeated the original before the translation.
-      return ExchangeReply(translation: arrow == null ? body : _unquote(body.substring(arrow.end)));
+      return ExchangeReply(translation: arrow == null ? body : _plain(body.substring(arrow.end)));
     case ExchangeMode.both:
       if (arrow == null) return ExchangeReply(translation: body, missingArrow: body.isNotEmpty);
       return ExchangeReply(
-        original: _unquote(body.substring(0, arrow.start)),
-        translation: _unquote(body.substring(arrow.end)),
+        original: _plain(body.substring(0, arrow.start)),
+        translation: _plain(body.substring(arrow.end)),
       );
   }
 }
@@ -344,9 +351,29 @@ String _cleanBody(String raw) {
       .map((l) => l.trim().replaceFirst(RegExp(r'^[>•]\s*'), ''))
       .where((l) => l.isNotEmpty)
       .join(' ');
-  s = s.replaceAll(RegExp(r'^\*\*|\*\*$'), '').trim();
-  return _unquote(s);
+  return _plain(s);
 }
+
+/// [s] without the bold marks of a bold label (`**[01-003]** Привет`,
+/// `**[01-003] Привет**`) and those a chat put around all of it
+/// (`**Привет**`); marks around single words stay (stressed words).
+String _unbold(String s) {
+  var t = s.trim();
+  if ('**'.allMatches(t).length.isOdd) {
+    if (t.startsWith('**')) {
+      t = t.substring(2).trim();
+    } else if (t.endsWith('**')) {
+      t = t.substring(0, t.length - 2).trim();
+    }
+  }
+  if (t.length > 4 && t.startsWith('**') && t.endsWith('**') && !t.substring(2, t.length - 2).contains('**')) {
+    t = t.substring(2, t.length - 2).trim();
+  }
+  return t;
+}
+
+/// [s] without bold marks and quotes around all of it, in either order.
+String _plain(String s) => _unbold(_unquote(_unbold(s)));
 
 const _quotes = {'"': '"', '“': '”', '«': '»', '„': '“', '「': '」', '『': '』'};
 
