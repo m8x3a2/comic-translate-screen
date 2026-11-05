@@ -78,4 +78,11 @@ void main() {
     expect(mask.data[48 * _w + 135], 255);
     expect(mask.data[48 * _w + 141] == 255, isFalse);
   });
+
+  test('turned off in the settings, the letters over the hatching stay out of the network', () {
+    final block = TextBlock(xyxy: _box, lines: [TextLine.box(_box)], text: 'text');
+    final mask = generateMask(_page(red), [block], letters: _found(), byColour: false);
+    expect(mask.data[48 * _w + 134] == 255, isFalse);
+    expect(mask.data[48 * _w + 54], 255, reason: 'a letter on white is still found by the masker');
+  });
 }

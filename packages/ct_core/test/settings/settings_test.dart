@@ -16,6 +16,7 @@ void main() {
     expect(s.inpainter, 'lama');
     expect(s.textMask, comicTextDetectorId);
     expect(CleanLevel.of(s), CleanLevel.high);
+    expect(s.colourLetters, isTrue);
     expect(s.useGpu, isFalse);
     expect(s.inpaint.strategy, HdStrategy.resize);
     expect(s.inpaint.resizeLimit, 960);
@@ -37,6 +38,7 @@ void main() {
       useGpu: true,
       textPrep: plainX2Id,
       fixCyrillicLookalikes: true,
+      colourLetters: false,
       render: const RenderSettings(
         textCase: TextCase.upper,
         shapeFit: true,

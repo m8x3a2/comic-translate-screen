@@ -570,7 +570,7 @@ class PagePipeline {
     start('04_mask');
     final inpaintBlocks = selectInpaintBlocks(blocks);
     final letters = await textMasker?.letters(work, context);
-    final mask = generateMask(work, inpaintBlocks, letters: letters);
+    final mask = generateMask(work, inpaintBlocks, letters: letters, byColour: settings.colourLetters);
     lap('04_mask');
     await recorder?.writeArtifact('04_mask', 'mask.png', ImageCodec.encodeGrayPng(mask), page: page);
 

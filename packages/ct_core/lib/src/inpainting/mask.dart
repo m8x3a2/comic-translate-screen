@@ -550,8 +550,14 @@ const letterMaskMargin = 2;
 /// the masker found almost nothing (a logo, tiny text it misses) keeps the
 /// original's mask as letters. Coloured letters the masker found only on
 /// plain background are followed over the drawing by their colour
-/// ([colourLetters]).
-GrayImage generateMask(RgbImage image, List<TextBlock> blocks, {int defaultPadding = 5, GrayImage? letters}) {
+/// ([colourLetters]) unless [byColour] is false.
+GrayImage generateMask(
+  RgbImage image,
+  List<TextBlock> blocks, {
+  int defaultPadding = 5,
+  GrayImage? letters,
+  bool byColour = true,
+}) {
   final w = image.width, h = image.height;
   final mask = GrayImage.zeros(w, h);
   for (final b in blocks) {
@@ -591,7 +597,8 @@ GrayImage generateMask(RgbImage image, List<TextBlock> blocks, {int defaultPaddi
     }
     // Coloured letters the masker missed over the drawing.
     final tx1 = math.max(rx1, t.x1), ty1 = math.max(ry1, t.y1);
-    if (colourLetters(image, letters, BBox(tx1, ty1, math.min(rx2, t.x2), math.min(ry2, t.y2))) case final c?) {
+    final textBox = BBox(tx1, ty1, math.min(rx2, t.x2), math.min(ry2, t.y2));
+    if ((byColour ? colourLetters(image, letters, textBox) : null) case final c?) {
       for (var y = 0; y < c.height; y++) {
         for (var x = 0; x < c.width; x++) {
           if (c.data[y * c.width + x] != 0) crop.data[(ty1 + y - cy1) * cw + tx1 + x - cx1] = 255;

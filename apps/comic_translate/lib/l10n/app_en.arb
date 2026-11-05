@@ -527,6 +527,8 @@
   "cleanLevelHigh": "High (default)",
   "cleanLevelCustom": "Custom combination",
   "cleanLevelInfo": "How text is removed from the page (times on a slow laptop without a graphics card, per page on average):\n• Simple — as before: a mask by the algorithm with a margin around the letters, repainted by the AOT network. About 4 s.\n• Medium — the comic-text-detector network finds the letters themselves and AOT repaints only them: the drawing next to the text is hardly touched, 2–4 times fewer letter remains. About 6 s.\n• High — the same, repainted by LaMa: best on grey screentone and drawings. About 7 s, plus 8 s on the first run. Large pages take longer (up to 15–20 s).\nWhite bubbles are filled at once, without a network, on every level. comic-text-detector is a separate download (82 MB, GPL-3.0 licence); until it is there, the mask of Simple is used.",
+  "colourLetters": "Find coloured letters over the drawing by their colour",
+  "colourLettersInfo": "Medium and High: comic-text-detector sees coloured letters on plain background but often misses them over hatching or screentone. Then the colour of the letters it found is looked for in the whole text block, and the rest of the letters are removed too. It works only when almost all the found letters are of one bright colour and there is no such colour in the drawing around the text; black, white and grey text is not affected. Turn it off if a piece of the drawing of the same colour inside the text gets removed.",
   "hdStrategy": "Cleaning large pages",
   "hdResize": "Shrink (faster)",
   "hdCrop": "In pieces (more precise)",

@@ -43,6 +43,7 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..ocr = d.ocr
           ..inpainter = d.inpainter
           ..textMask = d.textMask
+          ..colourLetters = d.colourLetters
           ..textPrep = d.textPrep
           ..screenTextPrep = d.screenTextPrep
           ..readLevel = d.readLevel

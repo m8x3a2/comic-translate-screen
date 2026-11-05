@@ -781,6 +781,13 @@ class _ToolsSection extends ConsumerWidget {
               },
               info: l.cleanLevelInfo,
             ),
+            if (s.textMask.isNotEmpty)
+              _switch(
+                l.colourLetters,
+                s.colourLetters,
+                (v) => _change(ref, (s) => s.colourLetters = v),
+                info: l.colourLettersInfo,
+              ),
           ],
         ),
         SettingsGroup(

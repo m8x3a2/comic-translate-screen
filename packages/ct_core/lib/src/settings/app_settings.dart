@@ -45,6 +45,7 @@ class AppSettings {
     this.translator = 'openrouter',
     this.inpainter = 'lama',
     this.textMask = comicTextDetectorId,
+    this.colourLetters = true,
     this.useGpu = false,
     this.textPrep = 'fatality_comix',
     this.screenTextPrep = 'plain_x1_5',
@@ -113,6 +114,11 @@ class AppSettings {
   /// '' for the original's mask alone. Together with [inpainter] it makes
   /// the cleaning level (see `clean_level.dart`). New in this project.
   String textMask;
+
+  /// Whether coloured letters the [textMask] finds on plain background are
+  /// followed over the drawing by their colour (`colour_letters.dart`).
+  /// New in this project.
+  bool colourLetters;
 
   bool useGpu;
 
@@ -274,6 +280,7 @@ class AppSettings {
       'translator': translator,
       'inpainter': inpainter,
       'text_mask': textMask,
+      'colour_letters': colourLetters,
       'use_gpu': useGpu,
       if (gpuCpuModels.isNotEmpty) 'gpu_cpu_models': gpuCpuModels,
       'text_prep': textPrep,
@@ -364,6 +371,7 @@ class AppSettings {
           ? pick(tools, 'inpainter', defaults.inpainter)
           : defaults.inpainter,
       textMask: pick(tools, 'text_mask', defaults.textMask),
+      colourLetters: pick(tools, 'colour_letters', defaults.colourLetters),
       useGpu: pick(tools, 'use_gpu', defaults.useGpu),
       gpuCpuModels: {
         for (final e in ((tools['gpu_cpu_models'] as Map?) ?? const {}).entries)

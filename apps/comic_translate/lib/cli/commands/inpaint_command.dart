@@ -49,7 +49,7 @@ class MaskCommand extends CtsCommand {
     final masker = await ctx.services.textMasker(settings);
     final sw = Stopwatch()..start();
     final letters = await masker?.letters(image, PluginContext(log: ctx.services.appLog.child(stage: 'mask')));
-    final mask = generateMask(image, blocks, letters: letters);
+    final mask = generateMask(image, blocks, letters: letters, byColour: settings.colourLetters);
     final ms = sw.elapsedMilliseconds;
     final outDir = Directory(args.option('output')!)..createSync(recursive: true);
     final file = File(p.join(outDir.path, '${p.basenameWithoutExtension(input)}.mask.png'))
@@ -175,7 +175,7 @@ class InpaintCommand extends CtsCommand {
               : await detector!.detect(image, context);
           blocks = selectInpaintBlocks(all);
           final letters = await masker?.letters(image, context);
-          mask = generateMask(image, blocks, letters: letters);
+          mask = generateMask(image, blocks, letters: letters, byColour: settings.colourLetters);
         }
         final maskMs = sw.elapsedMilliseconds;
         await recorder?.writeArtifact('04_mask', 'mask.png', ImageCodec.encodeGrayPng(mask), page: page);
