@@ -114,7 +114,11 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   the original's mask is (the flat fill of plain bubbles still decides and
   paints with the whole mask). A block where the masker finds almost nothing
   (under 30 % of the original's mask in the text box: logos, tiny text) keeps
-  the original's mask for the network. Brush strokes are 255. Medium repaints
+  the original's mask for the network. Coloured letters the masker finds
+  only on plain background (red text over hatching) are followed over the
+  drawing by their hue (`colour_letters.dart`): only when most of the found
+  ink is of one hue and the ring around the text box has almost none of it.
+  Brush strokes are 255. Medium repaints
   with AOT, High (the default) with LaMa. The night experiment (23 pages)
   measured 2.5–4× fewer letter remains and less of the drawing repainted
   (the original's mask is the letters plus ≈6 px); the model needs
