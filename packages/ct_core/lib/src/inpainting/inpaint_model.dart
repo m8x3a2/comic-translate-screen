@@ -9,6 +9,7 @@ import 'dart:typed_data';
 import '../image/raster.dart';
 import '../imaging/contours.dart';
 import '../imaging/pil.dart';
+import '../imaging/py_compat.dart';
 import '../model/geometry.dart';
 import '../plugins/engines.dart';
 
@@ -194,11 +195,13 @@ List<(int, int, int, int)> cropWindows(List<(int, int, int, int)> boxes, int img
   return [for (final g in groups) window(g)];
 }
 
-/// numpy float → uint8 assignment / `convert_scale_abs`: clip and truncate.
+/// numpy float → uint8 assignment / `convert_scale_abs`: clip, then round
+/// (the original truncates, which darkened the soft edges of a scaled mask
+/// by half a level on average).
 RgbImage _truncate(Float64List values, int w, int h) {
   final out = Uint8List(values.length);
   for (var i = 0; i < values.length; i++) {
-    final v = values[i].abs();
+    final v = npRint(values[i].abs());
     out[i] = v >= 255 ? 255 : v.toInt();
   }
   return RgbImage(w, h, out);

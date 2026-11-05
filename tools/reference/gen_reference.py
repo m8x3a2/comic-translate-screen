@@ -887,9 +887,21 @@ def gen_inpaint(out: Path, pages_dir: Path, models_dir: Path, detection_dir: Pat
         if ys.size:
             y1, y2, x1, x2 = int(ys.min()), int(ys.max()) + 1, int(xs.min()), int(xs.max()) + 1
             png = imk.encode_image(result[y1:y2, x1:x2], "png")
-            # Pixels only for small regions (fallback comparison on CPUs whose
-            # ONNX Runtime kernels round differently); the hash is the check.
-            region = {"box": [x1, y1, x2, y2], "png": base64.b64encode(png).decode("ascii") if len(png) < 400_000 else None}
+            # The pixels too: the port rounds the network output and evens out
+            # flat backgrounds on purpose, so the hash matches only by chance;
+            # also for CPUs whose ONNX Runtime kernels round differently. A
+            # large region is cut to the 384 px tile with the most mask.
+            if len(png) >= 400_000:
+                best = None
+                for ty in range(y1, y2, 384):
+                    for tx in range(x1, x2, 384):
+                        n = int(np.count_nonzero(mask[ty:min(ty + 384, y2), tx:min(tx + 384, x2)]))
+                        if best is None or n > best[0]:
+                            best = (n, tx, ty)
+                _, x1, y1 = best
+                x2, y2 = min(x1 + 384, x2), min(y1 + 384, y2)
+                png = imk.encode_image(result[y1:y2, x1:x2], "png")
+            region = {"box": [x1, y1, x2, y2], "png": base64.b64encode(png).decode("ascii")}
         write_json(out / "inpaint" / f"{name}.{model_name}.json", {
             "page": name, "model": model_name, "strategy": strategy,
             "mask_sha256": sha256(mask),

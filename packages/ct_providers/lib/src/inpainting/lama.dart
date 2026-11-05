@@ -78,7 +78,10 @@ class LamaInpainter implements Inpainter {
     final result = Uint8List(plane * 3);
     for (var i = 0; i < plane; i++) {
       for (var c = 0; c < 3; c++) {
-        final v = _fround(out[c * plane + i] * 255);
+        // Rounded, unlike the original's astype("uint8") (truncation): the
+        // network gives 254.7 for white, and truncated to 254 the removed
+        // letters showed as faint ghosts on white paper.
+        final v = npRint(_fround(out[c * plane + i] * 255));
         result[i * 3 + c] = v <= 0 ? 0 : (v >= 255 ? 255 : v.toInt());
       }
     }

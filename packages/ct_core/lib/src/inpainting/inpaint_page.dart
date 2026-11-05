@@ -16,6 +16,7 @@ import '../imaging/py_compat.dart';
 import '../model/geometry.dart';
 import '../model/text_block.dart';
 import '../plugins/engines.dart';
+import 'flat_background.dart';
 import 'mask.dart';
 
 const fastFillBubbleInset = 7;
@@ -110,7 +111,8 @@ List<(int, int, int, int)> mergeOverlappingPaddedBoxes(
 
 /// `inpaint_image`: cleans [mask]ed text from [image]. Uniform bubbles are
 /// filled with their background colour; the rest goes to [inpainter], by
-/// patches when that costs less than a full-page pass. Returns the cleaned
+/// patches when that costs less than a full-page pass, and what it redrew
+/// over a flat background is evened out ([snapToFlatBackground]). Returns the cleaned
 /// page (pixels outside the mask unchanged).
 Future<RgbImage> inpaintPage(
   RgbImage image,
@@ -159,7 +161,9 @@ Future<RgbImage> inpaintPage(
 
   if (!usePatches) {
     report.mode = 'full';
-    return await inpainter(workingImage, workingMask);
+    final out = await inpainter(workingImage, workingMask);
+    snapToFlatBackground(out, workingMask);
+    return out;
   }
   report.mode = 'patches';
   report.patches = merged.length;
@@ -171,6 +175,7 @@ Future<RgbImage> inpaintPage(
       out.data.setRange(out.offset(x1, y), out.offset(x2, y), patch.data, patch.offset(0, y - y1));
     }
   }
+  snapToFlatBackground(out, workingMask);
   return out;
 }
 

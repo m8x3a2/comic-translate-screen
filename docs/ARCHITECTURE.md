@@ -133,6 +133,18 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   runs out of memory at 2842×3200. A lone spot gets the original's crop; an
   image of at most 1536² px is cleaned in one pass when the crops together
   would be larger.
+- No ghosts of removed text on flat paper. LaMa's output is rounded, not
+  truncated (`astype("uint8")` in the original): it gives ≈254.7 for white, and
+  at 254 the removed letters showed faintly on white paper; the high-resolution
+  strategies round after blending too. Then `snapToFlatBackground`
+  (`flat_background.dart`, after the network in `inpaintPage`): for every spot
+  of the network mask (letters within 6 px together) whose surroundings are
+  mostly one colour (60 % within ±4 of their median), the redrawn pixels
+  within ±3 of that colour get it exactly. On a photo of red text over white
+  paper and hatching: redrawn pixels on flat paper off the background 93 % →
+  0.5 %; bubbles (flat-filled) are unchanged. The inpaint parity references
+  keep the original's pixels (a 384 px tile of large regions) and are compared
+  by PSNR.
 - Recognition levels (new, `tools.read_level` / `tools.screen_read_level`, see
   `read_level.dart`): for English, `LeveledOcr` wraps the chosen OCR (Default or
   PaddleOCR). Medium (the default): PP-OCRv6 small (`ppocr_v6_small`, a
