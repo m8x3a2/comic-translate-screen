@@ -2256,6 +2256,14 @@
       }
     }
   },
+  "chatSelectedElsewhere": "Also picked on other pages: {count} (not copied with this page)",
+  "@chatSelectedElsewhere": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "chatSelectAll": "Pick all",
   "chatSelectNone": "Pick none",
   "chatGalleryOpen": "Open the pictures large",

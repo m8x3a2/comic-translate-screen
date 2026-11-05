@@ -3199,6 +3199,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String chatSelectedElsewhere(int count) {
+    return 'Ещё отмечено на других страницах: $count (с этой страницей не копируются)';
+  }
+
+  @override
   String get chatSelectAll => 'Выбрать все';
 
   @override

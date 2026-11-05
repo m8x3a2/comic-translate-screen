@@ -1,6 +1,7 @@
 // The exchange with a chat AI inside "Translate all", the steps and the
 // chat buttons; the exchange window itself.
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:comic_translate/bootstrap.dart';
@@ -608,6 +609,102 @@ void main() {
       ],
       ['Привет', 'Пока', 'Привет-2', '', '', ''],
     );
+  });
+
+  testWidgets('an exchange in parts closed before "Apply" goes on from its folder, with its answers', (tester) async {
+    final settings = fakeSettings();
+    settings.exchange = settings.exchange.copyWith(partPages: 1);
+    await tester.runAsync(() => start(settings));
+    await tester.runAsync(() async {
+      final path = p.join(dir.path, 'c.png');
+      await ImageCodec.writeFile(path, RgbImage.filled(100, 60, 255, 255, 255));
+      await container.read(workspaceProvider.notifier).addInputs([path]);
+    });
+    final request = ExchangeRequest(pageIds: [for (final p in pages()) p.id], mode: ExchangeMode.translate);
+    await openWindow(tester, request, 'Копировать текст', ['Hello', 'Bye']);
+    Future<void> waitFor(String text) async {
+      for (var i = 0; i < 80 && find.text(text).evaluate().isEmpty; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+      }
+      expect(find.text(text), findsOneWidget);
+    }
+
+    await tester.enterText(find.byType(TextField).last, '[01-001] Привет\n[01-002] Пока');
+    await tester.pump();
+    await tester.tap(find.text('Далее'));
+    await waitFor('Часть 2 из 3 · страницы 2');
+    await tester.enterText(find.byType(TextField).last, '[02-001] Привет-2');
+    await tester.pump();
+    // Closed at once: what was typed is saved as the window closes.
+    await tester.tap(find.text('Отмена'));
+    await tester.pumpAndSettle();
+    final root = Directory(p.join(dir.path, 'exchange')).listSync().whereType<Directory>().single;
+    // The writing goes on after the window has closed.
+    Map<String, Object?> saved() {
+      try {
+        return (jsonDecode(File(p.join(root.path, ExchangeDraft.fileName)).readAsStringSync()) as Map).cast();
+      } on Object {
+        return const {};
+      }
+    }
+
+    for (var i = 0; i < 50 && saved()['answer'] == null; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump();
+    }
+    expect(File(p.join(root.path, exchangeManifestName)).existsSync(), isFalse, reason: 'only the parts have one');
+    final draft = (await tester.runAsync(() => ExchangeDraft.read(root)))!;
+    expect((draft.parts.length, draft.part, draft.answer), (3, 1, '[02-001] Привет-2'));
+    expect([for (final r in draft.accepted.values) r.translation], ['Привет', 'Пока']);
+    final sent = File(p.join(root.path, 'part_02', exchangeManifestName)).readAsStringSync();
+
+    // "Open an earlier exchange" on the folder with the date.
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showExchangeDialog(
+                  context,
+                  ExchangeRequest(pageIds: [for (final part in draft.parts) ...part], mode: draft.mode),
+                  draft: draft,
+                  root: root,
+                ),
+                child: const Text('open again'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open again'));
+    await tester.pump();
+    await waitFor('Часть 2 из 3 · страницы 2');
+    // The part is read from its folder.
+    await waitFor('Найдено ответов в этой части: 1 из 2');
+    expect(tester.widget<TextField>(find.byType(TextField).last).controller!.text, '[02-001] Привет-2');
+    expect(File(p.join(root.path, 'part_02', exchangeManifestName)).readAsStringSync(), sent, reason: 'not made anew');
+    expect(find.text('Страниц за раз'), findsNothing);
+    await tester.tap(find.text('Применить'));
+    for (var i = 0; i < 50 && find.text('Применить').evaluate().isNotEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+    expect(
+      [
+        for (final page in pages())
+          for (final b in page.blocks) b.translation,
+      ],
+      ['Привет', 'Пока', 'Привет-2', '', '', ''],
+    );
+    expect(File(p.join(root.path, ExchangeDraft.fileName)).existsSync(), isFalse, reason: 'applied: no draft');
   });
 
   testWidgets('a preset of instructions picked in the window is the instructions', (tester) async {

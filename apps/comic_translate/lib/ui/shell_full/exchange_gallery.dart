@@ -214,8 +214,9 @@ class _GalleryState extends ConsumerState<_Gallery> {
   Widget _build(BuildContext context) {
     final l = context.l10n;
     final theme = Theme.of(context);
+    // Of the page shown, as in the window.
     final picked = [
-      for (final f in _export.pictures)
+      for (final f in _pictures)
         if (_selected.contains(f)) f,
     ];
     return Dialog(

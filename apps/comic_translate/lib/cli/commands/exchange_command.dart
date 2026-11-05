@@ -103,7 +103,7 @@ class _ExchangeExport extends CtsCommand {
               number: i + 1,
               name: page.name,
               blocks: page.blocks,
-              image: mode.sendsImages ? await ImageCodec.readFile(page.image) : null,
+              loadImage: mode.sendsImages ? () => ImageCodec.readFile(page.image) : null,
             ),
         ];
       } else {
@@ -213,7 +213,14 @@ class _ExchangeExport extends CtsCommand {
               lineChecker: lineChecker,
             );
           }
-          return ExchangePage(id: path, number: i + 1, name: p.basename(path), blocks: blocks, image: image);
+          // Read again when its pieces are cut: not every page held at once.
+          return ExchangePage(
+            id: path,
+            number: i + 1,
+            name: p.basename(path),
+            blocks: blocks,
+            loadImage: () => ImageCodec.readFile(path),
+          );
         }(),
     ];
   }

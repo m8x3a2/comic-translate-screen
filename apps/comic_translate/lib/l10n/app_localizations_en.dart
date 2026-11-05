@@ -3197,6 +3197,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String chatSelectedElsewhere(int count) {
+    return 'Also picked on other pages: $count (not copied with this page)';
+  }
+
+  @override
   String get chatSelectAll => 'Pick all';
 
   @override

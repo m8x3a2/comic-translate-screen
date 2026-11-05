@@ -34,21 +34,33 @@ import 'prompt_presets.dart';
 const bigRequestPieces = 40;
 
 /// Opens the exchange window for [request]; with [existing], the folder of
-/// an earlier exchange is opened instead of writing a new one. True when
-/// the answer was applied.
-Future<bool> showExchangeDialog(BuildContext context, ExchangeRequest request, {ExchangeManifest? existing}) async =>
+/// an earlier exchange is opened instead of writing a new one; with [draft],
+/// an exchange in parts goes on in its folder [root] (or [existing] gets
+/// back the answers taken). True when the answer was applied.
+Future<bool> showExchangeDialog(
+  BuildContext context,
+  ExchangeRequest request, {
+  ExchangeManifest? existing,
+  ExchangeDraft? draft,
+  Directory? root,
+}) async =>
     await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => ExchangeDialog(request: request, existing: existing),
+      builder: (_) => ExchangeDialog(request: request, existing: existing, draft: draft, root: root),
     ) ??
     false;
 
 class ExchangeDialog extends ConsumerStatefulWidget {
-  const ExchangeDialog({super.key, required this.request, this.existing});
+  const ExchangeDialog({super.key, required this.request, this.existing, this.draft, this.root});
 
   final ExchangeRequest request;
   final ExchangeManifest? existing;
+
+  /// Where an earlier exchange stood ([ExchangeDraft]); in parts, with the
+  /// folder [root] of the whole exchange.
+  final ExchangeDraft? draft;
+  final Directory? root;
 
   @override
   ConsumerState<ExchangeDialog> createState() => _ExchangeDialogState();
@@ -170,16 +182,42 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
 
   String get _separator => widget.existing?.separator ?? _options.separator;
 
+  /// An exchange in parts goes on in its folder (opened again with its draft).
+  bool get _resumed => widget.existing == null && (widget.draft?.parts.isNotEmpty ?? false);
+
+  /// The folder as it went to the chat: nothing in it is made anew, and the
+  /// options that would make it anew are not shown.
+  bool get _fixed => widget.existing != null || _resumed;
+
+  /// Saves the draft shortly after a change.
+  Timer? _draftTimer;
+
+  /// Taken when the window opens: the draft may be saved while it closes.
+  late final EventLog _appLog;
+
   @override
   void initState() {
     super.initState();
-    final existing = widget.existing;
+    _appLog = ref.read(servicesProvider).appLog;
+    final existing = widget.existing, draft = widget.draft;
+    // Where it stood: the answers taken and what the fields held.
+    if (draft != null) {
+      _accepted.addAll(draft.accepted);
+      _acceptedUnchanged.addAll(draft.unchanged);
+      _answer.text = draft.answer;
+      _answer2.text = draft.answer2;
+    }
     if (existing != null) {
       _export = existing.export;
       _allItems = existing.items;
       _prompt.text = existing.export?.prompt ?? '';
-      _dir = Directory(existing.export?.dir ?? '');
+      _dir = widget.root ?? Directory(existing.export?.dir ?? '');
+      if (draft != null) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _parse() : null);
     } else {
+      if (_resumed) {
+        _dir = widget.root;
+        _part = draft!.part;
+      }
       unawaited(_rebuild());
     }
     _answer.addListener(_parse);
@@ -190,6 +228,11 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    // A change not saved yet (the window closed at once).
+    if (_draftTimer?.isActive ?? false) {
+      _draftTimer!.cancel();
+      unawaited(_saveDraft());
+    }
     _debounce?.cancel();
     _fitTimer?.cancel();
     _shown.dispose();
@@ -225,6 +268,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   /// The parts: the pages with pieces in this mode, so many at a time; none
   /// when they all fit in one.
   List<List<String>> _partsNow() {
+    if (_resumed) return widget.draft!.parts;
     final size = _options.partPages;
     if (size <= 0 || widget.existing != null) return const [];
     final ids = <String>[];
@@ -279,6 +323,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       _page.value = null;
       _askAgain.clear();
     });
+    _saveDraftSoon();
     await _rebuild();
   }
 
@@ -299,7 +344,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   /// pages at a time keep each part within [bigRequestPieces] (one page at
   /// least); null when the request is not big.
   int? _partsAdvice() {
-    if (_parts.isNotEmpty || _round != null || widget.existing != null) return null;
+    if (_parts.isNotEmpty || _round != null || _fixed) return null;
     final perPage = <String, int>{};
     for (final it in _items) {
       perPage[it.pageId] = (perPage[it.pageId] ?? 0) + 1;
@@ -320,6 +365,10 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
 
   /// Writes the exchange folder again (options changed).
   Future<void> _rebuild() async {
+    // An exchange opened again stays as it went to the chat: made anew from
+    // the pages as they are now, its labels could differ from the answer's.
+    // Another round gets a folder of its own.
+    if (widget.existing != null && _round == null) return;
     if (_exporting) {
       _again = true;
       return;
@@ -353,21 +402,28 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
           _roundDir ?? (_parts.isEmpty ? root : Directory(p.join(root.path, 'part_${'${_part + 1}'.padLeft(2, '0')}')));
       final e = settings.exchange;
       final textsKey = '${dir.path}|${_mode.name}|${e.splitFiles}|${e.textFiles.name}';
-      final out = await exportExchange(
-        dir,
-        ref.read(workspaceProvider),
-        pages,
-        _mode,
-        settings,
-        groups: groups,
-        keepTexts: textsKey == _textsKey,
-        promptText: _promptChanged ? _prompt.text : null,
-        lead: round ? exchangeResendLead(missing: _roundMissing, again: _roundAgain, shorter: _roundShorter) : '',
-      );
+      // Going on with an exchange: a part written before stays as it went to
+      // the chat; the parts not written yet are made now.
+      final before = _resumed && !round ? await _writtenBefore(dir) : null;
+      final out =
+          before ??
+          await exportExchange(
+            dir,
+            ref.read(workspaceProvider),
+            pages,
+            _mode,
+            settings,
+            groups: groups,
+            keepTexts: textsKey == _textsKey,
+            promptText: _promptChanged ? _prompt.text : null,
+            lead: round ? exchangeResendLead(missing: _roundMissing, again: _roundAgain, shorter: _roundShorter) : '',
+          );
       _textsKey = textsKey;
       if (!mounted) return;
       // The answers count against the pieces of every part.
       if (!round) _allItems = _parts.isEmpty ? out.items : _wholeItems;
+      // The folder of the whole exchange tells its parts from now on.
+      if (_parts.isNotEmpty) _saveDraftSoon();
       // The same image files are written again: every size of them shown
       // before is forgotten (the pictures are keyed by [out], so they load
       // again).
@@ -392,6 +448,50 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
         _again = false;
         unawaited(_rebuild());
       }
+    }
+  }
+
+  /// The folder [dir] as written before (a part of an exchange gone on
+  /// with); null when it was not written yet.
+  Future<ExchangeExport?> _writtenBefore(Directory dir) async {
+    if (!File(p.join(dir.path, exchangeManifestName)).existsSync()) return null;
+    try {
+      return (await ExchangeManifest.read(dir)).export;
+    } on Object catch (e, st) {
+      ref.read(servicesProvider).appLog.error('exchange_part_unreadable', e, st);
+      return null;
+    }
+  }
+
+  void _saveDraftSoon() {
+    _draftTimer?.cancel();
+    _draftTimer = Timer(const Duration(milliseconds: 800), () => unawaited(_saveDraft()));
+  }
+
+  /// Writes where the exchange stands into its folder ([ExchangeDraft]); with
+  /// nothing to keep, no draft.
+  Future<void> _saveDraft() async {
+    final dir = _dir;
+    if (dir == null || dir.path.isEmpty) return;
+    // Taken now: the window may be closing.
+    final draft = ExchangeDraft(
+      mode: _mode,
+      parts: _parts,
+      part: _part,
+      accepted: Map.of(_accepted),
+      unchanged: [..._acceptedUnchanged],
+      answer: _answer.text,
+      answer2: _answer2.text,
+    );
+    final log = _appLog;
+    try {
+      if (draft.isEmpty) {
+        await ExchangeDraft.delete(dir);
+      } else {
+        await draft.write(dir);
+      }
+    } on Object catch (e, st) {
+      log.error('exchange_draft_failed', e, st);
     }
   }
 
@@ -432,6 +532,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       _suggest('${_answer.text}\n${_answer2.text}');
     });
     _checkFitSoon();
+    _saveDraftSoon();
   }
 
   /// Tries the translations of the answer in their bubbles shortly after it
@@ -595,7 +696,9 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   bool _pickPage(int? page) {
     final export = _export;
     final mixed = export != null && export.pictures.any((f) => picturePages(export, f).length > 1);
-    final perPage = page != null && mixed && !_options.sheetPerPage;
+    // Not in an exchange opened again: its folder went to the chat as it is
+    // (made anew, the labels could differ from what the chat answers).
+    final perPage = page != null && mixed && !_options.sheetPerPage && !_fixed;
     setState(() {
       _page.value = page;
       // The instructions and the answer of the page too.
@@ -722,6 +825,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       _page.value = null;
       _askAgain.clear();
     });
+    _saveDraftSoon();
     await _rebuild();
   }
 
@@ -755,6 +859,15 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       export.mode,
       placeholder: settings.exchange.placeholder,
     );
+    // The answers are in the pages now: the draft goes.
+    _draftTimer?.cancel();
+    _draftTimer = null;
+    if (_dir case final dir? when dir.path.isNotEmpty) {
+      final log = _appLog;
+      unawaited(
+        ExchangeDraft.delete(dir).catchError((Object e, StackTrace st) => log.error('exchange_draft_failed', e, st)),
+      );
+    }
     if (!mounted) return;
     ref.read(servicesProvider).appLog.child(stage: 'exchange').info('exchange_applied', {
       'mode': export.mode.name,
@@ -787,110 +900,118 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
         ? _wholeItems.length
         : export?.items.length ?? (existing ? 0 : exchangeItems(_pages, _mode).length);
     final canApply = export != null && (_shownMatch?.replies.isNotEmpty ?? false);
-    return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1280, maxHeight: 860),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.forum_outlined, color: theme.colorScheme.primary),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(l.chatTitle, style: theme.textTheme.titleLarge)),
-                  IconButton(
-                    tooltip: l.chatHelpTooltip,
-                    // As high as the switch of the modes: the window keeps its room.
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => showHelp(context, HelpTopic.exchange),
-                    icon: const Icon(Icons.help_outline),
-                  ),
-                  const SizedBox(width: 8),
-                  if (!widget.request.modeFixed && !existing)
-                    SegmentedButton<ExchangeMode>(
-                      segments: [
-                        ButtonSegment(value: ExchangeMode.both, label: Text(l.chatModeBoth)),
-                        ButtonSegment(value: ExchangeMode.recognize, label: Text(l.chatModeRecognize)),
-                        ButtonSegment(value: ExchangeMode.translate, label: Text(l.chatModeTranslate)),
-                      ],
-                      selected: {_mode},
-                      // The answers taken belong to this mode.
-                      onSelectionChanged: _rounds > 0 || _accepted.isNotEmpty
-                          ? null
-                          : (s) {
-                              setState(() {
-                                _mode = s.first;
-                                _match = null;
-                                _resetPrompt();
-                              });
-                              unawaited(_rebuild());
-                            },
-                    )
-                  else
-                    Chip(label: Text(_modeLabel(l, _mode))),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(l.chatSubtitle, style: theme.textTheme.bodySmall),
-              const SizedBox(height: 4),
-              Text(l.chatPieces(count, pages), style: theme.textTheme.bodyMedium),
-              const SizedBox(height: 12),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: LayoutBuilder(
-                    // Wide: what to send and the answer side by side, both in sight.
-                    builder: (context, c) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Room for the floating labels of the fields.
-                        if (!existing) Padding(padding: const EdgeInsets.only(top: 8), child: _optionsRow(l, theme)),
-                        if (!existing && _mode != ExchangeMode.recognize) ...[
-                          const SizedBox(height: 10),
-                          _translationRow(l, theme),
+    // While the answer is written into the pages, the window stays (closed,
+    // the writing would go on unseen).
+    return PopScope(
+      canPop: !_applying,
+      child: Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1280, maxHeight: 860),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.forum_outlined, color: theme.colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(l.chatTitle, style: theme.textTheme.titleLarge)),
+                    IconButton(
+                      tooltip: l.chatHelpTooltip,
+                      // As high as the switch of the modes: the window keeps its room.
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => showHelp(context, HelpTopic.exchange),
+                      icon: const Icon(Icons.help_outline),
+                    ),
+                    const SizedBox(width: 8),
+                    if (!widget.request.modeFixed && !_fixed)
+                      SegmentedButton<ExchangeMode>(
+                        segments: [
+                          ButtonSegment(value: ExchangeMode.both, label: Text(l.chatModeBoth)),
+                          ButtonSegment(value: ExchangeMode.recognize, label: Text(l.chatModeRecognize)),
+                          ButtonSegment(value: ExchangeMode.translate, label: Text(l.chatModeTranslate)),
                         ],
-                        const SizedBox(height: 12),
-                        if (_parts.isNotEmpty) ...[_partBar(l, theme), const SizedBox(height: 12)],
-                        if (c.maxWidth >= 1000)
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(child: _sendCard(l, theme)),
-                              const SizedBox(width: 12),
-                              Expanded(child: _answerCard(l, theme)),
-                            ],
-                          )
-                        else ...[
-                          _sendCard(l, theme),
+                        selected: {_mode},
+                        // The answers taken belong to this mode.
+                        onSelectionChanged: _rounds > 0 || _accepted.isNotEmpty
+                            ? null
+                            : (s) {
+                                setState(() {
+                                  _mode = s.first;
+                                  _match = null;
+                                  _resetPrompt();
+                                });
+                                unawaited(_rebuild());
+                              },
+                      )
+                    else
+                      Chip(label: Text(_modeLabel(l, _mode))),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(l.chatSubtitle, style: theme.textTheme.bodySmall),
+                const SizedBox(height: 4),
+                Text(l.chatPieces(count, pages), style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: LayoutBuilder(
+                      // Wide: what to send and the answer side by side, both in sight.
+                      builder: (context, c) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Room for the floating labels of the fields.
+                          if (!_fixed) Padding(padding: const EdgeInsets.only(top: 8), child: _optionsRow(l, theme)),
+                          if (!_fixed && _mode != ExchangeMode.recognize) ...[
+                            const SizedBox(height: 10),
+                            _translationRow(l, theme),
+                          ],
                           const SizedBox(height: 12),
-                          _answerCard(l, theme),
+                          if (_parts.isNotEmpty) ...[_partBar(l, theme), const SizedBox(height: 12)],
+                          if (c.maxWidth >= 1000)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: _sendCard(l, theme)),
+                                const SizedBox(width: 12),
+                                Expanded(child: _answerCard(l, theme)),
+                              ],
+                            )
+                          else ...[
+                            _sendCard(l, theme),
+                            const SizedBox(height: 12),
+                            _answerCard(l, theme),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  if (export != null)
-                    TextButton.icon(
-                      onPressed: () => showInExplorer(export.dir),
-                      icon: const Icon(Icons.folder_open_outlined),
-                      label: Text(l.chatOpenFolder),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    if (export != null)
+                      TextButton.icon(
+                        onPressed: () => showInExplorer(export.dir),
+                        icon: const Icon(Icons.folder_open_outlined),
+                        label: Text(l.chatOpenFolder),
+                      ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _applying ? null : () => Navigator.pop(context, false),
+                      child: Text(l.cancel),
                     ),
-                  const Spacer(),
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.cancel)),
-                  const SizedBox(width: 8),
-                  FilledButton.icon(
-                    onPressed: canApply && !_applying ? _apply : null,
-                    icon: const Icon(Icons.check),
-                    label: Text(widget.request.fromRun ? l.chatApplyContinue : l.chatApply),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 8),
+                    FilledButton.icon(
+                      onPressed: canApply && !_applying ? _apply : null,
+                      icon: const Icon(Icons.check),
+                      label: Text(widget.request.fromRun ? l.chatApplyContinue : l.chatApply),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -997,11 +1118,17 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
             for (final n in {1200, 1600, 2000, 2400, 3000, s.sheetMaxPx}.toList()..sort()) n: '$n px',
           }, (v) => _changeOptions((e) => e.copyWith(sheetMaxPx: v))),
         ],
-        dropdown(l.chatContextImage, s.contextImage, {
-          ContextImage.off: l.chatContextOff,
-          ContextImage.separate: l.chatContextSeparate,
-          if (sheets) ContextImage.onSheet: l.chatContextOnSheet,
-        }, (v) => _changeOptions((e) => e.copyWith(contextImage: v))),
+        // "On a sheet" without sheets: the pages go as pictures of their own.
+        dropdown(
+          l.chatContextImage,
+          !sheets && s.contextImage == ContextImage.onSheet ? ContextImage.separate : s.contextImage,
+          {
+            ContextImage.off: l.chatContextOff,
+            ContextImage.separate: l.chatContextSeparate,
+            if (sheets) ContextImage.onSheet: l.chatContextOnSheet,
+          },
+          (v) => _changeOptions((e) => e.copyWith(contextImage: v)),
+        ),
         if (sheets) ...[
           SizedBox(
             width: 220,
@@ -1098,10 +1225,16 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     final all = export?.pictures ?? const <String>[];
     // With many pages, the pictures of one.
     final pictures = export == null ? all : picturesOfPage(export, _page.value);
+    // Picked on the page shown: those of other pages stay picked, but would
+    // go with the instructions of another page.
     final picked = [
-      for (final f in all)
+      for (final f in pictures)
         if (_selected.contains(f)) f,
     ];
+    final elsewhere = [
+      for (final f in all)
+        if (_selected.contains(f) && !pictures.contains(f)) f,
+    ].length;
     return Card.outlined(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1189,6 +1322,14 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
               ),
               const SizedBox(height: 8),
               Text(l.chatRequestSize(export.items.length, _prompt.text.length), style: theme.textTheme.bodySmall),
+              if (elsewhere > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    l.chatSelectedElsewhere(elsewhere),
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.tertiary),
+                  ),
+                ),
               if (_partsAdvice() case final size?)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),

@@ -172,6 +172,41 @@ void main() {
       expect((await ExchangeManifest.read(dir)).export!.sheetLabels, out.sheetLabels);
     });
 
+    test('pages read when their pieces are cut give the same sheets; a page without pieces is not read', () async {
+      const settings = ExchangeSettings(contextImage: ContextImage.separate);
+      Future<List<int>> sheetOf(List<ExchangePage> pages, Directory into) async {
+        await writeExchange(
+          into,
+          pages,
+          ExchangeMode.recognize,
+          settings,
+          sourceLanguage: 'English',
+          targetLanguage: '',
+        );
+        return File(p.join(into.path, 'sheet_01.png')).readAsBytesSync();
+      }
+
+      final read = <String>[];
+      final lazy = [
+        for (final pg in pages())
+          ExchangePage(
+            id: pg.id,
+            number: pg.number,
+            name: pg.name,
+            blocks: pg.blocks,
+            loadImage: () async {
+              read.add(pg.id);
+              return pg.image!;
+            },
+          ),
+        ExchangePage(id: 'p3', number: 3, name: 'c.png', blocks: const [], loadImage: () => throw StateError('read')),
+      ];
+      final other = Directory(p.join(dir.path, 'lazy'));
+      expect(await sheetOf(lazy, other), await sheetOf(pages(), Directory(p.join(dir.path, 'eager'))));
+      expect(read, ['p1', 'p2']);
+      expect(filesIn(other.path), contains('page_02_context.jpg'));
+    });
+
     test('translate: only blocks with letters, the text in the prompt and in ALL.txt, no pictures', () async {
       final out = await writeExchange(
         dir,
@@ -303,7 +338,7 @@ void main() {
       );
       // 01-001 in ALL.txt only, 02-001 half in each, 01-002 left as it is.
       File(p.join(dir.path, 'ALL.txt'))
-          .writeAsStringSync('[01-001] Hello --> Привет\n[01-002] ... -->\n[02-001] Пока\n');
+          .writeAsStringSync('[01-001] Hello --> Привет\n[01-002] ... -->\n[02-001] Пока\n[99-001] Лишнее\n');
       File(p.join(dir.path, 'ALL_original.txt')).writeAsStringSync('[01-001] Hello\n[01-002] ...\n[02-001] Bye!\n');
       final m = await readExchangeFolder(dir, await ExchangeManifest.read(dir));
       expect(m.replies[const ExchangeLabel(1, 1)]!.translation, 'Привет');
@@ -314,6 +349,8 @@ void main() {
       expect(m.unchanged, [const ExchangeLabel(1, 2)]);
       expect(m.sources[const ExchangeLabel(1, 1)], 'ALL.txt');
       expect(m.sources[const ExchangeLabel(2, 1)], 'ALL_original.txt, ALL.txt');
+      // A label of no piece sent is told, as for a pasted answer.
+      expect(m.unknown, [const ExchangeLabel(99, 1)]);
     });
 
     test('recognize: the same three files; a translation written in comes along', () async {

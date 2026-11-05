@@ -427,18 +427,29 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       initialDirectory: p.join(ref.read(servicesProvider).paths.root.path, 'exchange'),
     );
     if (dir == null || !mounted) return;
-    final ExchangeManifest manifest;
+    final folder = Directory(dir);
+    // Where it stood (answers taken, the parts); an exchange in parts has no
+    // folder of its own pictures, only its parts and this.
+    final draft = await ExchangeDraft.read(folder);
+    ExchangeManifest? manifest;
     try {
-      manifest = await ExchangeManifest.read(Directory(dir));
+      manifest = await ExchangeManifest.read(folder);
     } on Object {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.chatNotExchangeFolder)));
-      return;
+      manifest = null;
     }
     if (!mounted) return;
+    if (manifest == null && (draft == null || draft.parts.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.chatNotExchangeFolder)));
+      return;
+    }
     await showExchangeDialog(
       context,
-      ExchangeRequest(pageIds: manifest.pages.keys.toList(), mode: manifest.mode),
+      manifest != null
+          ? ExchangeRequest(pageIds: manifest.pages.keys.toList(), mode: manifest.mode)
+          : ExchangeRequest(pageIds: [for (final part in draft!.parts) ...part], mode: draft.mode),
       existing: manifest,
+      draft: draft,
+      root: folder,
     );
   }
 

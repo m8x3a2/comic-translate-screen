@@ -51,6 +51,7 @@ class ExchangePage {
     required this.name,
     required this.blocks,
     this.image,
+    this.loadImage,
     this.only,
   });
 
@@ -61,8 +62,12 @@ class ExchangePage {
   final String name;
   final List<TextBlock> blocks;
 
-  /// Needed when pictures are sent.
+  /// Needed when pictures are sent (or [loadImage]).
   final RgbImage? image;
+
+  /// Reads the image when it is needed, instead of [image]: a page at a time
+  /// is held, not all of them (a long chapter would not fit in memory).
+  final Future<RgbImage> Function()? loadImage;
 
   /// Only these blocks (0-based); null: all.
   final List<int>? only;
@@ -101,6 +106,7 @@ List<ExchangePage> exchangePagesOf(List<ExchangePage> pages, List<ExchangeItem> 
         name: page.name,
         blocks: page.blocks,
         image: page.image,
+        loadImage: page.loadImage,
         only: only,
       ),
 ];
@@ -208,12 +214,14 @@ Future<ExchangeExport> writeExchange(
     final pieces = <SheetPiece>[];
     final onSheet = settings.contextImage == ContextImage.onSheet && pictures && settings.images.hasSheets;
     for (final page in pages) {
-      final image = page.image;
       final own = [
         for (final it in items)
           if (it.pageId == page.id) it,
       ];
-      if (image == null || own.isEmpty) continue;
+      if (own.isEmpty) continue;
+      // Only the pieces stay: the page goes before the next one is read.
+      final image = page.image ?? await page.loadImage?.call();
+      if (image == null) continue;
       if (contextWanted) {
         final boxes = [for (final it in own) (it.label, it.box)];
         if (onSheet) {
@@ -618,6 +626,8 @@ Future<ExchangeMatch> readExchangeFolder(
   final repeated = <ExchangeLabel>[];
   // Labels the files have at all.
   final seen = <ExchangeLabel>{};
+  // Labels of no piece sent (another folder's files?): told, as for a pasted answer.
+  final unknown = <ExchangeLabel>{};
   final mode = manifest.mode;
   // A line as the program wrote it (in this mode or, kept for it, another)
   // is not an answer: only what differs from it counts.
@@ -669,6 +679,7 @@ Future<ExchangeMatch> readExchangeFolder(
       repeated.addAll(answer.repeated);
       seen.addAll(answer.replies.keys);
       final match = matchExchangeAnswer(manifest.items, answer, mode, ignoreUnchanged: true);
+      unknown.addAll(match.unknown);
       for (final MapEntry(key: label, value: reply) in match.replies.entries) {
         final name = nameOf(reply);
         final had = merged[label];
@@ -714,7 +725,7 @@ Future<ExchangeMatch> readExchangeFolder(
       for (final l in match.missing)
         if (!seen.contains(l)) l,
     ],
-    unknown: match.unknown,
+    unknown: [...{...match.unknown, ...unknown}],
     missingArrow: match.missingArrow,
     repeated: match.repeated,
     sources: match.sources,

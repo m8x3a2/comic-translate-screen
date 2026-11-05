@@ -58,7 +58,9 @@ const keptExchangeFolders = 20;
 /// window.
 Directory newExchangeDir(AppPaths paths) {
   final root = Directory(p.join(paths.root.path, 'exchange'))..createSync(recursive: true);
-  final old = root.listSync().whereType<Directory>().toList()..sort((a, b) => b.path.compareTo(a.path));
+  // An exchange with answers not applied yet stays (see [ExchangeDraft]).
+  final old = root.listSync().whereType<Directory>().where((d) => !ExchangeDraft.holdsAnswers(d)).toList()
+    ..sort((a, b) => b.path.compareTo(a.path));
   for (final d in old.skip(keptExchangeFolders - 1)) {
     try {
       d.deleteSync(recursive: true);
@@ -106,6 +108,7 @@ Future<ExchangeExport> exportExchange(
   final glossary = ws.glossary;
   final screens = settings.contentKind == ContentKind.screens;
   return Isolate.run(() async {
+    // Each page is read when its pieces are cut, not all of them first.
     final withImages = [
       for (final page in pages)
         ExchangePage(
@@ -114,8 +117,8 @@ Future<ExchangeExport> exportExchange(
           name: page.name,
           blocks: page.blocks,
           only: page.only,
-          image: (mode.sendsImages || exchange.contextImage != ContextImage.off) && paths[page.id] != null
-              ? await ImageCodec.readFile(paths[page.id]!)
+          loadImage: (mode.sendsImages || exchange.contextImage != ContextImage.off) && paths[page.id] != null
+              ? () => ImageCodec.readFile(paths[page.id]!)
               : null,
         ),
     ];

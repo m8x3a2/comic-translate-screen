@@ -5456,6 +5456,12 @@ abstract class AppLocalizations {
   /// **'Copy the picked ({count})'**
   String chatCopySelected(int count);
 
+  /// No description provided for @chatSelectedElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Also picked on other pages: {count} (not copied with this page)'**
+  String chatSelectedElsewhere(int count);
+
   /// No description provided for @chatSelectAll.
   ///
   /// In en, this message translates to:

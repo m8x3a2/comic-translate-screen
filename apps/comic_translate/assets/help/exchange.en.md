@@ -206,12 +206,19 @@ same pages, mode, pictures and txt files. Nothing is made again.
 chat's answer came later (or you wrote it into the txt files). Open that exchange, paste the answer (or press
 "Take from the txt files") and press "Apply".
 
+**Where you stopped is kept.** The answers taken ("Next" in parts, another round) and what the answer fields
+hold are saved in the folder of the exchange (`draft.json`) as you go, until "Apply". Open the folder with the
+date again: the window comes back with them, at the part where you stopped. Parts already made stay as they
+went to the chat; the ones not made yet are made then.
+
 **Where the exchanges are.** In the app's data folder, in `exchange`: on Windows
 `%LOCALAPPDATA%\ComicTranslateScreen\exchange`. Each exchange is a folder named by its date and time, for
-example `20261026_093015`. The last 20 are kept; older ones are removed.
+example `20261026_093015`. The last 20 are kept; older ones are removed, except those with answers not applied
+yet (a draft).
 
-**"Not an exchange folder".** The app says so when the folder has no `exchange.json`. Pick the dated folder
-itself (not `exchange` and not the `again_1` subfolder).
+**"Not an exchange folder".** The app says so when the folder has neither `exchange.json` nor the parts of an
+exchange. Pick the dated folder itself (not `exchange` and not the `again_1` subfolder; a `part_02` folder opens
+that part alone).
 
 The pages must be open in the app: the answer is written into the bubbles of the open project.
 
