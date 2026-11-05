@@ -985,6 +985,24 @@ class AppLocalizationsRu extends AppLocalizations {
       'переводит распознанный текст страницы (если нужно, сначала находит и читает его)';
 
   @override
+  String get stepTranslateMore => 'Распознать, перевести или всё сразу';
+
+  @override
+  String get stepReadAndTranslate => 'Распознать и перевести';
+
+  @override
+  String get stepReadAndTranslateHelp =>
+      'Заново распознаёт все рамки, потом переводит.';
+
+  @override
+  String get stepReadAndTranslateTogether =>
+      'Распознать и перевести одним запросом';
+
+  @override
+  String get stepReadAndTranslateTogetherHelp =>
+      'Нейросеть по ключу заново читает все рамки и переводит их в тех же запросах.';
+
+  @override
   String get stepMask => 'Маска';
 
   @override
@@ -1336,6 +1354,11 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String keyStatusLabel(String label) {
     return 'Ключ: $label';
+  }
+
+  @override
+  String priceHint(String requests, String cost) {
+    return 'Прошлые запросы этой модели ($requests): ≈ $cost за 10 пузырей (примерно страница).';
   }
 
   @override

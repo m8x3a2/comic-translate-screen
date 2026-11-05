@@ -32,7 +32,35 @@ abstract interface class OcrEngine implements Plugin {
 /// image by itself (a language model through the network): the text is not
 /// prepared, the lines are not checked, no recognition level applies. New
 /// in this project.
-abstract interface class PageOcr implements OcrEngine {}
+abstract interface class PageOcr implements OcrEngine {
+  /// Reads the blocks of [pages] together, in as few requests as its limits
+  /// allow (the owner's idea: requests are made of bubbles, not pages); with
+  /// [translation] the same requests translate them too.
+  Future<void> recognizePages(
+    List<OcrPage> pages, {
+    required String sourceLanguage,
+    ReadingTranslation? translation,
+    required PluginContext context,
+  });
+}
+
+/// One page of several read together ([PageOcr.recognizePages]).
+class OcrPage {
+  const OcrPage(this.image, this.blocks);
+
+  final RgbImage image;
+  final List<TextBlock> blocks;
+}
+
+/// A [PageOcr] translates while it reads (one request instead of two).
+class ReadingTranslation {
+  const ReadingTranslation({required this.targetLanguage, this.extraContext = ''});
+
+  final String targetLanguage;
+
+  /// About the comic, the glossary and the style (as a translator gets).
+  final String extraContext;
+}
 
 /// Prepares small text for reading: enlarges the pieces of a page where the
 /// lines are thin (see `reading_scale.dart`). New in this project.

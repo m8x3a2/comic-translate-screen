@@ -60,9 +60,20 @@ const _ru = <String, String>{
   'openrouter_ocr.resend_missing': 'Досылать недостающее',
   'openrouter_ocr.resend_missing.help': 'Если в ответе нет текста части пузырей — один раз спросить только про них.',
   'openrouter_ocr.max_tokens': 'Наибольшая длина ответа (токены)',
-  'openrouter_ocr.max_tokens.help': 'Хватает на текст страницы.',
+  'openrouter_ocr.max_tokens.help': 'Хватает на текст нескольких страниц.',
   'openrouter_ocr.timeout': 'Время ожидания (секунды)',
-  'openrouter_ocr.timeout.help': 'Сколько ждать ответа на одну страницу.',
+  'openrouter_ocr.timeout.help': 'Сколько ждать ответа на один запрос.',
+  'openrouter_ocr.together': 'Распознавать и переводить одним запросом',
+  'openrouter_ocr.together.help': 'Модель, которая читает, сразу и переводит: один запрос вместо двух, и она видит картинки, пока переводит. Выключено — только читает, переводит выбранный переводчик.',
+  'openrouter_ocr.page_pictures': 'Отправлять и всю страницу',
+  'openrouter_ocr.page_pictures.help':
+      'При «одним запросом»: картинка всей страницы показывает, что происходит и кто говорит (дороже).',
+  'openrouter_ocr.max_blocks': 'Пузырей в одном запросе',
+  'openrouter_ocr.max_blocks.help':
+      'Страницы идут вместе, пока не наберётся столько пузырей; страница, где их больше, уходит частями.',
+  'openrouter_ocr.max_pictures': 'Картинок в одном запросе',
+  'openrouter_ocr.max_pictures.help':
+      'Листы с пузырями (и целые страницы); если больше — часть уходит другим запросом.',
   'openai_compatible_ocr': 'Нейросеть по ключу: свой сервер',
   'openai_compatible_ocr.desc':
       'Пузыри читает языковая модель, которая видит картинки, через любой OpenAI-совместимый сервер (локальный '
@@ -78,9 +89,20 @@ const _ru = <String, String>{
   'openai_compatible_ocr.resend_missing.help':
       'Если в ответе нет текста части пузырей — один раз спросить только про них.',
   'openai_compatible_ocr.max_tokens': 'Наибольшая длина ответа (токены)',
-  'openai_compatible_ocr.max_tokens.help': 'Хватает на текст страницы.',
+  'openai_compatible_ocr.max_tokens.help': 'Хватает на текст нескольких страниц.',
   'openai_compatible_ocr.timeout': 'Время ожидания (секунды)',
-  'openai_compatible_ocr.timeout.help': 'Сколько ждать ответа на одну страницу.',
+  'openai_compatible_ocr.timeout.help': 'Сколько ждать ответа на один запрос.',
+  'openai_compatible_ocr.together': 'Распознавать и переводить одним запросом',
+  'openai_compatible_ocr.together.help': 'Модель, которая читает, сразу и переводит: один запрос вместо двух, и она видит картинки, пока переводит. Выключено — только читает, переводит выбранный переводчик.',
+  'openai_compatible_ocr.page_pictures': 'Отправлять и всю страницу',
+  'openai_compatible_ocr.page_pictures.help':
+      'При «одним запросом»: картинка всей страницы показывает, что происходит и кто говорит (дороже).',
+  'openai_compatible_ocr.max_blocks': 'Пузырей в одном запросе',
+  'openai_compatible_ocr.max_blocks.help':
+      'Страницы идут вместе, пока не наберётся столько пузырей; страница, где их больше, уходит частями.',
+  'openai_compatible_ocr.max_pictures': 'Картинок в одном запросе',
+  'openai_compatible_ocr.max_pictures.help':
+      'Листы с пузырями (и целые страницы); если больше — часть уходит другим запросом.',
   'chat_ocr': 'Вручную через чат (ChatGPT, Gemini, Claude…)',
   'chat_ocr.desc':
       'Вы сами отправляете картинки с пузырями в чат и вставляете его ответ: «Перевести всё» и «Распознать» '

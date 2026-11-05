@@ -984,6 +984,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'translates the recognized text of this page (finds and reads it first if needed)';
 
   @override
+  String get stepTranslateMore => 'Read, translate or both';
+
+  @override
+  String get stepReadAndTranslate => 'Read and translate';
+
+  @override
+  String get stepReadAndTranslateHelp =>
+      'Reads every box again, then translates it.';
+
+  @override
+  String get stepReadAndTranslateTogether =>
+      'Read and translate in one request';
+
+  @override
+  String get stepReadAndTranslateTogetherHelp =>
+      'The model by key reads every box again and translates it in the same requests.';
+
+  @override
   String get stepMask => 'Mask';
 
   @override
@@ -1335,6 +1353,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String keyStatusLabel(String label) {
     return 'Key: $label';
+  }
+
+  @override
+  String priceHint(String requests, String cost) {
+    return 'Earlier requests of this model ($requests): about $cost for 10 bubbles (about a page).';
   }
 
   @override

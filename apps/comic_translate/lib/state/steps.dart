@@ -107,15 +107,16 @@ class StepsNotifier extends Notifier<StepState> {
     if (!state.running && state.last != null) state = const StepState();
   }
 
-  /// The steps [step] needs on [page], in order.
-  static List<ManualStep> plan(ManualStep step, PageEntry page, {int? block}) {
+  /// The steps [step] needs on [page], in order; [readFirst]: translating
+  /// reads every block again first ("Read and translate").
+  static List<ManualStep> plan(ManualStep step, PageEntry page, {int? block, bool readFirst = false}) {
     final noBlocks = page.blocks.isEmpty;
     return switch (step) {
       ManualStep.detect => [ManualStep.detect],
       ManualStep.recognize => [if (noBlocks) ManualStep.detect, ManualStep.recognize],
       ManualStep.translate => [
         if (noBlocks) ManualStep.detect,
-        if (noBlocks || _unread(page, block).isNotEmpty) ManualStep.recognize,
+        if (readFirst || noBlocks || _unread(page, block).isNotEmpty) ManualStep.recognize,
         ManualStep.translate,
       ],
       ManualStep.mask => [if (noBlocks) ManualStep.detect, ManualStep.mask],
@@ -156,19 +157,23 @@ class StepsNotifier extends Notifier<StepState> {
   /// Reading or translating through a chat (the chosen engines, or [chat]
   /// for the chat buttons whatever the engines): the steps before it run
   /// first, then the exchange window, then the steps after it.
-  Future<void> run(ManualStep step, BatchUi ui, {int? block, ExchangeMode? chat}) async {
+  ///
+  /// [readFirst] with [ManualStep.translate]: every block is read again
+  /// before it is translated ("Read and translate"); a model by key that
+  /// translates too does both in the same requests.
+  Future<void> run(ManualStep step, BatchUi ui, {int? block, ExchangeMode? chat, bool readFirst = false}) async {
     if (state.running || ref.read(batchProvider) is BatchRunning) return;
     final ws = ref.read(workspaceProvider);
     final targets = block == null ? ws.stepPages : [?ws.currentPage];
     if (targets.isEmpty) return;
     final start = targets.first;
-    final plans = {for (final page in targets) page.id: plan(step, page, block: block)};
+    final plans = {for (final page in targets) page.id: plan(step, page, block: block, readFirst: readFirst)};
     final settings0 = ref.read(settingsProvider);
     // Frames found but not read: a frame may be left empty on purpose (a
     // sound, a picture), so they are read only when the user wants that.
     // Pages without frames are found and read as before; reading and
     // translating through the chat reads anyway.
-    if (step == ManualStep.translate && chat != ExchangeMode.both) {
+    if (step == ManualStep.translate && chat != ExchangeMode.both && !readFirst) {
       final unread = [
         for (final page in targets)
           if (page.blocks.isNotEmpty && _unread(page, block).isNotEmpty) page,
@@ -290,7 +295,7 @@ class StepsNotifier extends Notifier<StepState> {
               case ManualStep.recognize:
                 final which = block != null
                     ? [block]
-                    : step == ManualStep.translate
+                    : step == ManualStep.translate && !readFirst
                     ? _unread(page, null)
                     : [for (var i = 0; i < page.blocks.length; i++) i];
                 if (which.isEmpty) continue;
@@ -396,22 +401,97 @@ class StepsNotifier extends Notifier<StepState> {
         }
       }
 
-      // Several pages in one request (the owner's idea): the steps before
-      // translating on every page, then the translation in packs, then the
-      // steps after it.
+      // Reading by a model by key: the pages are read together, as many
+      // bubbles in one request as it takes (the owner's idea); translated in
+      // the same requests when it translates too.
+      final reading = block == null && rounds.isEmpty ? readingPlan(services.registry, settings) : null;
+      final grouped = reading != null && plans.values.any((s) => s.contains(ManualStep.recognize));
       final size = block == null ? pagesPerRequest(services.registry, settings) : 1;
-      final packed =
-          rounds.isEmpty && size > 1 && targets.length > 1 && plans.values.any((s) => s.contains(ManualStep.translate));
-      if (packed) {
-        await runSteps({
-          for (final e in plans.entries) e.key: e.value.takeWhile((s) => s != ManualStep.translate).toList(),
-        });
+
+      /// Reads the pages whose plan reads; returns those translated with it.
+      Future<Set<String>> readTogether(({bool together, int maxBlocks}) reading) async {
         final ws = ref.read(workspaceProvider);
-        final ready = [
-          for (final t in targets)
-            if (plans[t.id]!.contains(ManualStep.translate))
-              if (ws.byId(t.id) case final page? when page.blocks.any((b) => b.text.trim().isNotEmpty)) page,
-        ];
+        final jobs = <({PageEntry page, List<int> which, bool translate})>[];
+        for (final target in targets) {
+          if (!plans[target.id]!.contains(ManualStep.recognize)) continue;
+          final page = ws.byId(target.id);
+          if (page == null) continue;
+          final which = step == ManualStep.translate && !readFirst
+              ? _unread(page, null)
+              : [for (var i = 0; i < page.blocks.length; i++) i];
+          if (which.isEmpty) continue;
+          // Translated with the reading only when every block is read:
+          // others would need a translator anyway.
+          final translate =
+              reading.together &&
+              plans[target.id]!.contains(ManualStep.translate) &&
+              which.length == page.blocks.length;
+          jobs.add((page: page, which: which, translate: translate));
+        }
+        final translated = <String>{};
+        String together(({PageEntry page, List<int> which, bool translate}) j) =>
+            '${chapterOf(j.page)}|${j.page.sourceOf(settings)}|${j.page.targetOf(settings)}|${j.translate}';
+        for (final pack in packsByBlocks(jobs, reading.maxBlocks, (j) => j.which.length, together)) {
+          cancel.throwIfCancelled();
+          final first = pack.first.page;
+          state = state.copyWith(pageId: first.id, stage: _stage(ManualStep.recognize));
+          final pages = ref.read(workspaceProvider).pages;
+          final packJobs = <PackJob>[];
+          for (final j in pack) {
+            final seams = await webtoonSeams(ref.read(workspaceProvider), j.page);
+            packJobs.add(
+              PackJob(j.page.name, j.page.path, pages.indexWhere((p) => p.id == j.page.id) + 1, [
+                for (final i in j.which) j.page.blocks[i].copy(),
+              ], below: seams.below),
+            );
+          }
+          final sw = Stopwatch()..start();
+          final read = await active.readPack(
+            packJobs,
+            sourceLanguage: first.sourceOf(settings),
+            targetLanguage: first.targetOf(settings),
+            translate: pack.first.translate,
+            cancel: cancel,
+          );
+          times[ManualStep.recognize] = (times[ManualStep.recognize] ?? 0) + sw.elapsedMilliseconds;
+          for (final (n, j) in pack.indexed) {
+            empty += read[n].where((b) => b.text.trim().isEmpty).length;
+            if (step == ManualStep.recognize) count += j.which.length;
+            if (j.translate) {
+              translated.add(j.page.id);
+              if (step == ManualStep.translate) count += read[n].where((b) => b.text.trim().isNotEmpty).length;
+            }
+            timedPages.add(j.page.id);
+            workspace.edit(
+              j.page.id,
+              (p) => p.copyWith(
+                blocks: _replace(p.blocks, j.which, read[n], (old, b) {
+                  final out = old.copy()
+                    ..text = b.text
+                    ..linePx = b.linePx
+                    ..sourceStyle = b.sourceStyle;
+                  if (j.translate) {
+                    // As a new translation: it starts from the automatic look.
+                    out
+                      ..translation = b.translation
+                      ..untranslated = b.untranslated
+                      ..style = _freshStyle(old.style, b.style);
+                  }
+                  return out;
+                }),
+              ),
+              mergeKey: 'step:${_runs++}',
+              mergeWindow: _stepMergeWindow,
+              byHand: false,
+            );
+          }
+        }
+        return translated;
+      }
+
+      /// Several pages in one request (the owner's idea): the translation of
+      /// [ready] in packs.
+      Future<void> translatePacks(List<PageEntry> ready) async {
         String together(PageEntry p) => '${chapterOf(p)}|${p.sourceOf(settings)}|${p.targetOf(settings)}';
         for (final pack in packsOf(ready, size, together)) {
           cancel.throwIfCancelled();
@@ -461,8 +541,31 @@ class StepsNotifier extends Notifier<StepState> {
             );
           }
         }
+      }
+
+      final packed =
+          rounds.isEmpty && size > 1 && targets.length > 1 && plans.values.any((s) => s.contains(ManualStep.translate));
+      if (grouped || packed) {
+        // The steps before reading (or translating) on every page, then those
+        // together, then the steps after them.
+        bool shared(ManualStep s) => s == ManualStep.translate || (grouped && s == ManualStep.recognize);
+        await runSteps({for (final e in plans.entries) e.key: e.value.takeWhile((s) => !shared(s)).toList()});
+        final translated = grouped ? await readTogether(reading) : const <String>{};
+        final ws = ref.read(workspaceProvider);
+        final left = [
+          for (final t in targets)
+            if (plans[t.id]!.contains(ManualStep.translate) && !translated.contains(t.id))
+              if (ws.byId(t.id) case final page? when page.blocks.any((b) => b.text.trim().isNotEmpty)) page,
+        ];
+        if (packed) {
+          await translatePacks(left);
+        } else {
+          await runSteps({
+            for (final t in targets) t.id: [if (left.any((p) => p.id == t.id)) ManualStep.translate],
+          });
+        }
         await runSteps({
-          for (final e in plans.entries) e.key: e.value.skipWhile((s) => s != ManualStep.translate).skip(1).toList(),
+          for (final e in plans.entries) e.key: e.value.skipWhile((s) => !shared(s)).where((s) => !shared(s)).toList(),
         });
       } else if (rounds.isEmpty) {
         await runSteps(plans);
@@ -477,7 +580,7 @@ class StepsNotifier extends Notifier<StepState> {
               if (ws.byId(target.id) case final page?)
                 target.id: block != null
                     ? [block]
-                    : mode == ExchangeMode.recognize && step == ManualStep.translate
+                    : mode == ExchangeMode.recognize && step == ManualStep.translate && !readFirst
                     ? _unread(page, null)
                     : [for (var i = 0; i < page.blocks.length; i++) i],
           };
@@ -526,6 +629,16 @@ class StepsNotifier extends Notifier<StepState> {
     final (w, h) = base == null ? await imageFileSize(page.path) : (base.width, base.height);
     return rasterizeMask(w, h, base: base, strokes: page.strokes);
   }
+}
+
+/// The look of a new translation: only where its text goes stays, with the
+/// bold words of [result] (stars in a model's answer).
+BlockStyle? _freshStyle(BlockStyle? old, BlockStyle? result) {
+  final place = old?.placeOnly;
+  final runs = result?.runs;
+  if (runs == null || runs.isEmpty) return place;
+  final style = (place ?? const BlockStyle()).copyWith(runs: runs);
+  return style.isEmpty ? null : style;
 }
 
 /// [blocks] with the blocks at [indexes] updated from [results] by [apply].

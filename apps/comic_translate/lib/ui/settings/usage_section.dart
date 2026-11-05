@@ -21,6 +21,48 @@ String formatMoney(BuildContext context, double v) =>
 
 String _number(BuildContext context, int v) => NumberFormat.decimalPattern(_locale(context)).format(v);
 
+/// The history of requests, read again each time the settings open.
+final _historyProvider = FutureProvider.autoDispose<List<HistoryEntry>>(
+  (ref) => ref.read(servicesProvider).history.read(),
+);
+
+/// What 10 bubbles cost with [model] of [plugin] by the [entries] of the
+/// history that have a price (asking again for the missing ones included);
+/// null without them.
+({double cost, int requests})? pricePerTenBubbles(List<HistoryEntry> entries, String plugin, String model) {
+  var cost = 0.0, blocks = 0, requests = 0;
+  for (final e in entries) {
+    if (e.plugin != plugin || e.model != model || e.cost == null || e.error.isNotEmpty) continue;
+    cost += e.cost!;
+    requests++;
+    if (!e.again) blocks += e.blocks;
+  }
+  return blocks == 0 ? null : (cost: cost * 10 / blocks, requests: requests);
+}
+
+/// The price hint under a model by key (the owner's idea): what 10 bubbles
+/// cost by the earlier requests; nothing before the first one.
+class PriceHint extends ConsumerWidget {
+  const PriceHint(this.plugin, this.model, {super.key});
+
+  final String plugin;
+  final String model;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entries = ref.watch(_historyProvider).value;
+    final price = entries == null || model.trim().isEmpty ? null : pricePerTenBubbles(entries, plugin, model);
+    if (price == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(
+        context.l10n.priceHint(_number(context, price.requests), formatMoney(context, price.cost)),
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+    );
+  }
+}
+
 /// "Check balance": sends only the key, only to [KeyStatusQuery.host], only
 /// when pressed.
 class KeyStatusPanel extends ConsumerStatefulWidget {

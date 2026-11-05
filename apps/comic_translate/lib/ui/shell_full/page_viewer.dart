@@ -15,6 +15,7 @@ import '../../state/batch.dart';
 import '../../state/editor.dart';
 import '../../state/steps.dart';
 import '../../state/page_layout.dart';
+import '../../state/worker_pool.dart';
 import '../../state/workspace.dart';
 import '../common/content_kind_switch.dart';
 import '../common/key_bindings.dart';
@@ -556,6 +557,7 @@ class _StepStrip extends ConsumerWidget {
                   : TextButton.icon(onPressed: onPressed, icon: iconWidget, label: Text(label)),
             ),
           );
+          if (step == ManualStep.translate) children.add(_TranslateMenu(busy: busy));
         }
         // Hidden while anything runs; a new run of a step or of "Translate all" replaces it.
         final last = busy ? null : steps.last;
@@ -621,6 +623,51 @@ class _StepStrip extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// The arrow by "Translate": read, translate, or both (the owner's idea), in
+/// one request when the model by key that reads translates too.
+class _TranslateMenu extends ConsumerWidget {
+  const _TranslateMenu({required this.busy});
+
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final settings = ref.watch(settingsProvider);
+    final together = readingPlan(ref.read(servicesProvider).registry, settings)?.together ?? false;
+    void run(ManualStep step, {bool readFirst = false}) =>
+        ref.read(stepsProvider.notifier).run(step, DialogBatchUi(context), readFirst: readFirst);
+    return MenuAnchor(
+      menuChildren: [
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.abc),
+          onPressed: () => run(ManualStep.recognize),
+          child: Text(l.stepRecognize),
+        ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.translate),
+          onPressed: () => run(ManualStep.translate),
+          child: Text(l.stepTranslate),
+        ),
+        Tooltip(
+          message: together ? l.stepReadAndTranslateTogetherHelp : l.stepReadAndTranslateHelp,
+          child: MenuItemButton(
+            leadingIcon: const Icon(Icons.auto_awesome_outlined),
+            onPressed: () => run(ManualStep.translate, readFirst: true),
+            child: Text(together ? l.stepReadAndTranslateTogether : l.stepReadAndTranslate),
+          ),
+        ),
+      ],
+      builder: (context, menu, _) => IconButton(
+        tooltip: l.stepTranslateMore,
+        visualDensity: VisualDensity.compact,
+        onPressed: busy ? null : () => menu.isOpen ? menu.close() : menu.open(),
+        icon: const Icon(Icons.arrow_drop_down),
+      ),
     );
   }
 }

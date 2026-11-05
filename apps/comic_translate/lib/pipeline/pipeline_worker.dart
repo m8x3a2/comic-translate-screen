@@ -311,6 +311,28 @@ class PipelineWorker {
       (page as List).cast<TextBlock>(),
   ];
 
+  /// Several pages read by a model by key in as few requests as its limits
+  /// allow ([PageOcr.recognizePages]); with [translate] translated in the
+  /// same requests. Their blocks come back page by page.
+  Future<List<List<TextBlock>>> readPack(
+    List<PackJob> pages, {
+    required String sourceLanguage,
+    required String targetLanguage,
+    bool translate = false,
+    CancelToken? cancel,
+  }) async => [
+    for (final page in (await _job(
+      _Op.readPack,
+      [for (final p in pages) p.name].join(', '),
+      pack: pages,
+      source: sourceLanguage,
+      target: targetLanguage,
+      translate: translate,
+      cancel: cancel,
+    ) as List))
+      (page as List).cast<TextBlock>(),
+  ];
+
   /// The text-removal mask of [blocks] (every block, as the original's
   /// manual "Segment"). With the image [below], blocks may reach below the
   /// page: the mask is then taller than the page by the rows they need.
@@ -358,7 +380,10 @@ class PipelineWorker {
     CancelToken? cancel,
     void Function(String stage)? onStage,
   }) {
-    assert(op == _Op.load || op == _Op.translatePack || (path == null) != (image == null), 'pass either path or image');
+    assert(
+      op == _Op.load || op == _Op.translatePack || op == _Op.readPack || (path == null) != (image == null),
+      'pass either path or image',
+    );
     final id = _nextId++;
     final pending = _Pending<Object?>(onStage);
     _send(
@@ -452,7 +477,7 @@ class _Pending<T> {
   final void Function(String stage)? onStage;
 }
 
-enum _Op { prepare, load, detect, recognize, translate, translatePack, mask, inpaint }
+enum _Op { prepare, load, detect, recognize, translate, translatePack, readPack, mask, inpaint }
 
 // Messages main → worker.
 
@@ -496,16 +521,16 @@ class _Job {
   final bool read;
 
   /// Whole pages: translate them too (false: translated already, several
-  /// pages in one request).
+  /// pages in one request). [_Op.readPack]: translate while reading.
   final bool translate;
 
-  /// The pages of one request ([_Op.translatePack]).
+  /// The pages of one request ([_Op.translatePack], [_Op.readPack]).
   final List<PackJob> pack;
 }
 
-/// One page of several translated in one request.
+/// One page of several translated (or read) in one request.
 class PackJob {
-  const PackJob(this.name, this.path, this.number, this.blocks);
+  const PackJob(this.name, this.path, this.number, this.blocks, {this.below});
 
   final String name;
   final String path;
@@ -513,6 +538,9 @@ class PackJob {
   /// Its place among all pages, from 1 (the labels).
   final int number;
   final List<TextBlock> blocks;
+
+  /// Webtoon pages being read: the image of the next page.
+  final String? below;
 }
 
 class _Cancel {
@@ -703,6 +731,40 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
       );
       return [for (final p in m.pack) p.blocks];
     }
+    if (m.op == _Op.readPack) {
+      final ocr = await plugins.ocr;
+      if (ocr is! PageOcr) throw StateError('${ocr.info.id} does not read whole pages');
+      final pages = <OcrPage>[];
+      for (final job in m.pack) {
+        final image = await ImageCodec.readFile(job.path);
+        final next = job.below == null ? null : await ImageCodec.readFile(job.below!);
+        // The page with the rows of the next one that its blocks reach into.
+        final rows = next == null ? 0 : seamRows(job.blocks, image.height, next.height);
+        pages.add(OcrPage(rows > 0 ? extendBelow(image, next!, rows) : image, job.blocks));
+      }
+      await ocr.recognizePages(
+        pages,
+        sourceLanguage: m.source,
+        translation: m.translate
+            ? ReadingTranslation(targetLanguage: m.target, extraContext: settings.extraContext)
+            : null,
+        context: PluginContext(
+          log: log.child(page: m.page),
+          cancel: token,
+          recorder: recorder,
+          page: m.page,
+          onUsage: usage?.record,
+          onHistory: history?.record,
+        ),
+      );
+      // The letters are measured as after any reading.
+      for (final page in pages) {
+        for (final b in page.blocks) {
+          b.sourceStyle = measureSourceStyle(page.image, b);
+        }
+      }
+      return [for (final p in m.pack) p.blocks];
+    }
     final image = m.image ?? await ImageCodec.readFile(m.path!);
     final next = m.below == null ? null : await ImageCodec.readFile(m.below!);
     // The page with the rows of the next one that [blocks] reach into.
@@ -722,7 +784,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
     final blocks = m.blocks ?? const <TextBlock>[];
     switch (m.op) {
       // Handled before the page is read.
-      case _Op.load || _Op.translatePack:
+      case _Op.load || _Op.translatePack || _Op.readPack:
         return null;
       case _Op.prepare:
         final pipeline = await plugins.pipeline(m.source, m.target);

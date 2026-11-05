@@ -1784,6 +1784,36 @@ abstract class AppLocalizations {
   /// **'translates the recognized text of this page (finds and reads it first if needed)'**
   String get stepTranslateHelp;
 
+  /// No description provided for @stepTranslateMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Read, translate or both'**
+  String get stepTranslateMore;
+
+  /// No description provided for @stepReadAndTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and translate'**
+  String get stepReadAndTranslate;
+
+  /// No description provided for @stepReadAndTranslateHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Reads every box again, then translates it.'**
+  String get stepReadAndTranslateHelp;
+
+  /// No description provided for @stepReadAndTranslateTogether.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and translate in one request'**
+  String get stepReadAndTranslateTogether;
+
+  /// No description provided for @stepReadAndTranslateTogetherHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The model by key reads every box again and translates it in the same requests.'**
+  String get stepReadAndTranslateTogetherHelp;
+
   /// No description provided for @stepMask.
   ///
   /// In en, this message translates to:
@@ -2419,6 +2449,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Key: {label}'**
   String keyStatusLabel(String label);
+
+  /// No description provided for @priceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier requests of this model ({requests}): about {cost} for 10 bubbles (about a page).'**
+  String priceHint(String requests, String cost);
 
   /// No description provided for @keyStatusFreeTier.
   ///

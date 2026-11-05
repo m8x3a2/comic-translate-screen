@@ -96,6 +96,43 @@ int pagesPerRequest(PluginRegistry registry, AppSettings settings) {
   return PluginConfig.resolve(info.settings, settings.pluginValues(id)).value<int>('pages_per_request');
 }
 
+/// How reading by a model by key makes its requests (its settings): whether
+/// it translates too, and how many bubbles go in one request; null when the
+/// chosen reading is another one.
+({bool together, int maxBlocks})? readingPlan(PluginRegistry registry, AppSettings settings) {
+  final id = settings.ocr;
+  if (!registry.readsWholePage(id)) return null;
+  final info = registry.info(id);
+  if (info.field('max_blocks') == null) return null;
+  final config = PluginConfig.resolve(info.settings, settings.pluginValues(id));
+  return (together: config.value<bool>('together'), maxBlocks: config.value<int>('max_blocks'));
+}
+
+/// [pages] in packs for one reading each: in order, each pack with at most
+/// [maxBlocks] blocks ([blocksOf]; a page with more goes alone, the reading
+/// cuts it), never across [together] (a chapter, the languages).
+List<List<T>> packsByBlocks<T>(
+  List<T> pages,
+  int maxBlocks,
+  int Function(T page) blocksOf,
+  String Function(T page) together,
+) {
+  final packs = <List<T>>[];
+  var count = 0;
+  for (final page in pages) {
+    final n = blocksOf(page);
+    final last = packs.isEmpty ? null : packs.last;
+    if (last != null && count + n <= maxBlocks && together(last.first) == together(page)) {
+      last.add(page);
+      count += n;
+    } else {
+      packs.add([page]);
+      count = n;
+    }
+  }
+  return packs;
+}
+
 /// [PipelineWorker.translatePack]; an answer cut off at the length limit
 /// (a model that thinks first runs out of it on many pages): the pages again
 /// in two halves, down to one page, before giving up. [onSplit] is told the

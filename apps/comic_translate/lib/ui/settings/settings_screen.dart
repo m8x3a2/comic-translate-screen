@@ -583,6 +583,8 @@ class _TranslatorSection extends ConsumerWidget {
               onChanged: (v) => _change(ref, (s) => s.translator = v),
             ),
             if (info != null) PluginSettingsForm(info, key: ValueKey(info.id)),
+            if (info != null && info.privacy.sendsData && info.field('model') != null)
+              PriceHint(info.id, '${s.pluginValues(info.id)['model'] ?? ''}'),
             if (info != null && keyStatus != null)
               KeyStatusPanel(info, host: keyStatus.host, key: ValueKey('key_status.${info.id}.${keyStatus.host}')),
           ],
@@ -674,6 +676,8 @@ class _ToolsSection extends ConsumerWidget {
         children: [
           _PluginPicker(label: label, kind: kind, value: value, onChanged: (v) => _change(ref, (s) => apply(s, v))),
           if (info != null && info.settings.isNotEmpty) PluginSettingsForm(info, key: ValueKey(info.id)),
+          if (info != null && info.privacy.sendsData && info.field('model') != null)
+            PriceHint(info.id, '${s.pluginValues(info.id)['model'] ?? ''}'),
         ],
       );
     }

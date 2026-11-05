@@ -647,6 +647,11 @@
   "stepRecognizeHelp": "reads the text in the boxes",
   "stepTranslate": "Translate",
   "stepTranslateHelp": "translates the recognized text of this page (finds and reads it first if needed)",
+  "stepTranslateMore": "Read, translate or both",
+  "stepReadAndTranslate": "Read and translate",
+  "stepReadAndTranslateHelp": "Reads every box again, then translates it.",
+  "stepReadAndTranslateTogether": "Read and translate in one request",
+  "stepReadAndTranslateTogetherHelp": "The model by key reads every box again and translates it in the same requests.",
   "stepMask": "Mask",
   "stepMaskHelp": "marks the letters to remove in red; correct it with the brush and the eraser",
   "stepClean": "Clean",
@@ -851,6 +856,17 @@
   "@keyStatusLabel": {
     "placeholders": {
       "label": {
+        "type": "String"
+      }
+    }
+  },
+  "priceHint": "Earlier requests of this model ({requests}): about {cost} for 10 bubbles (about a page).",
+  "@priceHint": {
+    "placeholders": {
+      "requests": {
+        "type": "String"
+      },
+      "cost": {
         "type": "String"
       }
     }

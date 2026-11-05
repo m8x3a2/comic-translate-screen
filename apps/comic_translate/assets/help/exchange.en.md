@@ -20,6 +20,13 @@ Reading can do the same without hands: Settings → Recognition and cleaning →
 into the bubbles. The key is the translator's; the model is chosen apart and must see pictures (for example
 google/gemini-3.1-flash-lite: about $0.0005 a page). The app asks before it first sends anything.
 
+Requests are made of bubbles, not pages: pages go together until there are 40 bubbles and 10 pictures ("Bubbles in
+one request", "Pictures in one request"); a page with more goes in parts. With **"Read and translate in one
+request"** the model translates too: cheaper and quicker, and it sees the picture while it translates (the
+translator chosen takes no part then). Without it the model only reads and the translator chosen translates: when
+one model reads better and another translates better. For one page or the picked ones: the ▾ arrow by "Translate"
+→ **"Read and translate"**.
+
 ## How to open it
 
 - The **"Chat"** button on the main screen (or its menu): **"Read and translate through a chat…"**,

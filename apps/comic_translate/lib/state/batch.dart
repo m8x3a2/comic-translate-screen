@@ -439,7 +439,8 @@ class BatchNotifier extends Notifier<BatchState> {
       }
 
       final size = viaChat ? 1 : pagesPerRequest(services.registry, settings);
-      if (size > 1) {
+      final reading = viaChat ? null : readingPlan(services.registry, settings);
+      if (size > 1 || reading != null) {
         await _runPacks(
           active,
           todo,
@@ -448,8 +449,10 @@ class BatchNotifier extends Notifier<BatchState> {
           cancel,
           skipped,
           log,
+          reading: reading,
           finish: finish,
           failed: failed,
+          read: (ms) => stageMs['02_ocr'] = (stageMs['02_ocr'] ?? 0) + ms,
           translated: (ms) => stageMs['03_translate'] = (stageMs['03_translate'] ?? 0) + ms,
         );
       } else {
@@ -506,9 +509,10 @@ class BatchNotifier extends Notifier<BatchState> {
     List<SkippedPage> skipped,
     EventLog log, {
     String waitStage = 'exchange',
+    bool read = true,
   }) async {
     final workspace = ref.read(workspaceProvider.notifier);
-    final read = !readsThroughChat(settings);
+    read = read && !readsThroughChat(settings);
     final ready = <PageEntry>[];
     for (final page in pages) {
       cancel.throwIfCancelled();
@@ -557,12 +561,15 @@ class BatchNotifier extends Notifier<BatchState> {
     return ready;
   }
 
-  /// "Pages in one request" more than 1 (the owner's idea): the pages are
-  /// found and read one after another; those with text wait until [size] of
-  /// them (of one chapter and the same languages) are ready, go to the
-  /// translator in one request, then are cleaned and drawn by [finish].
-  /// Pages without text are finished at once. A failed request skips its
-  /// pages ([failed]); [translated] gets the time of each request.
+  /// "Pages in one request" more than 1, or reading by a model by key (the
+  /// owner's ideas): the pages are found (and read) one after another; those
+  /// with text wait until [size] of them (of one chapter and the same
+  /// languages) are ready, go to the translator in one request, then are
+  /// cleaned and drawn by [finish]. With [reading] they wait until they have
+  /// its number of bubbles and are read together first (translated in the
+  /// same requests when it translates too). Pages without text are finished
+  /// at once. A failed request skips its pages ([failed]); [read] and
+  /// [translated] get the time of each request.
   Future<void> _runPacks(
     PipelineWorker worker,
     List<PageEntry> todo,
@@ -571,41 +578,83 @@ class BatchNotifier extends Notifier<BatchState> {
     CancelToken cancel,
     List<SkippedPage> skipped,
     EventLog log, {
+    ({bool together, int maxBlocks})? reading,
     required Future<bool> Function(int i, PageEntry page, {List<TextBlock>? found, bool read, bool translate}) finish,
     required bool Function(int i, PageEntry page, Object e, StackTrace st, int ms) failed,
+    required void Function(int ms) read,
     required void Function(int ms) translated,
   }) async {
     final workspace = ref.read(workspaceProvider.notifier);
     final waiting = <(int, PageEntry, List<TextBlock>)>[];
+    var waitingBlocks = 0;
+    final together = reading?.together ?? false;
+    // Translated page by page after the reading (the translator takes one
+    // page at a time).
+    final eachPage = reading != null && !together && size < 2;
+    // Pages in one request at most: the translator's, unless the reading
+    // gathers them by bubbles.
+    final pageLimit = reading != null && (together || size < 2) ? 1 << 30 : size;
     // Pages of one request: one chapter, the same languages.
-    String together(PageEntry page) => '${chapterOf(page)}|${page.sourceOf(settings)}|${page.targetOf(settings)}';
+    String key(PageEntry page) => '${chapterOf(page)}|${page.sourceOf(settings)}|${page.targetOf(settings)}';
 
     /// The waiting pages in one request; false when the run stops.
     Future<bool> send() async {
       if (waiting.isEmpty) return true;
       final pack = List.of(waiting);
       waiting.clear();
+      waitingBlocks = 0;
       final pages = ref.read(workspaceProvider).pages;
-      _update(
-        (b) => b.copyWith(pageName: [for (final (_, page, _) in pack) page.name].join(', '), stage: '03_translate'),
-      );
-      log.info('batch_pack', {'pages': pack.length});
+      int number(PageEntry page) => pages.indexWhere((p) => p.id == page.id) + 1;
+      final names = [for (final (_, page, _) in pack) page.name].join(', ');
+      final found = [for (final (_, _, blocks) in pack) blocks];
       final sw = Stopwatch()..start();
-      final List<List<TextBlock>> done;
       try {
-        done = await translatePackSplitting(
-          worker,
-          [
-            for (final (_, page, blocks) in pack)
-              PackJob(page.name, page.path, pages.indexWhere((p) => p.id == page.id) + 1, [
-                for (final b in blocks) b.copy(),
-              ]),
-          ],
-          sourceLanguage: pack.first.$2.sourceOf(settings),
-          targetLanguage: pack.first.$2.targetOf(settings),
-          cancel: cancel,
-          onSplit: (n) => log.info('batch_pack_split', {'pages': n}),
-        );
+        if (reading != null) {
+          _update((b) => b.copyWith(pageName: names, stage: '02_ocr'));
+          log.info('batch_read_pack', {'pages': pack.length, 'blocks': found.fold<int>(0, (n, b) => n + b.length)});
+          final jobs = <PackJob>[];
+          for (final (_, page, blocks) in pack) {
+            final seams = await webtoonSeams(ref.read(workspaceProvider), page);
+            jobs.add(
+              PackJob(page.name, page.path, number(page), [for (final b in blocks) b.copy()], below: seams.below),
+            );
+          }
+          final done = await worker.readPack(
+            jobs,
+            sourceLanguage: pack.first.$2.sourceOf(settings),
+            targetLanguage: pack.first.$2.targetOf(settings),
+            translate: together,
+            cancel: cancel,
+          );
+          found.setAll(0, done);
+          read(sw.elapsedMilliseconds);
+          sw.reset();
+        }
+        if (!together && !eachPage) {
+          final withText = [
+            for (final (n, blocks) in found.indexed)
+              if (blocks.any((b) => hasTranslatableContent(b.text))) n,
+          ];
+          if (withText.isNotEmpty) {
+            _update((b) => b.copyWith(pageName: names, stage: '03_translate'));
+            log.info('batch_pack', {'pages': withText.length});
+            final done = await translatePackSplitting(
+              worker,
+              [
+                for (final n in withText)
+                  PackJob(pack[n].$2.name, pack[n].$2.path, number(pack[n].$2), [for (final b in found[n]) b.copy()]),
+              ],
+              sourceLanguage: pack.first.$2.sourceOf(settings),
+              targetLanguage: pack.first.$2.targetOf(settings),
+              cancel: cancel,
+              onSplit: (n) => log.info('batch_pack_split', {'pages': n}),
+            );
+            for (final (k, n) in withText.indexed) {
+              found[n] = done[k];
+            }
+            translated(sw.elapsedMilliseconds);
+          }
+        }
       } on CancelledException {
         for (final (_, page, _) in pack) {
           workspace.updatePage(
@@ -623,10 +672,10 @@ class BatchNotifier extends Notifier<BatchState> {
         }
         return !stop;
       }
-      translated(sw.elapsedMilliseconds);
-      for (final ((i, page, _), blocks) in [for (var n = 0; n < pack.length; n++) (pack[n], done[n])]) {
+      for (final ((i, page, _), blocks) in [for (var n = 0; n < pack.length; n++) (pack[n], found[n])]) {
         if (cancel.isCancelled) return false;
-        if (!await finish(i, page, found: blocks, read: false, translate: false)) return false;
+        final translate = eachPage && blocks.any((b) => hasTranslatableContent(b.text));
+        if (!await finish(i, page, found: blocks, read: false, translate: translate)) return false;
       }
       return true;
     }
@@ -634,20 +683,36 @@ class BatchNotifier extends Notifier<BatchState> {
     try {
       for (final (i, page) in todo.indexed) {
         if (cancel.isCancelled) return;
-        if (waiting.isNotEmpty && together(waiting.first.$2) != together(page) && !await send()) return;
-        // Found and read now; translated with the pages after it.
-        if ((await _findText(worker, [page], settings, cancel, skipped, log, waitStage: '03_translate')).isEmpty) {
+        if (waiting.isNotEmpty && key(waiting.first.$2) != key(page) && !await send()) return;
+        // Found (and read) now; read or translated with the pages after it.
+        final found = await _findText(
+          worker,
+          [page],
+          settings,
+          cancel,
+          skipped,
+          log,
+          waitStage: reading != null ? '02_ocr' : '03_translate',
+          read: reading == null,
+        );
+        if (found.isEmpty) {
           _update((b) => b.copyWith(done: i + 1));
           continue;
         }
         final blocks = ref.read(workspaceProvider).byId(page.id)?.blocks ?? const <TextBlock>[];
-        if (!blocks.any((b) => hasTranslatableContent(b.text))) {
-          // Nothing to translate: cleaned and drawn at once.
+        if (reading == null ? !blocks.any((b) => hasTranslatableContent(b.text)) : blocks.isEmpty) {
+          // Nothing to read or translate: cleaned and drawn at once.
           if (!await finish(i, page, found: [for (final b in blocks) b.copy()], read: false, translate: false)) return;
           continue;
         }
+        // The bubbles of a request: a page that would go over starts the next.
+        if (reading != null && waiting.isNotEmpty && waitingBlocks + blocks.length > reading.maxBlocks) {
+          if (!await send()) return;
+        }
         waiting.add((i, page, blocks));
-        if (waiting.length >= size && !await send()) return;
+        waitingBlocks += blocks.length;
+        final full = waiting.length >= pageLimit || (reading != null && waitingBlocks >= reading.maxBlocks);
+        if (full && !await send()) return;
       }
       if (!cancel.isCancelled) await send();
     } finally {
