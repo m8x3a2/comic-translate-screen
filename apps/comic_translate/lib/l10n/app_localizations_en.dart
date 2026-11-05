@@ -1986,6 +1986,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelsAll => 'Download all';
 
   @override
+  String get modelsLevel => 'Download for a level';
+
+  @override
+  String get modelsLevelSimple => 'Simple';
+
+  @override
+  String get modelsLevelMedium => 'Medium';
+
+  @override
+  String get modelsLevelHigh => 'High';
+
+  @override
+  String get modelsLevelUltra => 'Ultra';
+
+  @override
+  String get modelsLevelInfo =>
+      'Everything your settings need to work, and the models of the chosen level: recognition, preparation of small text and cleaning, for comics and for screens. The list and the total size come before the download. Your settings stay as they are: the levels are chosen in \"Recognition and cleaning\".';
+
+  @override
   String get modelsVerifyAll => 'Check all';
 
   @override

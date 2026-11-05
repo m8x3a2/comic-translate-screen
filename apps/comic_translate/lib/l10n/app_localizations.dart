@@ -3482,6 +3482,42 @@ abstract class AppLocalizations {
   /// **'Download all'**
   String get modelsAll;
 
+  /// No description provided for @modelsLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Download for a level'**
+  String get modelsLevel;
+
+  /// No description provided for @modelsLevelSimple.
+  ///
+  /// In en, this message translates to:
+  /// **'Simple'**
+  String get modelsLevelSimple;
+
+  /// No description provided for @modelsLevelMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get modelsLevelMedium;
+
+  /// No description provided for @modelsLevelHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get modelsLevelHigh;
+
+  /// No description provided for @modelsLevelUltra.
+  ///
+  /// In en, this message translates to:
+  /// **'Ultra'**
+  String get modelsLevelUltra;
+
+  /// No description provided for @modelsLevelInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything your settings need to work, and the models of the chosen level: recognition, preparation of small text and cleaning, for comics and for screens. The list and the total size come before the download. Your settings stay as they are: the levels are chosen in \"Recognition and cleaning\".'**
+  String get modelsLevelInfo;
+
   /// No description provided for @modelsVerifyAll.
   ///
   /// In en, this message translates to:

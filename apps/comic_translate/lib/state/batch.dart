@@ -891,6 +891,40 @@ Future<List<ModelSpec>> missingModels(
   ];
 }
 
+/// What working at [level] needs and is not downloaded yet (new): the
+/// models of [settings] with the recognition, the small text preparation of
+/// comics and the cleaning of that level ("Ultra" cleans as "High"), for
+/// comics and for screens. [settings] stay as they are.
+Future<List<ModelSpec>> levelModels(
+  PluginRegistry registry,
+  ModelManager models,
+  AppSettings settings,
+  ReadLevel level,
+) async {
+  final ids = <String>{};
+  final found = <ModelSpec>[];
+  for (final kind in ContentKind.values) {
+    final s = AppSettings.fromJson(settings.toJson())
+      ..contentKind = kind
+      ..readLevel = level
+      ..screenReadLevel = level
+      ..textPrep = switch (level) {
+        ReadLevel.simple => 'waifu2x_cunet',
+        ReadLevel.medium => 'waifu2x_swin',
+        ReadLevel.high || ReadLevel.ultra => 'fatality_comix',
+      };
+    (switch (level) {
+      ReadLevel.simple => CleanLevel.simple,
+      ReadLevel.medium => CleanLevel.medium,
+      ReadLevel.high || ReadLevel.ultra => CleanLevel.high,
+    }).applyTo(s);
+    for (final spec in await missingModels(registry, models, s)) {
+      if (ids.add(spec.id)) found.add(spec);
+    }
+  }
+  return found;
+}
+
 String _stamp(DateTime t) {
   String two(int v) => v.toString().padLeft(2, '0');
   return '${t.year}${two(t.month)}${two(t.day)}_${two(t.hour)}${two(t.minute)}${two(t.second)}';

@@ -105,7 +105,9 @@ void main() {
     }
     expect(find.text('Японский (manga-ocr)'), findsOneWidget);
     expect(find.text('Определение языка'), findsOneWidget, reason: 'for the source language "Auto"');
-    expect(find.byType(InfoHint), findsNWidgets(ModelCatalog.all.length));
+    // One per model, and one for "Download for a level".
+    expect(find.byType(InfoHint), findsNWidgets(ModelCatalog.all.length + 1));
+    expect(find.text('Скачать для уровня'), findsOneWidget);
     expect(find.text('Скачано 0 из ${ModelCatalog.all.length} · 0 B на диске'), findsOneWidget);
 
     // "Download all" shows what comes from where first; nothing starts on Cancel.

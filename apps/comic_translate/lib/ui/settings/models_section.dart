@@ -10,7 +10,7 @@ import 'package:path/path.dart' as p;
 
 import '../../l10n/app_localizations.dart';
 import '../../state/app_state.dart';
-import '../../state/batch.dart' show missingModels;
+import '../../state/batch.dart' show levelModels, missingModels;
 import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../shell_full/batch_dialogs.dart' show DialogBatchUi;
@@ -117,6 +117,12 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
   Future<void> _downloadNeeded() async {
     final services = ref.read(servicesProvider);
     final needed = await missingModels(services.registry, services.models, ref.read(settingsProvider));
+    if (mounted) await _downloadAll(needed);
+  }
+
+  Future<void> _downloadLevel(ReadLevel level) async {
+    final services = ref.read(servicesProvider);
+    final needed = await levelModels(services.registry, services.models, ref.read(settingsProvider), level);
     if (mounted) await _downloadAll(needed);
   }
 
@@ -298,6 +304,23 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
               icon: const Icon(Icons.download),
               label: Text(l.modelsNeeded(language)),
             ),
+            MenuAnchor(
+              menuChildren: [
+                for (final (level, label) in [
+                  (ReadLevel.simple, l.modelsLevelSimple),
+                  (ReadLevel.medium, l.modelsLevelMedium),
+                  (ReadLevel.high, l.modelsLevelHigh),
+                  (ReadLevel.ultra, l.modelsLevelUltra),
+                ])
+                  MenuItemButton(onPressed: () => _downloadLevel(level), child: Text(label)),
+              ],
+              builder: (context, menu, _) => OutlinedButton.icon(
+                onPressed: busy ? null : () => menu.isOpen ? menu.close() : menu.open(),
+                icon: const Icon(Icons.arrow_drop_down),
+                label: Text(l.modelsLevel),
+              ),
+            ),
+            InfoHint(l.modelsLevelInfo),
             OutlinedButton(
               onPressed: busy
                   ? null

@@ -1326,6 +1326,12 @@
     }
   },
   "modelsAll": "Download all",
+  "modelsLevel": "Download for a level",
+  "modelsLevelSimple": "Simple",
+  "modelsLevelMedium": "Medium",
+  "modelsLevelHigh": "High",
+  "modelsLevelUltra": "Ultra",
+  "modelsLevelInfo": "Everything your settings need to work, and the models of the chosen level: recognition, preparation of small text and cleaning, for comics and for screens. The list and the total size come before the download. Your settings stay as they are: the levels are chosen in \"Recognition and cleaning\".",
   "modelsVerifyAll": "Check all",
   "modelsNothingNeeded": "Everything needed is downloaded",
   "modelsSummary": "Downloaded {count} of {total} · {size} on disk",

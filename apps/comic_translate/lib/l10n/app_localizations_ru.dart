@@ -1986,6 +1986,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String get modelsAll => 'Скачать все';
 
   @override
+  String get modelsLevel => 'Скачать для уровня';
+
+  @override
+  String get modelsLevelSimple => 'Простой';
+
+  @override
+  String get modelsLevelMedium => 'Средний';
+
+  @override
+  String get modelsLevelHigh => 'Высокий';
+
+  @override
+  String get modelsLevelUltra => 'Ультра';
+
+  @override
+  String get modelsLevelInfo =>
+      'Всё, что нужно для работы с вашими настройками, и модели выбранного уровня: распознавания, подготовки мелкого текста и очистки — для «Комиксов» и для «Сайтов и игр». Перед скачиванием будет список и общий размер. Ваши настройки не меняются: уровни выбираются в разделе «Распознавание и очистка».';
+
+  @override
   String get modelsVerifyAll => 'Проверить все';
 
   @override
