@@ -572,6 +572,66 @@ abstract class AppLocalizations {
   /// **'Skip them'**
   String get handEditedSkip;
 
+  /// No description provided for @emptyFramesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Frames without text: {count}'**
+  String emptyFramesTitle(int count);
+
+  /// No description provided for @emptyFramesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'These frames have no recognized text yet. Maybe they were left empty on purpose (a sound, a picture). Recognize them before translating, or translate without them? Empty frames are not sent to the translator.'**
+  String get emptyFramesBody;
+
+  /// No description provided for @emptyFramesRemember.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember my choice (it can be changed in the settings, \"Translator\")'**
+  String get emptyFramesRemember;
+
+  /// No description provided for @emptyFramesRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize them'**
+  String get emptyFramesRead;
+
+  /// No description provided for @emptyFramesSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate without them'**
+  String get emptyFramesSkip;
+
+  /// No description provided for @emptyFrames.
+  ///
+  /// In en, this message translates to:
+  /// **'Frames without text before translating'**
+  String get emptyFrames;
+
+  /// No description provided for @emptyFramesHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'What \"Translate\" does when frames on the page have no text yet.'**
+  String get emptyFramesHelp;
+
+  /// No description provided for @emptyFramesAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask every time'**
+  String get emptyFramesAsk;
+
+  /// No description provided for @emptyFramesAlwaysRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize them'**
+  String get emptyFramesAlwaysRead;
+
+  /// No description provided for @emptyFramesAlwaysSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate without them'**
+  String get emptyFramesAlwaysSkip;
+
   /// No description provided for @missingAddressTitle.
   ///
   /// In en, this message translates to:

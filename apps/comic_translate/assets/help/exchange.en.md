@@ -30,7 +30,8 @@ The mode is chosen at the top of the exchange window.
 
 - **"Read"**: the chat reads the text from the pictures. Another translator (or the next exchange) translates it.
 - **"Translate"**: the app has read the text already; the chat gets the text with labels only (pictures if you
-  want). Works with chats that take no pictures.
+  want). Works with chats that take no pictures. If some frames have no text yet, the app asks: read them or
+  translate without them (the choice can be remembered; change it in the settings, "Translator").
 - **"Read and translate"**: the chat reads and translates in one answer.
 
 A window opened by "Translate all" has one mode: the one the settings need.
@@ -63,7 +64,8 @@ people who write the chat their own.
 
 Handy in this step:
 
-- **The page picker** ("All pages" / "Page 1"…) shows the pictures of one page (with many pages).
+- **The page picker** ("All pages" / "Page 1"…): the pictures, the instructions and "Copy the text" of one page
+  only (with many pages); under the answer, how many answers were found for it.
 - **"Open the pictures large"**: a big view of the pictures.
 - **"Sheets"**: how many bubbles go on one picture (sheet): "as many as fit" or "a set number".
   **"Sheet size"**: 1600 dots suits most chats (chats shrink big pictures and small letters stop being readable).

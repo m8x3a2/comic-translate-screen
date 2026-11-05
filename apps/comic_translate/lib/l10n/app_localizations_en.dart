@@ -293,6 +293,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get handEditedSkip => 'Skip them';
 
   @override
+  String emptyFramesTitle(int count) {
+    return 'Frames without text: $count';
+  }
+
+  @override
+  String get emptyFramesBody =>
+      'These frames have no recognized text yet. Maybe they were left empty on purpose (a sound, a picture). Recognize them before translating, or translate without them? Empty frames are not sent to the translator.';
+
+  @override
+  String get emptyFramesRemember =>
+      'Remember my choice (it can be changed in the settings, \"Translator\")';
+
+  @override
+  String get emptyFramesRead => 'Recognize them';
+
+  @override
+  String get emptyFramesSkip => 'Translate without them';
+
+  @override
+  String get emptyFrames => 'Frames without text before translating';
+
+  @override
+  String get emptyFramesHelp =>
+      'What \"Translate\" does when frames on the page have no text yet.';
+
+  @override
+  String get emptyFramesAsk => 'Ask every time';
+
+  @override
+  String get emptyFramesAlwaysRead => 'Recognize them';
+
+  @override
+  String get emptyFramesAlwaysSkip => 'Translate without them';
+
+  @override
   String get missingAddressTitle => 'Server address needed';
 
   @override

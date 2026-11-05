@@ -18,6 +18,19 @@ enum ContentKind {
   screens,
 }
 
+/// What "Translate" does with frames found but not read yet (no text). New
+/// in this project.
+enum EmptyFrames {
+  /// Asks each time.
+  ask,
+
+  /// Reads them first.
+  read,
+
+  /// Translates the rest: they stay empty and are not sent.
+  skip,
+}
+
 /// User settings stored in `settings.json` (never secrets).
 ///
 /// Defaults follow the original application (`app/ui/settings/settings_page.py`).
@@ -41,6 +54,7 @@ class AppSettings {
     this.splitGluedWords = false,
     this.checkLines = true,
     this.textPrepSeconds = 60,
+    this.emptyFrames = EmptyFrames.ask,
     this.inpaint = const InpaintConfig(),
     this.sourceLanguage = 'English',
     this.targetLanguage = 'Russian',
@@ -146,6 +160,10 @@ class AppSettings {
   /// Time a neural text preparation may spend on one page (seconds; 0: no
   /// limit), see `readingNeuralBudgetMs`. New in this project.
   int textPrepSeconds;
+
+  /// What the "Translate" step does with frames that have no text (the
+  /// answer remembered in its question, or chosen in the settings).
+  EmptyFrames emptyFrames;
   InpaintConfig inpaint;
 
   /// Default languages for new pages (canonical English names).
@@ -266,6 +284,7 @@ class AppSettings {
       'split_glued_words': splitGluedWords,
       'check_lines': checkLines,
       'text_prep_seconds': textPrepSeconds,
+      'empty_frames': emptyFrames.name,
     },
     'inpaint': inpaint.toJson(),
     'languages': {'source': sourceLanguage, 'target': targetLanguage},
@@ -358,6 +377,7 @@ class AppSettings {
       splitGluedWords: pick(tools, 'split_glued_words', defaults.splitGluedWords),
       checkLines: pick(tools, 'check_lines', defaults.checkLines),
       textPrepSeconds: pick(tools, 'text_prep_seconds', defaults.textPrepSeconds),
+      emptyFrames: EmptyFrames.values.asNameMap()[tools['empty_frames']] ?? defaults.emptyFrames,
       inpaint: InpaintConfig(
         strategy: HdStrategy.values.firstWhere((s) => s.name == strategyName, orElse: () => HdStrategy.resize),
         resizeLimit: pick<num>(inpaint, 'resize_limit', defaults.inpaint.resizeLimit).toInt(),

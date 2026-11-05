@@ -160,6 +160,34 @@ class StepsNotifier extends Notifier<StepState> {
     final start = targets.first;
     final plans = {for (final page in targets) page.id: plan(step, page, block: block)};
     final settings0 = ref.read(settingsProvider);
+    // Frames found but not read: a frame may be left empty on purpose (a
+    // sound, a picture), so they are read only when the user wants that.
+    // Pages without frames are found and read as before; reading and
+    // translating through the chat reads anyway.
+    if (step == ManualStep.translate && chat != ExchangeMode.both) {
+      final unread = [
+        for (final page in targets)
+          if (page.blocks.isNotEmpty && _unread(page, block).isNotEmpty) page,
+      ];
+      final count = unread.fold(0, (n, page) => n + _unread(page, block).length);
+      if (count > 0) {
+        var choice = settings0.emptyFrames;
+        if (choice == EmptyFrames.ask) {
+          final answer = await ui.confirmEmptyFrames(count);
+          if (answer == null) return;
+          choice = answer.choice;
+          if (answer.remember) await ref.read(settingsProvider.notifier).change((s) => s.emptyFrames = choice);
+        }
+        if (choice == EmptyFrames.skip) {
+          for (final page in unread) {
+            plans[page.id] = [
+              for (final s in plans[page.id]!)
+                if (s != ManualStep.recognize) s,
+            ];
+          }
+        }
+      }
+    }
     bool viaChat(ManualStep s) => switch (chat) {
       null =>
         (s == ManualStep.recognize && readsThroughChat(settings0)) ||

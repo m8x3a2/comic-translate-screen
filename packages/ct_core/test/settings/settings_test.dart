@@ -27,6 +27,7 @@ void main() {
     expect(s.textPrep, 'fatality_comix');
     expect(s.screenTextPrep, plainX15Id);
     expect(s.fixCyrillicLookalikes, isFalse);
+    expect(s.emptyFrames, EmptyFrames.ask, reason: 'new: asks before reading empty frames');
   });
 
   test('round trip preserves values and unknown keys', () async {
@@ -51,6 +52,7 @@ void main() {
       shortcuts: {'undo': 'Ctrl+U', 'help': ''},
       gpuCpuModels: {'rec.onnx': 'Softmax failed'},
       autoBugReport: false,
+      emptyFrames: EmptyFrames.skip,
       extra: {'future_feature': 42},
     );
     await store.save(s);
@@ -58,6 +60,7 @@ void main() {
     expect(loaded.toJson(), s.toJson());
     expect(loaded.extra['future_feature'], 42);
     expect(loaded.inpaint.strategy, HdStrategy.crop);
+    expect(loaded.emptyFrames, EmptyFrames.skip);
     expect(loaded.fixCyrillicLookalikes, isTrue);
     expect(loaded.textPrep, plainX2Id);
     expect(
@@ -144,7 +147,12 @@ void main() {
     expect(again.upgradedFrom, isNull);
 
     // No address meant OpenRouter too; a local server stays where it is.
-    expect((await load({'tools': {'translator': 'openai_compatible'}})).$1.translator, 'openrouter');
+    expect(
+      (await load({
+        'tools': {'translator': 'openai_compatible'},
+      })).$1.translator,
+      'openrouter',
+    );
     final (local, _) = await load({
       'tools': {'translator': 'openai_compatible'},
       'plugins': {

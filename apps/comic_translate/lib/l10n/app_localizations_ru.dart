@@ -294,6 +294,41 @@ class AppLocalizationsRu extends AppLocalizations {
   String get handEditedSkip => 'Пропустить их';
 
   @override
+  String emptyFramesTitle(int count) {
+    return 'Рамок без текста: $count';
+  }
+
+  @override
+  String get emptyFramesBody =>
+      'В этих рамках ещё нет распознанного текста. Возможно, их оставили пустыми специально (звук, рисунок). Распознать их перед переводом или перевести без них? Пустые рамки переводчику не отправляются.';
+
+  @override
+  String get emptyFramesRemember =>
+      'Запомнить выбор (изменить можно в настройках, раздел «Переводчик»)';
+
+  @override
+  String get emptyFramesRead => 'Распознать их';
+
+  @override
+  String get emptyFramesSkip => 'Перевести без них';
+
+  @override
+  String get emptyFrames => 'Рамки без текста перед переводом';
+
+  @override
+  String get emptyFramesHelp =>
+      'Что делает «Перевести», если на странице есть рамки без текста.';
+
+  @override
+  String get emptyFramesAsk => 'Спрашивать каждый раз';
+
+  @override
+  String get emptyFramesAlwaysRead => 'Распознавать их';
+
+  @override
+  String get emptyFramesAlwaysSkip => 'Переводить без них';
+
+  @override
   String get missingAddressTitle => 'Нужен адрес сервера';
 
   @override

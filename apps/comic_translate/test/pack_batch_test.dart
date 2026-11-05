@@ -47,6 +47,10 @@ class _Ui implements BatchUi {
   void showError(Object error) => fail('$error');
 
   @override
+  Future<({EmptyFrames choice, bool remember})?> confirmEmptyFrames(int count) async =>
+      (choice: EmptyFrames.read, remember: false);
+
+  @override
   Future<HandEditedChoice> confirmHandEdited(int count) async => HandEditedChoice.translate;
 }
 

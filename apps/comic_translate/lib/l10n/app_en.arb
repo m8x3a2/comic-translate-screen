@@ -250,6 +250,23 @@
   },
   "handEditedTranslate": "Translate again",
   "handEditedSkip": "Skip them",
+  "emptyFramesTitle": "Frames without text: {count}",
+  "@emptyFramesTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "emptyFramesBody": "These frames have no recognized text yet. Maybe they were left empty on purpose (a sound, a picture). Recognize them before translating, or translate without them? Empty frames are not sent to the translator.",
+  "emptyFramesRemember": "Remember my choice (it can be changed in the settings, \"Translator\")",
+  "emptyFramesRead": "Recognize them",
+  "emptyFramesSkip": "Translate without them",
+  "emptyFrames": "Frames without text before translating",
+  "emptyFramesHelp": "What \"Translate\" does when frames on the page have no text yet.",
+  "emptyFramesAsk": "Ask every time",
+  "emptyFramesAlwaysRead": "Recognize them",
+  "emptyFramesAlwaysSkip": "Translate without them",
   "missingAddressTitle": "Server address needed",
   "missingAddressBody": "\"{name}\" has no server address. Enter it in Settings → Translator (for example https://openrouter.ai/api/v1, or http://localhost:1234/v1 for LM Studio), or choose another translator.",
   "@missingAddressBody": {

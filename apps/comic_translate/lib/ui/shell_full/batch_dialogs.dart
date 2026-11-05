@@ -159,6 +159,46 @@ class DialogBatchUi implements BatchUi {
   }
 
   @override
+  Future<({EmptyFrames choice, bool remember})?> confirmEmptyFrames(int count) async {
+    if (!context.mounted) return null;
+    final l = context.l10n;
+    var remember = false;
+    final choice = await showDialog<EmptyFrames>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (c, setState) => AlertDialog(
+          icon: const Icon(Icons.crop_free),
+          title: Text(l.emptyFramesTitle(count)),
+          content: SizedBox(
+            width: 460,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.emptyFramesBody),
+                const SizedBox(height: 8),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: remember,
+                  onChanged: (v) => setState(() => remember = v ?? false),
+                  title: Text(l.emptyFramesRemember),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(c), child: Text(l.cancel)),
+            OutlinedButton(onPressed: () => Navigator.pop(c, EmptyFrames.skip), child: Text(l.emptyFramesSkip)),
+            FilledButton(onPressed: () => Navigator.pop(c, EmptyFrames.read), child: Text(l.emptyFramesRead)),
+          ],
+        ),
+      ),
+    );
+    return choice == null ? null : (choice: choice, remember: remember);
+  }
+
+  @override
   void showError(Object error) {
     if (!context.mounted) return;
     final l = context.l10n;

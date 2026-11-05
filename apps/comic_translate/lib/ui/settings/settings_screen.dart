@@ -302,6 +302,7 @@ class SettingsGroup extends StatelessWidget {
 
 class _Dropdown<T> extends StatelessWidget {
   const _Dropdown({
+    super.key,
     required this.label,
     required this.value,
     required this.options,
@@ -604,6 +605,20 @@ class _TranslatorSection extends ConsumerWidget {
               (v) => _change(ref, (s) => s.sendPageImage = v),
               help: l.sendPageImageHelp,
               info: l.sendPageImageInfo,
+            ),
+            const SizedBox(height: 8),
+            _Dropdown(
+              // A choice remembered in the question shows here.
+              key: ValueKey('empty_frames.${s.emptyFrames.name}'),
+              label: l.emptyFrames,
+              value: s.emptyFrames,
+              options: {
+                EmptyFrames.ask: l.emptyFramesAsk,
+                EmptyFrames.read: l.emptyFramesAlwaysRead,
+                EmptyFrames.skip: l.emptyFramesAlwaysSkip,
+              },
+              help: l.emptyFramesHelp,
+              onChanged: (v) => _change(ref, (s) => s.emptyFrames = v),
             ),
           ],
         ),

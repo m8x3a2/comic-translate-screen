@@ -52,6 +52,10 @@ class _YesUi implements BatchUi {
   int handEditedAsked = 0;
 
   @override
+  Future<({EmptyFrames choice, bool remember})?> confirmEmptyFrames(int count) async =>
+      (choice: EmptyFrames.read, remember: false);
+
+  @override
   Future<HandEditedChoice> confirmHandEdited(int count) async {
     handEditedAsked = count;
     return handEdited;

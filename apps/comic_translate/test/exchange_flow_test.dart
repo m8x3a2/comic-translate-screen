@@ -63,6 +63,10 @@ class _ChatUi implements BatchUi {
   void showError(Object error) => errors.add(error);
 
   @override
+  Future<({EmptyFrames choice, bool remember})?> confirmEmptyFrames(int count) async =>
+      (choice: EmptyFrames.read, remember: false);
+
+  @override
   Future<HandEditedChoice> confirmHandEdited(int count) async => HandEditedChoice.translate;
 }
 

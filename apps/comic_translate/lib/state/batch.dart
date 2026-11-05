@@ -38,6 +38,11 @@ abstract interface class BatchUi {
   /// again (losing those changes), skip them, or stop?
   Future<HandEditedChoice> confirmHandEdited(int count);
 
+  /// [count] frames of the pages to translate have no text: read them first
+  /// ([EmptyFrames.read]) or translate without them ([EmptyFrames.skip]),
+  /// and whether to remember the choice (no question next time); null: stop.
+  Future<({EmptyFrames choice, bool remember})?> confirmEmptyFrames(int count);
+
   /// Opens the exchange with a chat AI for [request]; true when the
   /// chat's answer was applied.
   Future<bool> exchange(ExchangeRequest request);

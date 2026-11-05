@@ -48,6 +48,18 @@ class _YesUi implements BatchUi {
     handEditedAsked = count;
     return handEdited;
   }
+
+  /// Frames without text: what to answer (null: stop) and how many were asked about.
+  EmptyFrames? emptyFrames = EmptyFrames.read;
+  bool rememberEmpty = false;
+  int emptyAsked = 0;
+
+  @override
+  Future<({EmptyFrames choice, bool remember})?> confirmEmptyFrames(int count) async {
+    emptyAsked = count;
+    final choice = emptyFrames;
+    return choice == null ? null : (choice: choice, remember: rememberEmpty);
+  }
 }
 
 void main() {
@@ -216,10 +228,10 @@ void main() {
       },
     );
     final repeats = asked.single;
-    expect([for (final r in repeats) (r.name, r.sameAs, r.sameAsNumber, p.basename(r.sameAsPath))], [
-      ('copy of b.png', 'b.png', 3, 'b.png'),
-      ('a.png', 'a.png', 5, 'a.png'),
-    ]);
+    expect(
+      [for (final r in repeats) (r.name, r.sameAs, r.sameAsNumber, p.basename(r.sameAsPath))],
+      [('copy of b.png', 'b.png', 3, 'b.png'), ('a.png', 'a.png', 5, 'a.png')],
+    );
     expect((outcome.added, outcome.repeatsLeft), (2, 1));
     expect(names(), ['d.png', 'page.png', 'b.png', 'c.png', 'a.png', 'e.png', 'a.png']);
   });
@@ -267,6 +279,71 @@ void main() {
     );
     expect(StepsNotifier.plan(ManualStep.translate, read), [ManualStep.translate]);
     expect(StepsNotifier.plan(ManualStep.clean, read.copyWith(maskPath: 'm.png')), [ManualStep.clean]);
+  });
+
+  test('"Translate" asks about frames without text: read them, translate without them, or stop', () async {
+    final ui = _YesUi();
+    final steps = container.read(stepsProvider.notifier);
+    final id = page().id;
+    void frames() => ws().edit(
+      id,
+      (p) => p.copyWith(
+        blocks: [
+          TextBlock(xyxy: const BBox(5, 5, 45, 25), text: 'Hi'),
+          TextBlock(xyxy: const BBox(50, 5, 95, 25)),
+          TextBlock(xyxy: const BBox(5, 30, 45, 55)),
+        ],
+      ),
+    );
+    List<(String, bool)> read() => [for (final b in page().blocks) (b.text, b.translation.isNotEmpty)];
+
+    // Stop: nothing is done.
+    frames();
+    ui.emptyFrames = null;
+    await steps.run(ManualStep.translate, ui);
+    expect(ui.emptyAsked, 2);
+    expect(read(), [('Hi', false), ('', false), ('', false)]);
+
+    // Without them: they stay empty and untranslated.
+    ui.emptyFrames = EmptyFrames.skip;
+    await steps.run(ManualStep.translate, ui);
+    expect(ui.errors, isEmpty);
+    expect(read(), [('Hi', true), ('', false), ('', false)]);
+
+    // Read them, remembered: the next time there is no question.
+    ui
+      ..emptyFrames = EmptyFrames.read
+      ..rememberEmpty = true;
+    await steps.run(ManualStep.translate, ui);
+    expect(read(), [('Hi', true), ('HELLO', true), ('HELLO', true)]);
+    expect(container.read(settingsProvider).emptyFrames, EmptyFrames.read);
+    frames();
+    ui.emptyAsked = 0;
+    await steps.run(ManualStep.translate, ui);
+    expect(ui.emptyAsked, 0);
+    expect(read(), [('Hi', true), ('HELLO', true), ('HELLO', true)]);
+
+    // Chosen in the settings: translated without them, no question.
+    await container.read(settingsProvider.notifier).change((s) => s.emptyFrames = EmptyFrames.skip);
+    frames();
+    await steps.run(ManualStep.translate, ui);
+    expect(ui.emptyAsked, 0);
+    expect(read(), [('Hi', true), ('', false), ('', false)]);
+
+    // One frame chosen: only it counts.
+    await container.read(settingsProvider.notifier).change((s) => s.emptyFrames = EmptyFrames.ask);
+    frames();
+    ui.rememberEmpty = false;
+    await steps.run(ManualStep.translate, ui, block: 1);
+    expect(ui.emptyAsked, 1);
+    expect(read(), [('Hi', false), ('HELLO', true), ('', false)]);
+  });
+
+  test('a page without frames is found and read with no question', () async {
+    final ui = _YesUi();
+    await container.read(stepsProvider.notifier).run(ManualStep.translate, ui);
+    expect(ui.emptyAsked, 0);
+    expect(page().blocks.single.text, 'HELLO');
   });
 
   test('translate a fresh page, make the mask, clean, then draw it for export', () async {
