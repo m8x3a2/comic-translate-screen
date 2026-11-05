@@ -111,6 +111,16 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   measured 2.5–4× fewer letter remains and less of the drawing repainted
   (the original's mask is the letters plus ≈6 px); the model needs
   `session.set_denormal_as_zero` (90 s per run without it on the CPU).
+- The Crop high-resolution strategy (`cropWindows` in `inpaint_model.dart`)
+  crops around groups of neighbouring mask spots, not around every spot: with
+  the letter mask every letter is a spot, and a 2842×4020 photo of a page made
+  794 crops of ≈1100×1100 px (78× the page, hours on a laptop). A group spans
+  at most 1024 px and gets the original's margin (512 px), less on a wide side
+  (at least 256 px) so that its crop stays within 1536 px: LaMa on a laptop
+  CPU takes ≈18 s per megapixel up to 1536 px, 33 s at 2048, 51 s at 2560, and
+  runs out of memory at 2842×3200. A lone spot gets the original's crop; an
+  image of at most 1536² px is cleaned in one pass when the crops together
+  would be larger.
 - Recognition levels (new, `tools.read_level` / `tools.screen_read_level`, see
   `read_level.dart`): for English, `LeveledOcr` wraps the chosen OCR (Default or
   PaddleOCR). Medium (the default): PP-OCRv6 small (`ppocr_v6_small`, a

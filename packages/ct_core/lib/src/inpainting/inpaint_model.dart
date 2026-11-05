@@ -35,14 +35,25 @@ class InpaintModel {
         // The original compares max(image.shape), which includes the channel
         // count; it never exceeds the sides of a real page.
         if (math.max(longSide, 3) > config.cropTriggerSize) {
-          final result = image.clone();
-          for (final box in boxesFromMask(mask)) {
-            final (crop, (l, t, r, b)) = _runBox(image, mask, box, config);
-            for (var y = t; y < b; y++) {
-              result.data.setRange(result.offset(l, y), result.offset(r, y), crop.data, crop.offset(0, y - t));
-            }
+          // Unlike the original, one crop per group of neighbouring spots (a
+          // letter mask has one spot per letter: hundreds of crops that
+          // overlap almost entirely), and one pass over a small image (at most
+          // [fastCropSide] squared) when the crops together are larger than it.
+          final windows = cropWindows(boxesFromMask(mask), image.width, image.height, config.cropMargin);
+          var area = 0;
+          for (final (l, t, r, b) in windows) {
+            area += (r - l) * (b - t);
           }
-          return result;
+          if (image.width * image.height > fastCropSide * fastCropSide || area < image.width * image.height) {
+            final result = image.clone();
+            for (final window in windows) {
+              final (crop, (l, t, r, b)) = _runWindow(image, mask, window);
+              for (var y = t; y < b; y++) {
+                result.data.setRange(result.offset(l, y), result.offset(r, y), crop.data, crop.offset(0, y - t));
+              }
+            }
+            return result;
+          }
         }
       case HdStrategy.resize:
         if (math.max(longSide, 3) > config.resizeLimit) {
@@ -84,29 +95,103 @@ class InpaintModel {
     return out;
   }
 
-  /// `_crop_box` + `_run_box`.
-  (RgbImage, (int, int, int, int)) _runBox(RgbImage image, GrayImage mask, (int, int, int, int) box, InpaintConfig config) {
-    final (x1, y1, x2, y2) = box;
-    final boxH = y2 - y1, boxW = x2 - x1;
-    final cx = (x1 + x2) ~/ 2, cy = (y1 + y2) ~/ 2;
-    final imgH = image.height, imgW = image.width;
-    final w = boxW + config.cropMargin * 2, h = boxH + config.cropMargin * 2;
-    final l0 = cx - w ~/ 2, r0 = cx + w ~/ 2, t0 = cy - h ~/ 2, b0 = cy + h ~/ 2;
-    var l = math.max(l0, 0), r = math.min(r0, imgW), t = math.max(t0, 0), b = math.min(b0, imgH);
-    // More context when the crop touches the image edge.
-    if (l0 < 0) r += -l0;
-    if (r0 > imgW) l -= r0 - imgW;
-    if (t0 < 0) b += -t0;
-    if (b0 > imgH) t -= b0 - imgH;
-    l = math.max(l, 0);
-    r = math.min(r, imgW);
-    t = math.max(t, 0);
-    b = math.min(b, imgH);
+  /// `_run_box` on a window from [cropWindows].
+  (RgbImage, (int, int, int, int)) _runWindow(RgbImage image, GrayImage mask, (int, int, int, int) window) {
+    final (l, t, r, b) = window;
     final cropImg = image.crop(BBox(l, t, r, b));
     final cropMask = mask.crop(BBox(l, t, r, b));
     final blended = _padForward(cropImg, cropMask);
     return (_truncate(blended, cropImg.width, cropImg.height), (l, t, r, b));
   }
+}
+
+/// The longest crop side the networks handle at their usual speed. LaMa on
+/// a laptop CPU (8 GB): ≈18 s per megapixel up to 1536 px, 33 s at 2048,
+/// 51 s at 2560, out of memory at 2842×3200.
+const fastCropSide = 1536;
+
+/// The least context kept around a group of spots (the original keeps
+/// `crop_margin`, 512 px by default, around every spot).
+const minCropMargin = 256;
+
+/// `_crop_box`: the crop around [box] with [margin] on every side
+/// ([marginY] above and below when given), shifted inwards (more context)
+/// where it touches the image edge.
+(int, int, int, int) cropAroundBox((int, int, int, int) box, int imgW, int imgH, int margin, {int? marginY}) {
+  final (x1, y1, x2, y2) = box;
+  final boxH = y2 - y1, boxW = x2 - x1;
+  final cx = (x1 + x2) ~/ 2, cy = (y1 + y2) ~/ 2;
+  final w = boxW + margin * 2, h = boxH + (marginY ?? margin) * 2;
+  final l0 = cx - w ~/ 2, r0 = cx + w ~/ 2, t0 = cy - h ~/ 2, b0 = cy + h ~/ 2;
+  var l = math.max(l0, 0), r = math.min(r0, imgW), t = math.max(t0, 0), b = math.min(b0, imgH);
+  if (l0 < 0) r += -l0;
+  if (r0 > imgW) l -= r0 - imgW;
+  if (t0 < 0) b += -t0;
+  if (b0 > imgH) t -= b0 - imgH;
+  return (math.max(l, 0), math.max(t, 0), math.min(r, imgW), math.min(b, imgH));
+}
+
+/// The crops of the crop strategy: the mask [boxes] are grouped while a
+/// group's boxes span at most [fastCropSide] − 2 × [minCropMargin] px each
+/// way and one crop around the group costs no more pixels than separate
+/// crops. A group gets [margin] px of context, as every spot in the
+/// original, less on a wide side so that its crop stays within
+/// [fastCropSide], but at least [minCropMargin].
+List<(int, int, int, int)> cropWindows(List<(int, int, int, int)> boxes, int imgW, int imgH, int margin) {
+  final least = math.min(minCropMargin, margin);
+  const maxGroup = fastCropSide - 2 * minCropMargin;
+  (int, int, int, int) window((int, int, int, int) box) {
+    final (x1, y1, x2, y2) = box;
+    return cropAroundBox(
+      box,
+      imgW,
+      imgH,
+      ((fastCropSide - (x2 - x1)) ~/ 2).clamp(least, margin),
+      marginY: ((fastCropSide - (y2 - y1)) ~/ 2).clamp(least, margin),
+    );
+  }
+
+  int area((int, int, int, int) box) {
+    final (l, t, r, b) = window(box);
+    return (r - l) * (b - t);
+  }
+
+  final groups = <(int, int, int, int)>[];
+  final areas = <int>[];
+  // Merges group [j] into group [i] when that pays off.
+  bool merge(int i, int j) {
+    final (ax1, ay1, ax2, ay2) = groups[i];
+    final (bx1, by1, bx2, by2) = groups[j];
+    final union = (math.min(ax1, bx1), math.min(ay1, by1), math.max(ax2, bx2), math.max(ay2, by2));
+    if (union.$3 - union.$1 > maxGroup || union.$4 - union.$2 > maxGroup) return false;
+    final merged = area(union);
+    if (merged > areas[i] + areas[j]) return false;
+    groups[i] = union;
+    areas[i] = merged;
+    groups.removeAt(j);
+    areas.removeAt(j);
+    return true;
+  }
+
+  // Each box joins the first group that takes it (there are few groups),
+  // then the groups are merged among themselves.
+  for (final box in boxes) {
+    groups.add(box);
+    areas.add(area(box));
+    for (var i = 0; i < groups.length - 1; i++) {
+      if (merge(i, groups.length - 1)) break;
+    }
+  }
+  var changed = true;
+  while (changed) {
+    changed = false;
+    for (var i = 0; i < groups.length; i++) {
+      for (var j = groups.length - 1; j > i; j--) {
+        if (merge(i, j)) changed = true;
+      }
+    }
+  }
+  return [for (final g in groups) window(g)];
 }
 
 /// numpy float → uint8 assignment / `convert_scale_abs`: clip and truncate.
@@ -193,14 +278,14 @@ GrayImage resizeMaxSizeGray(GrayImage image, int sizeLimit) {
 /// `boxes_from_mask`: bounding boxes `(x1, y1, x2, y2)` of the mask's
 /// contours (pixels above 127).
 List<(int, int, int, int)> boxesFromMask(GrayImage mask) => [
-      for (final c in findContours(mask, threshold: 127))
-        () {
-          final (x, y, w, h) = boundingRect(c);
-          return (
-            (x).clamp(0, mask.width),
-            (y).clamp(0, mask.height),
-            (x + w).clamp(0, mask.width),
-            (y + h).clamp(0, mask.height),
-          );
-        }(),
-    ];
+  for (final c in findContours(mask, threshold: 127))
+    () {
+      final (x, y, w, h) = boundingRect(c);
+      return (
+        (x).clamp(0, mask.width),
+        (y).clamp(0, mask.height),
+        (x + w).clamp(0, mask.width),
+        (y + h).clamp(0, mask.height),
+      );
+    }(),
+];
