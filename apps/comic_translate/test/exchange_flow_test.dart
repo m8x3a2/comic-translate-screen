@@ -498,6 +498,8 @@ void main() {
 
     Future<void> pick(String shown, String page) async {
       await tester.ensureVisible(find.text(shown));
+      // The window may still be moving after the answer was typed.
+      await tester.pumpAndSettle();
       await tester.tap(find.text(shown));
       await tester.pumpAndSettle();
       await tester.tap(find.text(page).last);
@@ -536,6 +538,96 @@ void main() {
     await pick('Все страницы (2)', 'Страница 1 (1)');
     expect(find.textContaining('остались пузыри всех страниц'), findsOneWidget);
     expect(await copied('Копировать инструкцию'), 'My own: [01-001] Hello [02-001] Hello');
+  });
+
+  testWidgets('a page at a time: "Next" and "Back" keep the answers, "Apply" writes all parts', (tester) async {
+    String? clipboard;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') clipboard = (call.arguments as Map)['text'] as String?;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final settings = fakeSettings();
+    settings.exchange = settings.exchange.copyWith(partPages: 1);
+    await tester.runAsync(() => start(settings));
+    await tester.runAsync(() async {
+      final path = p.join(dir.path, 'c.png');
+      await ImageCodec.writeFile(path, RgbImage.filled(100, 60, 255, 255, 255));
+      await container.read(workspaceProvider.notifier).addInputs([path]);
+    });
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [for (final p in pages()) p.id], mode: ExchangeMode.translate),
+      'Копировать текст',
+      ['Hello', 'Bye'],
+    );
+    expect(find.text('Часть 1 из 3 · страницы 1'), findsOneWidget);
+    expect(find.text('Пузырей с текстом: 6, страниц: 3'), findsOneWidget);
+    expect(find.textContaining('В запросе: пузырей — 2'), findsOneWidget);
+    await tester.tap(find.text('Копировать текст'));
+    await tester.pump();
+    expect(clipboard, '[01-001] Hello\n[01-002] Bye');
+    final answer = find.byType(TextField).last;
+    await tester.enterText(answer, '[01-001] Привет\n[01-002] Пока');
+    await tester.pump();
+    expect(find.text('Найдено ответов в этой части: 2 из 2'), findsOneWidget);
+
+    Future<void> go(String button, String ready) async {
+      await tester.tap(find.text(button));
+      for (var i = 0; i < 80 && find.text(ready).evaluate().isEmpty; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+      }
+      expect(find.text(ready), findsOneWidget);
+    }
+
+    await go('Далее', 'Часть 2 из 3 · страницы 2');
+    expect(find.text('Уже принято из прошлых ответов: 2 из 6'), findsOneWidget);
+    expect(tester.widget<TextField>(answer).controller!.text, isEmpty);
+    expect(
+      Directory(p.join(Directory(p.join(dir.path, 'exchange')).listSync().single.path, 'part_02')).existsSync(),
+      isTrue,
+    );
+    await tester.enterText(answer, '[02-001] Привет-2');
+    await tester.pump();
+    expect(find.text('Найдено ответов в этой части: 1 из 2'), findsOneWidget);
+    expect(find.text('Нет ответа: 02-002'), findsOneWidget);
+
+    await go('Назад', 'Часть 1 из 3 · страницы 1');
+    expect(find.text('Уже принято из прошлых ответов: 3 из 6'), findsOneWidget);
+    await tester.tap(find.text('Применить'));
+    for (var i = 0; i < 50 && find.text('Применить').evaluate().isNotEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+    expect(
+      [
+        for (final page in pages())
+          for (final b in page.blocks) b.translation,
+      ],
+      ['Привет', 'Пока', 'Привет-2', '', '', ''],
+    );
+  });
+
+  testWidgets('a big request: the window advises parts and turns them on', (tester) async {
+    await tester.runAsync(() => start(fakeSettings()));
+    await openWindow(
+      tester,
+      ExchangeRequest(pageIds: [for (final p in pages()) p.id], mode: ExchangeMode.translate),
+      'Копировать текст',
+      [for (var i = 0; i < 21; i++) 'Line $i'],
+    );
+    expect(find.textContaining('Лучше отправлять частями — по 1 стр.'), findsOneWidget);
+    await tester.ensureVisible(find.text('Отправлять частями'));
+    await tester.tap(find.text('Отправлять частями'));
+    for (var i = 0; i < 80 && find.text('Часть 1 из 2 · страницы 1').evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Часть 1 из 2 · страницы 1'), findsOneWidget);
+    expect(container.read(settingsProvider).exchange.partPages, 1);
+    expect(find.textContaining('Лучше отправлять частями'), findsNothing);
   });
 
   testWidgets('the pictures of one page: the list of pages over the pictures', (tester) async {

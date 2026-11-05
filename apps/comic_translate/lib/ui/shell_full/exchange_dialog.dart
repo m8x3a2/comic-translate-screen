@@ -5,6 +5,7 @@ library;
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:ct_core/ct_core.dart';
 import 'package:file_selector/file_selector.dart';
@@ -26,6 +27,10 @@ import '../settings/settings_screen.dart';
 import 'exchange_gallery.dart';
 import 'glossary_dialog.dart';
 import 'main_screen.dart' show showInExplorer;
+
+/// More pieces than this in one request: chats tend to skip some in a long
+/// answer, so the window advises sending the pages in parts.
+const bigRequestPieces = 40;
 
 /// Opens the exchange window for [request]; with [existing], the folder of
 /// an earlier exchange is opened instead of writing a new one. True when
@@ -132,6 +137,11 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   Directory? _roundDir;
   var _rounds = 0;
 
+  /// A few pages at a time ([ExchangeSettings.partPages]): the page ids of
+  /// each part and the part shown. Empty: all pages at once.
+  var _parts = <List<String>>[];
+  var _part = 0;
+
   /// Answers taken in earlier rounds; a new answer for a piece replaces its
   /// earlier one.
   final _accepted = <ExchangeLabel, ExchangeReply>{};
@@ -184,11 +194,104 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     super.dispose();
   }
 
-  /// The pages of the exchange; in another round, only with its pieces.
+  /// The pages of the exchange (of the part shown); in another round, only
+  /// with its pieces.
   List<ExchangePage> get _pages {
-    final pages = exchangePages(ref.read(workspaceProvider), widget.request);
+    var pages = exchangePages(ref.read(workspaceProvider), widget.request);
+    if (_parts.isNotEmpty) {
+      final part = _parts[_part].toSet();
+      pages = [
+        for (final page in pages)
+          if (part.contains(page.id)) page,
+      ];
+    }
     final round = _round;
     return round == null ? pages : exchangePagesOf(pages, round);
+  }
+
+  /// All the pieces of the exchange, in every part.
+  List<ExchangeItem> get _wholeItems =>
+      exchangeItems(exchangePages(ref.read(workspaceProvider), widget.request), _mode);
+
+  /// The parts: the pages with pieces in this mode, so many at a time; none
+  /// when they all fit in one.
+  List<List<String>> _partsNow() {
+    final size = _options.partPages;
+    if (size <= 0 || widget.existing != null) return const [];
+    final ids = <String>[];
+    for (final it in _wholeItems) {
+      if (ids.isEmpty || ids.last != it.pageId) ids.add(it.pageId);
+    }
+    if (ids.length <= size) return const [];
+    return [for (var i = 0; i < ids.length; i += size) ids.sublist(i, math.min(i + size, ids.length))];
+  }
+
+  /// The page numbers (as in the labels) of the part shown; null: no parts.
+  Set<int>? get _partNumbers {
+    if (_parts.isEmpty) return null;
+    final ids = _parts[_part].toSet();
+    return {
+      for (final it in _items)
+        if (ids.contains(it.pageId)) it.label.page,
+    };
+  }
+
+  /// What the answer has so far is taken (it stays when the fields change).
+  void _acceptShown() {
+    final shown = _shownMatch;
+    if (shown == null) return;
+    _accepted
+      ..clear()
+      ..addAll(shown.replies);
+    _acceptedUnchanged
+      ..clear()
+      ..addAll(shown.unchanged);
+  }
+
+  /// "Next" / "Back": the answers of this part are kept, part [n] is shown.
+  Future<void> _goToPart(int n) async {
+    _clearAnswer();
+    setState(() {
+      _acceptShown();
+      _part = n;
+      _round = null;
+      _roundDir = null;
+      _first = null;
+      _roundMissing = [];
+      _roundAgain = [];
+      _resetPrompt();
+      _match = null;
+      _fromFiles = null;
+      _note = null;
+      _offer = null;
+      _selected.clear();
+      _page.value = null;
+      _askAgain.clear();
+    });
+    await _rebuild();
+  }
+
+  /// For a request of many pieces on several pages sent at once: how many
+  /// pages at a time keep each part within [bigRequestPieces] (one page at
+  /// least); null when the request is not big.
+  int? _partsAdvice() {
+    if (_parts.isNotEmpty || _round != null || widget.existing != null) return null;
+    final perPage = <String, int>{};
+    for (final it in _items) {
+      perPage[it.pageId] = (perPage[it.pageId] ?? 0) + 1;
+    }
+    if (_items.length <= bigRequestPieces || perPage.length < 2) return null;
+    final counts = perPage.values.toList();
+    bool fits(int size) =>
+        [for (var i = 0; i < counts.length; i += size) counts.skip(i).take(size).fold(0, (a, b) => a + b)]
+            .every((n) => n <= bigRequestPieces);
+    return [10, 5, 3, 2].firstWhere(fits, orElse: () => 1);
+  }
+
+  /// Shows [size] pages at a time (0: all at once), from the first part.
+  void _setPartPages(int size) {
+    setState(() => _part = 0);
+    unawaited(_changeOptions((e) => e.copyWith(partPages: size)));
   }
 
   /// Writes the exchange folder again (options changed).
@@ -198,6 +301,10 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       return;
     }
     final settings = ref.read(settingsProvider);
+    if (_round == null) {
+      _parts = _partsNow();
+      _part = _parts.isEmpty ? 0 : math.min(_part, _parts.length - 1);
+    }
     final pages = _pages;
     final round = _round != null;
     final count = exchangeItems(pages, _mode).length;
@@ -216,7 +323,10 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       _exportError = null;
     });
     try {
-      final dir = _roundDir ?? (_dir ??= newExchangeDir(ref.read(servicesProvider).paths));
+      final root = _dir ??= newExchangeDir(ref.read(servicesProvider).paths);
+      // A folder of its own for each part.
+      final dir =
+          _roundDir ?? (_parts.isEmpty ? root : Directory(p.join(root.path, 'part_${'${_part + 1}'.padLeft(2, '0')}')));
       final e = settings.exchange;
       final textsKey = '${dir.path}|${_mode.name}|${e.splitFiles}|${e.textFiles.name}';
       final out = await exportExchange(
@@ -232,7 +342,8 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       );
       _textsKey = textsKey;
       if (!mounted) return;
-      if (!round) _allItems = out.items;
+      // The answers count against the pieces of every part.
+      if (!round) _allItems = _parts.isEmpty ? out.items : _wholeItems;
       // The same image files are written again: every size of them shown
       // before is forgotten (the pictures are keyed by [out], so they load
       // again).
@@ -529,18 +640,10 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   /// the ones asked again ([again]): what was answered so far is kept, the
   /// answer fields are for the new answer.
   Future<void> _startRound(List<ExchangeLabel> missing, List<ExchangeLabel> again) async {
-    final shown = _shownMatch;
     final labels = {...missing, ...again};
     _clearAnswer();
     setState(() {
-      if (shown != null) {
-        _accepted
-          ..clear()
-          ..addAll(shown.replies);
-        _acceptedUnchanged
-          ..clear()
-          ..addAll(shown.unchanged);
-      }
+      _acceptShown();
       _first ??= _export;
       _rounds++;
       _round = [
@@ -618,7 +721,10 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     final export = _export;
     final existing = widget.existing != null;
     final pages = existing ? widget.existing!.pages.length : widget.request.pageIds.length;
-    final count = export?.items.length ?? (existing ? 0 : exchangeItems(_pages, _mode).length);
+    // In parts: all of them (also while the first part is being prepared).
+    final count = _parts.isNotEmpty
+        ? _wholeItems.length
+        : export?.items.length ?? (existing ? 0 : exchangeItems(_pages, _mode).length);
     final canApply = export != null && (_shownMatch?.replies.isNotEmpty ?? false);
     return Dialog(
       child: ConstrainedBox(
@@ -650,7 +756,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                       ],
                       selected: {_mode},
                       // The answers taken belong to this mode.
-                      onSelectionChanged: _rounds > 0
+                      onSelectionChanged: _rounds > 0 || _accepted.isNotEmpty
                           ? null
                           : (s) {
                               setState(() {
@@ -684,6 +790,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                           _translationRow(l, theme),
                         ],
                         const SizedBox(height: 12),
+                        if (_parts.isNotEmpty) ...[_partBar(l, theme), const SizedBox(height: 12)],
                         if (c.maxWidth >= 1000)
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -729,6 +836,48 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     );
   }
 
+  /// Which part is shown, "Back" and "Next".
+  Widget _partBar(AppLocalizations l, ThemeData theme) {
+    final ws = ref.read(workspaceProvider);
+    final numbers = {for (final id in _parts[_part]) ws.pages.indexWhere((p) => p.id == id) + 1};
+    final busy = _exporting || _applying;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+      decoration: BoxDecoration(color: theme.colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        children: [
+          OutlinedButton.icon(
+            onPressed: _part > 0 && !busy ? () => _goToPart(_part - 1) : null,
+            icon: const Icon(Icons.chevron_left),
+            label: Text(l.chatPartBack),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.chatPartOf(_part + 1, _parts.length, pagesText(numbers)),
+                  style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+                ),
+                Text(
+                  l.chatPartHelp,
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: _part < _parts.length - 1 && !busy ? () => _goToPart(_part + 1) : null,
+            icon: const Icon(Icons.chevron_right),
+            label: Text(l.chatPartNext),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _optionsRow(AppLocalizations l, ThemeData theme) {
     final s = ref.watch(settingsProvider.select((s) => s.exchange));
     final sheets = _mode.sendsImages;
@@ -742,6 +891,8 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     }) => SizedBox(
       width: width,
       child: DropdownButtonFormField<T>(
+        // The value may change from elsewhere ("Send in parts").
+        key: ValueKey('$label=$value'),
         initialValue: value,
         isDense: true,
         // Long names (other languages) end with "…" instead of spilling over.
@@ -764,6 +915,11 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       runSpacing: 12,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        if (widget.request.pageIds.length > 1)
+          dropdown(l.chatPartPages, s.partPages, {
+            0: l.chatPartAll,
+            for (final n in {1, 2, 3, 5, 10, if (s.partPages > 0) s.partPages}.toList()..sort()) n: '$n',
+          }, _setPartPages),
         if (sheets) ...[
           dropdown(
             l.chatSheets,
@@ -970,6 +1126,32 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
                     ),
                 ],
               ),
+              const SizedBox(height: 8),
+              Text(l.chatRequestSize(export.items.length, _prompt.text.length), style: theme.textTheme.bodySmall),
+              if (_partsAdvice() case final size?)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.tertiaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.call_split, color: theme.colorScheme.onTertiaryContainer),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            l.chatRequestBig(size),
+                            style: TextStyle(color: theme.colorScheme.onTertiaryContainer),
+                          ),
+                        ),
+                        TextButton(onPressed: () => _setPartPages(size), child: Text(l.chatRequestSplit)),
+                      ],
+                    ),
+                  ),
+                ),
               if (_note != null) ...[
                 const SizedBox(height: 8),
                 Text(_note!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
@@ -1080,12 +1262,16 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   }
 
   Widget _answerCard(AppLocalizations l, ThemeData theme) {
-    // With a page picked, what the answer has for that page.
+    // With a page picked or in parts, what the answer has for the pages shown.
     final page = _pickedPage;
+    final pages = page != null ? {page} : _partNumbers;
+    bool shownHere(ExchangeLabel x) => pages == null || pages.contains(x.page);
     final shown = _shownMatch;
-    final match = shown == null || page == null ? shown : _matchOnPage(shown, page);
-    final total = page == null ? _items.length : _items.where((it) => it.label.page == page).length;
-    final accepted = _accepted.keys.where((x) => page == null || x.page == page).length;
+    final match = shown == null || pages == null ? shown : _matchOn(shown, pages);
+    final total = _items.where((it) => shownHere(it.label)).length;
+    // In parts: what was taken in all of them.
+    final accepted = _parts.isNotEmpty ? _accepted.length : _accepted.keys.where(shownHere).length;
+    final acceptedOf = _parts.isNotEmpty ? _items.length : total;
     final warn = TextStyle(color: theme.colorScheme.error);
     final s = ref.watch(settingsProvider.select((s) => s.exchange));
     final two = _mode == ExchangeMode.both && s.apart;
@@ -1189,12 +1375,14 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
               Text(_glossaryNote!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary)),
               const SizedBox(height: 8),
             ],
-            if (accepted > 0) Text(l.chatAccepted(accepted, total)),
+            if (accepted > 0) Text(l.chatAccepted(accepted, acceptedOf)),
             if (match != null) ...[
               Text(
-                page == null
-                    ? l.chatFound(match.replies.length, total)
-                    : l.chatFoundOnPage(page, match.replies.length, total),
+                page != null
+                    ? l.chatFoundOnPage(page, match.replies.length, total)
+                    : pages != null
+                    ? l.chatFoundInPart(match.replies.length, total)
+                    : l.chatFound(match.replies.length, total),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: match.replies.length == total ? Colors.green.shade600 : null,
@@ -1314,17 +1502,17 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   }
 }
 
-/// What [match] has for the pieces of [page]; labels that were not sent
+/// What [match] has for the pieces of [pages]; labels that were not sent
 /// stay (they belong to no page of the exchange).
-ExchangeMatch _matchOnPage(ExchangeMatch match, int page) {
+ExchangeMatch _matchOn(ExchangeMatch match, Set<int> pages) {
   List<ExchangeLabel> own(List<ExchangeLabel> labels) => [
     for (final x in labels)
-      if (x.page == page) x,
+      if (pages.contains(x.page)) x,
   ];
   return ExchangeMatch(
     replies: {
       for (final e in match.replies.entries)
-        if (e.key.page == page) e.key: e.value,
+        if (pages.contains(e.key.page)) e.key: e.value,
     },
     missing: own(match.missing),
     unknown: match.unknown,

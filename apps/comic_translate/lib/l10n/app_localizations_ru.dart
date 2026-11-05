@@ -2840,6 +2840,45 @@ class AppLocalizationsRu extends AppLocalizations {
       'В инструкции остались пузыри всех страниц: её изменили вручную, или это прошлый обмен.';
 
   @override
+  String chatFoundInPart(int found, int total) {
+    return 'Найдено ответов в этой части: $found из $total';
+  }
+
+  @override
+  String get chatPartPages => 'Страниц за раз';
+
+  @override
+  String get chatPartAll => 'все';
+
+  @override
+  String chatPartOf(int part, int parts, String pages) {
+    return 'Часть $part из $parts · страницы $pages';
+  }
+
+  @override
+  String get chatPartHelp =>
+      '«Далее» запоминает ответы этой части и показывает следующую. «Применить» запишет ответы всех частей.';
+
+  @override
+  String get chatPartBack => 'Назад';
+
+  @override
+  String get chatPartNext => 'Далее';
+
+  @override
+  String chatRequestSize(int pieces, int chars) {
+    return 'В запросе: пузырей — $pieces, знаков в инструкции — $chars';
+  }
+
+  @override
+  String chatRequestBig(int size) {
+    return 'Запрос большой: на длинных ответах чаты пропускают пузыри. Лучше отправлять частями — по $size стр.';
+  }
+
+  @override
+  String get chatRequestSplit => 'Отправлять частями';
+
+  @override
   String chatFoundOnPage(int page, int found, int total) {
     return 'Найдено ответов на странице $page: $found из $total';
   }

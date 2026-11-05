@@ -87,6 +87,7 @@ class ExchangeSettings {
     this.perSheet = 8,
     this.sheetMaxPx = 1600,
     this.sheetPerPage = false,
+    this.partPages = 0,
     this.contextImage = ContextImage.off,
     this.images = ExchangeImages.sheets,
     this.cropsPerFolder = 10,
@@ -122,6 +123,10 @@ class ExchangeSettings {
 
   /// Each page starts a new sheet.
   final bool sheetPerPage;
+
+  /// The exchange window shows this many pages at a time, one part after
+  /// another ("Next"); 0: all pages at once.
+  final int partPages;
   final ContextImage contextImage;
   final ExchangeImages images;
   final int cropsPerFolder;
@@ -182,6 +187,7 @@ class ExchangeSettings {
     int? perSheet,
     int? sheetMaxPx,
     bool? sheetPerPage,
+    int? partPages,
     ContextImage? contextImage,
     ExchangeImages? images,
     int? cropsPerFolder,
@@ -202,6 +208,7 @@ class ExchangeSettings {
     perSheet: perSheet ?? this.perSheet,
     sheetMaxPx: sheetMaxPx ?? this.sheetMaxPx,
     sheetPerPage: sheetPerPage ?? this.sheetPerPage,
+    partPages: partPages ?? this.partPages,
     contextImage: contextImage ?? this.contextImage,
     images: images ?? this.images,
     cropsPerFolder: cropsPerFolder ?? this.cropsPerFolder,
@@ -234,6 +241,7 @@ class ExchangeSettings {
     'per_sheet': perSheet,
     'sheet_max_px': sheetMaxPx,
     'sheet_per_page': sheetPerPage,
+    'part_pages': partPages,
     'context_image': contextImage.name,
     'images': images.name,
     'crops_per_folder': cropsPerFolder,
@@ -265,6 +273,7 @@ class ExchangeSettings {
       perSheet: number('per_sheet', d.perSheet, 1, 200),
       sheetMaxPx: number('sheet_max_px', d.sheetMaxPx, minSheetPx, maxSheetPx),
       sheetPerPage: flag('sheet_per_page', d.sheetPerPage),
+      partPages: number('part_pages', d.partPages, 0, 100),
       contextImage: ContextImage.parse(json['context_image'] as String?),
       images: ExchangeImages.parse(json['images'] as String?),
       cropsPerFolder: number('crops_per_folder', d.cropsPerFolder, 1, 1000),

@@ -66,6 +66,11 @@ Handy in this step:
 
 - **The page picker** ("All pages" / "Page 1"…): the pictures, the instructions and "Copy the text" of one page
   only (with many pages); under the answer, how many answers were found for it.
+- **"Pages at a time"**: send in parts: the window shows one part (for example one page) with its pictures,
+  instructions and text. **"Next"** keeps the answers of this part and shows the next one, **"Back"** the one
+  before; **"Apply"** writes the answers of all parts. Handy for long chapters and on a phone.
+- **"In this request: N bubbles"**: the size of the request. When it is big, the window offers **"Send in parts"**:
+  chats skip bubbles in long answers.
 - **"Open the pictures large"**: a big view of the pictures.
 - **"Sheets"**: how many bubbles go on one picture (sheet): "as many as fit" or "a set number".
   **"Sheet size"**: 1600 dots suits most chats (chats shrink big pictures and small letters stop being readable).

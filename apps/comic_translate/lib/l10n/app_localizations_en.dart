@@ -2838,6 +2838,45 @@ class AppLocalizationsEn extends AppLocalizations {
       'The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.';
 
   @override
+  String chatFoundInPart(int found, int total) {
+    return 'Answers found in this part: $found of $total';
+  }
+
+  @override
+  String get chatPartPages => 'Pages at a time';
+
+  @override
+  String get chatPartAll => 'all';
+
+  @override
+  String chatPartOf(int part, int parts, String pages) {
+    return 'Part $part of $parts · pages $pages';
+  }
+
+  @override
+  String get chatPartHelp =>
+      '\"Next\" keeps the answers of this part and shows the next one. \"Apply\" writes the answers of all parts.';
+
+  @override
+  String get chatPartBack => 'Back';
+
+  @override
+  String get chatPartNext => 'Next';
+
+  @override
+  String chatRequestSize(int pieces, int chars) {
+    return 'In this request: $pieces bubbles, $chars characters of instructions';
+  }
+
+  @override
+  String chatRequestBig(int size) {
+    return 'A big request: chats skip bubbles in long answers. Better send it in parts of $size pages.';
+  }
+
+  @override
+  String get chatRequestSplit => 'Send in parts';
+
+  @override
   String chatFoundOnPage(int page, int found, int total) {
     return 'Answers found on page $page: $found of $total';
   }

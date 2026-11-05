@@ -4892,6 +4892,66 @@ abstract class AppLocalizations {
   /// **'The instructions still have the bubbles of all pages: they were changed by hand or come from an earlier exchange.'**
   String get chatPromptAllPages;
 
+  /// No description provided for @chatFoundInPart.
+  ///
+  /// In en, this message translates to:
+  /// **'Answers found in this part: {found} of {total}'**
+  String chatFoundInPart(int found, int total);
+
+  /// No description provided for @chatPartPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages at a time'**
+  String get chatPartPages;
+
+  /// No description provided for @chatPartAll.
+  ///
+  /// In en, this message translates to:
+  /// **'all'**
+  String get chatPartAll;
+
+  /// No description provided for @chatPartOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Part {part} of {parts} · pages {pages}'**
+  String chatPartOf(int part, int parts, String pages);
+
+  /// No description provided for @chatPartHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Next\" keeps the answers of this part and shows the next one. \"Apply\" writes the answers of all parts.'**
+  String get chatPartHelp;
+
+  /// No description provided for @chatPartBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get chatPartBack;
+
+  /// No description provided for @chatPartNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get chatPartNext;
+
+  /// No description provided for @chatRequestSize.
+  ///
+  /// In en, this message translates to:
+  /// **'In this request: {pieces} bubbles, {chars} characters of instructions'**
+  String chatRequestSize(int pieces, int chars);
+
+  /// No description provided for @chatRequestBig.
+  ///
+  /// In en, this message translates to:
+  /// **'A big request: chats skip bubbles in long answers. Better send it in parts of {size} pages.'**
+  String chatRequestBig(int size);
+
+  /// No description provided for @chatRequestSplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Send in parts'**
+  String get chatRequestSplit;
+
   /// No description provided for @chatFoundOnPage.
   ///
   /// In en, this message translates to:
