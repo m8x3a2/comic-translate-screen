@@ -143,7 +143,7 @@ class AppServices {
       settingsStore: SettingsStore(paths.settingsFile, log: log),
       registry: registry ?? builtInRegistry(),
       usage: UsageLog(paths.usageFile),
-      history: TranslatorHistory(paths.historyFile),
+      history: TranslatorHistory(paths.historyFile, redactor: redactor),
     );
   }
 

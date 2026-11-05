@@ -8,6 +8,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import '../diagnostics/redactor.dart';
+
 /// One request to a translator.
 class HistoryEntry {
   const HistoryEntry({
@@ -119,18 +121,22 @@ typedef HistorySink = FutureOr<void> Function(HistoryEntry entry);
 
 /// The history in a JSON file: the newest [keep] requests.
 class TranslatorHistory {
-  TranslatorHistory(this.file);
+  TranslatorHistory(this.file, {this.redactor});
 
   static const keep = 100;
 
   final File file;
+
+  /// Masks keys in what is kept: a server may put the key into its answer
+  /// or error message.
+  final Redactor? redactor;
   Future<void> _queue = Future.value();
 
   /// Adds [entry]; the oldest go past [keep]. Never throws: a history that
   /// cannot be written must not fail a translation.
   Future<void> record(HistoryEntry entry) => _queue = _queue.then((_) async {
     try {
-      final entries = [..._load().map((e) => e.toJson()), entry.toJson()];
+      final entries = [..._load().map((e) => e.toJson()), _masked(entry.toJson())];
       final kept = entries.length > keep ? entries.sublist(entries.length - keep) : entries;
       await file.parent.create(recursive: true);
       // Written next to the file and renamed over it: a reader never sees half
@@ -147,6 +153,21 @@ class TranslatorHistory {
       // Best effort.
     }
   });
+
+  /// [json] of an entry with what came from the server masked (what was sent
+  /// never holds the key: it goes in a header).
+  Map<String, Object?> _masked(Map<String, Object?> json) {
+    final r = redactor;
+    if (r == null) return json;
+    return {
+      for (final MapEntry(:key, :value) in json.entries)
+        key: switch (value) {
+          final String s when key == 'reply' || key == 'error' => r.redact(s),
+          final List<String> list when key == 'warnings' => [for (final s in list) r.redact(s)],
+          _ => value,
+        },
+    };
+  }
 
   /// Newest first.
   Future<List<HistoryEntry>> read() async {

@@ -358,13 +358,14 @@ class PipelineWorker {
     CancelToken? cancel,
     void Function(String stage)? onStage,
   }) {
-    assert(
-      op == _Op.load || op == _Op.translatePack || (path == null) != (image == null),
-      'pass either path or image',
-    );
+    assert(op == _Op.load || op == _Op.translatePack || (path == null) != (image == null), 'pass either path or image');
     final id = _nextId++;
     final pending = _Pending<Object?>(onStage);
-    _send(id, pending, _Job(id, op, page, path, image, blocks, mask, source, target, parts, below, covered, read, translate, pack));
+    _send(
+      id,
+      pending,
+      _Job(id, op, page, path, image, blocks, mask, source, target, parts, below, covered, read, translate, pack),
+    );
     // A cancel answers at once: the worker stops at its next checkpoint, and
     // what it sends back for this job is dropped (a step must not apply the
     // result of work the user stopped).
@@ -622,7 +623,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
   final registry = setup.registry();
   final settings = setup.spec.settings;
   final usage = setup.usageFile == null ? null : UsageLog(File(setup.usageFile!));
-  final history = setup.historyFile == null ? null : TranslatorHistory(File(setup.historyFile!));
+  final history = setup.historyFile == null ? null : TranslatorHistory(File(setup.historyFile!), redactor: redactor);
   RunRecorder? recorder;
   late final EventLog log;
   late final LazyPlugins plugins;

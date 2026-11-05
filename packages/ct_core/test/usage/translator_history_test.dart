@@ -51,6 +51,31 @@ void main() {
     expect(await history.read(), isEmpty);
   });
 
+  test('a key the server put into its answer or error is masked in the file', () async {
+    const key = 'my-own-server-key-123456';
+    final history = TranslatorHistory(
+      File(p.join(tmp.path, 'translator_history.json')),
+      redactor: Redactor(secrets: [key]),
+    );
+    await history.record(entry(1, error: 'Incorrect API key provided: $key'));
+    await history.record(
+      HistoryEntry(
+        time: DateTime(2026, 11, 5),
+        plugin: 'openai_compatible',
+        host: 'example.com',
+        model: 'm',
+        ms: 1,
+        sent: 'Hi',
+        reply: 'echo $key',
+        blocks: 1,
+        warnings: const ['cut: $key'],
+      ),
+    );
+    expect(history.file.readAsStringSync(), isNot(contains(key)));
+    final read = await history.read();
+    expect([read.first.reply, read.first.warnings.single, read.last.error], everyElement(contains(Redactor.mask)));
+  });
+
   test('a broken file is an empty history; reporting never throws', () async {
     final file = File(p.join(tmp.path, 'translator_history.json'))..writeAsStringSync('{broken');
     expect(await TranslatorHistory(file).read(), isEmpty);
