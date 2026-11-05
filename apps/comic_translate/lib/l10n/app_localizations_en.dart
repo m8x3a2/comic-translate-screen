@@ -2933,6 +2933,33 @@ class AppLocalizationsEn extends AppLocalizations {
       '\"Next\" keeps the answers of this part and shows the next one. \"Apply\" writes the answers of all parts.';
 
   @override
+  String get chatPartPick => 'Go to a part';
+
+  @override
+  String chatPartItem(int part, String pages, int answered, int total) {
+    return 'Part $part · pages $pages · answers $answered of $total';
+  }
+
+  @override
+  String get chatGalleryParts => 'All parts';
+
+  @override
+  String get chatPartsViewHelp =>
+      'The pictures of every part, to look at. Copying and answering are in the part itself (the list of parts over the window).';
+
+  @override
+  String chatPartsPrepare(int count) {
+    return 'Prepare the other parts ($count)';
+  }
+
+  @override
+  String get chatPartShown => 'open now';
+
+  @override
+  String get chatPartNotPrepared =>
+      'Not prepared yet: its pictures come when you go to it or with \"Prepare the other parts\".';
+
+  @override
   String get chatPartBack => 'Back';
 
   @override

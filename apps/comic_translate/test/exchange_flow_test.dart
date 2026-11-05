@@ -611,6 +611,60 @@ void main() {
     );
   });
 
+  testWidgets('any part from the list over the window; the large view shows the pictures of all parts', (tester) async {
+    final settings = fakeSettings();
+    settings.exchange = settings.exchange.copyWith(partPages: 1);
+    await tester.runAsync(() => start(settings));
+    await tester.runAsync(() async {
+      final path = p.join(dir.path, 'c.png');
+      await ImageCodec.writeFile(path, RgbImage.filled(100, 60, 255, 255, 255));
+      await container.read(workspaceProvider.notifier).addInputs([path]);
+    });
+    final request = ExchangeRequest(pageIds: [for (final p in pages()) p.id], mode: ExchangeMode.both);
+    await openWindow(tester, request, 'Копировать картинки (1)', ['Hello', 'Bye']);
+    Future<void> waitFor(Finder finder) async {
+      for (var i = 0; i < 80 && finder.evaluate().isEmpty; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+        await tester.pump();
+      }
+      expect(finder, findsWidgets);
+    }
+
+    await tester.enterText(find.byType(TextField).last, '[01-001] Hi --> Привет');
+    await tester.pump();
+    await tester.ensureVisible(find.text('Часть 1 из 3 · страницы 1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Часть 1 из 3 · страницы 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Часть 1 · страницы 1 · ответов 1 из 2'), findsOneWidget);
+    await tester.tap(find.text('Часть 3 · страницы 3 · ответов 0 из 2'));
+    await tester.pump(const Duration(milliseconds: 400));
+    await waitFor(find.text('Часть 3 из 3 · страницы 3'));
+    await waitFor(find.text('Копировать картинки (1)'));
+    expect(find.text('Уже принято из прошлых ответов: 1 из 6'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.open_in_full));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Все части'));
+    await tester.pump();
+    await waitFor(find.text('Подготовить остальные части (1)'));
+    expect(find.textContaining('Ещё не подготовлена'), findsOneWidget, reason: 'part 2 was never shown');
+    await tester.tap(find.text('Подготовить остальные части (1)'));
+    await tester.pump();
+    for (var i = 0; i < 80 && find.textContaining('Ещё не подготовлена').evaluate().isNotEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump();
+    }
+    expect(find.textContaining('Ещё не подготовлена'), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text('Часть 3 из 3 · страницы 3  ·  открыта сейчас'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    final root = Directory(p.join(dir.path, 'exchange')).listSync().whereType<Directory>().single;
+    expect(File(p.join(root.path, 'part_02', exchangeManifestName)).existsSync(), isTrue);
+  });
+
   testWidgets('an exchange in parts closed before "Apply" goes on from its folder, with its answers', (tester) async {
     final settings = fakeSettings();
     settings.exchange = settings.exchange.copyWith(partPages: 1);

@@ -289,6 +289,85 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     };
   }
 
+  /// The page numbers of part [n], as in the labels.
+  Set<int> _partPageNumbers(int n) {
+    final ws = ref.read(workspaceProvider);
+    return {for (final id in _parts[n]) ws.pages.indexWhere((p) => p.id == id) + 1};
+  }
+
+  Directory _partDir(int n) => Directory(p.join(_dir!.path, 'part_${'${n + 1}'.padLeft(2, '0')}'));
+
+  /// Folders written by [_prepareParts]: their pictures load anew.
+  var _prepared = 0;
+
+  /// The pictures of every part for the large view; parts not written yet
+  /// have none.
+  Future<List<PartPictures>> _readPartPictures() async {
+    final l = context.l10n;
+    final shown = _round == null ? _export : _first;
+    return [
+      for (var n = 0; n < _parts.length; n++)
+        await () async {
+          final title = l.chatPartOf(n + 1, _parts.length, pagesText(_partPageNumbers(n)));
+          final export = n == _part && shown != null ? shown : await _writtenBefore(_partDir(n));
+          return export == null
+              ? PartPictures(title: title, dir: _partDir(n).path, pictures: const [], prepared: false)
+              : PartPictures(
+                  title: title,
+                  dir: export.dir,
+                  pictures: export.pictures,
+                  current: n == _part,
+                  version: _prepared,
+                );
+        }(),
+    ];
+  }
+
+  /// Writes the folders of the parts not written yet (to look at them all);
+  /// the part shown stays.
+  Future<void> _prepareParts() async {
+    final settings = ref.read(settingsProvider);
+    final ws = ref.read(workspaceProvider);
+    final all = exchangePages(ws, widget.request);
+    for (var n = 0; n < _parts.length; n++) {
+      final dir = _partDir(n);
+      if (File(p.join(dir.path, exchangeManifestName)).existsSync()) continue;
+      final ids = _parts[n].toSet();
+      try {
+        await exportExchange(
+          dir,
+          ws,
+          [
+            for (final page in all)
+              if (ids.contains(page.id)) page,
+          ],
+          _mode,
+          settings,
+        );
+      } catch (e, st) {
+        _appLog.error('exchange_part_prepare_failed', e, st);
+      }
+    }
+    _prepared++;
+  }
+
+  /// The pieces of part [n].
+  List<ExchangeItem> _partItems(int n) {
+    final ids = _parts[n].toSet();
+    return [
+      for (final it in _items)
+        if (ids.contains(it.pageId)) it,
+    ];
+  }
+
+  int _itemsIn(int n) => _partItems(n).length;
+
+  /// Pieces of part [n] with an answer (taken or in the fields now).
+  int _answeredIn(int n) {
+    final replies = _shownMatch?.replies ?? const {};
+    return _partItems(n).where((it) => replies.containsKey(it.label)).length;
+  }
+
   /// What the answer has so far is taken (it stays when the fields change).
   void _acceptShown() {
     final shown = _shownMatch;
@@ -763,6 +842,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
       groups: _groups.text,
       onCopy: _copy,
       pieces: pieces,
+      parts: _parts.isEmpty ? null : GalleryParts(read: _readPartPictures, prepare: _prepareParts),
     );
     if (result == null || !mounted) return;
     setState(() {
@@ -1020,9 +1100,13 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
 
   /// Which part is shown, "Back" and "Next".
   Widget _partBar(AppLocalizations l, ThemeData theme) {
-    final ws = ref.read(workspaceProvider);
-    final numbers = {for (final id in _parts[_part]) ws.pages.indexWhere((p) => p.id == id) + 1};
+    final numbersOf = _partPageNumbers;
+    final numbers = numbersOf(_part);
     final busy = _exporting || _applying;
+    final title = Text(
+      l.chatPartOf(_part + 1, _parts.length, pagesText(numbers)),
+      style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+    );
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
       decoration: BoxDecoration(color: theme.colorScheme.secondaryContainer, borderRadius: BorderRadius.circular(8)),
@@ -1038,9 +1122,29 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  l.chatPartOf(_part + 1, _parts.length, pagesText(numbers)),
-                  style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+                // Any part at once, not only the next one (the owner's idea).
+                PopupMenuButton<int>(
+                  key: const ValueKey('exchange-part-menu'),
+                  tooltip: l.chatPartPick,
+                  enabled: !busy,
+                  initialValue: _part,
+                  onSelected: (n) {
+                    if (n != _part) unawaited(_goToPart(n));
+                  },
+                  itemBuilder: (_) => [
+                    for (var n = 0; n < _parts.length; n++)
+                      PopupMenuItem(
+                        value: n,
+                        child: Text(l.chatPartItem(n + 1, pagesText(numbersOf(n)), _answeredIn(n), _itemsIn(n))),
+                      ),
+                  ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(child: title),
+                      Icon(Icons.arrow_drop_down, color: theme.colorScheme.onSecondaryContainer),
+                    ],
+                  ),
                 ),
                 Text(
                   l.chatPartHelp,

@@ -5042,6 +5042,48 @@ abstract class AppLocalizations {
   /// **'\"Next\" keeps the answers of this part and shows the next one. \"Apply\" writes the answers of all parts.'**
   String get chatPartHelp;
 
+  /// No description provided for @chatPartPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to a part'**
+  String get chatPartPick;
+
+  /// No description provided for @chatPartItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Part {part} · pages {pages} · answers {answered} of {total}'**
+  String chatPartItem(int part, String pages, int answered, int total);
+
+  /// No description provided for @chatGalleryParts.
+  ///
+  /// In en, this message translates to:
+  /// **'All parts'**
+  String get chatGalleryParts;
+
+  /// No description provided for @chatPartsViewHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The pictures of every part, to look at. Copying and answering are in the part itself (the list of parts over the window).'**
+  String get chatPartsViewHelp;
+
+  /// No description provided for @chatPartsPrepare.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare the other parts ({count})'**
+  String chatPartsPrepare(int count);
+
+  /// No description provided for @chatPartShown.
+  ///
+  /// In en, this message translates to:
+  /// **'open now'**
+  String get chatPartShown;
+
+  /// No description provided for @chatPartNotPrepared.
+  ///
+  /// In en, this message translates to:
+  /// **'Not prepared yet: its pictures come when you go to it or with \"Prepare the other parts\".'**
+  String get chatPartNotPrepared;
+
   /// No description provided for @chatPartBack.
   ///
   /// In en, this message translates to:

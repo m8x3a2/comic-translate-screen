@@ -3,6 +3,7 @@
 /// make own sheets ("a new sheet from here").
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
@@ -26,6 +27,43 @@ class GalleryResult {
   final String? groups;
 }
 
+enum _Tab { pictures, pieces, parts }
+
+/// The pictures of one part, for the tab "All parts" of the large view.
+class PartPictures {
+  const PartPictures({
+    required this.title,
+    required this.dir,
+    required this.pictures,
+    this.prepared = true,
+    this.current = false,
+    this.version = 0,
+  });
+
+  /// "Part 2 of 6 · pages 3–4".
+  final String title;
+  final String dir;
+  final List<String> pictures;
+
+  /// Its folder was written (shown or prepared before).
+  final bool prepared;
+
+  /// The part shown in the exchange window.
+  final bool current;
+
+  /// Changes when the folder is written again (the pictures load anew).
+  final int version;
+}
+
+/// In parts: reads the pictures of every part, and prepares the parts not
+/// written yet.
+class GalleryParts {
+  const GalleryParts({required this.read, required this.prepare});
+
+  final Future<List<PartPictures>> Function() read;
+  final Future<void> Function() prepare;
+}
+
 /// Opens the large view of [export] (made again while it is open when the
 /// options change); [onCopy] copies pictures (file names in its folder) and
 /// tells what happened. [page]: the page whose pictures are shown, the same
@@ -41,9 +79,11 @@ Future<GalleryResult?> showExchangeGallery(
   required String groups,
   required String Function(List<String> files) onCopy,
   bool pieces = false,
+  GalleryParts? parts,
 }) => showDialog<GalleryResult>(
   context: context,
   builder: (_) => _Gallery(
+    parts: parts,
     export: export,
     page: page,
     onPage: onPage,
@@ -169,6 +209,7 @@ class _Gallery extends ConsumerStatefulWidget {
     required this.groups,
     required this.onCopy,
     required this.pieces,
+    this.parts,
   });
 
   final ValueListenable<ExchangeExport?> export;
@@ -182,13 +223,21 @@ class _Gallery extends ConsumerStatefulWidget {
   final String Function(List<String> files) onCopy;
   final bool pieces;
 
+  /// In parts: the pictures of every part.
+  final GalleryParts? parts;
+
   @override
   ConsumerState<_Gallery> createState() => _GalleryState();
 }
 
 class _GalleryState extends ConsumerState<_Gallery> {
   late final _selected = {...widget.selected};
-  late var _piecesTab = widget.pieces && _export.previews.isNotEmpty;
+  late var _tab = widget.pieces && _export.previews.isNotEmpty ? _Tab.pieces : _Tab.pictures;
+  bool get _piecesTab => _tab == _Tab.pieces;
+
+  /// The pictures of every part (the tab "All parts"); null while read.
+  List<PartPictures>? _partPictures;
+  var _preparing = false;
   late final _breaks = breaksFromGroups(widget.groups, _export.items.length);
   var _breaksChanged = false;
   String? _note;
@@ -228,14 +277,19 @@ class _GalleryState extends ConsumerState<_Gallery> {
           children: [
             Row(
               children: [
-                if (_export.previews.isNotEmpty)
-                  SegmentedButton<bool>(
+                if (_export.previews.isNotEmpty || widget.parts != null)
+                  SegmentedButton<_Tab>(
                     segments: [
-                      ButtonSegment(value: false, label: Text(l.chatGalleryPictures)),
-                      ButtonSegment(value: true, label: Text(l.chatGalleryPieces)),
+                      ButtonSegment(value: _Tab.pictures, label: Text(l.chatGalleryPictures)),
+                      if (_export.previews.isNotEmpty)
+                        ButtonSegment(value: _Tab.pieces, label: Text(l.chatGalleryPieces)),
+                      if (widget.parts != null) ButtonSegment(value: _Tab.parts, label: Text(l.chatGalleryParts)),
                     ],
-                    selected: {_piecesTab},
-                    onSelectionChanged: (s) => setState(() => _piecesTab = s.first),
+                    selected: {_tab},
+                    onSelectionChanged: (s) {
+                      setState(() => _tab = s.first);
+                      if (_tab == _Tab.parts) unawaited(_readParts());
+                    },
                   )
                 else
                   Text(l.chatGalleryPictures, style: theme.textTheme.titleLarge),
@@ -249,7 +303,11 @@ class _GalleryState extends ConsumerState<_Gallery> {
               ],
             ),
             const SizedBox(height: 8),
-            if (_piecesTab) ..._piecesView(l, theme) else ..._picturesView(l, theme, picked),
+            ...switch (_tab) {
+              _Tab.pictures => _picturesView(l, theme, picked),
+              _Tab.pieces => _piecesView(l, theme),
+              _Tab.parts => _partsView(l, theme),
+            },
           ],
         ),
       ),
@@ -311,6 +369,83 @@ class _GalleryState extends ConsumerState<_Gallery> {
       ),
     ),
   ];
+
+  Future<void> _readParts() async {
+    final read = await widget.parts!.read();
+    if (mounted) setState(() => _partPictures = read);
+  }
+
+  Future<void> _prepareParts() async {
+    setState(() => _preparing = true);
+    try {
+      await widget.parts!.prepare();
+    } finally {
+      if (mounted) setState(() => _preparing = false);
+    }
+    await _readParts();
+  }
+
+  /// The pictures of every part, to look at (copying is in the part itself).
+  List<Widget> _partsView(AppLocalizations l, ThemeData theme) {
+    final parts = _partPictures;
+    if (parts == null) return [const Expanded(child: Center(child: CircularProgressIndicator()))];
+    final missing = parts.where((part) => !part.prepared).length;
+    return [
+      Wrap(
+        spacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(l.chatPartsViewHelp, style: theme.textTheme.bodySmall),
+          if (missing > 0)
+            FilledButton.tonalIcon(
+              onPressed: _preparing ? null : () => unawaited(_prepareParts()),
+              icon: _preparing
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.auto_awesome_motion_outlined),
+              label: Text(l.chatPartsPrepare(missing)),
+            ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      Expanded(
+        child: ListView(
+          children: [
+            for (final part in parts) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 6),
+                child: Text(
+                  part.title + (part.current ? '  ·  ${l.chatPartShown}' : ''),
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+              if (!part.prepared)
+                Text(l.chatPartNotPrepared, style: theme.textTheme.bodySmall)
+              else
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final f in part.pictures)
+                      SizedBox(
+                        width: 420,
+                        height: 460,
+                        child: _BigPicture(
+                          key: ValueKey((part.dir, f, part.version)),
+                          file: p.join(part.dir, f),
+                          name: f,
+                          range: '',
+                          selected: false,
+                          onTap: null,
+                        ),
+                      ),
+                  ],
+                ),
+            ],
+          ],
+        ),
+      ),
+    ];
+  }
 
   List<Widget> _piecesView(AppLocalizations l, ThemeData theme) {
     final items = _export.items;
@@ -379,7 +514,9 @@ class _BigPicture extends StatelessWidget {
   final String name;
   final String range;
   final bool selected;
-  final VoidCallback onTap;
+
+  /// Picks it for copying; null: only to look at.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -398,7 +535,7 @@ class _BigPicture extends StatelessWidget {
             Expanded(child: Image.file(File(file), fit: BoxFit.contain)),
             Row(
               children: [
-                Checkbox(value: selected, onChanged: (_) => onTap()),
+                if (onTap case final tap?) Checkbox(value: selected, onChanged: (_) => tap()),
                 Expanded(child: Text(range.isEmpty ? name : '$name  ·  $range')),
               ],
             ),

@@ -1998,6 +1998,26 @@
     }
   },
   "chatPartHelp": "\"Next\" keeps the answers of this part and shows the next one. \"Apply\" writes the answers of all parts.",
+  "chatPartPick": "Go to a part",
+  "chatPartItem": "Part {part} · pages {pages} · answers {answered} of {total}",
+  "@chatPartItem": {
+    "placeholders": {
+      "part": {"type": "int"},
+      "pages": {"type": "String"},
+      "answered": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "chatGalleryParts": "All parts",
+  "chatPartsViewHelp": "The pictures of every part, to look at. Copying and answering are in the part itself (the list of parts over the window).",
+  "chatPartsPrepare": "Prepare the other parts ({count})",
+  "@chatPartsPrepare": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "chatPartShown": "open now",
+  "chatPartNotPrepared": "Not prepared yet: its pictures come when you go to it or with \"Prepare the other parts\".",
   "chatPartBack": "Back",
   "chatPartNext": "Next",
   "chatRequestSize": "In this request: {pieces} bubbles, {chars} characters of instructions",

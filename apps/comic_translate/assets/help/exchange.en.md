@@ -79,6 +79,9 @@ Handy in this step:
 - **"Pages at a time"**: send in parts: the window shows one part (for example one page) with its pictures,
   instructions and text. **"Next"** keeps the answers of this part and shows the next one, **"Back"** the one
   before; **"Apply"** writes the answers of all parts. Handy for long chapters and on a phone.
+  A click on **"Part 2 of 6 ▾"** lists all parts (with how many answers each has): go to any of them at once.
+  In the large view the tab **"All parts"** shows the pictures of every part (to look at); **"Prepare the other
+  parts"** makes the pictures of the parts you have not reached yet.
 - **"In this request: N bubbles"**: the size of the request. When it is big, the window offers **"Send in parts"**:
   chats skip bubbles in long answers.
 - **"Open the pictures large"**: a big view of the pictures.

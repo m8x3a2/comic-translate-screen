@@ -2935,6 +2935,33 @@ class AppLocalizationsRu extends AppLocalizations {
       '«Далее» запоминает ответы этой части и показывает следующую. «Применить» запишет ответы всех частей.';
 
   @override
+  String get chatPartPick => 'Перейти к части';
+
+  @override
+  String chatPartItem(int part, String pages, int answered, int total) {
+    return 'Часть $part · страницы $pages · ответов $answered из $total';
+  }
+
+  @override
+  String get chatGalleryParts => 'Все части';
+
+  @override
+  String get chatPartsViewHelp =>
+      'Картинки всех частей — только посмотреть. Копировать и отвечать — в самой части (список частей над окном).';
+
+  @override
+  String chatPartsPrepare(int count) {
+    return 'Подготовить остальные части ($count)';
+  }
+
+  @override
+  String get chatPartShown => 'открыта сейчас';
+
+  @override
+  String get chatPartNotPrepared =>
+      'Ещё не подготовлена: картинки появятся при переходе к ней или по кнопке «Подготовить остальные части».';
+
+  @override
   String get chatPartBack => 'Назад';
 
   @override
