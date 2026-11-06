@@ -137,14 +137,24 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   both detectors): a list of names and descriptions came as one block, and
   the line finder joined a name and its description into one line. A block is
   split where an empty stripe crosses it top to bottom, at least 1.5 letter
-  heights wide (median height of the ink spots), with at least 3 letters and
-  two letters' width on each side; the stripe must separate text in two rows
-  of the block, or be met at the same place (letters of about the same size)
-  in two other blocks. Blocks of the line finder get their lines cut and
-  grouped again; comic blocks are cut into columns, the columns at empty bands
-  two letters tall, and get new heuristic lines (cut to the block: the
-  splitter looks beyond it). On 84 test pages only the two-column page and
-  two text-like pieces of drawing in the screens mode change.
+  heights wide (median height of the ink spots at least a third as tall as
+  the tall ones: the specks of hatching are left out) and 1.8 times as wide
+  as the widest ordinary space, with at least 3 letters and two letters'
+  width on each side; the stripe must separate text in two rows, or be met at
+  the same place (letters of about the same size) in two other blocks. A
+  title over both columns blocks the stripe: a block without one is cut at
+  its widest empty band of rows (at least half a letter, up to 3 times) and
+  the parts are looked at again; nothing is cut when no part has columns.
+  Columns are cut where a gap is at least a letter and 1.8 times the lower
+  quartile of the gaps between lines (widely spaced lines of a phone screen
+  stay together). Blocks of the line finder become one block per part with
+  their lines cut to it; comic blocks get new heuristic lines (cut to the
+  block: the splitter looks beyond it), and the direction the heuristics gave
+  them is not trusted (two English columns came out "vertical"). On 85 test
+  pages: the two-column list, the schedule with a title and a phone screen of
+  two columns are split; elsewhere only two text-like pieces of drawing, a
+  pair of texts in one bubble and a terminal window (cut across, all lines
+  kept) change.
 - No ghosts of removed text on flat paper. LaMa's output is rounded, not
   truncated (`astype("uint8")` in the original): it gives ≈254.7 for white, and
   at 254 the removed letters showed faintly on white paper; the high-resolution

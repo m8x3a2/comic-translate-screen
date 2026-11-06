@@ -51,6 +51,24 @@ void main() {
     expect(texts.any((b) => b.xyxy.y1 < 20 && b.xyxy.y2 > 54), isTrue);
   });
 
+  test('a title over both columns: the columns below it are still found', () {
+    final image = _page();
+    final rows = <BBox>[
+      _row(image, 20, 10, [8, 9]), // "Schedule" across both columns
+      for (final y in [50, 110, 170]) ...[
+        _row(image, 20, y, [3]),
+        _row(image, 100, y, [5, 4, 6]),
+        _row(image, 100, y + 20, [6, 3]),
+      ],
+    ];
+    final out = splitColumnBlocks(image, [TextBlock(xyxy: _around(rows), textClass: TextClass.free)]);
+    // The title, three names and three descriptions.
+    expect(out, hasLength(7));
+    expect(out.where((b) => b.xyxy.y2 < 40), hasLength(1));
+    expect(out.where((b) => b.xyxy.y1 > 40 && b.xyxy.x2 < 90), hasLength(3));
+    expect(out.where((b) => b.xyxy.y1 > 40 && b.xyxy.x1 > 90), hasLength(3));
+  });
+
   test('a paragraph with ordinary spaces stays one block', () {
     final image = _page();
     final rows = [
@@ -101,7 +119,7 @@ void main() {
     expect(splitColumnBlocks(image, [block]), [same(block)]);
   });
 
-  test('vertical blocks and blocks over a drawing are left alone', () {
+  test('vertical lines of the line finder and blocks over a drawing are left alone', () {
     final image = _page();
     final rows = [
       _row(image, 20, 20, [6]),
@@ -109,8 +127,15 @@ void main() {
       _row(image, 20, 40, [6]),
       _row(image, 120, 40, [6]),
     ];
-    final vertical = TextBlock(xyxy: _around(rows), direction: TextDirection.vertical);
+    final box = _around(rows);
+    final vertical = TextBlock(xyxy: box, direction: TextDirection.vertical, lines: [TextLine.box(box)])
+      ..fixedLines = true;
     expect(splitColumnBlocks(image, [vertical]), [same(vertical)]);
+
+    // The line heuristics called two columns of English "vertical": not
+    // trusted for comic blocks.
+    final guessed = TextBlock(xyxy: box, direction: TextDirection.vertical);
+    expect(splitColumnBlocks(image, [guessed]), hasLength(2));
 
     // Grey noise everywhere: no empty stripe.
     final busy = _page();
