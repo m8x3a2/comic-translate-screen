@@ -25,6 +25,9 @@ enum EditorTool {
   /// "Fit to letters": a click shrinks a piece of the mask to the letters in
   /// it; Shift + click picks several for the button (new in this project).
   fit,
+
+  /// The mask pipette: a click on a letter adds its colour to the mask.
+  pick,
 }
 
 /// What the viewer shows.
@@ -127,7 +130,7 @@ class EditorNotifier extends Notifier<EditorState> {
     final view = switch (tool) {
       EditorTool.pan || EditorTool.boxes => state.view,
       EditorTool.text => ViewMode.result,
-      EditorTool.brush || EditorTool.eraser || EditorTool.fit => ViewMode.mask,
+      EditorTool.brush || EditorTool.eraser || EditorTool.fit || EditorTool.pick => ViewMode.mask,
     };
     state = state.copyWith(tool: tool, view: view);
     if (tool != EditorTool.fit) clearFitPicks();

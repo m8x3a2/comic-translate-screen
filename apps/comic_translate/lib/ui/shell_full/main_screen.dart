@@ -860,6 +860,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         tool(EditorTool.eraser);
       case ShortcutAction.fitMask:
         tool(EditorTool.fit);
+      case ShortcutAction.pipette:
+        tool(EditorTool.pick);
       case ShortcutAction.brushSmaller:
         brushBy(-1);
       case ShortcutAction.brushLarger:

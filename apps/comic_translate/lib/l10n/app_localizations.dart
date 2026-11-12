@@ -3014,6 +3014,72 @@ abstract class AppLocalizations {
   /// **'Margin around the letters'**
   String get fitMargin;
 
+  /// No description provided for @toolPipette.
+  ///
+  /// In en, this message translates to:
+  /// **'Mask pipette (I): a click on a letter adds its colour; the mask takes that colour inside the text boxes at once'**
+  String get toolPipette;
+
+  /// No description provided for @colourModeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The mask by the colour of the letters. The pipette looks in the selected box, else in all boxes of the page, else over the whole page. Auto: coloured letters over the drawing are looked for by the Mask step (as in the settings, Text removal). Pipette: click letters to add their colour to the mask. Off: no colour search'**
+  String get colourModeHelp;
+
+  /// No description provided for @colourAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get colourAuto;
+
+  /// No description provided for @colourPick.
+  ///
+  /// In en, this message translates to:
+  /// **'Pipette'**
+  String get colourPick;
+
+  /// No description provided for @colourOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get colourOff;
+
+  /// No description provided for @pipetteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Click a letter'**
+  String get pipetteHint;
+
+  /// No description provided for @pipetteColour.
+  ///
+  /// In en, this message translates to:
+  /// **'{colour}: click to remove this colour'**
+  String pipetteColour(String colour);
+
+  /// No description provided for @pipetteTolerance.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour precision: to the right wider (more of the letters\' edges, but of the drawing too), to the left stricter'**
+  String get pipetteTolerance;
+
+  /// No description provided for @pipetteWhereBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'box {n}'**
+  String pipetteWhereBlock(int n);
+
+  /// No description provided for @pipetteWhereAll.
+  ///
+  /// In en, this message translates to:
+  /// **'all boxes'**
+  String get pipetteWhereAll;
+
+  /// No description provided for @pipetteWherePage.
+  ///
+  /// In en, this message translates to:
+  /// **'whole page'**
+  String get pipetteWherePage;
+
   /// No description provided for @fitAll.
   ///
   /// In en, this message translates to:
@@ -3457,6 +3523,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fit the mask to the letters'**
   String get keyFitMask;
+
+  /// No description provided for @keyPipette.
+  ///
+  /// In en, this message translates to:
+  /// **'Mask pipette'**
+  String get keyPipette;
 
   /// No description provided for @keyUndo.
   ///

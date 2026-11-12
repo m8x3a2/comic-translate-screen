@@ -9,6 +9,7 @@ import 'package:comic_translate/state/background.dart';
 import 'package:comic_translate/state/batch.dart';
 import 'package:comic_translate/state/exchange.dart';
 import 'package:comic_translate/state/editor.dart';
+import 'package:comic_translate/state/pipette.dart';
 import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:comic_translate/ui/app.dart';
@@ -426,6 +427,107 @@ void main() {
     await tester.pump();
     expect(find.byIcon(Icons.contrast), findsNothing);
     expect(black(), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the mask pipette: clicked colours join the mask, one undo step; Auto / Off are the setting', (
+    tester,
+  ) async {
+    final container = await openTranslatedPage(tester);
+    final page = container.read(workspaceProvider).currentPage!;
+    // Orange paper, dark red letters on the left, black drawing on the right.
+    bool red(int x, int y) => y >= 30 && y < 50 && x >= 20 && x < 50 && x % 6 < 2;
+    bool black(int x, int y) => y >= 30 && y < 50 && x >= 70 && x < 100 && x % 6 < 2;
+    final data = Uint8List(120 * 80 * 3);
+    for (var i = 0; i < 120 * 80; i++) {
+      final x = i % 120, y = i ~/ 120;
+      data.setAll(i * 3, red(x, y) ? [150, 20, 20] : (black(x, y) ? [0, 0, 0] : [240, 160, 60]));
+    }
+    await tester.runAsync(() => ImageCodec.writeFile(page.path, RgbImage(120, 80, data)));
+    container.read(workspaceProvider.notifier)
+      ..clearMask()
+      ..deleteAllBlocks();
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyI);
+    await tester.pump();
+    expect(container.read(editorProvider).tool, EditorTool.pick);
+    expect(container.read(editorProvider).view, ViewMode.mask);
+    expect(find.text('вся страница: '), findsOneWidget);
+    expect(find.text('Щёлкните по букве'), findsOneWidget);
+
+    final canvas = find.byType(PageCanvas);
+    for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    await settle(tester);
+    final rect = tester.getRect(canvas);
+    Offset at(double x, double y) => rect.topLeft + Offset(rect.width * x / 120, rect.height * y / 80);
+    PageEntry current() => container.read(workspaceProvider).currentPage!;
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
+    await mouse.addPointer(location: at(1, 1));
+    // The pipette reads the page and writes the mask in real time.
+    Future<void> settled(Future<void> Function() act) async {
+      final before = current().maskPath;
+      await tester.runAsync(() async {
+        await act();
+        for (var i = 0; i < 500 && (current().maskPath == before || container.read(pipetteProvider).busy); i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+      });
+      await tester.pump();
+    }
+
+    Future<void> click(double x, double y) => settled(() async {
+      await mouse.moveTo(at(x, y));
+      await mouse.down(at(x, y));
+      await mouse.up();
+    });
+    Future<GrayImage> mask() async => (await tester.runAsync(() => readGrayInBackground(current().maskPath!)))!;
+    int count(GrayImage m, bool Function(int x, int y) where) {
+      var n = 0;
+      for (var y = 0; y < 80; y++) {
+        for (var x = 0; x < 120; x++) {
+          if (where(x, y) && m.data[y * 120 + x] != 0) n++;
+        }
+      }
+      return n;
+    }
+
+    // A click on a red letter: the red letters, not the black drawing.
+    await click(24.5, 40);
+    var m = await mask();
+    expect(count(m, red), 5 * 2 * 20);
+    expect(count(m, black), 0);
+    expect(find.byTooltip('#961414 — щелчок убирает этот цвет'), findsOneWidget);
+    expect(tester.getRect(canvas), rect, reason: 'the page stays under the mouse');
+
+    // Black too: one more colour.
+    await click(72.5, 40);
+    m = await mask();
+    expect(count(m, black), 5 * 2 * 20);
+
+    // The cross on the red colour takes it away again.
+    await settled(() => tester.tap(find.byTooltip('#961414 — щелчок убирает этот цвет')));
+    m = await mask();
+    expect(count(m, red), 0);
+    expect(count(m, black), 5 * 2 * 20);
+
+    // The whole go of the pipette is one undo step.
+    await ctrl(tester, LogicalKeyboardKey.keyZ);
+    expect(current().maskPath, isNull);
+    expect(find.text('Щёлкните по букве'), findsOneWidget, reason: 'the colours go with it');
+
+    // Off: the setting, and back to the brush.
+    await tester.tap(find.text('Выкл'));
+    await tester.pump();
+    expect(container.read(settingsProvider).colourLetters, isFalse);
+    expect(container.read(editorProvider).tool, EditorTool.brush);
+    expect(find.text('Авто'), findsNothing, reason: 'the switch is the pipette\'s');
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyI);
+    await tester.pump();
+    await tester.tap(find.text('Авто'));
+    await tester.pump();
+    expect(container.read(settingsProvider).colourLetters, isTrue);
     expect(tester.takeException(), isNull);
   });
 

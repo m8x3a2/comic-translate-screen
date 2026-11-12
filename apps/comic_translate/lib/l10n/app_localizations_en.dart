@@ -1687,6 +1687,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fitMargin => 'Margin around the letters';
 
   @override
+  String get toolPipette =>
+      'Mask pipette (I): a click on a letter adds its colour; the mask takes that colour inside the text boxes at once';
+
+  @override
+  String get colourModeHelp =>
+      'The mask by the colour of the letters. The pipette looks in the selected box, else in all boxes of the page, else over the whole page. Auto: coloured letters over the drawing are looked for by the Mask step (as in the settings, Text removal). Pipette: click letters to add their colour to the mask. Off: no colour search';
+
+  @override
+  String get colourAuto => 'Auto';
+
+  @override
+  String get colourPick => 'Pipette';
+
+  @override
+  String get colourOff => 'Off';
+
+  @override
+  String get pipetteHint => 'Click a letter';
+
+  @override
+  String pipetteColour(String colour) {
+    return '$colour: click to remove this colour';
+  }
+
+  @override
+  String get pipetteTolerance =>
+      'Colour precision: to the right wider (more of the letters\' edges, but of the drawing too), to the left stricter';
+
+  @override
+  String pipetteWhereBlock(int n) {
+    return 'box $n';
+  }
+
+  @override
+  String get pipetteWhereAll => 'all boxes';
+
+  @override
+  String get pipetteWherePage => 'whole page';
+
+  @override
   String get fitAll => 'Fit all';
 
   @override
@@ -1929,6 +1969,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyFitMask => 'Fit the mask to the letters';
+
+  @override
+  String get keyPipette => 'Mask pipette';
 
   @override
   String get keyUndo => 'Undo';

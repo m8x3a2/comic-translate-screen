@@ -1,0 +1,73 @@
+import 'dart:typed_data';
+
+import 'package:ct_core/ct_core.dart';
+import 'package:test/test.dart';
+
+const _w = 120, _h = 60;
+
+/// Orange background; dark red letters (bars) at x 10–49 and black drawing
+/// (bars) at x 70–109, both in rows 20–39.
+RgbImage _page() {
+  final data = Uint8List(_w * _h * 3);
+  for (var i = 0; i < _w * _h; i++) {
+    final x = i % _w, y = i ~/ _w;
+    var c = const [240, 160, 60];
+    if (y >= 20 && y < 40 && x % 6 < 2) {
+      if (x >= 10 && x < 50) c = const [150, 20, 20];
+      if (x >= 70 && x < 110) c = const [0, 0, 0];
+    }
+    data.setRange(i * 3, i * 3 + 3, c);
+  }
+  return RgbImage(_w, _h, data);
+}
+
+int _count(GrayImage m, int x1, int x2) {
+  var n = 0;
+  for (var y = 0; y < _h; y++) {
+    for (var x = x1; x < x2; x++) {
+      if (m.data[y * _w + x] != 0) n++;
+    }
+  }
+  return n;
+}
+
+void main() {
+  test('a clicked colour is sampled as the median around the click', () {
+    final image = _page();
+    expect(sampleColour(image, 12, 30), (150, 20, 20));
+    expect(sampleColour(image, 3, 3), (240, 160, 60));
+  });
+
+  test('pixels of the picked colour become letters; other colours stay out', () {
+    final m = maskByColours(_page(), GrayImage.zeros(_w, _h), [(150, 20, 20)], grow: 0);
+    expect(_count(m, 0, 60), 7 * 2 * 20, reason: 'the red bars');
+    expect(_count(m, 60, _w), 0, reason: 'the black drawing');
+    expect(m.data[30 * _w + 12], 255);
+  });
+
+  test('a near shade is taken within the tolerance; black on colour can be picked too', () {
+    final near = maskByColours(_page(), GrayImage.zeros(_w, _h), [(165, 30, 25)], tolerance: 20, grow: 0);
+    expect(_count(near, 0, 60), 7 * 2 * 20);
+    final strict = maskByColours(_page(), GrayImage.zeros(_w, _h), [(165, 30, 25)], tolerance: 4, grow: 0);
+    expect(_count(strict, 0, 60), 0);
+    final black = maskByColours(_page(), GrayImage.zeros(_w, _h), [(0, 0, 0)], grow: 0);
+    expect(_count(black, 60, _w), 7 * 2 * 20);
+  });
+
+  test('only inside the regions; the base mask is kept; grown by a pixel', () {
+    final base = GrayImage.zeros(_w, _h + 10)..data[_w * 2 + 2] = 128;
+    final m = maskByColours(_page(), base, [(150, 20, 20), (0, 0, 0)], regions: [const BBox(0, 0, 60, _h)]);
+    expect(m.height, _h + 10);
+    expect(m.data[_w * 2 + 2], 128, reason: 'the base');
+    expect(_count(m, 60, _w), 0, reason: 'outside the region');
+    expect(m.data[30 * _w + 14], 255, reason: 'grown from x 13 into the gap');
+    expect(m.data[30 * _w + 15], 0);
+  });
+
+  test('the regions of blocks: the bubble, or the box grown a little', () {
+    final boxed = TextBlock(xyxy: const BBox(20, 20, 60, 40));
+    final bubble = TextBlock(xyxy: const BBox(20, 20, 60, 40), bubbleXyxy: const BBox(5, 5, 100, 55))
+      ..textClass = TextClass.bubble;
+    expect(textRegions([boxed, bubble], _w, _h), [const BBox(12, 13, 68, 47), const BBox(5, 5, 100, 55)]);
+  });
+}

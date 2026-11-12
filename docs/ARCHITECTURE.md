@@ -199,6 +199,14 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   button, which fits every piece when none is picked. The letters are the text
   masker's (its map of the page is kept in the worker for the next clicks), or
   what stands out from the colour along the piece's edge where it found none.
+  The view "Mask" shows what cleaning works on with the mask and no
+  translation ("mask only": white on black). The mask pipette (I,
+  `colour_mask.dart`, `state/pipette.dart`): a click on a letter adds its
+  colour (median of 3×3); every pixel within the tolerance (CIE76 ΔE, 20 by
+  default) inside the text regions (the selected block, else all blocks,
+  else the page) joins the mask, grown by a pixel, on top of the mask the
+  page had before the pipette; one undo step per go. "Auto / Off" next to it
+  is the `colour_letters` setting.
 - The heuristic line splitter of the original fails (IndexError) when a line
   box ends at the right or bottom edge of the crop, e.g. on an almost empty
   block enlarged for reading; the whole page then had no text. Here the box

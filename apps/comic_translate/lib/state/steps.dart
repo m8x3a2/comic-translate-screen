@@ -851,14 +851,16 @@ class StepsNotifier extends Notifier<StepState> {
     }
   }
 
-  /// The generated mask plus the strokes, at the page's size (taller on a
-  /// webtoon page whose mask reaches into the page below).
-  Future<GrayImage> _currentMask(PageEntry page) async {
-    final maskPath = page.maskPath;
-    final base = maskPath == null ? null : await readGrayInBackground(maskPath);
-    final (w, h) = base == null ? await imageFileSize(page.path) : (base.width, base.height);
-    return rasterizeMask(w, h, base: base, strokes: page.strokes);
-  }
+  Future<GrayImage> _currentMask(PageEntry page) => currentPageMask(page);
+}
+
+/// The generated mask plus the strokes of [page], at the page's size (taller
+/// on a webtoon page whose mask reaches into the page below).
+Future<GrayImage> currentPageMask(PageEntry page) async {
+  final maskPath = page.maskPath;
+  final base = maskPath == null ? null : await readGrayInBackground(maskPath);
+  final (w, h) = base == null ? await imageFileSize(page.path) : (base.width, base.height);
+  return rasterizeMask(w, h, base: base, strokes: page.strokes);
 }
 
 /// The look of a new translation: only where its text goes stays, with the

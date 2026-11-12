@@ -1686,6 +1686,46 @@ class AppLocalizationsRu extends AppLocalizations {
   String get fitMargin => 'Запас вокруг букв';
 
   @override
+  String get toolPipette =>
+      'Пипетка маски (I): щелчок по букве добавляет её цвет — маска сразу закрашивает этот цвет в рамках текста';
+
+  @override
+  String get colourModeHelp =>
+      'Маска по цвету букв. Где ищет пипетка: в выбранной рамке, иначе во всех рамках страницы, а если рамок нет — по всей странице. Авто — программа сама ищет цветные буквы на рисунке во время шага «Маска» (то же, что в настройках «Удаление текста»). Пипетка — щёлкайте по буквам, их цвет добавится в маску. Выкл — цвет не ищется';
+
+  @override
+  String get colourAuto => 'Авто';
+
+  @override
+  String get colourPick => 'Пипетка';
+
+  @override
+  String get colourOff => 'Выкл';
+
+  @override
+  String get pipetteHint => 'Щёлкните по букве';
+
+  @override
+  String pipetteColour(String colour) {
+    return '$colour — щелчок убирает этот цвет';
+  }
+
+  @override
+  String get pipetteTolerance =>
+      'Точность цвета: вправо — шире (больше краёв букв, но и рисунка), влево — строже';
+
+  @override
+  String pipetteWhereBlock(int n) {
+    return 'рамка $n';
+  }
+
+  @override
+  String get pipetteWhereAll => 'все рамки';
+
+  @override
+  String get pipetteWherePage => 'вся страница';
+
+  @override
   String get fitAll => 'Прижать все';
 
   @override
@@ -1927,6 +1967,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keyFitMask => 'Прижать маску к буквам';
+
+  @override
+  String get keyPipette => 'Пипетка маски';
 
   @override
   String get keyUndo => 'Отменить';

@@ -10,6 +10,7 @@ library;
 
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:typed_data';
 
 import 'package:ct_core/ct_core.dart';
 
@@ -19,6 +20,18 @@ Future<RgbImage> readImageInBackground(String path) => Isolate.run(() => ImageCo
 /// The gray image (a mask) in [path].
 Future<GrayImage> readGrayInBackground(String path) =>
     Isolate.run(() async => ImageCodec.decodeGray(await File(path).readAsBytes()));
+
+/// The mask pipette: [base] with the letters of [colours] in [regions] (see
+/// `maskByColours`), as PNG.
+Future<Uint8List> colourMaskPngInBackground(
+  RgbImage image,
+  GrayImage base,
+  List<(int, int, int)> colours,
+  double tolerance,
+  List<BBox>? regions,
+) => Isolate.run(
+  () => ImageCodec.encodeGrayPng(maskByColours(image, base, colours, tolerance: tolerance, regions: regions)),
+);
 
 /// The colour and the transparency of the image in [path].
 Future<(RgbImage, GrayImage)> readRgbaInBackground(String path) =>

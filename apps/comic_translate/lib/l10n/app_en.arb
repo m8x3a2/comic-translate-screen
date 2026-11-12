@@ -919,6 +919,31 @@
   "brushSize": "Brush size ([ and ])",
   "toolFitMask": "Fit to letters (G): a click on a red piece of the mask shrinks it around the letters. Shift + click picks several pieces for the \"Fit\" button",
   "fitMargin": "Margin around the letters",
+  "toolPipette": "Mask pipette (I): a click on a letter adds its colour; the mask takes that colour inside the text boxes at once",
+  "colourModeHelp": "The mask by the colour of the letters. The pipette looks in the selected box, else in all boxes of the page, else over the whole page. Auto: coloured letters over the drawing are looked for by the Mask step (as in the settings, Text removal). Pipette: click letters to add their colour to the mask. Off: no colour search",
+  "colourAuto": "Auto",
+  "colourPick": "Pipette",
+  "colourOff": "Off",
+  "pipetteHint": "Click a letter",
+  "pipetteColour": "{colour}: click to remove this colour",
+  "@pipetteColour": {
+    "placeholders": {
+      "colour": {
+        "type": "String"
+      }
+    }
+  },
+  "pipetteTolerance": "Colour precision: to the right wider (more of the letters' edges, but of the drawing too), to the left stricter",
+  "pipetteWhereBlock": "box {n}",
+  "@pipetteWhereBlock": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "pipetteWhereAll": "all boxes",
+  "pipetteWherePage": "whole page",
   "fitAll": "Fit all",
   "fitPicked": "Fit ({n})",
   "@fitPicked": {
@@ -1038,6 +1063,7 @@
   "keyBrush": "Brush: mark what to clean",
   "keyEraser": "Eraser: unmark",
   "keyFitMask": "Fit the mask to the letters",
+  "keyPipette": "Mask pipette",
   "keyUndo": "Undo",
   "keyRedo": "Redo",
   "keyDelete": "Delete the selected box",

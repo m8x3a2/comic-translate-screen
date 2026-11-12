@@ -50,6 +50,7 @@ export 'src/imaging/linalg.dart';
 export 'src/imaging/morphology.dart';
 export 'src/inpainting/inpaint_model.dart';
 export 'src/inpainting/inpaint_page.dart';
+export 'src/inpainting/colour_mask.dart';
 export 'src/inpainting/fit_mask.dart';
 export 'src/inpainting/mask.dart';
 export 'src/inpainting/flat_background.dart';

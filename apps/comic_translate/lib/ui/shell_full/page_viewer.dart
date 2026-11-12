@@ -6,6 +6,7 @@ library;
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:ct_core/ct_core.dart' show maxPipetteTolerance, minPipetteTolerance;
 import 'package:ct_providers/ct_providers.dart' show readsThroughChat, translatesThroughChat;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,7 @@ import '../../state/batch.dart';
 import '../../state/editor.dart';
 import '../../state/steps.dart';
 import '../../state/page_layout.dart';
+import '../../state/pipette.dart';
 import '../../state/worker_pool.dart';
 import '../../state/workspace.dart';
 import '../common/content_kind_switch.dart';
@@ -439,6 +441,7 @@ class _ToolBar extends ConsumerWidget {
               tool(EditorTool.brush, Icons.brush_outlined, l.toolBrush),
               tool(EditorTool.eraser, Icons.auto_fix_off_outlined, l.toolEraser),
               tool(EditorTool.fit, Icons.compress, l.toolFitMask),
+              tool(EditorTool.pick, Icons.colorize_outlined, l.toolPipette),
             ],
           ),
           const SizedBox(height: 4),
@@ -508,6 +511,7 @@ class _ToolBar extends ConsumerWidget {
                         icon: const Icon(Icons.layers_clear_outlined),
                       ),
                     ],
+                    if (editor.tool == EditorTool.pick) const _ColourMaskOptions(),
                     if (editor.tool == EditorTool.boxes)
                       MenuAnchor(
                         menuChildren: [
@@ -576,6 +580,129 @@ class _ToolBar extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+enum _ColourMode { auto, pick, off }
+
+/// "By colour: Auto / Pipette / Off" for the mask tools; with the pipette,
+/// the picked colours, the tolerance and where it looks.
+class _ColourMaskOptions extends ConsumerWidget {
+  const _ColourMaskOptions();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final editor = ref.watch(editorProvider);
+    final auto = ref.watch(settingsProvider.select((s) => s.colourLetters));
+    final picking = editor.tool == EditorTool.pick;
+    final mode = picking ? _ColourMode.pick : (auto ? _ColourMode.auto : _ColourMode.off);
+    final children = <Widget>[
+      SegmentedButton<_ColourMode>(
+        style: const ButtonStyle(visualDensity: VisualDensity.compact),
+        segments: [
+          ButtonSegment(value: _ColourMode.auto, label: Text(l.colourAuto), tooltip: l.colourModeHelp),
+          ButtonSegment(value: _ColourMode.pick, label: Text(l.colourPick), tooltip: l.colourModeHelp),
+          ButtonSegment(value: _ColourMode.off, label: Text(l.colourOff), tooltip: l.colourModeHelp),
+        ],
+        selected: {mode},
+        showSelectedIcon: false,
+        onSelectionChanged: (s) {
+          final chosen = s.first;
+          if (chosen == _ColourMode.pick) {
+            ref.read(editorProvider.notifier).setTool(EditorTool.pick);
+            return;
+          }
+          ref.read(settingsProvider.notifier).change((s) => s.colourLetters = chosen == _ColourMode.auto);
+          if (picking) ref.read(editorProvider.notifier).setTool(EditorTool.brush);
+        },
+      ),
+    ];
+    if (picking) {
+      final pipette = ref.watch(pipetteProvider);
+      final ws = ref.watch(workspaceProvider);
+      final page = ws.currentPage;
+      final colours = pipette.coloursOf(page);
+      final selected = ws.selectedBlock;
+      final where = page == null || page.blocks.isEmpty
+          ? l.pipetteWherePage
+          : selected != null && selected < page.blocks.length
+          ? l.pipetteWhereBlock(selected + 1)
+          : l.pipetteWhereAll;
+      String hex((int, int, int) c) => '#${[c.$1, c.$2, c.$3].map((v) => v.toRadixString(16).padLeft(2, '0')).join()}';
+      final swatches = <Widget>[
+        if (colours.isEmpty) Text(l.pipetteHint, style: Theme.of(context).textTheme.bodySmall),
+        for (final c in colours)
+          Tooltip(
+            message: l.pipetteColour(hex(c)),
+            child: InkResponse(
+              onTap: () => ref.read(pipetteProvider.notifier).remove(c),
+              radius: 16,
+              child: Container(
+                width: 24,
+                height: 24,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: Color.fromARGB(255, c.$1, c.$2, c.$3),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Theme.of(context).colorScheme.outline, width: 1.5),
+                ),
+                child: const Icon(Icons.close, size: 14, color: Colors.white, shadows: [Shadow(blurRadius: 2)]),
+              ),
+            ),
+          ),
+      ];
+      // The picked colours have a row of their own, as high with none as with
+      // some: picking must not move the page under the mouse.
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ...children,
+              Tooltip(
+                message: l.pipetteTolerance,
+                child: SizedBox(
+                  width: 120,
+                  child: Slider(
+                    value: pipette.tolerance,
+                    min: minPipetteTolerance,
+                    max: maxPipetteTolerance,
+                    onChanged: ref.read(pipetteProvider.notifier).setTolerance,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 24,
+                child: pipette.busy
+                    ? const Padding(
+                        padding: EdgeInsets.only(left: 6),
+                        child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                      )
+                    : null,
+              ),
+            ],
+          ),
+          SizedBox(
+            height: 30,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  Text('$where: ', style: Theme.of(context).textTheme.bodySmall),
+                  ...swatches,
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    return Wrap(spacing: 4, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: children);
   }
 }
 
