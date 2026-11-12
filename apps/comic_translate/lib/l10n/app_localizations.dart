@@ -2342,6 +2342,12 @@ abstract class AppLocalizations {
   /// **'Internet'**
   String get privacyCloudBadge;
 
+  /// No description provided for @sendsDataNoAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'No server address yet. The text will go to the server whose address you enter.'**
+  String get sendsDataNoAddress;
+
   /// No description provided for @sendsDataWarning.
   ///
   /// In en, this message translates to:
@@ -3787,6 +3793,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needed when the page image goes to the translator (\"Send the page image\")'**
   String get modelsVisionHelp;
+
+  /// No description provided for @modelsVisionUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'The server does not tell which models take pictures: pick one by the service\'s documentation.'**
+  String get modelsVisionUnknown;
 
   /// No description provided for @modelsCount.
   ///

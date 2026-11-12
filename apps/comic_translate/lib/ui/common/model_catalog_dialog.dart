@@ -91,13 +91,23 @@ class _ModelCatalogDialogState extends ConsumerState<_ModelCatalogDialog> {
     }
   }
 
+  /// The server tells prices (or which models are free): the "free" filter
+  /// means something. Many own servers send only ids.
+  bool get _knowsPrices => (_models ?? const <CatalogModel>[]).any((m) => m.free || m.promptPrice != null);
+
+  /// The server tells which models take pictures; otherwise that filter
+  /// would hide every model.
+  bool get _knowsVision => (_models ?? const <CatalogModel>[]).any((m) => m.vision);
+
   /// The models the search and the filters leave, in the chosen order.
   List<CatalogModel> get _shown {
     final words = _search.text.toLowerCase().split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
+    final freeOnly = _freeOnly && _knowsPrices;
+    final visionOnly = _visionOnly && _knowsVision;
     final shown = [
       for (final m in _models ?? const <CatalogModel>[])
-        if ((!_freeOnly || m.free) &&
-            (!_visionOnly || m.vision) &&
+        if ((!freeOnly || m.free) &&
+            (!visionOnly || m.vision) &&
             words.every((w) => m.id.toLowerCase().contains(w) || m.name.toLowerCase().contains(w)))
           m,
     ];
@@ -182,18 +192,22 @@ class _ModelCatalogDialogState extends ConsumerState<_ModelCatalogDialog> {
               runSpacing: 4,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                FilterChip(
-                  label: Text(l.modelsFreeOnly),
-                  selected: _freeOnly,
-                  onSelected: (v) => setState(() => _freeOnly = v),
-                ),
-                FilterChip(
-                  label: Text(l.modelsVisionOnly),
-                  tooltip: l.modelsVisionHelp,
-                  selected: _visionOnly,
-                  onSelected: (v) => setState(() => _visionOnly = v),
-                ),
+                if (models == null || _knowsPrices)
+                  FilterChip(
+                    label: Text(l.modelsFreeOnly),
+                    selected: _freeOnly,
+                    onSelected: (v) => setState(() => _freeOnly = v),
+                  ),
+                if (models == null || _knowsVision)
+                  FilterChip(
+                    label: Text(l.modelsVisionOnly),
+                    tooltip: l.modelsVisionHelp,
+                    selected: _visionOnly,
+                    onSelected: (v) => setState(() => _visionOnly = v),
+                  ),
                 if (models != null) Text(l.modelsCount(shown.length, models.length), style: theme.textTheme.bodySmall),
+                if (models != null && models.isNotEmpty && widget.vision && !_knowsVision)
+                  Text(l.modelsVisionUnknown, style: theme.textTheme.bodySmall),
               ],
             ),
             const SizedBox(height: 8),

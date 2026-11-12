@@ -1316,6 +1316,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privacyCloudBadge => 'Internet';
 
   @override
+  String get sendsDataNoAddress =>
+      'No server address yet. The text will go to the server whose address you enter.';
+
+  @override
   String sendsDataWarning(String host) {
     return 'Sends text outside this computer: $host';
   }
@@ -2118,6 +2122,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get modelsVisionHelp =>
       'Needed when the page image goes to the translator (\"Send the page image\")';
+
+  @override
+  String get modelsVisionUnknown =>
+      'The server does not tell which models take pictures: pick one by the service\'s documentation.';
 
   @override
   String modelsCount(int shown, int total) {

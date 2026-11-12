@@ -430,7 +430,12 @@ class _PluginPicker extends ConsumerWidget {
                   child: Row(
                     children: [
                       Expanded(child: Text(pluginName(context, p), overflow: TextOverflow.ellipsis)),
-                      PrivacyBadge(p.privacy),
+                      // Where this plugin's own settings send data: a
+                      // server on this computer is not the internet.
+                      PrivacyBadge(
+                        p.endpointFor(PluginConfig.resolve(p.settings, settings.pluginValues(p.id)))?.privacy ??
+                            Privacy.local,
+                      ),
                     ],
                   ),
                 ),
@@ -450,7 +455,9 @@ class _PluginPicker extends ConsumerWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      context.l10n.sendsDataWarning(endpoint.host),
+                      endpoint.host.isEmpty
+                          ? context.l10n.sendsDataNoAddress
+                          : context.l10n.sendsDataWarning(endpoint.host),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),

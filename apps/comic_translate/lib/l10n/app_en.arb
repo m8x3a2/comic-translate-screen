@@ -765,6 +765,7 @@
   "privacyLocalBadge": "On this computer",
   "privacyLanBadge": "Local network",
   "privacyCloudBadge": "Internet",
+  "sendsDataNoAddress": "No server address yet. The text will go to the server whose address you enter.",
   "sendsDataWarning": "Sends text outside this computer: {host}",
   "@sendsDataWarning": {
     "placeholders": {
@@ -1181,6 +1182,7 @@
   "modelsFreeOnly": "Free only",
   "modelsVisionOnly": "Takes pictures",
   "modelsVisionHelp": "Needed when the page image goes to the translator (\"Send the page image\")",
+  "modelsVisionUnknown": "The server does not tell which models take pictures: pick one by the service's documentation.",
   "modelsCount": "Shown: {shown} of {total}",
   "@modelsCount": {
     "placeholders": {

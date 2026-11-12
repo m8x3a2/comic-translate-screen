@@ -804,6 +804,44 @@ void main() {
     expect(find.text('Показано: 3 из 3'), findsOneWidget);
   });
 
+  testWidgets('a server that sends only ids: no price or picture filters, nothing hidden when pictures are wanted', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final query = ModelCatalogQuery(
+      host: '127.0.0.1',
+      settingKey: 'model',
+      usesProfileCredentials: true,
+      run: () async => const [CatalogModel(id: 'llama-3.1-8b'), CatalogModel(id: 'qwen2.5-vl-7b')],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [servicesProvider.overrideWithValue(services)],
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showModelCatalogDialog(context, query, current: '', vision: true),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Показано: 2 из 2'), findsOneWidget);
+    expect(find.text('Только бесплатные'), findsNothing);
+    expect(find.text('Видит картинки'), findsNothing);
+    expect(find.textContaining('Сервер не сообщает, какие модели видят картинки'), findsOneWidget);
+  });
+
   testWidgets('the usage counted on this computer is listed per model and can be reset', (tester) async {
     await tester.runAsync(() async {
       await services.usage.record(

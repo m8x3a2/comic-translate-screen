@@ -1317,7 +1317,11 @@ class _TranslatorChip extends ConsumerWidget {
     final info = services.registry.info(settings.translator);
     final endpoint = info.endpointFor(PluginConfig.resolve(info.settings, settings.pluginValues(info.id)));
     return Tooltip(
-      message: endpoint == null ? context.l10n.privacyLocal : context.l10n.sendsDataWarning(endpoint.host),
+      message: endpoint == null
+          ? context.l10n.privacyLocal
+          : endpoint.host.isEmpty
+          ? context.l10n.sendsDataNoAddress
+          : context.l10n.sendsDataWarning(endpoint.host),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: onTap,

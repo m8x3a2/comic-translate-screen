@@ -1316,6 +1316,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get privacyCloudBadge => 'Интернет';
 
   @override
+  String get sendsDataNoAddress =>
+      'Адрес сервера ещё не указан. Текст будет уходить на сервер, адрес которого вы впишете.';
+
+  @override
   String sendsDataWarning(String host) {
     return 'Отправляет текст за пределы компьютера: $host';
   }
@@ -2117,6 +2121,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get modelsVisionHelp =>
       'Нужно, когда переводчику уходит картинка страницы («Отправлять картинку страницы»)';
+
+  @override
+  String get modelsVisionUnknown =>
+      'Сервер не сообщает, какие модели видят картинки: выберите такую по документации сервиса.';
 
   @override
   String modelsCount(int shown, int total) {
