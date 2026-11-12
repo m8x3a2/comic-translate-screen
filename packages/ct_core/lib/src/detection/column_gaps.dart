@@ -298,6 +298,56 @@ List<TextBlock> splitColumnBlocks(RgbImage image, List<TextBlock> blocks, {LineA
   return out;
 }
 
+/// How "Find blocks inside" cuts a block.
+enum InsideSplit {
+  /// Columns, and paragraphs in them.
+  auto,
+
+  /// Only at empty stripes from top to bottom (a title over the columns is
+  /// still cut off: the stripes are found under it).
+  columns,
+
+  /// Only at tall empty bands of rows.
+  paragraphs,
+}
+
+/// "Find blocks inside" (a button for the selected block): [block] cut into
+/// its parts the way [mode] says, boldly: a stripe needs no rows across it
+/// and no other block with it, and one column is cut into paragraphs. The
+/// frame may have been stretched over text the detector missed. Empty when
+/// there is one block inside (or nothing to look at). The new blocks get
+/// lines from [annotateLines]; a block with fixed lines (from a line finder)
+/// gives its lines to the parts when every part gets some.
+List<TextBlock> splitBlockInside(RgbImage image, TextBlock block, InsideSplit mode, {LineAnnotator? annotateLines}) {
+  final look = _look(image, block);
+  if (look == null) return const [];
+  final (y1, y2) = (look.box.y1, look.box.y2);
+  List<BBox>? paragraphsOf(BBox p) => _columns(look, const [], p.y1, p.y2, x1: p.x1, x2: p.x2, minColumns: 1);
+  final List<BBox>? parts;
+  switch (mode) {
+    case InsideSplit.columns:
+      parts = _parts(look, y1, y2, (_, _, _) => true, paragraphs: false);
+    case InsideSplit.paragraphs:
+      parts = paragraphsOf(look.box);
+    case InsideSplit.auto:
+      // The pieces cut off above or below the columns (a title, a note) may
+      // hold paragraphs too.
+      parts = [
+        for (final p in _parts(look, y1, y2, (_, _, _) => true) ?? [?look.inkBox(look.box.x1, look.box.x2, y1, y2)])
+          ...paragraphsOf(p) ?? [p],
+      ];
+  }
+  if (parts == null || parts.length < 2) return const [];
+  if (block.fixedLines && block.lines.isNotEmpty) {
+    final split = _blocks(image, block, look, parts, annotateLines);
+    if (parts.every((p) => split.any((b) => b.xyxy.intersection(p) != null))) {
+      return split.length > 1 ? split : const [];
+    }
+  }
+  final split = _blocks(image, block, look, parts, annotateLines, useLines: false);
+  return split.length > 1 ? split : const [];
+}
+
 /// The parts of the page rows [y1, y2) of [look]: columns at the stripes
 /// [confirmed] there, else the rows cut at their widest empty band and each
 /// half looked at again, [depth] times at most. Null when nothing is cut.
@@ -307,19 +357,20 @@ List<BBox>? _parts(
   int y2,
   bool Function((int, int) stripe, int y1, int y2) confirmed, {
   int depth = _maxCuts,
+  bool paragraphs = true,
 }) {
   final stripes = [
     for (final s in look.stripes(y1, y2))
       if (confirmed(s, y1, y2)) s,
   ];
   if (stripes.isNotEmpty) {
-    if (_columns(look, stripes, y1, y2) case final columns?) return columns;
+    if (_columns(look, stripes, y1, y2, paragraphs: paragraphs) case final columns?) return columns;
   }
   if (depth == 0) return null;
   final gap = look.widestEmptyRows(y1, y2);
   if (gap == null) return null;
-  final top = _parts(look, y1, gap.$1, confirmed, depth: depth - 1);
-  final bottom = _parts(look, gap.$2, y2, confirmed, depth: depth - 1);
+  final top = _parts(look, y1, gap.$1, confirmed, depth: depth - 1, paragraphs: paragraphs);
+  final bottom = _parts(look, gap.$2, y2, confirmed, depth: depth - 1, paragraphs: paragraphs);
   if (top == null && bottom == null) return null;
   return [
     ...top ?? [?look.inkBox(look.box.x1, look.box.x2, y1, gap.$1)],
@@ -327,18 +378,28 @@ List<BBox>? _parts(
   ];
 }
 
-/// The rows [y1, y2) of [look] cut into columns at [stripes], and the
-/// columns at tall empty bands (a name, then the next name far below).
-/// Null unless two columns at least are two letters wide (a row of colons
-/// is no column).
-List<BBox>? _columns(_Ink look, List<(int, int)> stripes, int y1, int y2) {
+/// The rows [y1, y2) and page columns [x1, x2) (the whole block by default)
+/// of [look] cut into columns at [stripes], and the columns at tall empty
+/// bands (a name, then the next name far below) unless [paragraphs] is
+/// false. Null unless [minColumns] columns at least are two letters wide (a
+/// row of colons is no column).
+List<BBox>? _columns(
+  _Ink look,
+  List<(int, int)> stripes,
+  int y1,
+  int y2, {
+  int? x1,
+  int? x2,
+  int minColumns = 2,
+  bool paragraphs = true,
+}) {
   final ranges = <(int, int)>[];
-  var x = look.box.x1;
+  var x = x1 ?? look.box.x1;
   for (final (s1, s2) in stripes) {
     ranges.add((x, s1));
     x = s2;
   }
-  ranges.add((x, look.box.x2));
+  ranges.add((x, x2 ?? look.box.x2));
 
   // The empty bands of rows in each column: (first row, height).
   final columns = <(BBox, List<(int, int)>)>[];
@@ -357,7 +418,8 @@ List<BBox>? _columns(_Ink look, List<(int, int)> stripes, int y1, int y2) {
     }
     columns.add((column, gaps));
   }
-  if (columns.where((c) => c.$1.width >= 2 * look.letter).length < 2) return null;
+  if (columns.where((c) => c.$1.width >= 2 * look.letter).length < minColumns) return null;
+  if (!paragraphs) return [for (final (column, _) in columns) column];
   // A column is cut where the gap is much taller than between its lines
   // (widely spaced lines of a phone screen stay together).
   final all = [
@@ -379,9 +441,17 @@ List<BBox>? _columns(_Ink look, List<(int, int)> stripes, int y1, int y2) {
   return parts;
 }
 
-/// The blocks [block] becomes with [parts].
-List<TextBlock> _blocks(RgbImage image, TextBlock block, _Ink look, List<BBox> parts, LineAnnotator? annotateLines) {
-  if (block.fixedLines && block.lines.isNotEmpty) {
+/// The blocks [block] becomes with [parts]; its fixed lines are cut at the
+/// parts unless [useLines] is false.
+List<TextBlock> _blocks(
+  RgbImage image,
+  TextBlock block,
+  _Ink look,
+  List<BBox> parts,
+  LineAnnotator? annotateLines, {
+  bool useLines = true,
+}) {
+  if (useLines && block.fixedLines && block.lines.isNotEmpty) {
     // Each part takes the lines whose middle row is in it, cut to it; a line
     // in no part becomes a block of its own.
     final byPart = [for (final _ in parts) <BBox>[]];

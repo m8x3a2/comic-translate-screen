@@ -31,6 +31,24 @@ Future<List<SourceStyle?>> measureStylesInBackground(String path, List<TextBlock
   return [for (final b in blocks) measureSourceStyle(image, b)];
 });
 
+/// "Find blocks inside": [block] of the page in [path] cut the way [mode]
+/// says, the new blocks with lines for [sourceLanguage]; empty when there is
+/// one block inside.
+Future<List<TextBlock>> splitBlockInsideInBackground(
+  String path,
+  TextBlock block,
+  InsideSplit mode,
+  String sourceLanguage,
+) => Isolate.run(() async {
+  final image = await ImageCodec.readFile(path);
+  return splitBlockInside(
+    image,
+    block,
+    mode,
+    annotateLines: (image, blocks) => annotateBlocksWithHeuristicLines(image, blocks, sourceLanguage: sourceLanguage),
+  );
+});
+
 /// Writes [image] to [path] as PNG.
 Future<void> writePngInBackground(String path, RgbImage image) =>
     Isolate.run(() => File(path).writeAsBytes(ImageCodec.encodePng(image), flush: true));

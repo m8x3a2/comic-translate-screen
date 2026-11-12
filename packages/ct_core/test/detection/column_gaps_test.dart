@@ -145,4 +145,96 @@ void main() {
     final block = TextBlock(xyxy: const BBox(10, 10, 400, 100));
     expect(splitColumnBlocks(busy, [block]), [same(block)]);
   });
+
+  group('find blocks inside', () {
+    // Two paragraphs of three lines in each of two columns.
+    (RgbImage, TextBlock) twoByTwo() {
+      final image = _page();
+      final rows = [
+        for (final x in [20, 200])
+          for (final y in [20, 40, 60, 120, 140, 160]) _row(image, x, y, [4, 5, 3]),
+      ];
+      return (image, TextBlock(xyxy: _around(rows), textClass: TextClass.free));
+    }
+
+    test('auto: columns and the paragraphs in them', () {
+      final (image, block) = twoByTwo();
+      final out = splitBlockInside(image, block, InsideSplit.auto);
+      expect(out, hasLength(4));
+      expect(out.where((b) => b.xyxy.x2 < 190 && b.xyxy.y2 < 100), hasLength(1));
+      expect(out.where((b) => b.xyxy.x1 > 190 && b.xyxy.y1 > 100), hasLength(1));
+      expect(out.every((b) => b.textClass == TextClass.free && !b.fixedLines), isTrue);
+    });
+
+    test('only columns: the paragraphs stay together', () {
+      final (image, block) = twoByTwo();
+      final out = splitBlockInside(image, block, InsideSplit.columns);
+      expect(out, hasLength(2));
+      expect(out.every((b) => b.xyxy.y1 < 20 && b.xyxy.y2 > 174), isTrue);
+    });
+
+    test('only paragraphs: across both columns', () {
+      final (image, block) = twoByTwo();
+      final out = splitBlockInside(image, block, InsideSplit.paragraphs);
+      expect(out, hasLength(2));
+      expect(out.every((b) => b.xyxy.x1 < 20 && b.xyxy.x2 > 300), isTrue);
+    });
+
+    test('boldly: one wide gap in a lone line is enough', () {
+      final image = _page();
+      final rows = [
+        _row(image, 20, 20, [6]),
+        _row(image, 150, 20, [5]),
+      ];
+      final block = TextBlock(xyxy: _around(rows));
+      expect(splitColumnBlocks(image, [block]), [same(block)]);
+      expect(splitBlockInside(image, block, InsideSplit.auto), hasLength(2));
+      expect(splitBlockInside(image, block, InsideSplit.columns), hasLength(2));
+      expect(splitBlockInside(image, block, InsideSplit.paragraphs), isEmpty);
+    });
+
+    test('one block inside: nothing', () {
+      final image = _page();
+      final rows = [
+        for (final y in [20, 40, 60]) _row(image, 20, y, [4, 6, 3, 5]),
+      ];
+      final block = TextBlock(xyxy: _around(rows));
+      for (final mode in InsideSplit.values) {
+        expect(splitBlockInside(image, block, mode), isEmpty, reason: mode.name);
+      }
+      expect(splitBlockInside(_page(), TextBlock(xyxy: const BBox(10, 10, 300, 100)), InsideSplit.auto), isEmpty);
+    });
+
+    test('a frame stretched over text the line finder missed: new lines for the parts', () {
+      final image = _page();
+      final seen = _row(image, 20, 20, [6, 4]);
+      _row(image, 220, 20, [5]);
+      final lined = TextBlock(xyxy: seen.padded(2), lines: [TextLine.box(seen)])..fixedLines = true;
+      // As found: the lines are cut at the parts.
+      final both = [
+        _row(image, 20, 60, [6]),
+        _row(image, 220, 60, [5]),
+      ];
+      final twoLines = TextBlock(xyxy: _around(both), lines: [for (final b in both) TextLine.box(b)])
+        ..fixedLines = true;
+      final kept = splitBlockInside(image, twoLines, InsideSplit.columns);
+      expect(kept, hasLength(2));
+      expect(kept.every((b) => b.fixedLines && b.lines.length == 1), isTrue);
+      // Stretched to the right over a word without a line.
+      final stretched = lined.copy()..xyxy = BBox(14, 14, 290, 40);
+      final out = splitBlockInside(
+        image,
+        stretched,
+        InsideSplit.auto,
+        annotateLines: (_, blocks) {
+          for (final b in blocks) {
+            b.lines = [TextLine.box(b.xyxy)];
+          }
+        },
+      );
+      expect(out, hasLength(2));
+      expect(out.every((b) => !b.fixedLines && b.lines.length == 1), isTrue);
+      expect(out.any((b) => b.xyxy.x1 > 200), isTrue);
+    });
+  });
 }

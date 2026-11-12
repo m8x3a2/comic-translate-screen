@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/app_state.dart';
 import '../../state/block_looks.dart';
+import '../../state/background.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
 import '../../state/glued_words.dart';
@@ -170,6 +171,108 @@ Future<void> _splitWords(BuildContext context, WidgetRef ref, {int? block}) asyn
   );
 }
 
+/// "Find blocks inside": block [index] of the current page cut into its
+/// columns and paragraphs (the way chosen under the arrow) as one undo step;
+/// the new blocks are recognized at once when the block was. Says what
+/// happened.
+Future<void> _findInside(BuildContext context, WidgetRef ref, int index) async {
+  final l = context.l10n;
+  final messenger = ScaffoldMessenger.of(context);
+  final ui = DialogBatchUi(context);
+  // Taken before the wait: the button may be gone by then.
+  final workspace = ref.read(workspaceProvider.notifier);
+  final steps = ref.read(stepsProvider.notifier);
+  final page = ref.read(workspaceProvider).currentPage;
+  if (page == null || index < 0 || index >= page.blocks.length) return;
+  final original = page.blocks[index];
+  final settings = ref.read(settingsProvider);
+  final mode = InsideSplit.values.firstWhere((m) => m.name == settings.splitInside, orElse: () => InsideSplit.auto);
+  final List<TextBlock> parts;
+  try {
+    parts = await splitBlockInsideInBackground(page.path, original.copy(), mode, page.sourceOf(settings));
+  } on Object catch (e) {
+    messenger.showSnackBar(SnackBar(content: Text('$e')));
+    return;
+  }
+  if (parts.isEmpty) {
+    messenger.showSnackBar(SnackBar(content: Text(l.findInsideNone)));
+    return;
+  }
+  for (final b in parts) {
+    b
+      ..style = original.style
+      ..sourceLang = original.sourceLang
+      ..targetLang = original.targetLang;
+  }
+  if (!workspace.replaceBlock(page.id, index, original, parts)) return;
+  messenger.showSnackBar(SnackBar(content: Text(l.findInsideDone('${parts.length}'))));
+  if (original.text.trim().isNotEmpty) {
+    await steps.run(ManualStep.recognize, ui, blocks: [for (var k = 0; k < parts.length; k++) index + k]);
+  }
+}
+
+/// "Find blocks inside | ▾" of the selected block: the arrow chooses how
+/// (auto, columns only, paragraphs only); the choice stays on the button.
+class _FindInsideButton extends ConsumerWidget {
+  const _FindInsideButton({required this.index, required this.enabled});
+
+  final int index;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final current = ref.watch(settingsProvider.select((s) => s.splitInside));
+    void choose(InsideSplit mode) {
+      ref.read(settingsProvider.notifier).change((s) => s.splitInside = mode.name);
+      _findInside(context, ref, index);
+    }
+
+    String label(InsideSplit m) => switch (m) {
+      InsideSplit.auto => l.findInsideAuto,
+      InsideSplit.columns => l.findInsideColumns,
+      InsideSplit.paragraphs => l.findInsideParagraphs,
+    };
+    final chosen = InsideSplit.values.firstWhere((m) => m.name == current, orElse: () => InsideSplit.auto);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: '${l.findInside}\n${label(chosen)}',
+          visualDensity: VisualDensity.compact,
+          onPressed: enabled ? () => _findInside(context, ref, index) : null,
+          icon: const Icon(Icons.view_column_outlined, size: 20),
+        ),
+        MenuAnchor(
+          menuChildren: [
+            for (final m in InsideSplit.values)
+              MenuItemButton(
+                leadingIcon: Icon(m == chosen ? Icons.radio_button_checked : Icons.radio_button_unchecked, size: 18),
+                onPressed: () => choose(m),
+                child: Text(label(m)),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 280),
+                child: Text(l.findInsideHint, style: Theme.of(context).textTheme.bodySmall),
+              ),
+            ),
+          ],
+          builder: (context, menu, _) => Tooltip(
+            message: l.findInsideWhich,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: enabled ? () => menu.isOpen ? menu.close() : menu.open() : null,
+              child: Icon(Icons.arrow_drop_down, size: 18, color: enabled ? null : Theme.of(context).disabledColor),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _BlockCard extends ConsumerWidget {
   const _BlockCard({required this.index, required this.block, required this.selected, required this.readOnly});
 
@@ -309,42 +412,61 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${i + 1}', style: theme.textTheme.labelLarge),
-            const Spacer(),
-            IconButton(
-              tooltip: l.recognizeBlock,
-              visualDensity: VisualDensity.compact,
-              onPressed: busy
-                  ? null
-                  : () => ref.read(stepsProvider.notifier).run(ManualStep.recognize, DialogBatchUi(context), block: i),
-              icon: const Icon(Icons.abc, size: 20),
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text('${i + 1}', style: theme.textTheme.labelLarge),
             ),
-            IconButton(
-              tooltip: l.splitWordsBlock,
-              visualDensity: VisualDensity.compact,
-              onPressed: busy || widget.block.text.trim().isEmpty ? null : () => _splitWords(context, ref, block: i),
-              icon: const Icon(Icons.space_bar, size: 20),
-            ),
-            IconButton(
-              tooltip: l.translateBlock,
-              visualDensity: VisualDensity.compact,
-              onPressed: busy
-                  ? null
-                  : () => ref.read(stepsProvider.notifier).run(ManualStep.translate, DialogBatchUi(context), block: i),
-              icon: const Icon(Icons.translate, size: 20),
-            ),
-            IconButton(
-              tooltip: l.deleteBlock,
-              visualDensity: VisualDensity.compact,
-              onPressed: busy ? null : () => ws.deleteBlock(i),
-              icon: const Icon(Icons.delete_outline, size: 20),
-            ),
-            IconButton(
-              tooltip: l.deselect,
-              visualDensity: VisualDensity.compact,
-              onPressed: () => ws.selectBlock(null),
-              icon: const Icon(Icons.expand_less, size: 20),
+            // A narrow panel: the buttons go on to a second row.
+            Expanded(
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  IconButton(
+                    tooltip: l.recognizeBlock,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: busy
+                        ? null
+                        : () => ref
+                              .read(stepsProvider.notifier)
+                              .run(ManualStep.recognize, DialogBatchUi(context), block: i),
+                    icon: const Icon(Icons.abc, size: 20),
+                  ),
+                  _FindInsideButton(index: i, enabled: !busy),
+                  IconButton(
+                    tooltip: l.splitWordsBlock,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: busy || widget.block.text.trim().isEmpty
+                        ? null
+                        : () => _splitWords(context, ref, block: i),
+                    icon: const Icon(Icons.space_bar, size: 20),
+                  ),
+                  IconButton(
+                    tooltip: l.translateBlock,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: busy
+                        ? null
+                        : () => ref
+                              .read(stepsProvider.notifier)
+                              .run(ManualStep.translate, DialogBatchUi(context), block: i),
+                    icon: const Icon(Icons.translate, size: 20),
+                  ),
+                  IconButton(
+                    tooltip: l.deleteBlock,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: busy ? null : () => ws.deleteBlock(i),
+                    icon: const Icon(Icons.delete_outline, size: 20),
+                  ),
+                  IconButton(
+                    tooltip: l.deselect,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => ws.selectBlock(null),
+                    icon: const Icon(Icons.expand_less, size: 20),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
