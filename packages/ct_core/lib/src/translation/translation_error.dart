@@ -34,6 +34,9 @@ enum TranslationErrorKind {
   /// that thinks first can use it all up thinking).
   cutOff,
 
+  /// A streaming response ended without a completion signal.
+  interrupted,
+
   other;
 
   /// Every following page would fail the same way: a batch run stops at
@@ -46,15 +49,15 @@ enum TranslationErrorKind {
   /// Kind of an HTTP error status; [message] helps with 400, which some
   /// servers (OpenRouter) use for unknown models.
   static TranslationErrorKind forStatus(int status, [String message = '']) => switch (status) {
-        401 || 403 => auth,
-        402 => credits,
-        404 => notFound,
-        400 when RegExp(r'\bmodel\b', caseSensitive: false).hasMatch(message) => notFound,
-        408 => timeout,
-        429 => rateLimit,
-        >= 500 => server,
-        _ => other,
-      };
+    401 || 403 => auth,
+    402 => credits,
+    404 => notFound,
+    400 when RegExp(r'\bmodel\b', caseSensitive: false).hasMatch(message) => notFound,
+    408 => timeout,
+    429 => rateLimit,
+    >= 500 => server,
+    _ => other,
+  };
 }
 
 class TranslationException implements Exception {
@@ -72,4 +75,9 @@ class TranslationException implements Exception {
 
   @override
   String toString() => 'Translation failed: $message';
+}
+
+/// A readable response left every requested bubble untranslated.
+class NoTranslationsException extends TranslationException {
+  NoTranslationsException(super.message) : super(kind: TranslationErrorKind.badReply);
 }

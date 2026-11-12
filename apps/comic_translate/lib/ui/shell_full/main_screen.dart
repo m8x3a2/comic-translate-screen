@@ -42,11 +42,13 @@ import 'export_dialog.dart';
 import 'home_view.dart';
 import 'page_grid.dart';
 import 'page_list.dart';
+import '../chats/chats_screen.dart';
 import 'page_viewer.dart';
 import 'repeats_dialog.dart';
 import 'shortcuts_dialog.dart';
 import 'text_export_dialog.dart';
 import 'text_panel.dart';
+import 'translation_review.dart';
 
 /// Opens [path] in Windows Explorer (selecting it when it is a file).
 Future<void> showInExplorer(String path) async {
@@ -236,7 +238,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     final section = ref.read(settingsOnStartProvider);
     if (section != null) {
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => _openSettings(SettingsSection.values.asNameMap()[section] ?? SettingsSection.general),
+        (_) => _openSettings(
+          SettingsSection.values.asNameMap()[section == 'tools' ? 'ocr' : section] ?? SettingsSection.general,
+        ),
       );
     }
     final inputs = ref.read(initialInputsProvider);
@@ -321,7 +325,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     if (!mounted) return;
     if (outcome.repeatsLeft > 0) _snack(l.repeatsLeft('${outcome.repeatsLeft}'));
     for (final e in outcome.errors.entries) {
-      final why = e.value is ArchiveToolMissingException ? l.needsArchiveTool : '${e.value}';
+      final why = switch (e.value) {
+        ArchiveToolMissingException() => l.needsArchiveTool,
+        ArchivePasswordException() => l.archivePassword,
+        final other => '$other',
+      };
       _snack(l.importFailed(p.basename(e.key), why));
     }
     for (final MapEntry(key: name, value: notices) in outcome.notices.entries) {
@@ -573,14 +581,27 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       'pages': result.pages,
       'files': result.outputs.length,
     });
-    if (options.translated) ref.read(workspaceProvider.notifier).markExported(ids);
-    if (choice.removeFromProject) ref.read(workspaceProvider.notifier).removePages(ids.toSet());
+    // A page without the picture asked for (not cleaned, say) is not in the
+    // files: it is neither told saved nor taken out of the project.
+    final saved = [
+      for (final id in ids)
+        if (result.complete.contains(id)) id,
+    ];
+    final left = ids.length - saved.length;
+    if (saved.isEmpty) {
+      if (mounted) _snack(l.exportNothingWritten);
+      return;
+    }
+    if (options.translated) ref.read(workspaceProvider.notifier).markExported(saved);
+    if (choice.removeFromProject) ref.read(workspaceProvider.notifier).removePages(saved.toSet());
     if (mounted) {
       final shown = result.outputs.length == 1 ? result.outputs.single : target;
-      _snack(
-        choice.removeFromProject ? l.exportSavedRemoved(shown, '${ids.length}') : l.exportSaved(shown),
-        action: SnackBarAction(label: l.showInFolder, onPressed: () => showInExplorer(shown)),
-      );
+      _snack(switch ((choice.removeFromProject, left > 0)) {
+        (true, true) => l.exportSavedRemovedLeft(shown, '${saved.length}', '$left'),
+        (true, false) => l.exportSavedRemoved(shown, '${saved.length}'),
+        (false, true) => l.exportSavedLeftOut(shown, '$left'),
+        (false, false) => l.exportSaved(shown),
+      }, action: SnackBarAction(label: l.showInFolder, onPressed: () => showInExplorer(shown)));
     }
   }
 
@@ -716,7 +737,17 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                   // The settings panel takes the place of the text.
                                   if (ref.watch(settingsPanelProvider) == null) ...[
                                     const VerticalDivider(width: 1),
-                                    if (panelHidden(ref, Panels.text))
+                                    if (ref.watch(translationReviewProvider))
+                                      SizedBox(
+                                        width: (c.maxWidth * 0.22).clamp(240.0, 340.0),
+                                        child: const Column(
+                                          children: [
+                                            Expanded(child: TranslationReviewPanel()),
+                                            Expanded(flex: 2, child: TextPanel()),
+                                          ],
+                                        ),
+                                      )
+                                    else if (panelHidden(ref, Panels.text))
                                       FoldedSidePanel(Panels.text, label: l.textPanel)
                                     else
                                       SizedBox(
@@ -880,7 +911,11 @@ class _TranslateButton extends ConsumerWidget {
           onPressed: enabled ? () => onTranslate(selectedOnly: selectedOnly) : null,
           icon: const Icon(Icons.translate),
           label: Tooltip(
-            message: compact ? label : '',
+            message: [
+              label,
+              l.modelForOcr(selectedEngineLabel(context, ref, reader: true)),
+              l.modelForTranslation(selectedEngineLabel(context, ref, reader: false)),
+            ].join('\n'),
             child: Text(compact ? (selectedOnly ? l.translateShortCount('$picked') : l.translateShort) : label),
           ),
         ),
@@ -1076,11 +1111,24 @@ class _TopBar extends ConsumerWidget {
                 },
               ),
               const SizedBox(width: 16),
-              const _LanguagePickers(),
               Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _TranslatorChip(onTap: () => onSettings(SettingsSection.translator), compact: compact),
+                child: LayoutBuilder(
+                  builder: (context, space) => Row(
+                    children: [
+                      // Leave room for the privacy icon. On a narrow window the
+                      // language fields shrink before the action buttons do.
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: (space.maxWidth - 48).clamp(0.0, space.maxWidth)),
+                        child: const _LanguagePickers(),
+                      ),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _TranslatorChip(onTap: () => onSettings(SettingsSection.translator), compact: compact),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1130,6 +1178,17 @@ class _TopBar extends ConsumerWidget {
                   onPressed: () => showBatchReport(context, last),
                 ),
               ],
+              IconButton(
+                tooltip: l.translationReview,
+                isSelected: ref.watch(translationReviewProvider),
+                onPressed: hasPages ? () => ref.read(translationReviewProvider.notifier).open() : null,
+                icon: const Icon(Icons.rule),
+              ),
+              IconButton(
+                tooltip: l.chatsWorkspace,
+                onPressed: () => showChats(context),
+                icon: const Icon(Icons.chat_bubble_outline),
+              ),
               const SizedBox(width: 8),
               _ToolButton(
                 compact: compact,
@@ -1218,14 +1277,16 @@ class _LanguagePickers extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        picker(
-          source == Languages.auto ? l.languageAutoHint : l.sourceLanguage,
-          source,
-          sources,
-          (v) => choose(source: v),
+        Flexible(
+          child: picker(
+            source == Languages.auto ? l.languageAutoHint : l.sourceLanguage,
+            source,
+            sources,
+            (v) => choose(source: v),
+          ),
         ),
         const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Icon(Icons.arrow_forward, size: 18)),
-        picker(l.targetLanguage, target, targets, (v) => choose(target: v)),
+        Flexible(child: picker(l.targetLanguage, target, targets, (v) => choose(target: v))),
         // Only while the pages have different languages.
         if (differ)
           IconButton(

@@ -117,9 +117,9 @@ class ExchangeDraft {
       if (!await file.exists()) return null;
       final json = jsonDecode(await file.readAsString());
       return json is Map ? fromJson(json.cast<String, Object?>()) : null;
-    } on FormatException {
-      return null;
-    } on FileSystemException {
+    } on Object {
+      // Not JSON, unreadable, or a field of the wrong kind (a TypeError):
+      // the exchange folder still opens, without its draft.
       return null;
     }
   }

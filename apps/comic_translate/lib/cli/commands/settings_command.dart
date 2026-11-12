@@ -64,8 +64,10 @@ class _SettingsGet extends CtsCommand {
   @override
   Future<int> run() async {
     if (argResults!.rest.length != 1) usageException('Give one dotted path.');
-    final json = (await ctx.services.settingsStore.load()).toJson();
-    final value = _lookup(json, argResults!.rest.single.split('.'));
+    final settings = await ctx.services.settingsStore.load();
+    final path = argResults!.rest.single.split('.');
+    if (path.length > 2 && path.first == 'plugins') path[1] = settings.pluginStorageId(path[1]);
+    final value = _lookup(settings.toJson(), path);
     ctx.printJson(value);
     return value == null ? ExitCodes.failure : ExitCodes.ok;
   }
@@ -100,7 +102,9 @@ class _SettingsSet extends CtsCommand {
     }
 
     final store = ctx.services.settingsStore;
-    final json = (await store.load()).toJson();
+    final settings = await store.load();
+    if (path.length > 2 && path.first == 'plugins') path[1] = settings.pluginStorageId(path[1]);
+    final json = settings.toJson();
     Map<String, Object?> node = json;
     for (final key in path.take(path.length - 1)) {
       final child = node[key];
@@ -160,8 +164,13 @@ class _SettingsPlugins extends CtsCommand {
             : '${endpoint.privacy.name}: ${endpoint.host.isEmpty ? 'not configured' : endpoint.host}';
         ctx.say('${info.kind.name.padRight(10)} ${info.id.padRight(18)} [$privacy] ${info.displayName}');
         for (final f in info.settings) {
+          final slot = f is SecretSetting ? settings.pluginSettingSecretKey(info.id, f) : null;
           final v = f is SecretSetting
-              ? (config.secret(f.key) != null ? '<stored>' : '<not set>  (cts secrets set ${f.storeKey(info.id)})')
+              ? (config.secret(f.key) != null
+                    ? '<stored>'
+                    : slot == null
+                    ? '<no active key>'
+                    : '<not set>  (cts secrets set $slot)')
               : jsonEncode(config.values[f.key]);
           ctx.say('    plugins.${info.id}.${f.key} = $v');
         }

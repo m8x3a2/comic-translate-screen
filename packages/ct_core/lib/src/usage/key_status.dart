@@ -18,6 +18,7 @@ class KeyStatus {
     this.freeRequestsLeft,
     this.label = '',
     this.freeTier,
+    this.fields,
   });
 
   /// The key's name as the service shows it (OpenRouter: the name given to
@@ -46,19 +47,23 @@ class KeyStatus {
   final int? freeRequestsToday;
   final int? freeRequestsLimit;
   final int? freeRequestsLeft;
+
+  /// Selected fields of a custom reply, with the provider's values and units.
+  final Map<String, String>? fields;
 }
 
 /// How to ask a service about the key of a configuration
 /// ([PluginInfo.keyStatus]). Asking sends the key to [host]; the UI says so
 /// and asks only when the user presses the button.
 class KeyStatusQuery {
-  const KeyStatusQuery({required this.host, required this.hasKey, required this.run});
+  const KeyStatusQuery({required this.host, required this.hasKey, required this.run, this.custom = false});
 
   /// Where the key is sent.
   final String host;
 
   /// A key is saved; without one there is nothing to ask.
   final bool hasKey;
+  final bool custom;
 
   /// Throws `TranslationException` (refused key, no connection, ...).
   final Future<KeyStatus> Function() run;

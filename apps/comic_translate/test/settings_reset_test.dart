@@ -60,6 +60,32 @@ void main() {
     expect(s.recentProjects, ['a.ctsproj']);
   });
 
+  test('recognition and cleaning reset independently, leaving shared server profiles', () {
+    final s = changed()
+      ..ocr = 'openai_compatible_ocr'
+      ..ownServerNames['shared'] = 'Shared'
+      ..ownServerOcrProfile = 'shared'
+      ..ownServerProfile = 'shared'
+      ..inpaint = const InpaintConfig(strategy: HdStrategy.crop)
+      ..plugins['openai_compatible_ocr'] = {'model': 'vision', 'together': true}
+      ..plugins['openai_compatible_shared'] = {'api_url': 'http://localhost:8181', 'model': 'translator'};
+    resetSettings(s, registry, part: SettingsPart.cleaning);
+    expect(s.inpaint.strategy, AppSettings().inpaint.strategy);
+    expect(s.ocr, 'openai_compatible_ocr');
+    expect(s.ownServerOcrProfile, 'shared');
+    expect(s.pluginValues('openai_compatible_ocr')['together'], isTrue);
+    expect(s.plugins['aot'], isNull);
+
+    s.inpaint = const InpaintConfig(strategy: HdStrategy.crop);
+    resetSettings(s, registry, part: SettingsPart.ocr);
+    expect(s.ocr, AppSettings().ocr);
+    expect(s.ownServerOcrProfile, isNull);
+    expect(s.plugins['openai_compatible_ocr'], isNull);
+    expect(s.inpaint.strategy, HdStrategy.crop);
+    expect(s.ownServerProfile, 'shared');
+    expect(s.pluginValues('openai_compatible')['model'], 'translator');
+  });
+
   late Directory dir;
   late AppServices services;
   setUp(() async {

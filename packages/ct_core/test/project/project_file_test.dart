@@ -90,6 +90,65 @@ void main() {
     expect(File(font).lengthSync(), 300);
   });
 
+  // A font given to one word only was neither stored nor found again.
+  test('the font of a single word goes with the project too', () {
+    final path = p.join(dir.path, 'words.ctsproj');
+    final font = file('Shout.ttf', List.filled(200, 3));
+    final b = TextBlock(
+      xyxy: const BBox(10, 20, 110, 80),
+      text: 'Hey you',
+      translation: 'Эй ты',
+      style: BlockStyle(runs: [StyledRun(0, 2, RunStyle(fontFamily: font, bold: true))]),
+    );
+    final first = ProjectFile.save(
+      path,
+      ProjectData(
+        pages: [
+          ProjectPage(id: 'a', name: '001.png', image: file('001.png', [1, 2]), blocks: [b]),
+        ],
+      ),
+      appVersion: '0.1.0',
+    );
+    expect(first.filesAdded, 2, reason: 'the page and the font of the word');
+    File(font).deleteSync();
+    final moved = ProjectFile.load(path, Directory(p.join(dir.path, 'elsewhere')));
+    final run = moved.pages.single.blocks.single.style!.runs.single;
+    expect((run.start, run.end, run.style.bold), (0, 2, true));
+    expect(p.isWithin(p.join(dir.path, 'elsewhere', 'fonts'), run.style.fontFamily!), isTrue);
+    expect(File(run.style.fontFamily!).lengthSync(), 200);
+  });
+
+  // The cleaned picture is stored as `clean.png`: unpacked next to an
+  // original of that name, it was written over it.
+  test('a page named like the program\'s own pictures keeps its original', () {
+    final path = p.join(dir.path, 'names.ctsproj');
+    ProjectPage page(String name, String id) => ProjectPage(
+      id: id,
+      name: name,
+      image: file('$id/$name', [1, 1, 1]),
+      cleanImage: file('$id/c.png', [2, 2]),
+      mask: file('$id/m.png', [3]),
+      overflow: file('$id/o.png', [4, 4, 4, 4]),
+    );
+    ProjectFile.save(
+      path,
+      ProjectData(pages: [page('clean.png', 'a'), page('mask.png', 'b'), page('overflow.png', 'c')]),
+      appVersion: '0.1.0',
+    );
+    final data = ProjectFile.load(path, Directory(p.join(dir.path, 'open')));
+    for (final pg in data.pages) {
+      expect(File(pg.image).readAsBytesSync(), [1, 1, 1], reason: pg.name);
+      expect(File(pg.cleanImage!).readAsBytesSync(), [2, 2], reason: pg.name);
+      expect(File(pg.mask!).readAsBytesSync(), [3], reason: pg.name);
+      expect(File(pg.overflow!).readAsBytesSync(), [4, 4, 4, 4], reason: pg.name);
+      expect({pg.image, pg.cleanImage, pg.mask, pg.overflow}, hasLength(4), reason: pg.name);
+    }
+    // Saved again from the files opened: the originals are still there.
+    ProjectFile.save(path, data, appVersion: '0.1.0');
+    final again = ProjectFile.load(path, Directory(p.join(dir.path, 'again')));
+    expect([for (final pg in again.pages) File(pg.image).readAsBytesSync()], everyElement([1, 1, 1]));
+  });
+
   test('a webtoon page keeps the cleaned part of the page below it', () {
     final path = p.join(dir.path, 'w.ctsproj');
     ProjectFile.save(

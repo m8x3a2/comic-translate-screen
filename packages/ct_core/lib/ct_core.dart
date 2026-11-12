@@ -89,6 +89,8 @@ export 'src/render/text_case.dart';
 export 'src/render/text_runs.dart';
 export 'src/render/upscale.dart';
 export 'src/settings/app_settings.dart';
+export 'src/settings/own_server_keys.dart';
+export 'src/settings/request_template.dart';
 export 'src/settings/secret_store.dart';
 export 'src/settings/settings_store.dart';
 export 'src/translation/llm_protocol.dart';

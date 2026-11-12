@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:ct_core/ct_core.dart';
 
 import '../translation/openai_compatible.dart';
+import '../translation/http_request_editor.dart';
 import '../translation/openrouter.dart';
 
 const _modelHelp = 'A model that sees pictures (the list marks them), e.g. google/gemini-2.5-flash.';
@@ -92,6 +93,8 @@ const openRouterOcrInfo = PluginInfo(
     TextSetting(key: 'model', label: 'Model', help: _modelHelp, placeholder: 'google/gemini-2.5-flash'),
     SecretSetting(key: 'api_key', label: 'API key', help: _keyHelp, sharedWith: 'openrouter'),
     ..._readingPlan,
+    llmPromptSetting,
+    httpRequestTemplateSetting,
     _readingMaxTokens,
     _readingTimeout,
   ],
@@ -107,15 +110,14 @@ const openAiCompatibleOcrInfo = PluginInfo(
   displayName: 'Model by key: own server',
   description:
       'A language model that sees pictures reads the bubbles, through any OpenAI-compatible server you '
-      'name (a local LM Studio / Ollama server, OpenAI and others). The key is the one of the "Own server" '
-      'translator.',
+      'name (a local LM Studio / Ollama server, OpenAI and others).',
   kind: PluginKind.ocr,
   privacy: Privacy.cloud,
   settings: [
     TextSetting(
       key: 'api_url',
       label: 'API URL',
-      help: 'Base URL ending in /v1, e.g. http://localhost:1234/v1 (LM Studio).',
+      help: 'Use the base URL documented by your server, e.g. http://localhost:1234/v1 for LM Studio.',
       placeholder: 'http://localhost:1234/v1',
       isUrl: true,
     ),
@@ -128,8 +130,13 @@ const openAiCompatibleOcrInfo = PluginInfo(
       sharedWith: 'openai_compatible',
     ),
     ..._readingPlan,
+    llmPromptSetting,
     _readingMaxTokens,
     _readingTimeout,
+    llmChatPathSetting,
+    llmModelsPathSetting,
+    llmRequestOptionsSetting,
+    httpRequestTemplateSetting,
   ],
   endpoint: openAiCompatibleEndpoint,
   keyStatus: openAiCompatibleKeyStatus,
@@ -169,6 +176,10 @@ class ModelOcr implements PageOcr {
       temperature: 0,
       maxTokens: config.value<int>('max_tokens'),
       timeout: Duration(seconds: config.value<int>('timeout')),
+      chatPath: config.values['chat_path'] as String? ?? '',
+      requestOptions: config.values['request_options'] as String? ?? '',
+      comicPrompt: config.value<String>(llmPromptSetting.key),
+      httpChat: httpRequestSpec(config, HttpOperation.chat),
       info: info,
     ),
     resendMissing: config.value<bool>('resend_missing'),
@@ -209,11 +220,7 @@ class ModelOcr implements PageOcr {
   }) async {
     final parts = readingParts([for (final p in pages) p.blocks.length], maxBlocks);
     if (parts.isEmpty) return;
-    final base = client.apiUrl.trim().replaceAll(RegExp(r'/+$'), '');
-    final uri = Uri.tryParse('$base/chat/completions');
-    if (base.isEmpty || uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      throw TranslationException('set the API URL of the model that reads', kind: TranslationErrorKind.config);
-    }
+    final uri = client.chatUri();
     if (client.model.trim().isEmpty) {
       throw TranslationException(
         'choose the model that reads (Settings, Recognition)',
@@ -253,6 +260,7 @@ class ModelOcr implements PageOcr {
       ],
       translation: translation,
       pagePictures: pagePictures && translation != null,
+      instructions: client.comicPrompt,
     );
     final first = request(null);
     if (first.sheets.length > maxPictures && count > 1) {

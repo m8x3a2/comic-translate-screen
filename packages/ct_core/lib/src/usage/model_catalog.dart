@@ -39,16 +39,23 @@ class CatalogModel {
 }
 
 /// How to get the list of models for a configuration
-/// ([PluginInfo.modelCatalog]). Asking sends nothing of the user's (no key):
-/// the UI still names [host] and asks only when the user presses the button.
+/// ([PluginInfo.modelCatalog]). The UI names [host] and loads the list on request.
 class ModelCatalogQuery {
-  const ModelCatalogQuery({required this.host, required this.settingKey, required this.run});
+  const ModelCatalogQuery({
+    required this.host,
+    required this.settingKey,
+    required this.run,
+    this.usesProfileCredentials = false,
+  });
 
   /// Where the list comes from.
   final String host;
 
   /// The setting the picked model's id goes into.
   final String settingKey;
+
+  /// Authenticated lists can differ by profile or key even at the same host.
+  final bool usesProfileCredentials;
 
   /// Throws `TranslationException` (no connection, ...).
   final Future<List<CatalogModel>> Function() run;

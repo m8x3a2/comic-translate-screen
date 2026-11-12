@@ -62,6 +62,8 @@ class Redactor {
     if (trimmed.length >= minSecretLength) _secrets.add(trimmed);
   }
 
+  bool containsKnownSecret(String input) => _secrets.any(input.contains);
+
   String redact(String input) {
     var out = input;
     // Longest first so that a secret containing another one is fully masked.

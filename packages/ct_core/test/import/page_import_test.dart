@@ -58,12 +58,17 @@ void main() {
 
   test('a broken archive gives a readable error', () async {
     final bad = File(p.join(dir.path, 'bad.cbz'))..writeAsStringSync('not a zip');
-    await expectLater(importPages([bad.path], cacheDir: Directory(p.join(dir.path, 'cache'))),
-        throwsA(isA<PageImportException>().having((e) => e.message, 'message', contains('bad.cbz'))));
+    await expectLater(
+      importPages([bad.path], cacheDir: Directory(p.join(dir.path, 'cache'))),
+      throwsA(isA<PageImportException>().having((e) => e.message, 'message', contains('bad.cbz'))),
+    );
     final errors = <String>[];
     final png = File(p.join(dir.path, 'ok.png'))..writeAsBytesSync([1]);
-    final pages = await importPages([bad.path, png.path],
-        cacheDir: Directory(p.join(dir.path, 'cache')), onError: (input, e) => errors.add(p.basename(input)));
+    final pages = await importPages(
+      [bad.path, png.path],
+      cacheDir: Directory(p.join(dir.path, 'cache')),
+      onError: (input, e) => errors.add(p.basename(input)),
+    );
     expect(pages.map((e) => e.name), ['ok.png']);
     expect(errors, ['bad.cbz']);
   });
@@ -81,4 +86,26 @@ void main() {
     expect(pages.map((e) => e.name), ['Page1.png', 'page2.png', 'page10.png']);
     expect(Directory(p.join(p.dirname(pages.first.path), '_unpack')).existsSync(), isFalse);
   }, skip: sevenZip == null ? '7-Zip is not installed' : false);
+
+  // 7-Zip used to wait for the password to be typed: the import never ended.
+  for (final headers in [false, true]) {
+    test('a 7z with a password (names ${headers ? 'hidden' : 'shown'}) is told at once', () async {
+      final src = Directory(p.join(dir.path, 'locked'))..createSync(recursive: true);
+      File(p.join(src.path, 'page1.png')).writeAsBytesSync(png);
+      final archive = p.join(dir.path, 'locked.7z');
+      final r = await Process.run(sevenZip!, [
+        'a',
+        '-t7z',
+        '-psecret',
+        '-mhe=${headers ? 'on' : 'off'}',
+        archive,
+        p.join(src.path, '*'),
+      ]);
+      expect(r.exitCode, 0, reason: '${r.stderr}');
+      await expectLater(
+        importPages([archive], cacheDir: Directory(p.join(dir.path, 'cache'))).timeout(const Duration(seconds: 30)),
+        throwsA(isA<ArchivePasswordException>()),
+      );
+    }, skip: sevenZip == null ? '7-Zip is not installed' : false);
+  }
 }

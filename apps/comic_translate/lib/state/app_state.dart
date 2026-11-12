@@ -31,6 +31,16 @@ final initialSettingsProvider = Provider<AppSettings>((ref) => AppSettings());
 
 final settingsProvider = NotifierProvider<SettingsNotifier, AppSettings>(SettingsNotifier.new);
 
+final credentialRevisionProvider = NotifierProvider<CredentialRevision, int>(CredentialRevision.new);
+
+/// Invalidate information fetched with a credential that was replaced or removed.
+class CredentialRevision extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void changed() => state++;
+}
+
 /// The current settings; every change is saved to `settings.json` at once.
 class SettingsNotifier extends Notifier<AppSettings> {
   @override

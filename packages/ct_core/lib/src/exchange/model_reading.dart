@@ -47,6 +47,7 @@ ReadingRequest readingRequest(
   bool pagePictures = false,
   int sheetPx = 1600,
   bool screens = false,
+  String instructions = '',
 }) {
   final mode = translation == null ? ExchangeMode.recognize : ExchangeMode.both;
   final items = exchangeItems([
@@ -83,7 +84,12 @@ ReadingRequest readingRequest(
     contextPictures: pagePictures && translation != null,
     screens: screens,
   );
-  return ReadingRequest(items, [...wholePages, for (final s in sheets) s.image], prompt, translation: translation);
+  return ReadingRequest(
+    items,
+    [...wholePages, for (final s in sheets) s.image],
+    instructions.trim().isEmpty ? prompt : '$prompt\n\n$instructions',
+    translation: translation,
+  );
 }
 
 /// The blocks of [pages] in parts of at most [maxBlocks] for one request

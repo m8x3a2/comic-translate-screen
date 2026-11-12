@@ -15,6 +15,8 @@ import '../render/mask_raster.dart' show imageFileSize;
 import 'background.dart';
 import 'workspace.dart';
 
+typedef CommitOmissionTranslations = Future<int> Function(PageEntry page, Map<int, TextBlock> updates);
+
 /// What the exchange window works on.
 class ExchangeRequest {
   const ExchangeRequest({
@@ -23,6 +25,8 @@ class ExchangeRequest {
     this.only = const {},
     this.fromRun = false,
     this.modeFixed = false,
+    this.retryOmissions = false,
+    this.commitOmissions,
   });
 
   /// In page order.
@@ -38,6 +42,12 @@ class ExchangeRequest {
   /// "Translate all" goes on in its own order after "Apply": the window
   /// cannot switch to another mode.
   final bool modeFixed;
+
+  /// Apply only nonempty translations when filling missing replies.
+  final bool retryOmissions;
+
+  /// Commits the accepted translations together with any needed cleaning.
+  final CommitOmissionTranslations? commitOmissions;
 }
 
 /// The rounds of the exchange that reading ([read]) and translating
@@ -153,6 +163,8 @@ Future<({int changed, List<ExchangeLabel> lost})> applyExchange(
   ExchangeMatch match,
   ExchangeMode mode, {
   String placeholder = '',
+  bool retryOmissions = false,
+  CommitOmissionTranslations? commitOmissions,
 }) async {
   var changed = 0;
   final lost = <ExchangeLabel>[];
@@ -168,6 +180,7 @@ Future<({int changed, List<ExchangeLabel> lost})> applyExchange(
     }
     final blocks = [...page.blocks];
     final read = <int>{};
+    final omissions = <int, TextBlock>{};
     var any = false;
     for (final it in own) {
       // Left as it was in the text files: the bubble stays (no placeholder).
@@ -177,13 +190,39 @@ Future<({int changed, List<ExchangeLabel> lost})> applyExchange(
         lost.add(it.label);
         continue;
       }
+      final reply = match.replies[it.label];
+      if (retryOmissions) {
+        final old = blocks[i];
+        final translation = reply?.translation;
+        if (!old.untranslated ||
+            old.translation.trim().isNotEmpty ||
+            old.text.trim().isEmpty ||
+            !hasTranslatableContent(translation)) {
+          continue;
+        }
+        final b = old.copy();
+        applyExchangeReply(b, ExchangeReply(translation: translation), ExchangeMode.translate);
+        if (old.style?.runs.isNotEmpty ?? false) b.style = old.style;
+        if (hasTranslatableContent(b.translation)) omissions[i] = blocks[i] = b;
+        continue;
+      }
       final b = blocks[i].copy();
-      if (applyExchangeReply(b, match.replies[it.label], mode, placeholder: placeholder)) {
+      if (applyExchangeReply(b, reply, mode, placeholder: placeholder)) {
         if (b.text != blocks[i].text) read.add(i);
         blocks[i] = b;
         changed++;
         any = true;
       }
+    }
+    if (retryOmissions) {
+      if (omissions.isEmpty) continue;
+      if (commitOmissions == null) {
+        workspace.edit(id, (p) => p.copyWith(blocks: blocks), byHand: false);
+        changed += omissions.length;
+      } else {
+        changed += await commitOmissions(page, omissions);
+      }
+      continue;
     }
     if (read.isNotEmpty) {
       final which = read.toList()..sort();

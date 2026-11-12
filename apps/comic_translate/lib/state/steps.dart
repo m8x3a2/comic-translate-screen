@@ -27,6 +27,9 @@ import 'workspace.dart';
 
 enum ManualStep { detect, recognize, translate, mask, clean }
 
+bool canRetryTranslation(TextBlock block) =>
+    block.untranslated && block.translation.trim().isEmpty && block.text.trim().isNotEmpty;
+
 /// How long a finished run of a step took, for the line under the step buttons.
 class StepResult {
   const StepResult({required this.step, required this.pages, required this.count, required this.ms, this.empty = 0});
@@ -109,14 +112,14 @@ class StepsNotifier extends Notifier<StepState> {
 
   /// The steps [step] needs on [page], in order; [readFirst]: translating
   /// reads every block again first ("Read and translate").
-  static List<ManualStep> plan(ManualStep step, PageEntry page, {int? block, bool readFirst = false}) {
+  static List<ManualStep> plan(ManualStep step, PageEntry page, {List<int>? only, bool readFirst = false}) {
     final noBlocks = page.blocks.isEmpty;
     return switch (step) {
       ManualStep.detect => [ManualStep.detect],
       ManualStep.recognize => [if (noBlocks) ManualStep.detect, ManualStep.recognize],
       ManualStep.translate => [
         if (noBlocks) ManualStep.detect,
-        if (readFirst || noBlocks || _unread(page, block).isNotEmpty) ManualStep.recognize,
+        if (readFirst || noBlocks || _unread(page, only).isNotEmpty) ManualStep.recognize,
         ManualStep.translate,
       ],
       ManualStep.mask => [if (noBlocks) ManualStep.detect, ManualStep.mask],
@@ -127,10 +130,10 @@ class StepsNotifier extends Notifier<StepState> {
     };
   }
 
-  /// Blocks (or block [only]) without recognized text.
-  static List<int> _unread(PageEntry page, int? only) => [
+  /// Blocks (or those of [only]) without recognized text.
+  static List<int> _unread(PageEntry page, List<int>? only) => [
     for (final (i, b) in page.blocks.indexed)
-      if ((only == null || only == i) && b.text.trim().isEmpty) i,
+      if ((only == null || only.contains(i)) && b.text.trim().isEmpty) i,
   ];
 
   static PipelinePart _part(ManualStep s) => switch (s) {
@@ -161,24 +164,50 @@ class StepsNotifier extends Notifier<StepState> {
   /// [readFirst] with [ManualStep.translate]: every block is read again
   /// before it is translated ("Read and translate"); a model by key that
   /// translates too does both in the same requests.
-  Future<void> run(ManualStep step, BatchUi ui, {int? block, ExchangeMode? chat, bool readFirst = false}) async {
+  Future<void> run(
+    ManualStep step,
+    BatchUi ui, {
+    int? block,
+    List<int>? blocks,
+    ExchangeMode? chat,
+    bool readFirst = false,
+    bool retryOmissions = false,
+  }) async {
     if (state.running || ref.read(batchProvider) is BatchRunning) return;
     final ws = ref.read(workspaceProvider);
-    final targets = block == null ? ws.stepPages : [?ws.currentPage];
+    final only = blocks ?? (block == null ? null : [block]);
+    final chapter = ws.currentPage == null ? null : chapterOf(ws.currentPage!);
+    List<int>? onlyFor(PageEntry page) => retryOmissions
+        ? [
+            for (final (i, b) in page.blocks.indexed)
+              if (canRetryTranslation(b)) i,
+          ]
+        : only;
+    final targets = retryOmissions
+        ? [
+            for (final page in ws.pages)
+              if (chapterOf(page) == chapter && onlyFor(page)!.isNotEmpty) page,
+          ]
+        : only == null
+        ? ws.stepPages
+        : [?ws.currentPage];
     if (targets.isEmpty) return;
     final start = targets.first;
-    final plans = {for (final page in targets) page.id: plan(step, page, block: block, readFirst: readFirst)};
+    final plans = {
+      for (final page in targets)
+        page.id: retryOmissions ? [ManualStep.translate] : plan(step, page, only: only, readFirst: readFirst),
+    };
     final settings0 = ref.read(settingsProvider);
     // Frames found but not read: a frame may be left empty on purpose (a
     // sound, a picture), so they are read only when the user wants that.
     // Pages without frames are found and read as before; reading and
     // translating through the chat reads anyway.
-    if (step == ManualStep.translate && chat != ExchangeMode.both && !readFirst) {
+    if (step == ManualStep.translate && !retryOmissions && chat != ExchangeMode.both && !readFirst) {
       final unread = [
         for (final page in targets)
-          if (page.blocks.isNotEmpty && _unread(page, block).isNotEmpty) page,
+          if (page.blocks.isNotEmpty && _unread(page, only).isNotEmpty) page,
       ];
-      final count = unread.fold(0, (n, page) => n + _unread(page, block).length);
+      final count = unread.fold(0, (n, page) => n + _unread(page, only).length);
       if (count > 0) {
         var choice = settings0.emptyFrames;
         if (choice == EmptyFrames.ask) {
@@ -251,6 +280,98 @@ class StepsNotifier extends Notifier<StepState> {
       final settings = ref.read(settingsProvider);
       log.info('step_start', {'step': step.name, 'pages': targets.length});
       final active = worker;
+      var cleaningReady = false;
+      Future<int> commitOmissions(PageEntry page, Map<int, TextBlock> updates) async {
+        if (updates.isEmpty) return 0;
+        cancel.throwIfCancelled();
+        PageEntry? belowPage(WorkspaceState ws) {
+          final index = ws.pages.indexWhere((p) => p.id == page.id);
+          return ws.webtoon && index >= 0 && index + 1 < ws.pages.length ? ws.pages[index + 1] : null;
+        }
+
+        final before = ref.read(workspaceProvider);
+        final below = belowPage(before);
+        var cleanPath = page.cleanPath;
+        var overflowPath = page.overflowPath;
+        if (cleanPath != null) {
+          if (!cleaningReady) {
+            const cleaning = {PipelinePart.textMask, PipelinePart.inpainter};
+            if (!await ensureModels(
+              ref,
+              ui,
+              cancel,
+              parts: cleaning,
+              onProgress: (f) => state = state.copyWith(stage: 'download', download: f),
+            )) {
+              throw const CancelledException();
+            }
+            state = state.copyWith(stage: 'loading');
+            await active.load(cleaning, cancel: cancel);
+            cleaningReady = true;
+          }
+          final blocks = updates.values.toList();
+          state = state.copyWith(stage: _stage(ManualStep.mask), pageId: page.id);
+          final mask = await active.makeMask(
+            page.name,
+            path: cleanPath,
+            blocks: blocks,
+            below: below?.basePath,
+            cancel: cancel,
+          );
+          // The mask may include other text inside the same bubble.
+          for (final (i, block) in page.blocks.indexed) {
+            if (updates.containsKey(i)) continue;
+            final box = block.xyxy.clampTo(mask.width, mask.height);
+            if (box.isEmpty) continue;
+            for (var y = box.y1; y < box.y2; y++) {
+              final row = y * mask.width;
+              mask.data.fillRange(row + box.x1, row + box.x2, 0);
+            }
+          }
+          if (mask.countNonZero() > 0) {
+            state = state.copyWith(stage: _stage(ManualStep.clean));
+            final cleaned = await active.inpaint(
+              page.name,
+              path: cleanPath,
+              mask: mask,
+              blocks: blocks,
+              below: below?.basePath,
+              cancel: cancel,
+            );
+            final dir = workspace.pageDir(page.id).path;
+            final stamp = _stamp();
+            cleanPath = p.join(dir, 'clean_$stamp.png');
+            final outputs = <WorkerOutput>[ImageOutput(cleanPath, cleaned.clean)];
+            if (cleaned.overflow case final patch?) {
+              final merged = overflowPath == null ? patch : await _mergeOverflow(overflowPath, patch);
+              overflowPath = p.join(dir, 'overflow_$stamp.png');
+              outputs.add(PatchOutput(overflowPath, merged));
+            }
+            await active.save(outputs);
+          }
+        }
+
+        cancel.throwIfCancelled();
+        final now = ref.read(workspaceProvider);
+        final latest = now.byId(page.id);
+        if (latest == null) return 0;
+        final next = belowPage(now);
+        if (latest.cleanPath != page.cleanPath ||
+            latest.overflowPath != page.overflowPath ||
+            (overflowPath != page.overflowPath && (next?.id != below?.id || next?.basePath != below?.basePath)) ||
+            updates.keys.any((i) => i >= latest.blocks.length || !identical(latest.blocks[i], page.blocks[i]))) {
+          throw StateError('Page changed while filling translations');
+        }
+        final blocks = [...latest.blocks];
+        updates.forEach((i, block) => blocks[i] = block);
+        workspace.edit(
+          page.id,
+          (p) => p.copyWith(blocks: blocks, cleanPath: cleanPath, overflowPath: overflowPath),
+          byHand: false,
+        );
+        return updates.length;
+      }
+
       Future<void> runSteps(Map<String, List<ManualStep>> plans) async {
         final worker = active;
         for (final (n, target) in targets.indexed) {
@@ -293,8 +414,11 @@ class StepsNotifier extends Notifier<StepState> {
                 commit((p) => p.copyWith(blocks: found));
                 workspace.selectBlock(null);
               case ManualStep.recognize:
-                final which = block != null
-                    ? [block]
+                final which = only != null
+                    ? [
+                        for (final i in only)
+                          if (i < page.blocks.length) i,
+                      ]
                     : step == ManualStep.translate && !readFirst
                     ? _unread(page, null)
                     : [for (var i = 0; i < page.blocks.length; i++) i];
@@ -323,19 +447,44 @@ class StepsNotifier extends Notifier<StepState> {
                   ),
                 );
               case ManualStep.translate:
+                final selected = onlyFor(page);
                 final which = [
                   for (final (i, b) in page.blocks.indexed)
-                    if ((block == null || block == i) && b.text.trim().isNotEmpty) i,
+                    if ((selected == null || selected.contains(i)) && b.text.trim().isNotEmpty) i,
                 ];
                 if (which.isEmpty) continue;
-                final done = await worker.translate(
-                  page.name,
-                  path: page.path,
-                  blocks: [for (final i in which) page.blocks[i].copy()],
-                  sourceLanguage: page.sourceOf(settings),
-                  targetLanguage: page.targetOf(settings),
-                  cancel: cancel,
-                );
+                final List<TextBlock> done;
+                try {
+                  done = await worker.translate(
+                    page.name,
+                    path: page.path,
+                    blocks: [for (final i in which) page.blocks[i].copy()],
+                    sourceLanguage: page.sourceOf(settings),
+                    targetLanguage: page.targetOf(settings),
+                    cancel: cancel,
+                  );
+                } on NoTranslationsException {
+                  if (!retryOmissions) rethrow;
+                  timed();
+                  continue;
+                }
+                if (retryOmissions) {
+                  final latest = ref.read(workspaceProvider).byId(id);
+                  if (latest == null) continue;
+                  final updates = <int, TextBlock>{};
+                  for (final (k, i) in which.indexed) {
+                    if (i >= latest.blocks.length || !identical(latest.blocks[i], page.blocks[i]) || k >= done.length) {
+                      continue;
+                    }
+                    final b = done[k];
+                    if (b.untranslated || !hasTranslatableContent(b.translation)) continue;
+                    updates[i] = latest.blocks[i].copy()
+                      ..translation = b.translation
+                      ..untranslated = false;
+                  }
+                  timed(await commitOmissions(latest, updates));
+                  continue;
+                }
                 timed(which.length);
                 commit(
                   (p) => p.copyWith(
@@ -404,9 +553,9 @@ class StepsNotifier extends Notifier<StepState> {
       // Reading by a model by key: the pages are read together, as many
       // bubbles in one request as it takes (the owner's idea); translated in
       // the same requests when it translates too.
-      final reading = block == null && rounds.isEmpty ? readingPlan(services.registry, settings) : null;
+      final reading = only == null && rounds.isEmpty ? readingPlan(services.registry, settings) : null;
       final grouped = reading != null && plans.values.any((s) => s.contains(ManualStep.recognize));
-      final size = block == null ? pagesPerRequest(services.registry, settings) : 1;
+      final size = only == null && !retryOmissions ? pagesPerRequest(services.registry, settings) : 1;
 
       /// Reads the pages whose plan reads; returns those translated with it.
       Future<Set<String>> readTogether(({bool together, int maxBlocks}) reading) async {
@@ -575,11 +724,16 @@ class StepsNotifier extends Notifier<StepState> {
           cancel.throwIfCancelled();
           state = state.copyWith(stage: 'exchange');
           final ws = ref.read(workspaceProvider);
-          final only = <String, List<int>>{
+          final byPage = <String, List<int>>{
             for (final target in targets)
               if (ws.byId(target.id) case final page?)
-                target.id: block != null
-                    ? [block]
+                target.id: retryOmissions
+                    ? onlyFor(page)!
+                    : only != null
+                    ? [
+                        for (final i in only)
+                          if (i < page.blocks.length) i,
+                      ]
                     : mode == ExchangeMode.recognize && step == ManualStep.translate && !readFirst
                     ? _unread(page, null)
                     : [for (var i = 0; i < page.blocks.length; i++) i],
@@ -587,11 +741,14 @@ class StepsNotifier extends Notifier<StepState> {
           final request = ExchangeRequest(
             pageIds: [
               for (final t in targets)
-                if (only[t.id]?.isNotEmpty ?? false) t.id,
+                if (byPage[t.id]?.isNotEmpty ?? false) t.id,
             ],
             mode: mode,
-            only: only,
+            only: byPage,
             fromRun: true,
+            modeFixed: retryOmissions,
+            retryOmissions: retryOmissions,
+            commitOmissions: retryOmissions ? commitOmissions : null,
           );
           if (request.pageIds.isEmpty) continue;
           if (!await ui.exchange(request)) throw const CancelledException();
@@ -656,3 +813,26 @@ List<TextBlock> _replace(
 }
 
 String _stamp() => '${DateTime.now().microsecondsSinceEpoch}';
+
+/// Keep earlier seam pixels wherever the new mask is transparent.
+Future<SeamPatch> _mergeOverflow(String path, SeamPatch patch) async {
+  final (oldImage, oldAlpha) = await readRgbaInBackground(path);
+  final w = patch.alpha.width;
+  final h = oldAlpha.height > patch.alpha.height ? oldAlpha.height : patch.alpha.height;
+  final image = RgbImage.filled(w, h, 0, 0, 0);
+  final alpha = GrayImage.zeros(w, h);
+  for (final layer in [SeamPatch(oldImage, oldAlpha), patch]) {
+    final width = layer.alpha.width < w ? layer.alpha.width : w;
+    for (var y = 0; y < layer.alpha.height; y++) {
+      for (var x = 0; x < width; x++) {
+        final opacity = layer.alpha.at(x, y);
+        if (opacity == 0) continue;
+        alpha.data[y * w + x] = opacity;
+        final dst = image.offset(x, y);
+        final src = layer.image.offset(x, y);
+        image.data.setRange(dst, dst + 3, layer.image.data, src);
+      }
+    }
+  }
+  return SeamPatch(image, alpha);
+}

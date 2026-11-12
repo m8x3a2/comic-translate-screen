@@ -33,6 +33,7 @@ ExportPage exportPageOf(PageEntry page, {String? translatedImage}) {
   final ext = p.extension(page.name);
   return ExportPage(
     name: p.basenameWithoutExtension(page.name),
+    id: page.id,
     chapter: chapterOf(page),
     sourceExtension: ext.isEmpty ? p.extension(page.path) : ext,
     translatedImage: translatedImage ?? page.translatedPath,

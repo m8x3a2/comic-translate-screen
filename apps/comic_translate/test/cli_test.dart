@@ -8,17 +8,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 /// Runs the CLI in-process and captures stdout/stderr.
-Future<({int code, String out, String err})> cts(
-  List<String> args,
-  Directory dataDir, {
-  SecretStore? secrets,
-}) async {
+Future<({int code, String out, String err})> cts(List<String> args, Directory dataDir, {SecretStore? secrets}) async {
   final outFile = File(p.join(dataDir.path, '_stdout.txt'));
   final errFile = File(p.join(dataDir.path, '_stderr.txt'));
   final out = outFile.openWrite();
   final err = errFile.openWrite();
-  final code = await runCli(args,
-      out: out, err: err, dataDirOverride: dataDir.path, secretStore: secrets ?? MemorySecretStore());
+  final code = await runCli(
+    args,
+    out: out,
+    err: err,
+    dataDirOverride: dataDir.path,
+    secretStore: secrets ?? MemorySecretStore(),
+  );
   await out.close();
   await err.close();
   return (code: code, out: outFile.readAsStringSync(), err: errFile.readAsStringSync());
@@ -111,14 +112,16 @@ void main() {
     final empty = await cts(['usage'], dataDir);
     expect(empty.code, ExitCodes.ok);
     expect(empty.out, contains('No requests'));
-    await UsageLog(File(p.join(dataDir.path, 'usage.json'))).record(const ServiceUsage(
-      plugin: 'openai_compatible',
-      host: 'openrouter.ai',
-      model: 'deepseek/deepseek-chat-v3.1',
-      inputTokens: 900,
-      outputTokens: 100,
-      cost: 0.0004,
-    ));
+    await UsageLog(File(p.join(dataDir.path, 'usage.json'))).record(
+      const ServiceUsage(
+        plugin: 'openai_compatible',
+        host: 'openrouter.ai',
+        model: 'deepseek/deepseek-chat-v3.1',
+        inputTokens: 900,
+        outputTokens: 100,
+        cost: 0.0004,
+      ),
+    );
     final r = await cts(['--json', 'usage'], dataDir);
     final entry = ((jsonDecode(r.out) as Map)['entries'] as List).single as Map;
     expect(entry['model'], 'deepseek/deepseek-chat-v3.1');
@@ -127,11 +130,11 @@ void main() {
 
     final noServer = await cts(['usage', '--balance', '--translator', 'mock'], dataDir);
     expect(noServer.code, ExitCodes.failure);
-    expect(noServer.err, contains('cannot tell'));
+    expect(noServer.err, contains('No key status request is configured'));
     await cts(['settings', 'set', 'plugins.openai_compatible.api_url', 'https://openrouter.ai/api/v1'], dataDir);
     final noKey = await cts(['usage', '--balance', '--translator', 'openai_compatible'], dataDir);
     expect(noKey.code, ExitCodes.failure);
-    expect(noKey.err, contains('No API key saved'));
+    expect(noKey.err, contains('No active API key'));
 
     await cts(['usage', '--reset'], dataDir);
     expect((await cts(['usage'], dataDir)).out, contains('No requests'));
@@ -229,21 +232,33 @@ void main() {
     late String ocrJson;
     setUp(() {
       ocrJson = p.join(dataDir.path, 'page.ocr.json');
-      File(ocrJson).writeAsStringSync(jsonEncode({
-        'image': 'page.jpg',
-        'source_language': 'English',
-        'blocks': [
-          TextBlock(xyxy: const BBox(0, 50, 10, 60), text: 'Second').toJson(),
-          TextBlock(xyxy: const BBox(0, 0, 10, 10), text: 'First').toJson(),
-          TextBlock(xyxy: const BBox(0, 80, 10, 90), text: '...').toJson(),
-        ],
-        'reading_order': [1, 0, 2],
-      }));
+      File(ocrJson).writeAsStringSync(
+        jsonEncode({
+          'image': 'page.jpg',
+          'source_language': 'English',
+          'blocks': [
+            TextBlock(xyxy: const BBox(0, 50, 10, 60), text: 'Second').toJson(),
+            TextBlock(xyxy: const BBox(0, 0, 10, 10), text: 'First').toJson(),
+            TextBlock(xyxy: const BBox(0, 80, 10, 90), text: '...').toJson(),
+          ],
+          'reading_order': [1, 0, 2],
+        }),
+      );
     });
 
     test('mock translator writes translations in reading order', () async {
       final out = p.join(dataDir.path, 'out');
-      final r = await cts(['--json', 'translate', '--translator', 'mock', '--to', 'Russian', ocrJson, '-o', out], dataDir);
+      final r = await cts([
+        '--json',
+        'translate',
+        '--translator',
+        'mock',
+        '--to',
+        'Russian',
+        ocrJson,
+        '-o',
+        out,
+      ], dataDir);
       expect(r.code, ExitCodes.ok, reason: r.err);
       final pairs = ((jsonDecode(r.out) as Map)['results'] as List).single['pairs'] as List;
       expect([for (final x in pairs) x['translation']], ['[ru] First', '[ru] Second', '']);
@@ -271,9 +286,11 @@ void main() {
       final png = p.join(dataDir.path, 'page.png');
       File(png).writeAsBytesSync(ImageCodec.encodePng(page));
       final blocks = p.join(dataDir.path, 'page.blocks.json');
-      File(blocks).writeAsStringSync(jsonEncode({
-        'blocks': [TextBlock(xyxy: const BBox(50, 40, 150, 72), text: 'word').toJson()],
-      }));
+      File(blocks).writeAsStringSync(
+        jsonEncode({
+          'blocks': [TextBlock(xyxy: const BBox(50, 40, 150, 72), text: 'word').toJson()],
+        }),
+      );
       final out = p.join(dataDir.path, 'out');
       final r = await cts(['--json', 'mask', png, '--blocks', blocks, '-o', out], dataDir);
       expect(r.code, ExitCodes.ok, reason: r.err);
@@ -298,10 +315,14 @@ void main() {
     test('render draws the translation inside its block only', () async {
       final png = writePng('page.clean.png', RgbImage.filled(400, 300, 255, 255, 255));
       final blocks = p.join(dataDir.path, 'page.translated.json');
-      File(blocks).writeAsStringSync(jsonEncode({
-        'target_language': 'Russian',
-        'blocks': [TextBlock(xyxy: const BBox(100, 80, 300, 220), text: 'Hello', translation: 'Привет всем').toJson()],
-      }));
+      File(blocks).writeAsStringSync(
+        jsonEncode({
+          'target_language': 'Russian',
+          'blocks': [
+            TextBlock(xyxy: const BBox(100, 80, 300, 220), text: 'Hello', translation: 'Привет всем').toJson(),
+          ],
+        }),
+      );
       final out = p.join(dataDir.path, 'out');
       final r = await cts(['--json', 'render', png, '--blocks', blocks, '-o', out], dataDir);
       expect(r.code, ExitCodes.ok, reason: r.err);

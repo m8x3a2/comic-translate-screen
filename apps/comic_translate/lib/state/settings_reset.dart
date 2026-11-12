@@ -5,7 +5,7 @@ library;
 
 import 'package:ct_core/ct_core.dart';
 
-enum SettingsPart { general, translator, exchange, tools, text, upscale, export, keys, models }
+enum SettingsPart { general, translator, exchange, ocr, cleaning, text, upscale, export, keys, models }
 
 void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part}) {
   final d = AppSettings();
@@ -24,6 +24,7 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..autoBugReport = d.autoBugReport
           ..gridTileSize = d.gridTileSize
           ..translateSelected = d.translateSelected
+          ..splitInside = d.splitInside
           ..showNavigator = d.showNavigator
           ..settingsView = d.settingsView
           ..settingsLastView = d.settingsLastView
@@ -35,15 +36,13 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..sendPageImage = d.sendPageImage
           ..approvedNetworkPlugins.clear();
         forgetPlugins({PluginKind.translator});
-      case SettingsPart.tools:
+      case SettingsPart.ocr:
         s
           ..detector = d.detector
           ..contentKind = d.contentKind
           ..screenDetector = d.screenDetector
           ..ocr = d.ocr
-          ..inpainter = d.inpainter
-          ..textMask = d.textMask
-          ..colourLetters = d.colourLetters
+          ..ownServerOcrProfile = d.ownServerOcrProfile
           ..textPrep = d.textPrep
           ..screenTextPrep = d.screenTextPrep
           ..readLevel = d.readLevel
@@ -51,16 +50,15 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..fixCyrillicLookalikes = d.fixCyrillicLookalikes
           ..splitGluedWords = d.splitGluedWords
           ..checkLines = d.checkLines
-          ..textPrepSeconds = d.textPrepSeconds
+          ..textPrepSeconds = d.textPrepSeconds;
+        forgetPlugins({PluginKind.detector, PluginKind.ocr, PluginKind.textPrep, PluginKind.reader});
+      case SettingsPart.cleaning:
+        s
+          ..inpainter = d.inpainter
+          ..textMask = d.textMask
+          ..colourLetters = d.colourLetters
           ..inpaint = d.inpaint;
-        forgetPlugins({
-          PluginKind.detector,
-          PluginKind.ocr,
-          PluginKind.inpainter,
-          PluginKind.textPrep,
-          PluginKind.textMask,
-          PluginKind.reader,
-        });
+        forgetPlugins({PluginKind.inpainter, PluginKind.textMask});
       case SettingsPart.text:
         s.render = d.render;
       case SettingsPart.upscale:
@@ -79,7 +77,7 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
     s
       ..sourceLanguage = d.sourceLanguage
       ..targetLanguage = d.targetLanguage
-      ..plugins.clear()
+      ..plugins.removeWhere((id, _) => !id.startsWith(AppSettings.ownServerStoragePrefix))
       ..extra.clear();
   }
 }

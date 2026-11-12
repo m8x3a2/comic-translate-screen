@@ -17,6 +17,7 @@ export 'src/ocr/script_id.dart';
 export 'src/ocr/windows_ocr.dart';
 export 'src/text_prep/neural_upscalers.dart';
 export 'src/translation/mock.dart';
+export 'src/translation/http_request_editor.dart';
 export 'src/translation/openai_compatible.dart';
 export 'src/translation/openrouter.dart';
 export 'src/translation/opus_mt.dart';

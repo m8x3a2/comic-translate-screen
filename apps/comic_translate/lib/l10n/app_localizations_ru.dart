@@ -10,6 +10,698 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
+  String get chatContinueReply => 'Продолжить с места обрыва';
+
+  @override
+  String get chatContinuePrompt =>
+      'Продолжи ответ с места обрыва, без повторения уже полученного текста.';
+
+  @override
+  String get chatContinueHelp =>
+      'Включит незавершённый ответ в новый запрос. При обычной отправке этот фрагмент пропускается.';
+
+  @override
+  String get chatResendAttachments => 'Повторно отправить вложения из истории';
+
+  @override
+  String get chatResendAttachmentsNotice =>
+      'В запрос также войдут вложения из предыдущих сообщений.';
+
+  @override
+  String get trErrInterrupted => 'поток закрылся без сигнала завершения ответа';
+
+  @override
+  String get chatIncompleteResponse => 'Ответ незавершён';
+
+  @override
+  String get translatorStream => 'Потоковый ответ (SSE)';
+
+  @override
+  String get translatorStreamHelp =>
+      'В тестовом чате текст появляется по частям, если сервер поддерживает потоковый ответ OpenAI Chat Completions.';
+
+  @override
+  String get translatorStreamTemplateHelp =>
+      'Для полного HTTP-запроса «Чат и перевод» поток настраивается в самом шаблоне.';
+
+  @override
+  String get httpEditorFormatsHelp =>
+      'Для SSE в правилах чата задайте format = sse и путь text к фрагменту ответа. Для multipart укажите Content-Type: multipart/form-data и подставьте files в поле файла в теле JSON.';
+
+  @override
+  String get httpEditorCheckResponse => 'Проверить вставленный SSE';
+
+  @override
+  String get httpEditorSampleSse =>
+      'Вставьте события SSE вместе с пустыми строками';
+
+  @override
+  String get httpEditorAttachFile => 'Прикрепить файл';
+
+  @override
+  String get httpEditorRemoveFile => 'Убрать файл';
+
+  @override
+  String get httpEditorFileTooLarge => 'Файл больше 10 МБ.';
+
+  @override
+  String get httpEditorFileNeedsTemplate =>
+      'Для отправки файла нужен multipart-шаблон с переменной files в поле файла.';
+
+  @override
+  String httpEditorFileConfirm(String name) {
+    return 'В тест будет отправлен файл $name.';
+  }
+
+  @override
+  String get translatorTestFileConfirm => 'Отправить вложения?';
+
+  @override
+  String translatorTestFileNetwork(String destination) {
+    return 'Вложения и переписка будут отправлены на $destination.';
+  }
+
+  @override
+  String get modelPromptPreset => 'Заготовка промпта';
+
+  @override
+  String get modelPromptPresetStandard => 'Встроенный промпт';
+
+  @override
+  String get modelPromptPresetAdd => 'Создать заготовку';
+
+  @override
+  String get modelPromptPresetEdit => 'Редактировать заготовку';
+
+  @override
+  String get modelPromptPresetNameRequired => 'Введите название.';
+
+  @override
+  String get modelPromptPresetNameTaken => 'Это название уже занято.';
+
+  @override
+  String get modelPromptPresetTextRequired => 'Введите текст инструкций.';
+
+  @override
+  String get modelPromptPresetHelp =>
+      'При выборе заготовки её текст копируется в редактор. «Сохранить» применяет текст и сохраняет изменения списка.';
+
+  @override
+  String get ownServerAiGuide => 'Промпт для настройки с нейросетью';
+
+  @override
+  String get ownServerAiGuideCopy => 'Копировать полный промпт';
+
+  @override
+  String get chatsWorkspace => 'Чаты';
+
+  @override
+  String get chatUntitled => 'Чат без названия';
+
+  @override
+  String get chatEmpty => 'Напишите сообщение или прикрепите изображение.';
+
+  @override
+  String get chatNew => 'Новый чат';
+
+  @override
+  String get chatNewFolder => 'Новая папка';
+
+  @override
+  String get chatThreadTitle => 'Название чата';
+
+  @override
+  String get chatConnection => 'Подключение';
+
+  @override
+  String get chatCreate => 'Создать';
+
+  @override
+  String get chatFolderName => 'Название папки';
+
+  @override
+  String get chatPasswordHelp =>
+      'Чаты и картинки в папке будут зашифрованы. Сохраните пароль. Восстановить его нельзя.';
+
+  @override
+  String get chatPassword => 'Пароль';
+
+  @override
+  String get chatRepeatPassword => 'Повторите пароль';
+
+  @override
+  String get chatPasswordMismatch => 'Пароли не совпадают';
+
+  @override
+  String get chatRequired => 'Заполните поле';
+
+  @override
+  String get chatUnlock => 'Открыть папку';
+
+  @override
+  String get chatLock => 'Заблокировать папку сейчас';
+
+  @override
+  String get chatProtect => 'Установить пароль на папку';
+
+  @override
+  String get chatUnlockError => 'Не удалось открыть папку. Проверьте пароль.';
+
+  @override
+  String get chatStorageError =>
+      'Не удалось прочитать или сохранить чаты. Проверьте папку и закройте другой экземпляр приложения, если он использует эту папку.';
+
+  @override
+  String get chatStorageSettings => 'Хранилище чатов';
+
+  @override
+  String get chatStorageHelp =>
+      'Выберите папку для хранения чатов. При смене расположения откроется библиотека в выбранной папке. Прежняя библиотека останется в своей папке.';
+
+  @override
+  String get chatChooseLocation => 'Выбрать папку';
+
+  @override
+  String get chatRelock => 'Снова запрашивать пароль';
+
+  @override
+  String get chatRelockRestart => 'После перезапуска приложения';
+
+  @override
+  String get chatRelock30 => 'Через 30 минут после открытия';
+
+  @override
+  String get chatRelock60 => 'Через 60 минут после открытия';
+
+  @override
+  String get chatRename => 'Переименовать';
+
+  @override
+  String get chatPin => 'Закрепить чат';
+
+  @override
+  String get chatUnpin => 'Открепить чат';
+
+  @override
+  String get chatMove => 'Переместить в папку';
+
+  @override
+  String get chatMovePrivacy =>
+      'После перемещения чат будет храниться с настройками защиты папки назначения.';
+
+  @override
+  String get chatDelete => 'Удалить чат';
+
+  @override
+  String get chatNoFolder => 'Вне папок';
+
+  @override
+  String get chatUnlockToMove =>
+      'Откройте защищённую папку, прежде чем перемещать в неё чат.';
+
+  @override
+  String get chatAll => 'Все чаты';
+
+  @override
+  String get chatChoose => 'Выберите или создайте чат';
+
+  @override
+  String get chatTitleSearch => 'Поиск по названию чата';
+
+  @override
+  String get chatMessageSearch => 'Поиск сообщений в чате';
+
+  @override
+  String get chatNoMessagesFound => 'Сообщения не найдены';
+
+  @override
+  String get chatConnectionMissing => 'Подключение этого чата недоступно.';
+
+  @override
+  String get chatOwnServerOriginal => 'Свой сервер · Исходное подключение';
+
+  @override
+  String chatOwnServerNamed(String name) {
+    return 'Свой сервер · $name';
+  }
+
+  @override
+  String get httpEditorOffline => 'Проверить вставленный JSON';
+
+  @override
+  String get httpEditorStatus => 'HTTP-статус примера';
+
+  @override
+  String get httpEditorStatusError => 'Введите код от 100 до 599.';
+
+  @override
+  String get httpEditorSampleJson => 'Вставьте JSON ответа';
+
+  @override
+  String get checkSample => 'Проверить пример';
+
+  @override
+  String get fillPromptSample => 'Подставить пример';
+
+  @override
+  String get requestTemplateImport => 'Импорт JSON';
+
+  @override
+  String get requestTemplateExport => 'Экспорт JSON';
+
+  @override
+  String get requestTemplateImported => 'Шаблон импортирован и выбран.';
+
+  @override
+  String get requestTemplateTransferError =>
+      'Не удалось перенести шаблон. Проверьте формат JSON, пути и отсутствие ключей.';
+
+  @override
+  String get openRouterTemplateHelp =>
+      'Действует для перевода, тестового чата и сетевого OCR через OpenRouter. Выберите «Настройки профиля», чтобы вернуться к штатным запросам.';
+
+  @override
+  String get modelPromptEditor => 'Редактор промпта';
+
+  @override
+  String get modelPromptInstructions => 'Свои инструкции';
+
+  @override
+  String get modelPromptHelp =>
+      'Эти инструкции дополняют встроенный промпт. Оставьте поле пустым, чтобы использовать встроенный промпт. Сохраняйте формат ответа, чтобы приложение могло сопоставить текст с рамками.';
+
+  @override
+  String get modelPromptExample => 'Пример ответа для двух рамок';
+
+  @override
+  String get modelPromptReply =>
+      'Вставьте ответ для локальной проверки формата';
+
+  @override
+  String get modelPromptValid => 'Обе рамки сопоставлены.';
+
+  @override
+  String get modelPromptInvalidJson => 'В ответе некорректный JSON.';
+
+  @override
+  String modelPromptMissing(String frames) {
+    return 'Нет подходящего ответа для $frames.';
+  }
+
+  @override
+  String get modelViaChat => 'Внешний чат';
+
+  @override
+  String get modelNotSelected => 'модель не выбрана';
+
+  @override
+  String modelForOcr(String model) {
+    return 'OCR · $model';
+  }
+
+  @override
+  String modelForTranslation(String model) {
+    return 'Перевод · $model';
+  }
+
+  @override
+  String modelForCombined(String model) {
+    return 'OCR · $model (с переводом)';
+  }
+
+  @override
+  String get translationReview => 'Проверка перевода';
+
+  @override
+  String get translationReviewScope => 'Страницы без главы';
+
+  @override
+  String get translationReviewEmpty => 'Нет отмеченных пропусков';
+
+  @override
+  String get translationReviewNext => 'Следующий';
+
+  @override
+  String get translationReviewRetry => 'Перевести пропуски';
+
+  @override
+  String get ownServerProfile => 'Подключение к серверу';
+
+  @override
+  String get requestTemplate => 'Шаблон запросов';
+
+  @override
+  String get httpEditorChat => 'Чат и перевод';
+
+  @override
+  String get httpEditorModels => 'Список моделей';
+
+  @override
+  String get httpEditorOperations => 'Полные HTTP-запросы';
+
+  @override
+  String get httpEditorLegacy => 'Параметры совместимости';
+
+  @override
+  String get httpEditorBalance => 'Остаток';
+
+  @override
+  String get httpEditorRequest => 'HTTP-запрос';
+
+  @override
+  String get httpEditorResponse => 'Правила разбора ответа (JSON)';
+
+  @override
+  String get httpEditorSampleLabel => 'Тестовое сообщение';
+
+  @override
+  String get httpEditorSampleMessage => 'Ответь одним словом OK.';
+
+  @override
+  String get httpEditorHelp =>
+      'Путь считается от базового адреса профиля. Между заголовками и телом JSON оставьте пустую строку. Переменные из примера подставляют активный ключ и данные чата.';
+
+  @override
+  String get httpEditorTips =>
+      'По умолчанию принимаются коды HTTP 2xx. В statuses можно перечислить конкретные коды. При 401 проверьте заголовок авторизации, при 404 — путь запроса. Если HTTP-запрос успешен, а разбор не удался, сравните пути разбора с полученным JSON.';
+
+  @override
+  String get httpEditorPreview => 'Предпросмотр';
+
+  @override
+  String get httpEditorSend => 'Отправить тест';
+
+  @override
+  String httpEditorConfirm(String request) {
+    return 'Отправить $request через этот профиль? Тест выполнит реальный запрос, который может потратить токены или изменить данные на сервере.';
+  }
+
+  @override
+  String get httpEditorExtracted => 'Результат разбора';
+
+  @override
+  String get httpEditorResult => 'Результат теста HTTP';
+
+  @override
+  String get httpEditorCopy => 'Копировать отчёт';
+
+  @override
+  String get httpEditorApply => 'Использовать запрос';
+
+  @override
+  String get requestTemplateNone => 'Настройки профиля';
+
+  @override
+  String get requestTemplateHelp =>
+      'Пустые поля шаблона берутся из профиля. Правки шаблона применяются ко всем подключениям, где он выбран.';
+
+  @override
+  String get requestTemplateAdd => 'Создать шаблон запросов';
+
+  @override
+  String get requestTemplateEdit => 'Редактировать шаблон запросов';
+
+  @override
+  String get requestTemplateDelete => 'Удалить шаблон запросов';
+
+  @override
+  String requestTemplateDeleteHelp(String name) {
+    return 'Удалить «$name»? Подключения, которые используют этот шаблон, вернутся к своим настройкам запросов.';
+  }
+
+  @override
+  String get requestTemplateEditorHelp =>
+      'Шаблон можно использовать в нескольких профилях. Адрес, модель и ключ API задаются в каждом профиле отдельно. Пустые поля берутся из профиля. Серые примеры служат подсказкой.';
+
+  @override
+  String get requestTemplateName => 'Название шаблона';
+
+  @override
+  String get requestTemplateNameRequired => 'Введите название шаблона.';
+
+  @override
+  String get requestTemplateNameTaken =>
+      'Шаблон с таким названием уже существует.';
+
+  @override
+  String get requestTemplateChatPath => 'Путь чата';
+
+  @override
+  String get requestTemplateModelsPath => 'Путь списка моделей';
+
+  @override
+  String get requestTemplateOptions => 'Дополнительные поля чата (JSON)';
+
+  @override
+  String get requestTemplateStatusPath => 'Путь запроса сведений о ключе';
+
+  @override
+  String get requestTemplateStatusPathHelp =>
+      'Необязательный GET-запрос. Программа использует ключ API выбранного профиля.';
+
+  @override
+  String get requestTemplateStatusFields =>
+      'Поля ответа со сведениями о ключе (JSON)';
+
+  @override
+  String get requestTemplatePathError =>
+      'Укажите пути относительно адреса API профиля, без имени сервера и параметров после знака вопроса.';
+
+  @override
+  String get requestTemplateOptionsError =>
+      'Укажите объект JSON без полей model, messages и stream.';
+
+  @override
+  String get requestTemplateCredentialsError =>
+      'Данные авторизации вводятся в поле «Ключ API» в профиле.';
+
+  @override
+  String get requestTemplateStatusError =>
+      'Для сведений о ключе заполните путь запроса и JSON с подписями и путями к полям ответа.';
+
+  @override
+  String requestTemplateStatusConsent(String host) {
+    return 'Сведения о ключе запрашиваются у $host с сохранённым ключом API.';
+  }
+
+  @override
+  String get ownServerOriginal => 'Исходное подключение';
+
+  @override
+  String get ownServerKeyActive => 'Активный ключ API';
+
+  @override
+  String get ownServerKeyFirst => 'Первый ключ';
+
+  @override
+  String ownServerKeyNumber(int number) {
+    return 'Ключ $number';
+  }
+
+  @override
+  String get ownServerKeyNone => 'Без ключа';
+
+  @override
+  String get ownServerKeyAdd => 'Добавить ключ API';
+
+  @override
+  String get ownServerKeyEditNote => 'Редактировать заметку к ключу';
+
+  @override
+  String get ownServerKeyValue => 'Новый ключ API';
+
+  @override
+  String get ownServerKeyNote => 'Заметка к ключу';
+
+  @override
+  String get ownServerKeyNoteHelp =>
+      'Необязательная подпись, чтобы различать ключи.';
+
+  @override
+  String get ownServerKeyRequired => 'Введите ключ API.';
+
+  @override
+  String get ownServerKeyNoteSecret =>
+      'Ключ вводится в поле «Ключ API». В заметке укажите его назначение.';
+
+  @override
+  String get ownServerKeySaveFailed => 'Не удалось сохранить ключ или заметку.';
+
+  @override
+  String get ownServerKeyRemoveBody =>
+      'Выбранный ключ и его заметка будут удалены из приложения. Другой сохранённый ключ можно выбрать вручную.';
+
+  @override
+  String get ownServerKeysSecureHelp =>
+      'Ключи хранятся в защищённом хранилище Windows. Для запросов используется выбранный ниже ключ.';
+
+  @override
+  String get ownServerLoadModels => 'Загрузить модели';
+
+  @override
+  String get ownServerModelsNeedUrl =>
+      'Укажите действительный адрес API и относительный путь списка моделей в настройках.';
+
+  @override
+  String ownServerModelsHelp(String host) {
+    return 'Загрузить список моделей с $host с сохранённым ключом API, если он задан.';
+  }
+
+  @override
+  String get ownServerSetupGuideTitle => 'Как подключить свой сервер';
+
+  @override
+  String get ownServerCopyGuide => 'Копировать инструкцию';
+
+  @override
+  String get ownServerGuideCopied => 'Инструкция скопирована';
+
+  @override
+  String get ownServerSetupGuide =>
+      '1. В «Настройки → Переводчик → Свой сервер» добавьте профиль кнопкой «+» и дайте ему имя.\n2. Укажите базовый адрес из документации поставщика. Программа дописывает к нему /chat/completions и /models. Указывайте /v1, только если он входит в базовый адрес. Например, RelayModels указывает https://api.relaymodels.com/v1. Для локального сервера или сервера в вашей сети используйте HTTP, если он так настроен.\n3. Сохраните ключ в поле «Ключ API». Локальные серверы часто работают без ключа. Нажмите «Загрузить модели», чтобы выбрать идентификатор модели, или введите его вручную. Если сервер умеет выбирать модель по умолчанию, оставьте поле «Модель» пустым.\n4. Отправьте короткое сообщение в тестовом чате. В «Логах» видны запрос, HTTP-статус и ответ. Перед отправкой логов проверьте текст сообщений. Если нужна помощь в настройке, приложите документацию сервиса и обезличенный отчёт. Ключ вводите только в поле «Ключ API».\n5. В разделе «Дополнительно» можно поменять относительные пути и добавить или убрать поля JSON. Программа ожидает ответ чата в choices[].message.content и идентификаторы моделей в data[].id.';
+
+  @override
+  String get ownServerOcrConnection => 'Подключение для распознавания';
+
+  @override
+  String get ownServerOcrSearch => 'Поиск по имени или адресу';
+
+  @override
+  String get ownServerOcrManual => 'Отдельный адрес (прежние настройки)';
+
+  @override
+  String get ownServerOcrMissing =>
+      'Профиль удалён. Выберите другое подключение.';
+
+  @override
+  String get ownServerOcrConnectionHelp =>
+      'Профили общие с переводчиком. Подключение для OCR и модель с поддержкой картинок выбираются здесь.';
+
+  @override
+  String get ownServerOcrSharedSettings => 'Настройки общего подключения';
+
+  @override
+  String get ownServerOcrSharedSettingsHelp =>
+      'Правки адреса, активного ключа или шаблона действуют и в переводчике, когда он использует этот профиль.';
+
+  @override
+  String get revokeNetworkInfo =>
+      'Приложение забудет разрешение на отправку данных этому серверу и спросит снова при следующей отправке. Ключ останется сохранённым.';
+
+  @override
+  String get translatorTestDiagnostics => 'Логи';
+
+  @override
+  String get translatorTestDiagnosticsHelp =>
+      'Последняя попытка в этом чате. Заголовки авторизации и данные картинок скрыты. Проверьте текст сообщений перед тем, как поделиться логами.';
+
+  @override
+  String get translatorTestDiagnosticsEmpty =>
+      'Отправьте сообщение, чтобы увидеть запрос и ответ сервера.';
+
+  @override
+  String get translatorTestRequest => 'Запрос';
+
+  @override
+  String get translatorTestResponse => 'Ответ';
+
+  @override
+  String get translatorTestCopyDiagnostics => 'Копировать логи';
+
+  @override
+  String ownServerModelsDialogHelp(String host) {
+    return 'Список приходит с $host. Программа использует сохранённый ключ, если он задан. Некоторые серверы возвращают только идентификаторы моделей, без сведений о возможностях и ценах.';
+  }
+
+  @override
+  String ownServerModelsConsent(String host) {
+    return 'Отправить сохранённый ключ API на $host, чтобы получить список моделей?';
+  }
+
+  @override
+  String get ownServerAdd => 'Добавить подключение';
+
+  @override
+  String get ownServerRename => 'Переименовать подключение';
+
+  @override
+  String get ownServerName => 'Название подключения';
+
+  @override
+  String get ownServerNameTaken => 'Подключение с таким именем уже существует.';
+
+  @override
+  String get ownServerSearch => 'Поиск по имени, адресу или модели';
+
+  @override
+  String get ownServerSortAdded => 'По добавлению';
+
+  @override
+  String get ownServerSortName => 'По имени';
+
+  @override
+  String get ownServerNoMatches => 'Подключения не найдены';
+
+  @override
+  String get ownServerRemoveTitle => 'Удалить подключение?';
+
+  @override
+  String get ownServerRemoveBody =>
+      'Профиль, его настройки и все сохранённые ключи и заметки будут удалены.';
+
+  @override
+  String get translatorTestChat => 'Тестовый чат';
+
+  @override
+  String get translatorTestHelp =>
+      'Отправьте короткое сообщение, чтобы проверить подключение. Поставщик может списать токены за запрос.';
+
+  @override
+  String get translatorTestMessage => 'Сообщение';
+
+  @override
+  String get translatorTestSend => 'Отправить';
+
+  @override
+  String get translatorTestAttachImage =>
+      'Прикрепить изображение (вставка — Ctrl+V)';
+
+  @override
+  String get translatorTestPastedImage => 'Изображение из буфера';
+
+  @override
+  String get translatorTestRemoveImage => 'Убрать вложение';
+
+  @override
+  String get translatorTestImageHint =>
+      'Оставьте сообщение пустым, чтобы распознать текст.';
+
+  @override
+  String get translatorTestOcrPrompt =>
+      'Перепиши текст с изображения дословно.';
+
+  @override
+  String get translatorTestInvalidImage =>
+      'Не удалось прочитать изображение. Подойдут PNG, JPEG и WebP.';
+
+  @override
+  String get translatorTestImageTooLarge =>
+      'Изображение больше 10 МБ или 24 мегапикселей.';
+
+  @override
+  String get translatorTestImageConfirm => 'Отправить изображение?';
+
+  @override
+  String translatorTestImageNetwork(String destination) {
+    return 'Изображения и переписка будут отправлены на $destination.';
+  }
+
+  @override
+  String translatorTestNetwork(String host, String where) {
+    return 'Чат отправит переписку на $host ($where).';
+  }
+
+  @override
   String get appTitle => 'Comic Translate Screen';
 
   @override
@@ -354,7 +1046,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String missingKeyBodyReading(String name, String host) {
-    return '«$name» отправляет картинки пузырей на $host, а там нужен ключ API. Это ключ переводчика того же сервиса: укажите его в «Настройки → Распознавание и очистка» или «Настройки → Переводчик» (он хранится в защищённом хранилище Windows) или выберите локальное распознавание.';
+    return '«$name» отправляет картинки пузырей на $host, где нужен ключ API. Проверьте выбранное подключение в «Настройки → Распознавание» или сохраните ключ в «Настройки → Переводчик». Также можно выбрать локальное распознавание.';
   }
 
   @override
@@ -382,7 +1074,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get trErrConfig =>
-      'переводчик не настроен: укажите адрес сервера и модель в настройках';
+      'подключение не настроено: проверьте адрес, модель и параметры запроса';
 
   @override
   String get trErrAuth =>
@@ -423,6 +1115,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get needsArchiveTool =>
       'для CBR, RAR, CB7 и 7Z нужен установленный 7-Zip (7-zip.org) или WinRAR';
+
+  @override
+  String get archivePassword =>
+      'архив защищён паролем: распакуйте его в 7-Zip или WinRAR и откройте папку';
 
   @override
   String exportFailed(String error) {
@@ -518,7 +1214,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsTranslator => 'Переводчик';
 
   @override
-  String get settingsTools => 'Распознавание и очистка';
+  String get settingsOcr => 'Распознавание';
+
+  @override
+  String get settingsCleaning => 'Очистка';
 
   @override
   String get settingsText => 'Текст';
@@ -999,7 +1698,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get stepReadAndTranslateHelp =>
-      'Заново распознаёт все рамки, потом переводит.';
+      'Заново читает все рамки выбранным распознавателем, затем передаёт текст выбранному переводчику.';
 
   @override
   String get stepReadAndTranslateTogether =>
@@ -1975,7 +2674,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get modelsTextPrepHelp =>
-      'Нейросети, которые перед распознаванием увеличивают мелкий текст. Нужна только та, что выбрана в «Распознавание и очистка → Подготовка мелкого текста».';
+      'Нейросети, которые перед распознаванием увеличивают мелкий текст. Нужна только та, что выбрана в «Распознавание → Подготовка мелкого текста».';
 
   @override
   String modelsNeeded(String language) {
@@ -2002,7 +2701,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get modelsLevelInfo =>
-      'Всё, что нужно для работы с вашими настройками, и модели выбранного уровня: распознавания, подготовки мелкого текста и очистки — для «Комиксов» и для «Сайтов и игр». Перед скачиванием будет список и общий размер. Ваши настройки не меняются: уровни выбираются в разделе «Распознавание и очистка».';
+      'Включает модели для выбранных уровней распознавания, подготовки мелкого текста и очистки, для комиксов и скриншотов. Перед скачиванием будет список и общий размер. Уровни задаются в разделах «Распознавание» и «Очистка».';
 
   @override
   String get modelsVerifyAll => 'Проверить все';
@@ -2495,7 +3194,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String tinyTextTryHigh(String px) {
-    return 'Очень мелкий текст (строки около $px точек): возможны ошибки. Включите уровень «Высокий» в «Настройки → Распознавание и очистка → Подготовка мелкого текста» и распознайте заново — или сделайте снимок крупнее.';
+    return 'Очень мелкий текст (строки около $px точек): возможны ошибки. Включите уровень «Высокий» в «Настройки → Распознавание → Подготовка мелкого текста» и распознайте заново — или сделайте снимок крупнее.';
   }
 
   @override
@@ -3186,7 +3885,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get chatSettingsHelp =>
-      'Кнопка «Чат» на главном экране работает при любых настройках. Чтобы «Перевести всё» само открывало обмен, выберите «Вручную через чат» в разделе «Переводчик» и/или в разделе «Распознавание и очистка».';
+      'Кнопка «Чат» на главном экране работает при любых настройках. Чтобы «Перевести всё» само открывало обмен, выберите «Вручную через чат» в разделе «Переводчик» и/или в разделе «Распознавание».';
 
   @override
   String get chatTogether => 'Распознавать и переводить одним сообщением';
@@ -3753,5 +4452,46 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String exportSavedRemoved(String path, String count) {
     return 'Сохранено: $path. Убрано из проекта: $count (Ctrl+Z — вернуть).';
+  }
+
+  @override
+  String get exportNothingWritten =>
+      'Ничего не сохранено: у выбранных страниц нет нужных картинок (например, они ещё не очищены)';
+
+  @override
+  String exportSavedLeftOut(String path, String count) {
+    return 'Сохранено: $path. Пропущено — нет нужной картинки: $count';
+  }
+
+  @override
+  String exportSavedRemovedLeft(String path, String removed, String left) {
+    return 'Сохранено: $path. Убрано из проекта: $removed (Ctrl+Z — вернуть). Остались в проекте — нет нужной картинки: $left';
+  }
+
+  @override
+  String get findInside => 'Найти блоки внутри рамки (столбцы, абзацы)';
+
+  @override
+  String get findInsideWhich => 'Как искать блоки внутри рамки';
+
+  @override
+  String get findInsideAuto => 'Авто: столбцы и абзацы';
+
+  @override
+  String get findInsideColumns => 'Только столбцы';
+
+  @override
+  String get findInsideParagraphs => 'Только абзацы';
+
+  @override
+  String get findInsideHint =>
+      'Рамку можно сначала растянуть: найдётся и текст, который в неё не попал. Если рамка была распознана, новые блоки распознаются сразу.';
+
+  @override
+  String get findInsideNone => 'Внутри один блок: делить нечего.';
+
+  @override
+  String findInsideDone(String count) {
+    return 'Найдено блоков: $count. Отменить — Ctrl+Z.';
   }
 }

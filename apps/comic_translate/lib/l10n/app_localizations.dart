@@ -98,6 +98,1230 @@ abstract class AppLocalizations {
     Locale('ru'),
   ];
 
+  /// No description provided for @chatContinueReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue from the interruption'**
+  String get chatContinueReply;
+
+  /// No description provided for @chatContinuePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue from where the reply was interrupted without repeating the text already received.'**
+  String get chatContinuePrompt;
+
+  /// No description provided for @chatContinueHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes the incomplete reply in the new request. Regular messages skip that fragment.'**
+  String get chatContinueHelp;
+
+  /// No description provided for @chatResendAttachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend attachments from chat history'**
+  String get chatResendAttachments;
+
+  /// No description provided for @chatResendAttachmentsNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'This request also includes attachments from earlier messages.'**
+  String get chatResendAttachmentsNotice;
+
+  /// No description provided for @trErrInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'the response stream closed without a completion signal'**
+  String get trErrInterrupted;
+
+  /// No description provided for @chatIncompleteResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Incomplete response'**
+  String get chatIncompleteResponse;
+
+  /// No description provided for @translatorStream.
+  ///
+  /// In en, this message translates to:
+  /// **'Stream response (SSE)'**
+  String get translatorStream;
+
+  /// No description provided for @translatorStreamHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The test chat shows text as it arrives if the server supports OpenAI Chat Completions streaming.'**
+  String get translatorStreamHelp;
+
+  /// No description provided for @translatorStreamTemplateHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure streaming in the template when a full Chat and translation HTTP request is active.'**
+  String get translatorStreamTemplateHelp;
+
+  /// No description provided for @httpEditorFormatsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'For SSE chat responses, set format to sse and text to the path of a text chunk. For multipart, use Content-Type: multipart/form-data and put files in the file field of the JSON body.'**
+  String get httpEditorFormatsHelp;
+
+  /// No description provided for @httpEditorCheckResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Check pasted SSE'**
+  String get httpEditorCheckResponse;
+
+  /// No description provided for @httpEditorSampleSse.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the SSE events, including blank lines'**
+  String get httpEditorSampleSse;
+
+  /// No description provided for @httpEditorAttachFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach file'**
+  String get httpEditorAttachFile;
+
+  /// No description provided for @httpEditorRemoveFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove file'**
+  String get httpEditorRemoveFile;
+
+  /// No description provided for @httpEditorFileTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The file exceeds 10 MB.'**
+  String get httpEditorFileTooLarge;
+
+  /// No description provided for @httpEditorFileNeedsTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'An attachment requires a multipart template with a file field set to files.'**
+  String get httpEditorFileNeedsTemplate;
+
+  /// No description provided for @httpEditorFileConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'The test sends the file {name}.'**
+  String httpEditorFileConfirm(String name);
+
+  /// No description provided for @translatorTestFileConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Send attachments?'**
+  String get translatorTestFileConfirm;
+
+  /// No description provided for @translatorTestFileNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'The attachments and conversation will be sent to {destination}.'**
+  String translatorTestFileNetwork(String destination);
+
+  /// No description provided for @modelPromptPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt preset'**
+  String get modelPromptPreset;
+
+  /// No description provided for @modelPromptPresetStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in prompt'**
+  String get modelPromptPresetStandard;
+
+  /// No description provided for @modelPromptPresetAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Create preset'**
+  String get modelPromptPresetAdd;
+
+  /// No description provided for @modelPromptPresetEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit preset'**
+  String get modelPromptPresetEdit;
+
+  /// No description provided for @modelPromptPresetNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name.'**
+  String get modelPromptPresetNameRequired;
+
+  /// No description provided for @modelPromptPresetNameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'This name is already used.'**
+  String get modelPromptPresetNameTaken;
+
+  /// No description provided for @modelPromptPresetTextRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the instructions.'**
+  String get modelPromptPresetTextRequired;
+
+  /// No description provided for @modelPromptPresetHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Selecting a preset copies its text into the editor. Save to apply the text and keep changes to the preset list.'**
+  String get modelPromptPresetHelp;
+
+  /// No description provided for @ownServerAiGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup prompt for an AI assistant'**
+  String get ownServerAiGuide;
+
+  /// No description provided for @ownServerAiGuideCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the full prompt'**
+  String get ownServerAiGuideCopy;
+
+  /// No description provided for @chatsWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Chats'**
+  String get chatsWorkspace;
+
+  /// No description provided for @chatUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled chat'**
+  String get chatUntitled;
+
+  /// No description provided for @chatEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a message or attach an image.'**
+  String get chatEmpty;
+
+  /// No description provided for @chatNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get chatNew;
+
+  /// No description provided for @chatNewFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'New folder'**
+  String get chatNewFolder;
+
+  /// No description provided for @chatThreadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat title'**
+  String get chatThreadTitle;
+
+  /// No description provided for @chatConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get chatConnection;
+
+  /// No description provided for @chatCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get chatCreate;
+
+  /// No description provided for @chatFolderName.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder name'**
+  String get chatFolderName;
+
+  /// No description provided for @chatPasswordHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Chats and images in this folder will be encrypted. Keep the password. It cannot be recovered.'**
+  String get chatPasswordHelp;
+
+  /// No description provided for @chatPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get chatPassword;
+
+  /// No description provided for @chatRepeatPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat password'**
+  String get chatRepeatPassword;
+
+  /// No description provided for @chatPasswordMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords differ'**
+  String get chatPasswordMismatch;
+
+  /// No description provided for @chatRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value'**
+  String get chatRequired;
+
+  /// No description provided for @chatUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock folder'**
+  String get chatUnlock;
+
+  /// No description provided for @chatLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock folder now'**
+  String get chatLock;
+
+  /// No description provided for @chatProtect.
+  ///
+  /// In en, this message translates to:
+  /// **'Set folder password'**
+  String get chatProtect;
+
+  /// No description provided for @chatUnlockError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not unlock the folder. Check the password.'**
+  String get chatUnlockError;
+
+  /// No description provided for @chatStorageError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read or save the chat library. Check the folder and close any other instance using it.'**
+  String get chatStorageError;
+
+  /// No description provided for @chatStorageSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat storage settings'**
+  String get chatStorageSettings;
+
+  /// No description provided for @chatStorageHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose where to keep the chat library. Changing the location opens the library in the selected folder. The previous library stays in its folder.'**
+  String get chatStorageHelp;
+
+  /// No description provided for @chatChooseLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose folder'**
+  String get chatChooseLocation;
+
+  /// No description provided for @chatRelock.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for the folder password again'**
+  String get chatRelock;
+
+  /// No description provided for @chatRelockRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'After restarting the app'**
+  String get chatRelockRestart;
+
+  /// No description provided for @chatRelock30.
+  ///
+  /// In en, this message translates to:
+  /// **'30 minutes after unlocking'**
+  String get chatRelock30;
+
+  /// No description provided for @chatRelock60.
+  ///
+  /// In en, this message translates to:
+  /// **'60 minutes after unlocking'**
+  String get chatRelock60;
+
+  /// No description provided for @chatRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get chatRename;
+
+  /// No description provided for @chatPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin chat'**
+  String get chatPin;
+
+  /// No description provided for @chatUnpin.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin chat'**
+  String get chatUnpin;
+
+  /// No description provided for @chatMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to folder'**
+  String get chatMove;
+
+  /// No description provided for @chatMovePrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'After moving, the chat uses the protection settings of its destination.'**
+  String get chatMovePrivacy;
+
+  /// No description provided for @chatDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete chat'**
+  String get chatDelete;
+
+  /// No description provided for @chatNoFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Outside folders'**
+  String get chatNoFolder;
+
+  /// No description provided for @chatUnlockToMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock a protected folder before moving a chat into it.'**
+  String get chatUnlockToMove;
+
+  /// No description provided for @chatAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All chats'**
+  String get chatAll;
+
+  /// No description provided for @chatChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose or create a chat'**
+  String get chatChoose;
+
+  /// No description provided for @chatTitleSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search chat titles'**
+  String get chatTitleSearch;
+
+  /// No description provided for @chatMessageSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search messages in this chat'**
+  String get chatMessageSearch;
+
+  /// No description provided for @chatNoMessagesFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching messages'**
+  String get chatNoMessagesFound;
+
+  /// No description provided for @chatConnectionMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'The chat\'s connection is unavailable.'**
+  String get chatConnectionMissing;
+
+  /// No description provided for @chatOwnServerOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Own server · Original connection'**
+  String get chatOwnServerOriginal;
+
+  /// No description provided for @chatOwnServerNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Own server · {name}'**
+  String chatOwnServerNamed(String name);
+
+  /// No description provided for @httpEditorOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Check pasted JSON'**
+  String get httpEditorOffline;
+
+  /// No description provided for @httpEditorStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP status of the sample'**
+  String get httpEditorStatus;
+
+  /// No description provided for @httpEditorStatusError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a status code from 100 to 599.'**
+  String get httpEditorStatusError;
+
+  /// No description provided for @httpEditorSampleJson.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the response JSON'**
+  String get httpEditorSampleJson;
+
+  /// No description provided for @checkSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Check sample'**
+  String get checkSample;
+
+  /// No description provided for @fillPromptSample.
+  ///
+  /// In en, this message translates to:
+  /// **'Use sample'**
+  String get fillPromptSample;
+
+  /// No description provided for @requestTemplateImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import JSON'**
+  String get requestTemplateImport;
+
+  /// No description provided for @requestTemplateExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export JSON'**
+  String get requestTemplateExport;
+
+  /// No description provided for @requestTemplateImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Template imported and selected.'**
+  String get requestTemplateImported;
+
+  /// No description provided for @requestTemplateTransferError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not transfer the template. Check the JSON format, paths and credentials.'**
+  String get requestTemplateTransferError;
+
+  /// No description provided for @openRouterTemplateHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to OpenRouter translation, test chat and network OCR. Select “Profile settings” to restore the built-in requests.'**
+  String get openRouterTemplateHelp;
+
+  /// No description provided for @modelPromptEditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Prompt editor'**
+  String get modelPromptEditor;
+
+  /// No description provided for @modelPromptInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom instructions'**
+  String get modelPromptInstructions;
+
+  /// No description provided for @modelPromptHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'These instructions are added to the built-in prompt. Leave them empty to use the built-in prompt alone. Keep the response format so the app can match the text to its frames.'**
+  String get modelPromptHelp;
+
+  /// No description provided for @modelPromptExample.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected response for two sample frames'**
+  String get modelPromptExample;
+
+  /// No description provided for @modelPromptReply.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a reply to check its format locally'**
+  String get modelPromptReply;
+
+  /// No description provided for @modelPromptValid.
+  ///
+  /// In en, this message translates to:
+  /// **'Both sample frames matched.'**
+  String get modelPromptValid;
+
+  /// No description provided for @modelPromptInvalidJson.
+  ///
+  /// In en, this message translates to:
+  /// **'The reply contains malformed JSON.'**
+  String get modelPromptInvalidJson;
+
+  /// No description provided for @modelPromptMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Missing or unusable response for {frames}.'**
+  String modelPromptMissing(String frames);
+
+  /// No description provided for @modelViaChat.
+  ///
+  /// In en, this message translates to:
+  /// **'External chat'**
+  String get modelViaChat;
+
+  /// No description provided for @modelNotSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'model not selected'**
+  String get modelNotSelected;
+
+  /// No description provided for @modelForOcr.
+  ///
+  /// In en, this message translates to:
+  /// **'OCR · {model}'**
+  String modelForOcr(String model);
+
+  /// No description provided for @modelForTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation · {model}'**
+  String modelForTranslation(String model);
+
+  /// No description provided for @modelForCombined.
+  ///
+  /// In en, this message translates to:
+  /// **'OCR · {model} (with translation)'**
+  String modelForCombined(String model);
+
+  /// No description provided for @translationReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review translation'**
+  String get translationReview;
+
+  /// No description provided for @translationReviewScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Pages without a chapter'**
+  String get translationReviewScope;
+
+  /// No description provided for @translationReviewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No flagged omissions'**
+  String get translationReviewEmpty;
+
+  /// No description provided for @translationReviewNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get translationReviewNext;
+
+  /// No description provided for @translationReviewRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate omissions'**
+  String get translationReviewRetry;
+
+  /// No description provided for @ownServerProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Server profile'**
+  String get ownServerProfile;
+
+  /// No description provided for @requestTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Request template'**
+  String get requestTemplate;
+
+  /// No description provided for @httpEditorChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat and translation'**
+  String get httpEditorChat;
+
+  /// No description provided for @httpEditorModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Model list'**
+  String get httpEditorModels;
+
+  /// No description provided for @httpEditorOperations.
+  ///
+  /// In en, this message translates to:
+  /// **'Full HTTP requests'**
+  String get httpEditorOperations;
+
+  /// No description provided for @httpEditorLegacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Compatibility settings'**
+  String get httpEditorLegacy;
+
+  /// No description provided for @httpEditorBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get httpEditorBalance;
+
+  /// No description provided for @httpEditorRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP request'**
+  String get httpEditorRequest;
+
+  /// No description provided for @httpEditorResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Response rules (JSON)'**
+  String get httpEditorResponse;
+
+  /// No description provided for @httpEditorSampleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Test message'**
+  String get httpEditorSampleLabel;
+
+  /// No description provided for @httpEditorSampleMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply with OK.'**
+  String get httpEditorSampleMessage;
+
+  /// No description provided for @httpEditorHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The path is relative to the profile’s base address. Leave a blank line between headers and the JSON body. Use the variables shown in the example to insert the active key or chat data.'**
+  String get httpEditorHelp;
+
+  /// No description provided for @httpEditorTips.
+  ///
+  /// In en, this message translates to:
+  /// **'By default, HTTP 2xx is accepted. Set statuses to a list of specific codes. On 401, check the authorization header. On 404, check the path. If HTTP succeeds but extraction fails, compare the response rules to the returned JSON.'**
+  String get httpEditorTips;
+
+  /// No description provided for @httpEditorPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get httpEditorPreview;
+
+  /// No description provided for @httpEditorSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send test'**
+  String get httpEditorSend;
+
+  /// No description provided for @httpEditorConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Send {request} using this profile? The test sends a real request and may use tokens or change data on the server.'**
+  String httpEditorConfirm(String request);
+
+  /// No description provided for @httpEditorExtracted.
+  ///
+  /// In en, this message translates to:
+  /// **'Extracted result'**
+  String get httpEditorExtracted;
+
+  /// No description provided for @httpEditorResult.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP test result'**
+  String get httpEditorResult;
+
+  /// No description provided for @httpEditorCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy report'**
+  String get httpEditorCopy;
+
+  /// No description provided for @httpEditorApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this request'**
+  String get httpEditorApply;
+
+  /// No description provided for @requestTemplateNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile settings'**
+  String get requestTemplateNone;
+
+  /// No description provided for @requestTemplateHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Blank template fields use the profile settings. Edits apply to every connection using this template.'**
+  String get requestTemplateHelp;
+
+  /// No description provided for @requestTemplateAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Create request template'**
+  String get requestTemplateAdd;
+
+  /// No description provided for @requestTemplateEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit request template'**
+  String get requestTemplateEdit;
+
+  /// No description provided for @requestTemplateDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete request template'**
+  String get requestTemplateDelete;
+
+  /// No description provided for @requestTemplateDeleteHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{name}”? Connections using it will return to their own request settings.'**
+  String requestTemplateDeleteHelp(String name);
+
+  /// No description provided for @requestTemplateEditorHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A template can be shared by several profiles. Enter the address, model and API key in each profile. Blank fields inherit profile settings. The grey examples are hints.'**
+  String get requestTemplateEditorHelp;
+
+  /// No description provided for @requestTemplateName.
+  ///
+  /// In en, this message translates to:
+  /// **'Template name'**
+  String get requestTemplateName;
+
+  /// No description provided for @requestTemplateNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a template name.'**
+  String get requestTemplateNameRequired;
+
+  /// No description provided for @requestTemplateNameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'A template with this name already exists.'**
+  String get requestTemplateNameTaken;
+
+  /// No description provided for @requestTemplateChatPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat path'**
+  String get requestTemplateChatPath;
+
+  /// No description provided for @requestTemplateModelsPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Model list path'**
+  String get requestTemplateModelsPath;
+
+  /// No description provided for @requestTemplateOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional chat fields (JSON)'**
+  String get requestTemplateOptions;
+
+  /// No description provided for @requestTemplateStatusPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Key details path'**
+  String get requestTemplateStatusPath;
+
+  /// No description provided for @requestTemplateStatusPathHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional GET request. The program uses the selected profile’s API key.'**
+  String get requestTemplateStatusPathHelp;
+
+  /// No description provided for @requestTemplateStatusFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Key details response fields (JSON)'**
+  String get requestTemplateStatusFields;
+
+  /// No description provided for @requestTemplatePathError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter paths relative to the profile’s API address, without a host or query parameters.'**
+  String get requestTemplatePathError;
+
+  /// No description provided for @requestTemplateOptionsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a JSON object without model, messages or stream.'**
+  String get requestTemplateOptionsError;
+
+  /// No description provided for @requestTemplateCredentialsError.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep authorization fields and API keys in the profile’s API key field.'**
+  String get requestTemplateCredentialsError;
+
+  /// No description provided for @requestTemplateStatusError.
+  ///
+  /// In en, this message translates to:
+  /// **'For key details, provide both a path and a JSON object that maps display labels to response fields.'**
+  String get requestTemplateStatusError;
+
+  /// No description provided for @requestTemplateStatusConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the saved API key to {host} to request its details.'**
+  String requestTemplateStatusConsent(String host);
+
+  /// No description provided for @ownServerOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original connection'**
+  String get ownServerOriginal;
+
+  /// No description provided for @ownServerKeyActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active API key'**
+  String get ownServerKeyActive;
+
+  /// No description provided for @ownServerKeyFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'First key'**
+  String get ownServerKeyFirst;
+
+  /// No description provided for @ownServerKeyNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Key {number}'**
+  String ownServerKeyNumber(int number);
+
+  /// No description provided for @ownServerKeyNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Without a key'**
+  String get ownServerKeyNone;
+
+  /// No description provided for @ownServerKeyAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add API key'**
+  String get ownServerKeyAdd;
+
+  /// No description provided for @ownServerKeyEditNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit key note'**
+  String get ownServerKeyEditNote;
+
+  /// No description provided for @ownServerKeyValue.
+  ///
+  /// In en, this message translates to:
+  /// **'New API key'**
+  String get ownServerKeyValue;
+
+  /// No description provided for @ownServerKeyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Key note'**
+  String get ownServerKeyNote;
+
+  /// No description provided for @ownServerKeyNoteHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. A label to help identify this key.'**
+  String get ownServerKeyNoteHelp;
+
+  /// No description provided for @ownServerKeyRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an API key.'**
+  String get ownServerKeyRequired;
+
+  /// No description provided for @ownServerKeyNoteSecret.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the key in the API key field. Use the note to describe it.'**
+  String get ownServerKeyNoteSecret;
+
+  /// No description provided for @ownServerKeySaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the key or note.'**
+  String get ownServerKeySaveFailed;
+
+  /// No description provided for @ownServerKeyRemoveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected key and its note will be removed from this app. You can choose another saved key manually.'**
+  String get ownServerKeyRemoveBody;
+
+  /// No description provided for @ownServerKeysSecureHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Key values are stored in Windows secure storage. Requests use the key selected below.'**
+  String get ownServerKeysSecureHelp;
+
+  /// No description provided for @ownServerLoadModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Load models'**
+  String get ownServerLoadModels;
+
+  /// No description provided for @ownServerModelsNeedUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid API base URL and relative models path in the settings.'**
+  String get ownServerModelsNeedUrl;
+
+  /// No description provided for @ownServerModelsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Load the model list from {host} using the saved API key, if present.'**
+  String ownServerModelsHelp(String host);
+
+  /// No description provided for @ownServerSetupGuideTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How to connect your own server'**
+  String get ownServerSetupGuideTitle;
+
+  /// No description provided for @ownServerCopyGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy instructions'**
+  String get ownServerCopyGuide;
+
+  /// No description provided for @ownServerGuideCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Instructions copied'**
+  String get ownServerGuideCopied;
+
+  /// No description provided for @ownServerSetupGuide.
+  ///
+  /// In en, this message translates to:
+  /// **'1. In Settings → Translator → Own server, add a profile with + and name it.\n2. Enter the base URL from your provider’s documentation. The app appends /chat/completions and /models to it. Include /v1 only if it is part of that base URL. For example, RelayModels documents https://api.relaymodels.com/v1. Use HTTP for localhost or your LAN only if the server calls for it.\n3. Save the API key in the API key field. Local servers can often work without a key. Press Load models to pick a model ID, or type it. Leave Model blank if your server can pick its own default.\n4. Send a short message in Test chat. Open Logs to see the request, HTTP status and response. Review any message text before sharing the logs. Share the service documentation and the redacted report when asking for help. Keep your key in the API key field.\n5. In More settings, you can change the relative endpoint paths and add or omit JSON fields. The expected response uses choices[].message.content for chat and data[].id for the model list.'**
+  String get ownServerSetupGuide;
+
+  /// No description provided for @ownServerOcrConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Server connection for recognition'**
+  String get ownServerOcrConnection;
+
+  /// No description provided for @ownServerOcrSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name or address'**
+  String get ownServerOcrSearch;
+
+  /// No description provided for @ownServerOcrManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate address (previous settings)'**
+  String get ownServerOcrManual;
+
+  /// No description provided for @ownServerOcrMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile deleted. Select another connection.'**
+  String get ownServerOcrMissing;
+
+  /// No description provided for @ownServerOcrConnectionHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Profiles are shared with Translator. Choose the recognition connection and vision model here.'**
+  String get ownServerOcrConnectionHelp;
+
+  /// No description provided for @ownServerOcrSharedSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared connection settings'**
+  String get ownServerOcrSharedSettings;
+
+  /// No description provided for @ownServerOcrSharedSettingsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes to the address, active key or template also apply in Translator when it uses this profile.'**
+  String get ownServerOcrSharedSettingsHelp;
+
+  /// No description provided for @revokeNetworkInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this app’s saved permission for the server. The app will ask again before sending data. The API key stays saved.'**
+  String get revokeNetworkInfo;
+
+  /// No description provided for @translatorTestDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs'**
+  String get translatorTestDiagnostics;
+
+  /// No description provided for @translatorTestDiagnosticsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest attempt in this chat. Authentication headers and image data are hidden. Check the message text before sharing.'**
+  String get translatorTestDiagnosticsHelp;
+
+  /// No description provided for @translatorTestDiagnosticsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a message to see the request and the server response.'**
+  String get translatorTestDiagnosticsEmpty;
+
+  /// No description provided for @translatorTestRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get translatorTestRequest;
+
+  /// No description provided for @translatorTestResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Response'**
+  String get translatorTestResponse;
+
+  /// No description provided for @translatorTestCopyDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy logs'**
+  String get translatorTestCopyDiagnostics;
+
+  /// No description provided for @ownServerModelsDialogHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The list comes from {host}. The saved key is used if present. Some servers report model IDs only, without capabilities or prices.'**
+  String ownServerModelsDialogHelp(String host);
+
+  /// No description provided for @ownServerModelsConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the saved API key to {host} to load its model list?'**
+  String ownServerModelsConsent(String host);
+
+  /// No description provided for @ownServerAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a connection'**
+  String get ownServerAdd;
+
+  /// No description provided for @ownServerRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename connection'**
+  String get ownServerRename;
+
+  /// No description provided for @ownServerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection name'**
+  String get ownServerName;
+
+  /// No description provided for @ownServerNameTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'A connection with this name already exists.'**
+  String get ownServerNameTaken;
+
+  /// No description provided for @ownServerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by name, address or model'**
+  String get ownServerSearch;
+
+  /// No description provided for @ownServerSortAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'By addition order'**
+  String get ownServerSortAdded;
+
+  /// No description provided for @ownServerSortName.
+  ///
+  /// In en, this message translates to:
+  /// **'By name'**
+  String get ownServerSortName;
+
+  /// No description provided for @ownServerNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching connections'**
+  String get ownServerNoMatches;
+
+  /// No description provided for @ownServerRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this connection?'**
+  String get ownServerRemoveTitle;
+
+  /// No description provided for @ownServerRemoveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The profile, its settings and all its saved keys and notes will be deleted.'**
+  String get ownServerRemoveBody;
+
+  /// No description provided for @translatorTestChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Test chat'**
+  String get translatorTestChat;
+
+  /// No description provided for @translatorTestHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a short message to check the connection. The provider may charge for the request.'**
+  String get translatorTestHelp;
+
+  /// No description provided for @translatorTestMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get translatorTestMessage;
+
+  /// No description provided for @translatorTestSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get translatorTestSend;
+
+  /// No description provided for @translatorTestAttachImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach image (Ctrl+V to paste)'**
+  String get translatorTestAttachImage;
+
+  /// No description provided for @translatorTestPastedImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Pasted image'**
+  String get translatorTestPastedImage;
+
+  /// No description provided for @translatorTestRemoveImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove attachment'**
+  String get translatorTestRemoveImage;
+
+  /// No description provided for @translatorTestImageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the message empty to transcribe the image.'**
+  String get translatorTestImageHint;
+
+  /// No description provided for @translatorTestOcrPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribe the text in the image exactly as written.'**
+  String get translatorTestOcrPrompt;
+
+  /// No description provided for @translatorTestInvalidImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the image. Use PNG, JPEG or WebP.'**
+  String get translatorTestInvalidImage;
+
+  /// No description provided for @translatorTestImageTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'The image exceeds 10 MB or 24 megapixels.'**
+  String get translatorTestImageTooLarge;
+
+  /// No description provided for @translatorTestImageConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the image?'**
+  String get translatorTestImageConfirm;
+
+  /// No description provided for @translatorTestImageNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'The images and conversation will be sent to {destination}.'**
+  String translatorTestImageNetwork(String destination);
+
+  /// No description provided for @translatorTestNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'The chat sends the conversation to {host} ({where}).'**
+  String translatorTestNetwork(String host, String where);
+
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
@@ -671,7 +1895,7 @@ abstract class AppLocalizations {
   /// No description provided for @missingKeyBodyReading.
   ///
   /// In en, this message translates to:
-  /// **'\"{name}\" sends the pictures of the bubbles to {host}, which needs an API key. It is the key of the translator of the same service: enter it in Settings → Recognition and cleaning or Settings → Translator (it is stored in Windows secure storage), or choose a local recognition.'**
+  /// **'\"{name}\" sends pictures of the bubbles to {host}, which needs an API key. Check the selected connection in Settings → Recognition or save the key in Settings → Translator. You can also choose local recognition.'**
   String missingKeyBodyReading(String name, String host);
 
   /// No description provided for @showInFolder.
@@ -713,7 +1937,7 @@ abstract class AppLocalizations {
   /// No description provided for @trErrConfig.
   ///
   /// In en, this message translates to:
-  /// **'the translator is not set up: enter the server address and model in Settings'**
+  /// **'the connection is not set up: check its address, model and request settings'**
   String get trErrConfig;
 
   /// No description provided for @trErrAuth.
@@ -781,6 +2005,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'CBR, RAR, CB7 and 7Z need 7-Zip (7-zip.org) or WinRAR installed'**
   String get needsArchiveTool;
+
+  /// No description provided for @archivePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'the archive is protected by a password: unpack it with 7-Zip or WinRAR and open the folder'**
+  String get archivePassword;
 
   /// No description provided for @exportFailed.
   ///
@@ -926,11 +2156,17 @@ abstract class AppLocalizations {
   /// **'Translator'**
   String get settingsTranslator;
 
-  /// No description provided for @settingsTools.
+  /// No description provided for @settingsOcr.
   ///
   /// In en, this message translates to:
-  /// **'Recognition and cleaning'**
-  String get settingsTools;
+  /// **'Recognition'**
+  String get settingsOcr;
+
+  /// No description provided for @settingsCleaning.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning'**
+  String get settingsCleaning;
 
   /// No description provided for @settingsText.
   ///
@@ -1811,7 +3047,7 @@ abstract class AppLocalizations {
   /// No description provided for @stepReadAndTranslateHelp.
   ///
   /// In en, this message translates to:
-  /// **'Reads every box again, then translates it.'**
+  /// **'Reads every box again with the selected OCR engine, then passes the text to the selected translator.'**
   String get stepReadAndTranslateHelp;
 
   /// No description provided for @stepReadAndTranslateTogether.
@@ -3467,7 +4703,7 @@ abstract class AppLocalizations {
   /// No description provided for @modelsTextPrepHelp.
   ///
   /// In en, this message translates to:
-  /// **'Neural networks that enlarge small text before recognition. Only the one chosen in \"Recognition and cleaning → Preparing small text\" is needed.'**
+  /// **'Neural networks that enlarge small text before recognition. Only the one chosen in \"Recognition → Preparing small text\" is needed.'**
   String get modelsTextPrepHelp;
 
   /// No description provided for @modelsNeeded.
@@ -3515,7 +4751,7 @@ abstract class AppLocalizations {
   /// No description provided for @modelsLevelInfo.
   ///
   /// In en, this message translates to:
-  /// **'Everything your settings need to work, and the models of the chosen level: recognition, preparation of small text and cleaning, for comics and for screens. The list and the total size come before the download. Your settings stay as they are: the levels are chosen in \"Recognition and cleaning\".'**
+  /// **'Includes the models for the selected levels of recognition, small text preparation and cleaning, for comics and screens. The list and total size appear before the download. Set the levels in the Recognition and Cleaning sections.'**
   String get modelsLevelInfo;
 
   /// No description provided for @modelsVerifyAll.
@@ -4301,7 +5537,7 @@ abstract class AppLocalizations {
   /// No description provided for @tinyTextTryHigh.
   ///
   /// In en, this message translates to:
-  /// **'Very small text (lines of about {px} px): mistakes are likely. Turn on the High level in \"Settings → Recognition and cleaning → Preparing small text\" and recognize again, or take a larger screenshot.'**
+  /// **'Very small text (lines of about {px} px): mistakes are likely. Turn on the High level in \"Settings → Recognition → Preparing small text\" and recognize again, or take a larger screenshot.'**
   String tinyTextTryHigh(String px);
 
   /// No description provided for @tinyTextLarger.
@@ -5429,7 +6665,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatSettingsHelp.
   ///
   /// In en, this message translates to:
-  /// **'The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Recognition and cleaning.'**
+  /// **'The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Recognition.'**
   String get chatSettingsHelp;
 
   /// No description provided for @chatTogether.
@@ -6397,6 +7633,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved: {path}. Taken out of the project: {count} (Ctrl+Z brings them back).'**
   String exportSavedRemoved(String path, String count);
+
+  /// No description provided for @exportNothingWritten.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was saved: the pages chosen have no picture of the kind asked for (not cleaned yet, say)'**
+  String get exportNothingWritten;
+
+  /// No description provided for @exportSavedLeftOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved: {path}. Left out, with no picture of the kind asked for: {count}'**
+  String exportSavedLeftOut(String path, String count);
+
+  /// No description provided for @exportSavedRemovedLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved: {path}. Taken out of the project: {removed} (Ctrl+Z brings them back). Left in it, with no picture of the kind asked for: {left}'**
+  String exportSavedRemovedLeft(String path, String removed, String left);
+
+  /// No description provided for @findInside.
+  ///
+  /// In en, this message translates to:
+  /// **'Find blocks inside this box (columns, paragraphs)'**
+  String get findInside;
+
+  /// No description provided for @findInsideWhich.
+  ///
+  /// In en, this message translates to:
+  /// **'How to find blocks inside the box'**
+  String get findInsideWhich;
+
+  /// No description provided for @findInsideAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto: columns and paragraphs'**
+  String get findInsideAuto;
+
+  /// No description provided for @findInsideColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns only'**
+  String get findInsideColumns;
+
+  /// No description provided for @findInsideParagraphs.
+  ///
+  /// In en, this message translates to:
+  /// **'Paragraphs only'**
+  String get findInsideParagraphs;
+
+  /// No description provided for @findInsideHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can stretch the box first: text it missed is found too. If the box was recognized, the new blocks are recognized at once.'**
+  String get findInsideHint;
+
+  /// No description provided for @findInsideNone.
+  ///
+  /// In en, this message translates to:
+  /// **'There is one block inside: nothing to split.'**
+  String get findInsideNone;
+
+  /// No description provided for @findInsideDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocks found: {count}. Undo with Ctrl+Z.'**
+  String findInsideDone(String count);
 }
 
 class _AppLocalizationsDelegate

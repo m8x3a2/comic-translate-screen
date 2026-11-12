@@ -17,7 +17,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../state/app_state.dart';
 import 'labels.dart';
 
-enum HelpTopic { exchange }
+enum HelpTopic { exchange, ownServer }
 
 /// The help languages there are; others get the English one.
 const helpLanguages = {'en', 'ru'};
@@ -176,7 +176,12 @@ class _HelpDialogState extends ConsumerState<_HelpDialog> {
                 children: [
                   Icon(Icons.help_outline, color: theme.colorScheme.primary),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(l.helpTitle, style: theme.textTheme.titleLarge)),
+                  Expanded(
+                    child: Text(
+                      widget.topic == HelpTopic.ownServer ? l.ownServerAiGuide : l.helpTitle,
+                      style: theme.textTheme.titleLarge,
+                    ),
+                  ),
                   IconButton(tooltip: l.close, onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
                 ],
               ),
@@ -229,6 +234,17 @@ class _HelpDialogState extends ConsumerState<_HelpDialog> {
                     icon: const Icon(Icons.save_alt),
                     label: Text(l.saveAs),
                   ),
+                  if (widget.topic == HelpTopic.ownServer)
+                    TextButton.icon(
+                      onPressed: text == null
+                          ? null
+                          : () async {
+                              await Clipboard.setData(ClipboardData(text: text));
+                              if (mounted) setState(() => _note = l.ownServerGuideCopied);
+                            },
+                      icon: const Icon(Icons.copy_outlined),
+                      label: Text(l.ownServerAiGuideCopy),
+                    ),
                   const Spacer(),
                   FilledButton(onPressed: () => Navigator.pop(context), child: Text(l.close)),
                 ],

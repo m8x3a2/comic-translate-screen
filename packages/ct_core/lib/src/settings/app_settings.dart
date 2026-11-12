@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../export/export_pages.dart';
 import '../exchange/exchange_settings.dart';
 import '../ocr/read_level.dart';
@@ -5,9 +7,13 @@ import '../ocr/text_prep.dart';
 import '../export/strip_export.dart';
 import '../inpainting/clean_level.dart';
 import '../plugins/engines.dart';
+import '../plugins/settings_schema.dart' show SecretSetting;
 import '../render/layout.dart';
 import '../render/text_case.dart';
 import '../render/upscale.dart';
+import 'own_server_keys.dart';
+import 'request_template.dart';
+import 'secret_store.dart' show pluginSecretKey;
 
 /// What the pages are: each kind finds text its own way.
 enum ContentKind {
@@ -30,6 +36,9 @@ enum EmptyFrames {
   /// Translates the rest: they stay empty and are not sent.
   skip,
 }
+
+/// Named instructions for the network models, separate from manual chat exchange.
+enum ModelPromptKind { ocr, translation }
 
 /// User settings stored in `settings.json` (never secrets).
 ///
@@ -74,6 +83,7 @@ class AppSettings {
     this.showLookInPanel = true,
     this.gridTileSize = 190,
     this.translateSelected = false,
+    this.splitInside = 'auto',
     this.showNavigator = false,
     this.settingsView = 'full',
     this.settingsLastView = 'full',
@@ -82,6 +92,13 @@ class AppSettings {
     this.projectAutosave = true,
     List<String>? recentProjects,
     Map<String, Map<String, Object?>>? plugins,
+    Map<String, String>? ownServerNames,
+    this.ownServerProfile = '',
+    this.ownServersByName = false,
+    this.ownServerOcrProfile,
+    Map<String, RequestTemplate>? requestTemplates,
+    Map<ModelPromptKind, List<PromptPreset>>? modelPromptPresets,
+    Map<String, OwnServerKeys>? ownServerKeys,
     Set<String>? approvedNetworkPlugins,
     Map<String, Object?>? extra,
   }) : shortcuts = shortcuts ?? {},
@@ -89,6 +106,10 @@ class AppSettings {
        gpuCpuModels = gpuCpuModels ?? {},
        recentProjects = recentProjects ?? [],
        plugins = plugins ?? {},
+       ownServerNames = ownServerNames ?? {},
+       requestTemplates = requestTemplates ?? {},
+       modelPromptPresets = modelPromptPresets ?? {},
+       ownServerKeys = ownServerKeys ?? {},
        approvedNetworkPlugins = approvedNetworkPlugins ?? {},
        extra = extra ?? {};
 
@@ -228,6 +249,10 @@ class AppSettings {
   /// (the choice under its arrow).
   bool translateSelected;
 
+  /// How "Find blocks inside" cuts a block (the choice under its arrow):
+  /// `auto`, `columns` or `paragraphs` (an `InsideSplit` name).
+  String splitInside;
+
   /// The mini view of the page (or the webtoon strip) is shown.
   bool showNavigator;
 
@@ -260,7 +285,103 @@ class AppSettings {
 
   Map<String, Object?> extra;
 
-  Map<String, Object?> pluginValues(String id) => plugins[id] ?? const {};
+  /// Named connections have independent settings and API keys. The empty
+  /// profile continues to use the original connection's storage keys.
+  final Map<String, String> ownServerNames;
+  String ownServerProfile;
+  bool ownServersByName;
+
+  /// Null keeps the independent OCR address used by older settings.
+  String? ownServerOcrProfile;
+  final Map<String, RequestTemplate> requestTemplates;
+  final Map<ModelPromptKind, List<PromptPreset>> modelPromptPresets;
+  final Map<String, OwnServerKeys> ownServerKeys;
+
+  static const ownServerStoragePrefix = 'openai_compatible_';
+
+  static String ownServerStorageId(String profile) =>
+      profile.isEmpty ? 'openai_compatible' : '$ownServerStoragePrefix$profile';
+
+  static String ownServerSecretKey(String storageId, String slot) =>
+      pluginSecretKey(storageId, slot.isEmpty ? 'api_key' : 'api_key.$slot');
+
+  OwnServerKeys keysForOwnServer(String storageId) => ownServerKeys[storageId] ?? OwnServerKeys();
+
+  void setOwnServerKeys(String storageId, OwnServerKeys keys) {
+    if (keys.isDefault) {
+      ownServerKeys.remove(storageId);
+    } else {
+      ownServerKeys[storageId] = keys;
+    }
+  }
+
+  String pluginStorageId(String id) => id == 'openai_compatible' && ownServerNames.containsKey(ownServerProfile)
+      ? ownServerStorageId(ownServerProfile)
+      : id;
+
+  Map<String, Object?> pluginValues(String id) {
+    final profile = ownServerOcrProfile;
+    if (id == 'openai_compatible_ocr' && profile != null) {
+      final connectionId = ownServerStorageId(profile);
+      final connection = plugins[connectionId];
+      final template = requestTemplateFor(connectionId);
+      return {
+        ...?plugins[id],
+        'api_url': connection?['api_url'],
+        'chat_path': template != null && template.chatPath.isNotEmpty ? template.chatPath : connection?['chat_path'],
+        'models_path': template != null && template.modelsPath.isNotEmpty
+            ? template.modelsPath
+            : connection?['models_path'],
+        if (template != null && template.http.isNotEmpty) RequestTemplate.httpSettingKey: jsonEncode(template.httpJson),
+      };
+    }
+    if (id == 'openrouter_ocr') {
+      final template = requestTemplateFor('openrouter');
+      return {
+        ...?plugins[id],
+        if (template != null && template.http.isNotEmpty) RequestTemplate.httpSettingKey: jsonEncode(template.httpJson),
+      };
+    }
+    return pluginValuesForStorage(pluginStorageId(id));
+  }
+
+  Map<String, Object?> pluginValuesForStorage(String storageId) {
+    final values = plugins[storageId] ?? const <String, Object?>{};
+    final template = requestTemplateFor(storageId);
+    if (template == null) return values;
+    return {
+      ...values,
+      ...template.overrides,
+      RequestTemplate.keyStatusPathKey: template.keyStatusPath,
+      RequestTemplate.keyStatusFieldsKey: jsonEncode(template.keyStatusFields),
+      if (template.http.isNotEmpty) RequestTemplate.httpSettingKey: jsonEncode(template.httpJson),
+    };
+  }
+
+  RequestTemplate? requestTemplateFor(String storageId) =>
+      requestTemplates[plugins[storageId]?[RequestTemplate.selectionKey]];
+
+  void removeRequestTemplate(String id) {
+    requestTemplates.remove(id);
+    plugins.updateAll(
+      (_, values) =>
+          values[RequestTemplate.selectionKey] == id ? ({...values}..remove(RequestTemplate.selectionKey)) : values,
+    );
+  }
+
+  String? pluginSettingSecretKey(String id, SecretSetting field) {
+    final profile = ownServerOcrProfile;
+    final connection = switch (id) {
+      'openai_compatible' => pluginStorageId(id),
+      'openai_compatible_ocr' when profile != null => ownServerStorageId(profile),
+      _ => null,
+    };
+    if (connection != null && field.key == 'api_key') {
+      final slot = keysForOwnServer(connection).activeId;
+      return slot == null ? null : ownServerSecretKey(connection, slot);
+    }
+    return field.storeKey(pluginStorageId(id));
+  }
 
   /// The "Own server" translator's [values] point at OpenRouter: its address,
   /// or none (which meant OpenRouter before it had a translator of its own).
@@ -309,6 +430,7 @@ class AppSettings {
       if (!showLookInPanel) 'show_look_in_panel': false,
       if (gridTileSize != 190) 'grid_tile_size': gridTileSize,
       if (translateSelected) 'translate_selected': true,
+      if (splitInside != 'auto') 'split_inside': splitInside,
       if (showNavigator) 'show_navigator': true,
       if (settingsView != 'full') 'settings_view': settingsView,
       if (settingsLastView != 'full') 'settings_last_view': settingsLastView,
@@ -317,6 +439,22 @@ class AppSettings {
     'auto_bug_report': autoBugReport,
     'projects': {'autosave': projectAutosave, 'recent': recentProjects},
     'plugins': plugins,
+    if (modelPromptPresets.isNotEmpty)
+      'model_prompt_presets': {
+        for (final entry in modelPromptPresets.entries)
+          entry.key.name: [for (final preset in entry.value) preset.toJson()],
+      },
+    if (requestTemplates.isNotEmpty)
+      'request_templates': {for (final entry in requestTemplates.entries) entry.key: entry.value.toJson()},
+    if (ownServerKeys.isNotEmpty)
+      'own_server_keys': {for (final entry in ownServerKeys.entries) entry.key: entry.value.toJson()},
+    if (ownServerNames.isNotEmpty || ownServersByName || ownServerOcrProfile != null)
+      'own_servers': {
+        'active': ownServerProfile,
+        'names': ownServerNames,
+        'by_name': ownServersByName,
+        if (ownServerOcrProfile != null) 'ocr_profile': ownServerOcrProfile,
+      },
     'approved_network_plugins': approvedNetworkPlugins.toList()..sort(),
   };
 
@@ -339,6 +477,7 @@ class AppSettings {
     final exchange = group('exchange');
     final models = group('models');
     final projects = group('projects');
+    final ownServers = group('own_servers');
     const known = {
       'schema_version',
       'tools',
@@ -354,6 +493,10 @@ class AppSettings {
       'test_mode',
       'auto_bug_report',
       'plugins', //
+      'own_servers',
+      'request_templates',
+      'model_prompt_presets',
+      'own_server_keys',
       'approved_network_plugins', 'projects',
     };
     // Before step 2.1 a switch turned the enlarging of small text off.
@@ -411,6 +554,7 @@ class AppSettings {
       showLookInPanel: ui['show_look_in_panel'] != false,
       gridTileSize: ((ui['grid_tile_size'] as num?)?.toInt() ?? 190).clamp(100, 400),
       translateSelected: ui['translate_selected'] == true,
+      splitInside: const {'columns', 'paragraphs'}.contains(ui['split_inside']) ? ui['split_inside'] as String : 'auto',
       showNavigator: ui['show_navigator'] == true,
       settingsView: const {'panel', 'last'}.contains(ui['settings_view']) ? ui['settings_view'] as String : 'full',
       settingsLastView: ui['settings_last_view'] == 'panel' ? 'panel' : 'full',
@@ -421,6 +565,31 @@ class AppSettings {
       plugins: {
         for (final e in group('plugins').entries)
           if (e.value is Map) e.key: (e.value as Map).cast<String, Object?>(),
+      },
+      ownServerNames: {
+        for (final e in (ownServers['names'] as Map? ?? const {}).entries)
+          if (e.key is String && (e.key as String).isNotEmpty && e.value is String) e.key as String: e.value as String,
+      },
+      ownServerProfile: pick(ownServers, 'active', ''),
+      ownServersByName: ownServers['by_name'] == true,
+      ownServerOcrProfile: ownServers['ocr_profile'] is String ? ownServers['ocr_profile'] as String : null,
+      modelPromptPresets: {
+        if (json['model_prompt_presets'] case final Map all)
+          for (final kind in ModelPromptKind.values)
+            if (all[kind.name] case final List list)
+              kind: [for (final item in list) ?PromptPreset.fromJson(item)],
+      },
+      requestTemplates: {
+        if (json['request_templates'] case final Map templates)
+          for (final entry in templates.entries)
+            if (entry.key case final String id when id.isNotEmpty)
+              id: ?RequestTemplate.fromJson(entry.value),
+      },
+      ownServerKeys: {
+        if (json['own_server_keys'] case final Map keys)
+          for (final entry in keys.entries)
+            if (entry.key case final String id)
+              id: ?OwnServerKeys.fromJson(entry.value),
       },
       approvedNetworkPlugins: {...?(json['approved_network_plugins'] as List?)?.whereType<String>()},
       extra: {

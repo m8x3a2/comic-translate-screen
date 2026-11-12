@@ -11,6 +11,7 @@ import 'package:comic_translate/state/page_render.dart';
 import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:ct_core/ct_core.dart';
+import 'package:ct_providers/ct_providers.dart' show chatTranslatorId;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -18,8 +19,10 @@ import 'package:path/path.dart' as p;
 import 'support/fake_plugins.dart';
 
 class _YesUi implements BatchUi {
+  Future<bool> Function(ExchangeRequest)? answerExchange;
+
   @override
-  Future<bool> exchange(ExchangeRequest request) async => false;
+  Future<bool> exchange(ExchangeRequest request) async => await answerExchange?.call(request) ?? false;
 
   final errors = <Object>[];
 
@@ -71,6 +74,28 @@ class _YesUi implements BatchUi {
   }
 }
 
+final _paintMaskInfo = fakeInfo('paint_mask', PluginKind.inpainter);
+
+PluginRegistry _editingRegistry() =>
+    fakeRegistry()..register(PluginFactory<Inpainter>(_paintMaskInfo, (c, e) async => _PaintMask()));
+
+class _PaintMask implements Inpainter {
+  @override
+  PluginInfo get info => _paintMaskInfo;
+
+  @override
+  Future<RgbImage> inpaint(RgbImage image, GrayImage mask, InpaintConfig config, PluginContext context) async {
+    final cleaned = image.clone();
+    for (var i = 0; i < mask.data.length; i++) {
+      if (mask.data[i] != 0) cleaned.data.fillRange(i * 3, i * 3 + 3, 255);
+    }
+    return cleaned;
+  }
+
+  @override
+  Future<void> dispose() async {}
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late Directory dir;
@@ -82,13 +107,13 @@ void main() {
     services = AppServices.create(
       dataDirOverride: dir.path,
       secretStore: MemorySecretStore(),
-      registry: fakeRegistry(),
+      registry: _editingRegistry(),
     );
     container = ProviderContainer(
       overrides: [
         servicesProvider.overrideWithValue(services),
         initialSettingsProvider.overrideWithValue(fakeSettings()),
-        workerRegistryProvider.overrideWithValue(fakeRegistry),
+        workerRegistryProvider.overrideWithValue(_editingRegistry),
       ],
     );
     final page = p.join(dir.path, 'page.png');
@@ -173,6 +198,26 @@ void main() {
     expect(page().blocks, hasLength(2));
     ws().undo();
     expect(page().blocks.first.xyxy.toJson(), [7, 7, 43, 33]);
+  });
+
+  test('blocks found inside a block take its place in one undo step; only they are read', () async {
+    ws().addBlock(const BBox(2, 2, 20, 20));
+    ws().addBlock(const BBox(10, 10, 90, 50));
+    ws().addBlock(const BBox(60, 2, 90, 8));
+    final original = page().blocks[1];
+    final parts = [TextBlock(xyxy: const BBox(10, 10, 45, 50)), TextBlock(xyxy: const BBox(55, 10, 90, 50))];
+    // A page changed meanwhile: nothing happens.
+    expect(ws().replaceBlock(page().id, 1, original.copy(), parts), isFalse);
+    expect(ws().replaceBlock(page().id, 1, original, parts), isTrue);
+    expect(page().blocks.map((b) => b.xyxy.x1), [2, 10, 55, 60]);
+    expect(container.read(workspaceProvider).selectedBlock, 1);
+
+    await container.read(stepsProvider.notifier).run(ManualStep.recognize, _YesUi(), blocks: [1, 2]);
+    expect([for (final b in page().blocks) b.text.isNotEmpty], [false, true, true, false]);
+    ws().undo();
+    expect(page().blocks.every((b) => b.text.isEmpty), isTrue);
+    ws().undo();
+    expect(page().blocks.map((b) => b.xyxy.x1), [2, 10, 60]);
   });
 
   test('pages picked with Ctrl or Shift: a step runs on each, one undo step per page', () async {
@@ -289,6 +334,127 @@ void main() {
     expect(StepsNotifier.plan(ManualStep.translate, read), [ManualStep.translate]);
     expect(StepsNotifier.plan(ManualStep.clean, read.copyWith(maskPath: 'm.png')), [ManualStep.clean]);
   });
+
+  test('retry fills only flagged omissions with recognized text and keeps manual styling', () async {
+    final edited = TextBlock(
+      xyxy: const BBox(1, 1, 10, 10),
+      text: 'Edited',
+      translation: 'Manual translation',
+      style: const BlockStyle(fontSizePt: 23),
+      untranslated: true,
+    );
+    ws().edit(
+      page().id,
+      (p) => p.copyWith(
+        blocks: [
+          edited,
+          TextBlock(xyxy: const BBox(12, 1, 20, 10), text: 'Retry me', untranslated: true),
+          TextBlock(xyxy: const BBox(22, 1, 30, 10), text: 'Intentional blank'),
+          TextBlock(xyxy: const BBox(32, 1, 40, 10), untranslated: true),
+        ],
+      ),
+    );
+    final ui = _YesUi();
+    final steps = container.read(stepsProvider.notifier);
+    await steps.run(ManualStep.translate, ui, retryOmissions: true);
+
+    expect(ui.errors, isEmpty);
+    expect(ui.emptyAsked, 0);
+    expect(container.read(stepsProvider).last?.count, 1);
+    final blocks = page().blocks;
+    expect(blocks[0].toJson(), edited.toJson());
+    expect(blocks[1].translation.toUpperCase(), endsWith('RETRY ME'));
+    expect(blocks[1].untranslated, isFalse);
+    expect(blocks[2].translation, isEmpty);
+    expect(blocks[3].untranslated, isTrue);
+  });
+
+  for (final viaChat in [false, true]) {
+    test('retry through ${viaChat ? 'chat' : 'the translator'} cleans only the newly translated frame', () async {
+      await container.read(settingsProvider.notifier).change((s) {
+        s.inpainter = _paintMaskInfo.id;
+        if (viaChat) s.translator = chatTranslatorId;
+      });
+      final cleanPath = p.join(dir.path, 'clean.png');
+      final maskPath = p.join(dir.path, 'draft_mask.png');
+      final clean = RgbImage.filled(100, 60, 255, 255, 255);
+      // Simulate a retouch on the first frame and dark letters in the second.
+      clean.data.setRange(clean.offset(12, 16), clean.offset(13, 16), [185, 200, 220]);
+      for (var y = 21; y < 35; y++) {
+        clean.data.fillRange(clean.offset(47, y), clean.offset(51, y), 0);
+        clean.data.fillRange(clean.offset(78, y), clean.offset(82, y), 0);
+      }
+      await ImageCodec.writeFile(cleanPath, clean);
+      await File(maskPath).writeAsBytes(ImageCodec.encodeGrayPng(GrayImage.zeros(100, 60)));
+      final ready = TextBlock(
+        xyxy: const BBox(6, 10, 26, 48),
+        text: 'Ready',
+        translation: 'Edited translation',
+        style: const BlockStyle(fontSizePt: 23),
+      );
+      final pending = TextBlock(xyxy: const BBox(38, 10, 60, 48), text: 'Retry me', untranslated: true);
+      final missed = TextBlock(
+        xyxy: const BBox(71, 10, 92, 48),
+        text: viaChat ? 'Still missing' : '',
+        untranslated: true,
+      );
+      const strokes = [
+        MaskStroke(points: [Point2(8, 52), Point2(20, 52)], width: 4),
+      ];
+      ws().edit(
+        page().id,
+        (p) => p.copyWith(
+          cleanPath: cleanPath,
+          translatedPath: cleanPath,
+          maskPath: maskPath,
+          strokes: strokes,
+          blocks: [ready, pending, missed],
+        ),
+      );
+      final ui = _YesUi();
+      if (viaChat) {
+        ui.answerExchange = (request) async {
+          final state = container.read(workspaceProvider);
+          final items = exchangeItems(exchangePages(state, request), request.mode);
+          expect(items.map((item) => item.blockIndex), [1, 2]);
+          final match = matchExchangeAnswer(
+            items,
+            parseExchangeAnswer('[01-002] New translation', request.mode),
+            request.mode,
+          );
+          final result = await applyExchange(
+            ws(),
+            state,
+            items,
+            match,
+            request.mode,
+            retryOmissions: request.retryOmissions,
+            commitOmissions: request.commitOmissions,
+          );
+          expect(result.changed, 1);
+          return true;
+        };
+      }
+      await container.read(stepsProvider.notifier).run(ManualStep.translate, ui, retryOmissions: true);
+
+      expect(ui.errors, isEmpty);
+      expect(page().cleanPath, isNot(cleanPath));
+      expect(page().translatedPath, isNull);
+      expect(page().maskPath, maskPath);
+      expect(page().strokes, strokes);
+      expect(page().blocks[0].toJson(), ready.toJson());
+      expect(page().blocks[1].untranslated, isFalse);
+      expect(page().blocks[1].translation, isNotEmpty);
+      expect(page().blocks[2].toJson(), missed.toJson());
+      final cleaned = await ImageCodec.readFile(page().cleanPath!);
+      expect(cleaned.data[cleaned.offset(48, 26)], 255);
+      expect(cleaned.data[cleaned.offset(79, 26)], 0);
+      expect(cleaned.data[cleaned.offset(12, 16)], 185);
+      ws().undo();
+      expect(page().cleanPath, cleanPath);
+      expect(page().blocks[1].toJson(), pending.toJson());
+    });
+  }
 
   test('"Translate" asks about frames without text: read them, translate without them, or stop', () async {
     final ui = _YesUi();

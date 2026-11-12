@@ -914,6 +914,19 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     state = state.copyWith(selectedBlock: page.blocks.length);
   }
 
+  /// Puts [parts] in place of block [index] of page [pageId] as one undo
+  /// step and selects the first of them; false (nothing changed) when that
+  /// block is no longer [original] (the page was changed meanwhile).
+  bool replaceBlock(String pageId, int index, TextBlock original, List<TextBlock> parts) {
+    final page = state.byId(pageId);
+    if (page == null || parts.isEmpty || index >= page.blocks.length || !identical(page.blocks[index], original)) {
+      return false;
+    }
+    edit(pageId, (p) => p.copyWith(blocks: [...p.blocks]..replaceRange(index, index + 1, parts)));
+    if (state.currentPage?.id == pageId) state = state.copyWith(selectedBlock: index);
+    return true;
+  }
+
   void deleteBlock(int index) {
     final page = state.currentPage;
     if (page == null || index < 0 || index >= page.blocks.length) return;

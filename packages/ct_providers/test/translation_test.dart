@@ -64,6 +64,301 @@ void main() {
   setUp(() async => server = await FakeServer.start());
   tearDown(() => server.close());
 
+  test('test chat uses the configured endpoint and sends only the conversation', () async {
+    const key = 'sk-synthetic-chat-test';
+    server.handler = (body) => (200, chatReply('Reply $key'));
+    final translator = OpenAiCompatibleTranslator(
+      apiUrl: server.url,
+      model: 'chat-model',
+      apiKey: key,
+      tokenLimitParam: 'max_tokens',
+      maxTokens: 128,
+    );
+    final messages = [
+      {'role': 'user', 'content': 'Hello'},
+      {'role': 'assistant', 'content': 'Hi'},
+      {'role': 'user', 'content': 'How are you?'},
+    ];
+    expect(await translator.testChat(messages, CancelToken(), EventLog.silent()), 'Reply [redacted]');
+    final sent = server.requests.single;
+    expect(sent.path, '/v1/chat/completions');
+    expect(sent.auth, 'Bearer $key');
+    expect(sent.body['model'], 'chat-model');
+    expect(sent.body['messages'], messages);
+    expect(sent.body['max_tokens'], 128);
+    expect(sent.body.containsKey('stream'), isFalse);
+  });
+
+  test('the SSE switch sends standard streaming JSON and publishes text before completion', () async {
+    final api = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final finish = Completer<void>();
+    addTearDown(() async {
+      if (!finish.isCompleted) finish.complete();
+      await api.close(force: true);
+    });
+    final served = api.first.then((req) async {
+      final payload = jsonDecode(await utf8.decoder.bind(req).join()) as Map;
+      expect(req.uri.path, '/v1/respond');
+      expect(req.headers.value('accept'), 'text/event-stream');
+      expect(req.headers.value('authorization'), 'Bearer fixture-stream-key');
+      expect(payload['stream'], isTrue);
+      expect(payload['top_p'], 0.5);
+      req.response
+        ..bufferOutput = false
+        ..headers.contentType = ContentType('text', 'event-stream')
+        ..write('data: {"choices":[{"delta":{"content":"First"}}]}\n\n');
+      await req.response.flush();
+      await finish.future;
+      req.response.write('data: {"choices":[{"delta":{"content":" second"}}]}\n\ndata: [DONE]\n\n');
+      await req.response.close();
+    });
+    final translator = OpenAiCompatibleTranslator(
+      apiUrl: 'http://127.0.0.1:${api.port}/v1',
+      apiKey: 'fixture-stream-key',
+      model: 'example',
+      chatPath: 'respond',
+      streamChat: true,
+      requestOptions: '{"top_p":0.5}',
+    );
+    final partials = <String>[];
+    final first = Completer<String>();
+    final reply = translator.testChat(
+      [
+        {'role': 'user', 'content': 'Hello'},
+      ],
+      CancelToken(),
+      EventLog.silent(),
+      onText: (text) {
+        partials.add(text);
+        if (!first.isCompleted) first.complete(text);
+      },
+    );
+    expect(await first.future.timeout(const Duration(seconds: 5)), 'First');
+    finish.complete();
+    expect(await reply, 'First second');
+    expect(partials, ['First', 'First second']);
+    await served;
+  });
+
+  test('a reply that omits every bubble reports a distinct error', () async {
+    server.handler = (body) => (200, chatReply('{}'));
+    final translator = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'test-model', resendMissing: false);
+    await expectLater(
+      translator.translate(request([block('Hello')]), PluginContext(log: EventLog.silent())),
+      throwsA(isA<NoTranslationsException>()),
+    );
+  });
+
+  test('test chat preserves image parts and hides a key echoed in an image error', () async {
+    const key = 'sk-synthetic-vision-test';
+    const content = [
+      {'type': 'text', 'text': 'Read this'},
+      {
+        'type': 'image_url',
+        'image_url': {'url': 'data:image/png;base64,AA=='},
+      },
+    ];
+    server.handler = (_) => (
+      400,
+      jsonEncode({
+        'error': {'message': 'Image inputs are unsupported ($key)'},
+      }),
+    );
+    final translator = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'test-model', apiKey: key);
+    String? sentLog;
+    late (int, String) responseLog;
+    await expectLater(
+      translator.testChat(
+        [
+          {'role': 'user', 'content': content},
+        ],
+        CancelToken(),
+        EventLog.silent(),
+        onRequest: (body) => sentLog = body,
+        onResponse: (status, body) => responseLog = (status, body),
+      ),
+      throwsA(
+        isA<TranslationException>()
+            .having((e) => e.statusCode, 'HTTP status', 400)
+            .having((e) => e.message, 'safe explanation', contains('Image inputs are unsupported ([redacted])')),
+      ),
+    );
+    expect((server.requests.single.body['messages'] as List).single['content'], content);
+    expect(sentLog, contains('POST ${server.url}chat/completions'));
+    expect(sentLog, contains('[image data omitted]'));
+    expect(sentLog, isNot(contains('AA==')));
+    expect(responseLog.$1, 400);
+    expect(responseLog.$2, contains('Image inputs are unsupported ([redacted])'));
+  });
+
+  test('own server appends a custom path and uses server defaults when model is empty', () async {
+    server.handler = (_) => (200, chatReply('{"block_0": "x"}'));
+    final translator = OpenAiCompatibleTranslator(
+      apiUrl: server.url,
+      model: ' ',
+      chatPath: '/proxy/completions',
+      requestOptions: '{"temperature": null, "max_completion_tokens": null, "max_tokens": 128}',
+    );
+    await translator.translate(request([block('a')]), PluginContext(log: EventLog.silent()));
+    final sent = server.requests.single;
+    expect(sent.path, '/v1/proxy/completions');
+    expect(sent.body.keys, unorderedEquals(['messages', 'max_tokens']));
+    expect(sent.body['max_tokens'], 128);
+    expect(openAiCompatibleUri(server.url, '//other.example/path', 'models'), isNull);
+  });
+
+  test('own server requests models with its key and accepts IDs without metadata', () async {
+    final api = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => api.close(force: true));
+    final received = api.first;
+    final config = PluginConfig.resolve(
+      openAiCompatibleInfo.settings,
+      {'api_url': 'http://127.0.0.1:${api.port}/gateway', 'models_path': 'catalog'},
+      secrets: {'api_key': 'catalog-secret'},
+    );
+    final listing = openAiCompatibleModelCatalog(config)!.run();
+    final req = await received;
+    expect(req.method, 'GET');
+    expect(req.uri.path, '/gateway/catalog');
+    expect(req.headers.value(HttpHeaders.authorizationHeader), 'Bearer catalog-secret');
+    req.response.write('{"data": [{"id": "default-vision"}, {"id": "test-model"}, {"name": "invalid"}]}');
+    await req.response.close();
+    expect((await listing).map((model) => model.id), ['default-vision', 'test-model']);
+  });
+
+  test('key details use the configured path and return only mapped, masked scalar values', () async {
+    final api = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => api.close(force: true));
+    final received = api.first;
+    const key = '2';
+    final config = PluginConfig.resolve(
+      openAiCompatibleInfo.settings,
+      {
+        'api_url': 'http://127.0.0.1:${api.port}/gateway',
+        RequestTemplate.keyStatusPathKey: '/credits',
+        RequestTemplate.keyStatusFieldsKey:
+            '{"Balance": "account.balance", "Label": "account.label", "Missing": "other"}',
+      },
+      secrets: {'api_key': key},
+    );
+    final query = openAiCompatibleKeyStatus(config)!;
+    expect(query.custom, isTrue);
+    expect(query.hasKey, isTrue);
+    final status = query.run();
+    final req = await received;
+    expect(req.method, 'GET');
+    expect(req.uri.path, '/gateway/credits');
+    expect(req.headers.value(HttpHeaders.authorizationHeader), 'Bearer $key');
+    req.response.write('{"account":{"balance":12.5,"label":"test $key","token":"secret"}}');
+    await req.response.close();
+    expect((await status).fields, {'Balance': '12.5', 'Label': 'test ***'});
+    expect(RequestTemplate.parseKeyStatusFields('{"Leaked": "account.api_key"}'), isNull);
+  });
+
+  test('full HTTP templates drive translation, catalog and key status with the active key', () async {
+    final api = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => api.close(force: true));
+    const key = 'fixture-active-key';
+    final seen = <String>[];
+    api.listen((req) async {
+      expect(req.headers.value('x-api-key'), key);
+      seen.add('${req.method} ${req.uri}');
+      final body = jsonDecode(await utf8.decoder.bind(req).join()) as Map;
+      switch (req.uri.path) {
+        case '/gateway/respond':
+          expect(body['engine'], 'model-fixture');
+          expect(body['turns'], isA<List>());
+          req.response.statusCode = 201;
+          req.response.write(
+            jsonEncode({
+              'result': {'text': '{"block_0": "Done"}'},
+            }),
+          );
+        case '/gateway/catalog':
+          expect(body['type'], 'chat');
+          req.response.write('{"payload":[{"code":"custom-model","label":"Custom"}]}');
+        case '/gateway/credits':
+          expect(body['request'], 'balance');
+          req.response.write('{"usage":{"left":240}}');
+      }
+      await req.response.close();
+    });
+    const chat = HttpRequestSpec(
+      'PATCH respond?client=cts\nX-API-Key: {{api_key}}\n\n{"engine":{{model}},"turns":{{messages}}}',
+      '{"statuses":[201],"text":"result.text"}',
+    );
+    const models = HttpRequestSpec(
+      'POST catalog\nX-API-Key: {{api_key}}\n\n{"type":"chat"}',
+      '{"items":"payload","id":"code","name":"label"}',
+    );
+    const status = HttpRequestSpec(
+      'PUT credits\nX-API-Key: {{api_key}}\n\n{"request":"balance"}',
+      '{"fields":{"Left":"usage.left"}}',
+    );
+    final base = 'http://127.0.0.1:${api.port}/gateway';
+    final config = PluginConfig.resolve(
+      openAiCompatibleInfo.settings,
+      {
+        'api_url': base,
+        RequestTemplate.httpSettingKey: jsonEncode({
+          'chat': chat.toJson(),
+          'models': models.toJson(),
+          'keyStatus': status.toJson(),
+        }),
+      },
+      secrets: {'api_key': key},
+    );
+    final preview = EditableHttpRequest.parse(HttpOperation.chat, chat).prepare(base, key, {'messages': []}).preview;
+    expect(preview, contains('PATCH $base/respond?client=cts'));
+    expect(preview, isNot(contains(key)));
+    expect(preview, isNot(contains('"engine"')));
+    final translator = OpenAiCompatibleTranslator(
+      apiUrl: base,
+      model: 'model-fixture',
+      apiKey: key,
+      httpChat: chat,
+      streamChat: true,
+    );
+    final blocks = [block('Source')];
+    await translator.translate(request(blocks), PluginContext(log: EventLog.silent()));
+    expect(blocks.single.translation, 'Done');
+    expect((await openAiCompatibleModelCatalog(config)!.run()).single.id, 'custom-model');
+    expect((await openAiCompatibleKeyStatus(config)!.run()).fields, {'Left': '240'});
+    expect(seen, ['PATCH /gateway/respond?client=cts', 'POST /gateway/catalog', 'PUT /gateway/credits']);
+    expect(
+      () => EditableHttpRequest.parse(
+        HttpOperation.chat,
+        const HttpRequestSpec('GET //elsewhere.example/v1', '{"text":"x"}'),
+      ),
+      throwsFormatException,
+    );
+  });
+
+  test('OpenRouter HTTP catalog retains metadata and accepts custom paths', () {
+    const spec = HttpRequestSpec(
+      'GET models',
+      '{"items":"data","id":"id","name":"name","context_length":"limits.context"}',
+    );
+    final request = EditableHttpRequest.parse(HttpOperation.models, spec, openRouterModelDefaults: true);
+    final models = request.decode(
+      const HttpExchange(200, '''
+        {"data":[{"id":"model","name":"Name","description":"Details",
+          "created":1700000000,"context_length":16000,"limits":{"context":32000},
+          "pricing":{"prompt":"0.00000015","completion":"0.00000060"},
+          "architecture":{"input_modalities":["text","image"]}}]}
+      '''),
+      '',
+    ) as List<CatalogModel>;
+    final model = models.single;
+    expect(model.name, 'Name');
+    expect(model.description, 'Details');
+    expect(model.contextLength, 32000);
+    expect(model.promptPrice, closeTo(0.15, 0.000001));
+    expect(model.completionPrice, closeTo(0.60, 0.000001));
+    expect(model.created, DateTime.fromMillisecondsSinceEpoch(1700000000000, isUtc: true));
+    expect(model.vision, isTrue);
+  });
+
   test('request has the original prompt protocol; reply fills translations', () async {
     server.handler = (body) => (200, chatReply('```json\n{"block_0": "Привет!", "block_1": "Нет!"}\n```'));
     final t = OpenAiCompatibleTranslator(apiUrl: server.url, model: 'test-model', apiKey: 'sk-test-123456789');
@@ -633,7 +928,7 @@ void main() {
   test('the models of OpenRouter: listed without the key, prices per million tokens, text answers only', () async {
     PluginConfig config(String url) =>
         PluginConfig.resolve(openAiCompatibleInfo.settings, {'api_url': url}, secrets: {'api_key': 'sk-or-1'});
-    expect(openAiCompatibleInfo.modelCatalog!(config('http://localhost:11434/v1')), isNull);
+    expect(openAiCompatibleInfo.modelCatalog!(config('http://localhost:11434/v1'))?.host, 'localhost');
     final query = openAiCompatibleInfo.modelCatalog!(config('https://openrouter.ai/api/v1/'))!;
     expect((query.host, query.settingKey), ('openrouter.ai', 'model'));
     expect(openAiCompatibleInfo.modelCatalog!(config(' ')), isNull, reason: 'own server with no address');
@@ -644,16 +939,33 @@ void main() {
       'api_key',
       'pages_per_request',
       'resend_missing',
+      llmStreamSetting.key,
       'temperature',
       'max_tokens',
       'timeout',
+      'chat_path',
+      'models_path',
+      'request_options',
+      'comic_prompt',
+      RequestTemplate.httpSettingKey,
+      RequestTemplate.keyStatusPathKey,
+      RequestTemplate.keyStatusFieldsKey,
     ]);
     expect(
       [
         for (final f in openRouterInfo.settings)
           if (f.advanced) f.key,
       ],
-      ['temperature', 'max_tokens', 'timeout'],
+      [
+        'temperature',
+        'max_tokens',
+        'timeout',
+        'chat_path',
+        'models_path',
+        'request_options',
+        'comic_prompt',
+        RequestTemplate.httpSettingKey,
+      ],
     );
     expect(openRouterInfo.modelCatalog!(own)!.host, 'openrouter.ai');
     expect((openRouterInfo.keyStatus!(own)!.host, openRouterInfo.keyStatus!(own)!.hasKey), ('openrouter.ai', true));

@@ -36,6 +36,7 @@ enum ExportContainer {
 class ExportPage {
   const ExportPage({
     required this.name,
+    this.id = '',
     this.chapter = '',
     this.sourceExtension = '.png',
     this.translatedImage,
@@ -47,6 +48,9 @@ class ExportPage {
   /// File name of the page without extension (unique names are made from
   /// it).
   final String name;
+
+  /// The page's id in the app (told back in [ExportResult.complete]).
+  final String id;
 
   /// Pages of the same chapter go into the same file when exporting by
   /// chapter (the archive or PDF they came from).
@@ -146,13 +150,19 @@ class NameTemplate {
 }
 
 class ExportResult {
-  const ExportResult(this.outputs, this.pages);
+  const ExportResult(this.outputs, this.pages, {this.complete = const {}});
 
   /// Written files or folders.
   final List<String> outputs;
 
   /// Pages written (counted once even if several kinds were saved).
   final int pages;
+
+  /// The ids ([ExportPage.id]) of the pages with every picture asked for
+  /// written (with texts only: with any text written). A page without the
+  /// picture asked for (no cleaned image) is left out silently, so this is
+  /// what may be taken out of the project.
+  final Set<String> complete;
 }
 
 class ExportException implements Exception {
@@ -204,6 +214,15 @@ Future<ExportResult> exportPages(
 
   final outputs = <String>[];
   final written = <ExportPage>{};
+  // What was written for each page, for [ExportResult.complete].
+  final kindsOf = <ExportPage, Set<String>>{};
+  void mark(Iterable<ExportPage> pages, String kind) {
+    for (final page in pages) {
+      written.add(page);
+      (kindsOf[page] ??= {}).add(kind);
+    }
+  }
+
   final usedNames = <String>{};
   final strips = o.strip == StripExport.pages ? null : Directory.systemTemp.createTempSync('cts_strip_');
   try {
@@ -230,7 +249,7 @@ Future<ExportResult> exportPages(
             } else {
               pdf.addJpeg(ImageCodec.encodeJpeg(image, quality: 92), image.width, image.height);
             }
-            written.addAll(identical(pictures, group) ? [page] : group);
+            mark(identical(pictures, group) ? [page] : group, kinds.first);
           }
         } finally {
           pdf.close();
@@ -276,14 +295,14 @@ Future<ExportResult> exportPages(
                 } else {
                   await ImageCodec.writeFile(target, await ImageCodec.readFile(source));
                 }
-                written.addAll(identical(pictures, group) ? [page] : group);
+                mark(identical(pictures, group) ? [page] : group, kind);
               case 'raw_texts' || 'translated_texts':
                 final texts = kind == 'raw_texts' ? page.recognized : page.translations;
                 if (texts == null) continue;
                 final suffix = kind == 'raw_texts' ? 'raw' : 'translated';
                 File(p.join(into, '${name}_$suffix.json'))
                     .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(texts));
-                written.add(page);
+                mark([page], kind);
             }
           }
         }
@@ -342,7 +361,19 @@ Future<ExportResult> exportPages(
   } finally {
     if (strips != null && strips.existsSync()) strips.deleteSync(recursive: true);
   }
-  return ExportResult(outputs, written.length);
+  // A PDF holds one picture of each page (the first kind).
+  final asked = [
+    for (final kind in o.container == ExportContainer.pdf ? kinds.take(1) : kinds)
+      if (kind == 'translated' || kind == 'cleaned') kind,
+  ];
+  return ExportResult(
+    outputs,
+    written.length,
+    complete: {
+      for (final page in written)
+        if (kindsOf[page]!.containsAll(asked)) page.id,
+    },
+  );
 }
 
 /// The pictures of [group] joined into one strip, or cut again (see

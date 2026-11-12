@@ -58,7 +58,9 @@ class AppServices {
     final info = registry.info(id);
     final secrets = <String, String>{};
     for (final field in info.settings.whereType<SecretSetting>()) {
-      final value = await this.secrets.read(field.storeKey(id));
+      final key = settings.pluginSettingSecretKey(id, field);
+      if (key == null) continue;
+      final value = await this.secrets.read(key);
       if (value != null && value.isNotEmpty) secrets[field.key] = value;
     }
     return PluginConfig.resolve(info.settings, {...settings.pluginValues(id), ...overrides}, secrets: secrets);
@@ -167,7 +169,7 @@ class AppServices {
   Future<void> _moveKeyToOpenRouter(AppSettings settings) async {
     final from = settingsStore.upgradedFrom;
     if (from == null || from >= 2) return;
-    if (!AppSettings.ownServerIsOpenRouter(settings.pluginValues('openai_compatible'))) return;
+    if (!AppSettings.ownServerIsOpenRouter(settings.plugins['openai_compatible'] ?? const {})) return;
     try {
       final to = pluginSecretKey('openrouter', 'api_key');
       if ((await secrets.read(to) ?? '').isNotEmpty) return;

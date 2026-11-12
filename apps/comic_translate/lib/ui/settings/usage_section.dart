@@ -66,22 +66,23 @@ class PriceHint extends ConsumerWidget {
 /// "Check balance": sends only the key, only to [KeyStatusQuery.host], only
 /// when pressed.
 class KeyStatusPanel extends ConsumerStatefulWidget {
-  const KeyStatusPanel(this.info, {super.key, required this.host});
+  const KeyStatusPanel(this.info, {super.key, required this.preview, required this.scope});
 
   final PluginInfo info;
-  final String host;
+  final KeyStatusQuery preview;
+  final Object scope;
 
   @override
   ConsumerState<KeyStatusPanel> createState() => _KeyStatusPanelState();
 }
 
-/// The last answer about each plugin's key (`plugin@host`) in this session:
+/// The last built-in answer about each connection's key in this session:
 /// the settings opened again show it without asking the service again.
-final _lastStatus = <String, (KeyStatus, DateTime)>{};
+final _lastStatus = <Object, (KeyStatus, DateTime)>{};
 
 class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
   bool _checking = false;
-  late final _last = _lastStatus['${widget.info.id}@${widget.host}'];
+  late final _last = widget.preview.custom ? null : _lastStatus[widget.scope];
   late KeyStatus? _status = _last?.$1;
   String? _error;
   late DateTime? _at = _last?.$2;
@@ -89,26 +90,42 @@ class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
   Future<void> _check() async {
     final l = context.l10n;
     final services = ref.read(servicesProvider);
-    final config = await services.pluginConfig(widget.info.id, ref.read(settingsProvider));
-    final query = widget.info.keyStatus?.call(config);
-    if (query == null || !mounted) return;
-    if (!query.hasKey) {
-      setState(() {
-        _status = null;
-        _error = l.keyStatusNeedsKey;
-      });
-      return;
-    }
+    final settings = ref.read(settingsProvider);
+    final scope = widget.scope;
     setState(() {
       _checking = true;
       _error = null;
     });
-    services.appLog.info('key_status_request', {'plugin': widget.info.id, 'host': query.host});
     try {
+      final config = await services.pluginConfig(widget.info.id, settings);
+      final query = widget.info.keyStatus?.call(config);
+      if (query == null || !mounted) return;
+      if (!query.hasKey) {
+        setState(() {
+          _status = null;
+          _error = l.keyStatusNeedsKey;
+        });
+        return;
+      }
+      if (query.custom && widget.info.endpointFor(config) != null) {
+        final allowed = await showDialog<bool>(
+          context: context,
+          builder: (dialog) => AlertDialog(
+            title: Text(l.keyStatusCheck),
+            content: Text(l.requestTemplateStatusConsent(query.host)),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(dialog, false), child: Text(l.cancel)),
+              FilledButton(onPressed: () => Navigator.pop(dialog, true), child: Text(l.keyStatusCheck)),
+            ],
+          ),
+        );
+        if (allowed != true || !mounted) return;
+      }
+      services.appLog.info('key_status_request', {'plugin': widget.info.id, 'host': query.host});
       final status = await query.run();
       services.appLog.info('key_status', {'limit': status.limit, 'remaining': status.remaining});
       final at = DateTime.now();
-      _lastStatus['${widget.info.id}@${widget.host}'] = (status, at);
+      if (!query.custom) _lastStatus[scope] = (status, at);
       if (!mounted) return;
       setState(() {
         _status = status;
@@ -119,8 +136,14 @@ class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
       if (!mounted) return;
       setState(() {
         _status = null;
-        _error = l.keyStatusFailed(translationErrorLabel(l, e.kind));
+        final label = translationErrorLabel(l, e.kind);
+        _error = l.keyStatusFailed(
+          widget.preview.custom ? l.withDetails(label, services.redactor.redact(e.message)) : label,
+        );
       });
+    } catch (error, stack) {
+      services.appLog.error('key_status_failed', error, stack);
+      if (mounted) setState(() => _error = l.keyStatusFailed(l.trErrOther));
     } finally {
       if (mounted) setState(() => _checking = false);
     }
@@ -133,13 +156,15 @@ class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
     final s = _status;
     String money(double v) => formatMoney(context, v);
     // The limit and what is left: the main line.
-    final main = s == null
+    final main = s == null || s.fields != null
         ? null
         : s.limit != null
         ? l.keyStatusLimit(money(s.limit!), money(s.used), money(s.remaining ?? s.limit! - s.used))
         : l.keyStatusNoLimit(money(s.used));
     final lines = [
-      if (s != null) ...[
+      if (s?.fields case final fields?)
+        for (final entry in fields.entries) '${entry.key} · ${entry.value}',
+      if (s != null && s.fields == null) ...[
         if (s.label.isNotEmpty) l.keyStatusLabel(s.label),
         main!,
         ...switch (s.freeTier) {
@@ -164,8 +189,8 @@ class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
           ),
           l.keyStatusFreeNote,
         ],
-        if (_at != null) l.keyStatusAt(DateFormat.Hm(_locale(context)).format(_at!)),
       ],
+      if (s != null && _at != null) l.keyStatusAt(DateFormat.Hm(_locale(context)).format(_at!)),
     ];
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -191,7 +216,14 @@ class _KeyStatusPanelState extends ConsumerState<KeyStatusPanel> {
                 children: [
                   Icon(Icons.cloud_outlined, size: 16, color: theme.colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
-                  Flexible(child: Text(l.keyStatusHelp(widget.host), style: theme.textTheme.bodySmall)),
+                  Flexible(
+                    child: Text(
+                      widget.preview.custom
+                          ? l.requestTemplateStatusConsent(widget.preview.host)
+                          : l.keyStatusHelp(widget.preview.host),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
                 ],
               ),
             ],

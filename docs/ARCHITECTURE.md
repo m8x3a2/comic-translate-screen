@@ -310,6 +310,23 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   worker and from `cts`. Plugins whose service can tell what is left of a key
   declare `PluginInfo.keyStatus`; for `openai_compatible` that is OpenRouter's
   `GET /api/v1/key`, sent only when the user presses "Check balance".
+- Own server profiles keep their settings and API keys separate. The model
+  picker requests `GET /models` relative to the profile's base URL and uses its
+  saved key when present. OCR can reuse a profile's connection and select its
+  own vision model. The OpenAI-compatible adapter supports configurable paths
+  and extra JSON fields. Test chat can show and copy the latest HTTP exchange
+  with authorization and encoded images removed.
+- Own server profiles can share a named request template. A template supplies
+  relative chat and model-list paths, extra JSON fields and an optional GET
+  for key details. The details show selected values from the JSON response.
+  The server address, model and secure key still come from the profile.
+- A shared template can define a complete HTTP request for chat, model
+  discovery and key details. Each operation has a relative path, method,
+  headers, an optional JSON body and response mapping rules. The editor can
+  preview the rendered request and run a test against the selected profile.
+- An own server profile can have several API keys and a note on each. The
+  selected key is used for requests from that profile, including linked OCR.
+  Notes and the selection are settings. Key values stay in secure storage.
 - Enlarging before drawing (new, setting `upscale`): when the source text
   lines are thinner than about 20 px, or when many translations do not fit
   even at the smallest font size, the cleaned page is enlarged (Lanczos, up
@@ -573,6 +590,9 @@ fonts/             fonts the user added
 ```
 
 ## Stage 1 milestones
+
+See the [development roadmap in Russian](ROADMAP.ru.md) for completed provider
+and OCR features and proposed follow-up work.
 
 M0 skeleton, CLI, diagnostics → M1 core, plugin registry, model manager, ONNX Runtime →
 M2 detection → M3 OCR (PaddleOCR ONNX, then Windows OCR) → M4 translation → M5 mask and inpainting →

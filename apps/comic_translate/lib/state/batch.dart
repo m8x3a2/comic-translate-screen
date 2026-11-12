@@ -779,9 +779,9 @@ Future<bool> checkReaderNetwork(Ref ref, BatchUi ui) async {
 
 /// Plugin [id] that sends data to a service without its key would fail
 /// every page: explains where to enter it and returns false.
-Future<bool> checkPluginKey(Ref ref, BatchUi ui, String id) async {
+Future<bool> checkPluginKey(Ref ref, BatchUi ui, String id, {AppSettings? connection}) async {
   final services = ref.read(servicesProvider);
-  final settings = ref.read(settingsProvider);
+  final settings = connection ?? ref.read<AppSettings>(settingsProvider);
   if (!services.registry.contains(id)) return true;
   final info = services.registry.info(id);
   final config = await services.pluginConfig(id, settings);
@@ -800,9 +800,15 @@ Future<bool> checkPluginKey(Ref ref, BatchUi ui, String id) async {
 
 /// Asks before plugin [id] sends data off the device (once, or always for
 /// this plugin and address).
-Future<bool> approvePluginNetwork(Ref ref, BatchUi ui, String id, {required bool sendsImage}) async {
+Future<bool> approvePluginNetwork(
+  Ref ref,
+  BatchUi ui,
+  String id, {
+  required bool sendsImage,
+  AppSettings? connection,
+}) async {
   final services = ref.read(servicesProvider);
-  final settings = ref.read(settingsProvider);
+  final settings = connection ?? ref.read<AppSettings>(settingsProvider);
   if (!services.registry.contains(id)) return true;
   final info = services.registry.info(id);
   final endpoint = info.endpointFor(await services.pluginConfig(id, settings));

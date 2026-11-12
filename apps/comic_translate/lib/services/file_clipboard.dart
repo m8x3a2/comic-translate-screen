@@ -13,6 +13,7 @@ import 'package:ffi/ffi.dart';
 
 const _cfDib = 8;
 const _cfHdrop = 15;
+const _cfDibV5 = 17;
 const _gmemMoveable = 0x0002;
 const _dropEffectCopy = 1;
 
@@ -112,9 +113,11 @@ ClipboardPages? readClipboardPages() {
       final bytes = _get(png);
       if (bytes != null) return ClipboardPicture(bytes, png: true);
     }
-    if (_isFormatAvailable(_cfDib) != 0) {
-      final bytes = _get(_cfDib);
-      if (bytes != null) return ClipboardPicture(bytes, png: false);
+    for (final format in const [_cfDib, _cfDibV5]) {
+      if (_isFormatAvailable(format) != 0) {
+        final bytes = _get(format);
+        if (bytes != null) return ClipboardPicture(bytes, png: false);
+      }
     }
     return null;
   } finally {

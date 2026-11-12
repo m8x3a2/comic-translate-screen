@@ -18,6 +18,7 @@ import 'package:path/path.dart' as p;
 import '../../l10n/app_localizations.dart';
 import '../../services/file_clipboard.dart';
 import '../../state/app_state.dart';
+import '../../state/batch.dart' show skipReasonFor;
 import '../../state/exchange.dart';
 import '../../state/workspace.dart';
 import '../common/help_dialog.dart';
@@ -77,8 +78,9 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
   var _exporting = false;
   var _again = false;
 
-  /// The answer is being written into the pages (letters measured).
+  /// The answer is being written into the pages.
   var _applying = false;
+  Object? _applyError;
   Timer? _debounce;
 
   /// One folder for this window: the pictures are made again in it when
@@ -930,15 +932,35 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
     final export = _export, match = _shownMatch;
     if (export == null || match == null || _applying) return;
     final settings = ref.read(settingsProvider);
-    setState(() => _applying = true);
-    final result = await applyExchange(
-      ref.read(workspaceProvider.notifier),
-      ref.read(workspaceProvider),
-      _items,
-      match,
-      export.mode,
-      placeholder: settings.exchange.placeholder,
-    );
+    setState(() {
+      _applying = true;
+      _applyError = null;
+    });
+    final ({int changed, List<ExchangeLabel> lost}) result;
+    try {
+      result = await applyExchange(
+        ref.read(workspaceProvider.notifier),
+        ref.read(workspaceProvider),
+        _items,
+        match,
+        export.mode,
+        placeholder: settings.exchange.placeholder,
+        retryOmissions: widget.request.retryOmissions,
+        commitOmissions: widget.request.commitOmissions,
+      );
+    } on CancelledException {
+      if (mounted) setState(() => _applying = false);
+      return;
+    } catch (e, st) {
+      _appLog.error('exchange_apply_failed', e, st);
+      if (mounted) {
+        setState(() {
+          _applying = false;
+          _applyError = e;
+        });
+      }
+      return;
+    }
     // The answers are in the pages now: the draft goes.
     _draftTimer?.cancel();
     _draftTimer = null;
@@ -1695,6 +1717,7 @@ class _ExchangeDialogState extends ConsumerState<ExchangeDialog> with WidgetsBin
               const SizedBox(height: 8),
             ],
             if (accepted > 0) Text(l.chatAccepted(accepted, acceptedOf)),
+            if (_applyError case final error?) Text(l.runFailed(reasonLabel(l, skipReasonFor(error))), style: warn),
             if (match != null) ...[
               Text(
                 page != null

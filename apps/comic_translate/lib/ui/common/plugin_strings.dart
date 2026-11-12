@@ -78,14 +78,13 @@ const _ru = <String, String>{
   'openai_compatible_ocr': 'Нейросеть по ключу: свой сервер',
   'openai_compatible_ocr.desc':
       'Пузыри читает языковая модель, которая видит картинки, через любой OpenAI-совместимый сервер (локальный '
-      'LM Studio / Ollama, OpenAI и другие). Ключ — тот же, что у переводчика «Свой сервер».',
+      'LM Studio / Ollama, OpenAI и другие).',
   'openai_compatible_ocr.api_url': 'Адрес API',
-  'openai_compatible_ocr.api_url.help': 'Адрес, оканчивающийся на /v1, например http://localhost:1234/v1 (LM Studio).',
+  'openai_compatible_ocr.api_url.help': 'Базовый адрес из документации сервера, например http://localhost:1234/v1.',
   'openai_compatible_ocr.model': 'Модель',
   'openai_compatible_ocr.model.help': 'Модель, которая видит картинки, например qwen2.5-vl-7b-instruct.',
   'openai_compatible_ocr.api_key': 'Ключ API',
-  'openai_compatible_ocr.api_key.help':
-      'Для локальных серверов обычно не нужен. Тот же ключ, что у переводчика «Свой сервер».',
+  'openai_compatible_ocr.api_key.help': 'Для локальных серверов обычно не нужен. В режиме отдельного адреса используется первый ключ исходного подключения.',
   'openai_compatible_ocr.resend_missing': 'Досылать недостающее',
   'openai_compatible_ocr.resend_missing.help':
       'Если в ответе нет текста части пузырей — один раз спросить только про них.',
@@ -176,8 +175,10 @@ const _ru = <String, String>{
       'локальный LM Studio / Ollama / llama.cpp, OpenAI, DeepSeek и другие. Для OpenRouter есть свой переводчик.',
   'openai_compatible.api_url': 'Адрес API',
   'openai_compatible.api_url.help':
-      'Адрес, оканчивающийся на /v1, например http://localhost:11434/v1 (Ollama) или https://api.deepseek.com/v1.',
+      'Базовый адрес из документации сервера, например http://localhost:11434/v1 для Ollama.',
   'openai_compatible.model': 'Модель',
+  'openai_compatible.model.help':
+      'Укажите идентификатор модели или оставьте поле пустым для модели по умолчанию на сервере.',
   'openai_compatible.api_key': 'Ключ API',
   'openai_compatible.api_key.help': 'Для большинства локальных серверов не нужен.',
   'openai_compatible.pages_per_request': 'Страниц в одном запросе',
@@ -212,8 +213,20 @@ const _ru = <String, String>{
       'могут отвечать долго.',
 };
 
+const _sharedRequestFieldsRu = {
+  'chat_path': 'Путь чата',
+  'chat_path.help': 'Добавляется к адресу API. Пустое поле означает chat/completions.',
+  'models_path': 'Путь списка моделей',
+  'models_path.help': 'Добавляется к адресу API. Пустое поле означает models.',
+  'request_options': 'Дополнительные поля запроса (JSON)',
+  'request_options.help': 'Объект JSON, например {"top_p": 0.9}. Значение null убирает поле. Поля model, messages и stream формирует программа.',
+};
+
 String? _lookup(BuildContext context, String key) =>
     Localizations.localeOf(context).languageCode == 'ru' ? _ru[key] : null;
+
+String? _requestField(BuildContext context, String key) =>
+    Localizations.localeOf(context).languageCode == 'ru' ? _sharedRequestFieldsRu[key] : null;
 
 String pluginName(BuildContext context, PluginInfo info) => _lookup(context, info.id) ?? info.displayName;
 
@@ -221,10 +234,10 @@ String pluginDescription(BuildContext context, PluginInfo info) =>
     _lookup(context, '${info.id}.desc') ?? info.description;
 
 String fieldLabel(BuildContext context, PluginInfo info, SettingField field) =>
-    _lookup(context, '${info.id}.${field.key}') ?? field.label;
+    _lookup(context, '${info.id}.${field.key}') ?? _requestField(context, field.key) ?? field.label;
 
 String fieldHelp(BuildContext context, PluginInfo info, SettingField field) =>
-    _lookup(context, '${info.id}.${field.key}.help') ?? field.help;
+    _lookup(context, '${info.id}.${field.key}.help') ?? _requestField(context, '${field.key}.help') ?? field.help;
 
 String fieldInfo(BuildContext context, PluginInfo info, SettingField field) =>
     _lookup(context, '${info.id}.${field.key}.info') ?? field.info;

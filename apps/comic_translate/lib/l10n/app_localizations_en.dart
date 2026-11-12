@@ -10,6 +10,699 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get chatContinueReply => 'Continue from the interruption';
+
+  @override
+  String get chatContinuePrompt =>
+      'Continue from where the reply was interrupted without repeating the text already received.';
+
+  @override
+  String get chatContinueHelp =>
+      'Includes the incomplete reply in the new request. Regular messages skip that fragment.';
+
+  @override
+  String get chatResendAttachments => 'Resend attachments from chat history';
+
+  @override
+  String get chatResendAttachmentsNotice =>
+      'This request also includes attachments from earlier messages.';
+
+  @override
+  String get trErrInterrupted =>
+      'the response stream closed without a completion signal';
+
+  @override
+  String get chatIncompleteResponse => 'Incomplete response';
+
+  @override
+  String get translatorStream => 'Stream response (SSE)';
+
+  @override
+  String get translatorStreamHelp =>
+      'The test chat shows text as it arrives if the server supports OpenAI Chat Completions streaming.';
+
+  @override
+  String get translatorStreamTemplateHelp =>
+      'Configure streaming in the template when a full Chat and translation HTTP request is active.';
+
+  @override
+  String get httpEditorFormatsHelp =>
+      'For SSE chat responses, set format to sse and text to the path of a text chunk. For multipart, use Content-Type: multipart/form-data and put files in the file field of the JSON body.';
+
+  @override
+  String get httpEditorCheckResponse => 'Check pasted SSE';
+
+  @override
+  String get httpEditorSampleSse =>
+      'Paste the SSE events, including blank lines';
+
+  @override
+  String get httpEditorAttachFile => 'Attach file';
+
+  @override
+  String get httpEditorRemoveFile => 'Remove file';
+
+  @override
+  String get httpEditorFileTooLarge => 'The file exceeds 10 MB.';
+
+  @override
+  String get httpEditorFileNeedsTemplate =>
+      'An attachment requires a multipart template with a file field set to files.';
+
+  @override
+  String httpEditorFileConfirm(String name) {
+    return 'The test sends the file $name.';
+  }
+
+  @override
+  String get translatorTestFileConfirm => 'Send attachments?';
+
+  @override
+  String translatorTestFileNetwork(String destination) {
+    return 'The attachments and conversation will be sent to $destination.';
+  }
+
+  @override
+  String get modelPromptPreset => 'Prompt preset';
+
+  @override
+  String get modelPromptPresetStandard => 'Built-in prompt';
+
+  @override
+  String get modelPromptPresetAdd => 'Create preset';
+
+  @override
+  String get modelPromptPresetEdit => 'Edit preset';
+
+  @override
+  String get modelPromptPresetNameRequired => 'Enter a name.';
+
+  @override
+  String get modelPromptPresetNameTaken => 'This name is already used.';
+
+  @override
+  String get modelPromptPresetTextRequired => 'Enter the instructions.';
+
+  @override
+  String get modelPromptPresetHelp =>
+      'Selecting a preset copies its text into the editor. Save to apply the text and keep changes to the preset list.';
+
+  @override
+  String get ownServerAiGuide => 'Setup prompt for an AI assistant';
+
+  @override
+  String get ownServerAiGuideCopy => 'Copy the full prompt';
+
+  @override
+  String get chatsWorkspace => 'Chats';
+
+  @override
+  String get chatUntitled => 'Untitled chat';
+
+  @override
+  String get chatEmpty => 'Write a message or attach an image.';
+
+  @override
+  String get chatNew => 'New chat';
+
+  @override
+  String get chatNewFolder => 'New folder';
+
+  @override
+  String get chatThreadTitle => 'Chat title';
+
+  @override
+  String get chatConnection => 'Connection';
+
+  @override
+  String get chatCreate => 'Create';
+
+  @override
+  String get chatFolderName => 'Folder name';
+
+  @override
+  String get chatPasswordHelp =>
+      'Chats and images in this folder will be encrypted. Keep the password. It cannot be recovered.';
+
+  @override
+  String get chatPassword => 'Password';
+
+  @override
+  String get chatRepeatPassword => 'Repeat password';
+
+  @override
+  String get chatPasswordMismatch => 'Passwords differ';
+
+  @override
+  String get chatRequired => 'Enter a value';
+
+  @override
+  String get chatUnlock => 'Unlock folder';
+
+  @override
+  String get chatLock => 'Lock folder now';
+
+  @override
+  String get chatProtect => 'Set folder password';
+
+  @override
+  String get chatUnlockError =>
+      'Could not unlock the folder. Check the password.';
+
+  @override
+  String get chatStorageError =>
+      'Could not read or save the chat library. Check the folder and close any other instance using it.';
+
+  @override
+  String get chatStorageSettings => 'Chat storage settings';
+
+  @override
+  String get chatStorageHelp =>
+      'Choose where to keep the chat library. Changing the location opens the library in the selected folder. The previous library stays in its folder.';
+
+  @override
+  String get chatChooseLocation => 'Choose folder';
+
+  @override
+  String get chatRelock => 'Ask for the folder password again';
+
+  @override
+  String get chatRelockRestart => 'After restarting the app';
+
+  @override
+  String get chatRelock30 => '30 minutes after unlocking';
+
+  @override
+  String get chatRelock60 => '60 minutes after unlocking';
+
+  @override
+  String get chatRename => 'Rename';
+
+  @override
+  String get chatPin => 'Pin chat';
+
+  @override
+  String get chatUnpin => 'Unpin chat';
+
+  @override
+  String get chatMove => 'Move to folder';
+
+  @override
+  String get chatMovePrivacy =>
+      'After moving, the chat uses the protection settings of its destination.';
+
+  @override
+  String get chatDelete => 'Delete chat';
+
+  @override
+  String get chatNoFolder => 'Outside folders';
+
+  @override
+  String get chatUnlockToMove =>
+      'Unlock a protected folder before moving a chat into it.';
+
+  @override
+  String get chatAll => 'All chats';
+
+  @override
+  String get chatChoose => 'Choose or create a chat';
+
+  @override
+  String get chatTitleSearch => 'Search chat titles';
+
+  @override
+  String get chatMessageSearch => 'Search messages in this chat';
+
+  @override
+  String get chatNoMessagesFound => 'No matching messages';
+
+  @override
+  String get chatConnectionMissing => 'The chat\'s connection is unavailable.';
+
+  @override
+  String get chatOwnServerOriginal => 'Own server · Original connection';
+
+  @override
+  String chatOwnServerNamed(String name) {
+    return 'Own server · $name';
+  }
+
+  @override
+  String get httpEditorOffline => 'Check pasted JSON';
+
+  @override
+  String get httpEditorStatus => 'HTTP status of the sample';
+
+  @override
+  String get httpEditorStatusError => 'Enter a status code from 100 to 599.';
+
+  @override
+  String get httpEditorSampleJson => 'Paste the response JSON';
+
+  @override
+  String get checkSample => 'Check sample';
+
+  @override
+  String get fillPromptSample => 'Use sample';
+
+  @override
+  String get requestTemplateImport => 'Import JSON';
+
+  @override
+  String get requestTemplateExport => 'Export JSON';
+
+  @override
+  String get requestTemplateImported => 'Template imported and selected.';
+
+  @override
+  String get requestTemplateTransferError =>
+      'Could not transfer the template. Check the JSON format, paths and credentials.';
+
+  @override
+  String get openRouterTemplateHelp =>
+      'Applies to OpenRouter translation, test chat and network OCR. Select “Profile settings” to restore the built-in requests.';
+
+  @override
+  String get modelPromptEditor => 'Prompt editor';
+
+  @override
+  String get modelPromptInstructions => 'Custom instructions';
+
+  @override
+  String get modelPromptHelp =>
+      'These instructions are added to the built-in prompt. Leave them empty to use the built-in prompt alone. Keep the response format so the app can match the text to its frames.';
+
+  @override
+  String get modelPromptExample => 'Expected response for two sample frames';
+
+  @override
+  String get modelPromptReply => 'Paste a reply to check its format locally';
+
+  @override
+  String get modelPromptValid => 'Both sample frames matched.';
+
+  @override
+  String get modelPromptInvalidJson => 'The reply contains malformed JSON.';
+
+  @override
+  String modelPromptMissing(String frames) {
+    return 'Missing or unusable response for $frames.';
+  }
+
+  @override
+  String get modelViaChat => 'External chat';
+
+  @override
+  String get modelNotSelected => 'model not selected';
+
+  @override
+  String modelForOcr(String model) {
+    return 'OCR · $model';
+  }
+
+  @override
+  String modelForTranslation(String model) {
+    return 'Translation · $model';
+  }
+
+  @override
+  String modelForCombined(String model) {
+    return 'OCR · $model (with translation)';
+  }
+
+  @override
+  String get translationReview => 'Review translation';
+
+  @override
+  String get translationReviewScope => 'Pages without a chapter';
+
+  @override
+  String get translationReviewEmpty => 'No flagged omissions';
+
+  @override
+  String get translationReviewNext => 'Next';
+
+  @override
+  String get translationReviewRetry => 'Translate omissions';
+
+  @override
+  String get ownServerProfile => 'Server profile';
+
+  @override
+  String get requestTemplate => 'Request template';
+
+  @override
+  String get httpEditorChat => 'Chat and translation';
+
+  @override
+  String get httpEditorModels => 'Model list';
+
+  @override
+  String get httpEditorOperations => 'Full HTTP requests';
+
+  @override
+  String get httpEditorLegacy => 'Compatibility settings';
+
+  @override
+  String get httpEditorBalance => 'Balance';
+
+  @override
+  String get httpEditorRequest => 'HTTP request';
+
+  @override
+  String get httpEditorResponse => 'Response rules (JSON)';
+
+  @override
+  String get httpEditorSampleLabel => 'Test message';
+
+  @override
+  String get httpEditorSampleMessage => 'Reply with OK.';
+
+  @override
+  String get httpEditorHelp =>
+      'The path is relative to the profile’s base address. Leave a blank line between headers and the JSON body. Use the variables shown in the example to insert the active key or chat data.';
+
+  @override
+  String get httpEditorTips =>
+      'By default, HTTP 2xx is accepted. Set statuses to a list of specific codes. On 401, check the authorization header. On 404, check the path. If HTTP succeeds but extraction fails, compare the response rules to the returned JSON.';
+
+  @override
+  String get httpEditorPreview => 'Preview';
+
+  @override
+  String get httpEditorSend => 'Send test';
+
+  @override
+  String httpEditorConfirm(String request) {
+    return 'Send $request using this profile? The test sends a real request and may use tokens or change data on the server.';
+  }
+
+  @override
+  String get httpEditorExtracted => 'Extracted result';
+
+  @override
+  String get httpEditorResult => 'HTTP test result';
+
+  @override
+  String get httpEditorCopy => 'Copy report';
+
+  @override
+  String get httpEditorApply => 'Use this request';
+
+  @override
+  String get requestTemplateNone => 'Profile settings';
+
+  @override
+  String get requestTemplateHelp =>
+      'Blank template fields use the profile settings. Edits apply to every connection using this template.';
+
+  @override
+  String get requestTemplateAdd => 'Create request template';
+
+  @override
+  String get requestTemplateEdit => 'Edit request template';
+
+  @override
+  String get requestTemplateDelete => 'Delete request template';
+
+  @override
+  String requestTemplateDeleteHelp(String name) {
+    return 'Delete “$name”? Connections using it will return to their own request settings.';
+  }
+
+  @override
+  String get requestTemplateEditorHelp =>
+      'A template can be shared by several profiles. Enter the address, model and API key in each profile. Blank fields inherit profile settings. The grey examples are hints.';
+
+  @override
+  String get requestTemplateName => 'Template name';
+
+  @override
+  String get requestTemplateNameRequired => 'Enter a template name.';
+
+  @override
+  String get requestTemplateNameTaken =>
+      'A template with this name already exists.';
+
+  @override
+  String get requestTemplateChatPath => 'Chat path';
+
+  @override
+  String get requestTemplateModelsPath => 'Model list path';
+
+  @override
+  String get requestTemplateOptions => 'Additional chat fields (JSON)';
+
+  @override
+  String get requestTemplateStatusPath => 'Key details path';
+
+  @override
+  String get requestTemplateStatusPathHelp =>
+      'Optional GET request. The program uses the selected profile’s API key.';
+
+  @override
+  String get requestTemplateStatusFields =>
+      'Key details response fields (JSON)';
+
+  @override
+  String get requestTemplatePathError =>
+      'Enter paths relative to the profile’s API address, without a host or query parameters.';
+
+  @override
+  String get requestTemplateOptionsError =>
+      'Enter a JSON object without model, messages or stream.';
+
+  @override
+  String get requestTemplateCredentialsError =>
+      'Keep authorization fields and API keys in the profile’s API key field.';
+
+  @override
+  String get requestTemplateStatusError =>
+      'For key details, provide both a path and a JSON object that maps display labels to response fields.';
+
+  @override
+  String requestTemplateStatusConsent(String host) {
+    return 'Send the saved API key to $host to request its details.';
+  }
+
+  @override
+  String get ownServerOriginal => 'Original connection';
+
+  @override
+  String get ownServerKeyActive => 'Active API key';
+
+  @override
+  String get ownServerKeyFirst => 'First key';
+
+  @override
+  String ownServerKeyNumber(int number) {
+    return 'Key $number';
+  }
+
+  @override
+  String get ownServerKeyNone => 'Without a key';
+
+  @override
+  String get ownServerKeyAdd => 'Add API key';
+
+  @override
+  String get ownServerKeyEditNote => 'Edit key note';
+
+  @override
+  String get ownServerKeyValue => 'New API key';
+
+  @override
+  String get ownServerKeyNote => 'Key note';
+
+  @override
+  String get ownServerKeyNoteHelp =>
+      'Optional. A label to help identify this key.';
+
+  @override
+  String get ownServerKeyRequired => 'Enter an API key.';
+
+  @override
+  String get ownServerKeyNoteSecret =>
+      'Enter the key in the API key field. Use the note to describe it.';
+
+  @override
+  String get ownServerKeySaveFailed => 'Could not save the key or note.';
+
+  @override
+  String get ownServerKeyRemoveBody =>
+      'The selected key and its note will be removed from this app. You can choose another saved key manually.';
+
+  @override
+  String get ownServerKeysSecureHelp =>
+      'Key values are stored in Windows secure storage. Requests use the key selected below.';
+
+  @override
+  String get ownServerLoadModels => 'Load models';
+
+  @override
+  String get ownServerModelsNeedUrl =>
+      'Enter a valid API base URL and relative models path in the settings.';
+
+  @override
+  String ownServerModelsHelp(String host) {
+    return 'Load the model list from $host using the saved API key, if present.';
+  }
+
+  @override
+  String get ownServerSetupGuideTitle => 'How to connect your own server';
+
+  @override
+  String get ownServerCopyGuide => 'Copy instructions';
+
+  @override
+  String get ownServerGuideCopied => 'Instructions copied';
+
+  @override
+  String get ownServerSetupGuide =>
+      '1. In Settings → Translator → Own server, add a profile with + and name it.\n2. Enter the base URL from your provider’s documentation. The app appends /chat/completions and /models to it. Include /v1 only if it is part of that base URL. For example, RelayModels documents https://api.relaymodels.com/v1. Use HTTP for localhost or your LAN only if the server calls for it.\n3. Save the API key in the API key field. Local servers can often work without a key. Press Load models to pick a model ID, or type it. Leave Model blank if your server can pick its own default.\n4. Send a short message in Test chat. Open Logs to see the request, HTTP status and response. Review any message text before sharing the logs. Share the service documentation and the redacted report when asking for help. Keep your key in the API key field.\n5. In More settings, you can change the relative endpoint paths and add or omit JSON fields. The expected response uses choices[].message.content for chat and data[].id for the model list.';
+
+  @override
+  String get ownServerOcrConnection => 'Server connection for recognition';
+
+  @override
+  String get ownServerOcrSearch => 'Search by name or address';
+
+  @override
+  String get ownServerOcrManual => 'Separate address (previous settings)';
+
+  @override
+  String get ownServerOcrMissing =>
+      'Profile deleted. Select another connection.';
+
+  @override
+  String get ownServerOcrConnectionHelp =>
+      'Profiles are shared with Translator. Choose the recognition connection and vision model here.';
+
+  @override
+  String get ownServerOcrSharedSettings => 'Shared connection settings';
+
+  @override
+  String get ownServerOcrSharedSettingsHelp =>
+      'Changes to the address, active key or template also apply in Translator when it uses this profile.';
+
+  @override
+  String get revokeNetworkInfo =>
+      'Remove this app’s saved permission for the server. The app will ask again before sending data. The API key stays saved.';
+
+  @override
+  String get translatorTestDiagnostics => 'Logs';
+
+  @override
+  String get translatorTestDiagnosticsHelp =>
+      'Latest attempt in this chat. Authentication headers and image data are hidden. Check the message text before sharing.';
+
+  @override
+  String get translatorTestDiagnosticsEmpty =>
+      'Send a message to see the request and the server response.';
+
+  @override
+  String get translatorTestRequest => 'Request';
+
+  @override
+  String get translatorTestResponse => 'Response';
+
+  @override
+  String get translatorTestCopyDiagnostics => 'Copy logs';
+
+  @override
+  String ownServerModelsDialogHelp(String host) {
+    return 'The list comes from $host. The saved key is used if present. Some servers report model IDs only, without capabilities or prices.';
+  }
+
+  @override
+  String ownServerModelsConsent(String host) {
+    return 'Send the saved API key to $host to load its model list?';
+  }
+
+  @override
+  String get ownServerAdd => 'Add a connection';
+
+  @override
+  String get ownServerRename => 'Rename connection';
+
+  @override
+  String get ownServerName => 'Connection name';
+
+  @override
+  String get ownServerNameTaken =>
+      'A connection with this name already exists.';
+
+  @override
+  String get ownServerSearch => 'Search by name, address or model';
+
+  @override
+  String get ownServerSortAdded => 'By addition order';
+
+  @override
+  String get ownServerSortName => 'By name';
+
+  @override
+  String get ownServerNoMatches => 'No matching connections';
+
+  @override
+  String get ownServerRemoveTitle => 'Delete this connection?';
+
+  @override
+  String get ownServerRemoveBody =>
+      'The profile, its settings and all its saved keys and notes will be deleted.';
+
+  @override
+  String get translatorTestChat => 'Test chat';
+
+  @override
+  String get translatorTestHelp =>
+      'Send a short message to check the connection. The provider may charge for the request.';
+
+  @override
+  String get translatorTestMessage => 'Message';
+
+  @override
+  String get translatorTestSend => 'Send';
+
+  @override
+  String get translatorTestAttachImage => 'Attach image (Ctrl+V to paste)';
+
+  @override
+  String get translatorTestPastedImage => 'Pasted image';
+
+  @override
+  String get translatorTestRemoveImage => 'Remove attachment';
+
+  @override
+  String get translatorTestImageHint =>
+      'Leave the message empty to transcribe the image.';
+
+  @override
+  String get translatorTestOcrPrompt =>
+      'Transcribe the text in the image exactly as written.';
+
+  @override
+  String get translatorTestInvalidImage =>
+      'Could not read the image. Use PNG, JPEG or WebP.';
+
+  @override
+  String get translatorTestImageTooLarge =>
+      'The image exceeds 10 MB or 24 megapixels.';
+
+  @override
+  String get translatorTestImageConfirm => 'Send the image?';
+
+  @override
+  String translatorTestImageNetwork(String destination) {
+    return 'The images and conversation will be sent to $destination.';
+  }
+
+  @override
+  String translatorTestNetwork(String host, String where) {
+    return 'The chat sends the conversation to $host ($where).';
+  }
+
+  @override
   String get appTitle => 'Comic Translate Screen';
 
   @override
@@ -353,7 +1046,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String missingKeyBodyReading(String name, String host) {
-    return '\"$name\" sends the pictures of the bubbles to $host, which needs an API key. It is the key of the translator of the same service: enter it in Settings → Recognition and cleaning or Settings → Translator (it is stored in Windows secure storage), or choose a local recognition.';
+    return '\"$name\" sends pictures of the bubbles to $host, which needs an API key. Check the selected connection in Settings → Recognition or save the key in Settings → Translator. You can also choose local recognition.';
   }
 
   @override
@@ -381,7 +1074,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trErrConfig =>
-      'the translator is not set up: enter the server address and model in Settings';
+      'the connection is not set up: check its address, model and request settings';
 
   @override
   String get trErrAuth =>
@@ -422,6 +1115,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get needsArchiveTool =>
       'CBR, RAR, CB7 and 7Z need 7-Zip (7-zip.org) or WinRAR installed';
+
+  @override
+  String get archivePassword =>
+      'the archive is protected by a password: unpack it with 7-Zip or WinRAR and open the folder';
 
   @override
   String exportFailed(String error) {
@@ -517,7 +1214,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTranslator => 'Translator';
 
   @override
-  String get settingsTools => 'Recognition and cleaning';
+  String get settingsOcr => 'Recognition';
+
+  @override
+  String get settingsCleaning => 'Cleaning';
 
   @override
   String get settingsText => 'Text';
@@ -999,7 +1699,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get stepReadAndTranslateHelp =>
-      'Reads every box again, then translates it.';
+      'Reads every box again with the selected OCR engine, then passes the text to the selected translator.';
 
   @override
   String get stepReadAndTranslateTogether =>
@@ -1975,7 +2675,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelsTextPrepHelp =>
-      'Neural networks that enlarge small text before recognition. Only the one chosen in \"Recognition and cleaning → Preparing small text\" is needed.';
+      'Neural networks that enlarge small text before recognition. Only the one chosen in \"Recognition → Preparing small text\" is needed.';
 
   @override
   String modelsNeeded(String language) {
@@ -2002,7 +2702,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get modelsLevelInfo =>
-      'Everything your settings need to work, and the models of the chosen level: recognition, preparation of small text and cleaning, for comics and for screens. The list and the total size come before the download. Your settings stay as they are: the levels are chosen in \"Recognition and cleaning\".';
+      'Includes the models for the selected levels of recognition, small text preparation and cleaning, for comics and screens. The list and total size appear before the download. Set the levels in the Recognition and Cleaning sections.';
 
   @override
   String get modelsVerifyAll => 'Check all';
@@ -2494,7 +3194,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tinyTextTryHigh(String px) {
-    return 'Very small text (lines of about $px px): mistakes are likely. Turn on the High level in \"Settings → Recognition and cleaning → Preparing small text\" and recognize again, or take a larger screenshot.';
+    return 'Very small text (lines of about $px px): mistakes are likely. Turn on the High level in \"Settings → Recognition → Preparing small text\" and recognize again, or take a larger screenshot.';
   }
 
   @override
@@ -3185,7 +3885,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatSettingsHelp =>
-      'The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Recognition and cleaning.';
+      'The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Recognition.';
 
   @override
   String get chatTogether => 'Read and translate in one message';
@@ -3754,5 +4454,46 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String exportSavedRemoved(String path, String count) {
     return 'Saved: $path. Taken out of the project: $count (Ctrl+Z brings them back).';
+  }
+
+  @override
+  String get exportNothingWritten =>
+      'Nothing was saved: the pages chosen have no picture of the kind asked for (not cleaned yet, say)';
+
+  @override
+  String exportSavedLeftOut(String path, String count) {
+    return 'Saved: $path. Left out, with no picture of the kind asked for: $count';
+  }
+
+  @override
+  String exportSavedRemovedLeft(String path, String removed, String left) {
+    return 'Saved: $path. Taken out of the project: $removed (Ctrl+Z brings them back). Left in it, with no picture of the kind asked for: $left';
+  }
+
+  @override
+  String get findInside => 'Find blocks inside this box (columns, paragraphs)';
+
+  @override
+  String get findInsideWhich => 'How to find blocks inside the box';
+
+  @override
+  String get findInsideAuto => 'Auto: columns and paragraphs';
+
+  @override
+  String get findInsideColumns => 'Columns only';
+
+  @override
+  String get findInsideParagraphs => 'Paragraphs only';
+
+  @override
+  String get findInsideHint =>
+      'You can stretch the box first: text it missed is found too. If the box was recognized, the new blocks are recognized at once.';
+
+  @override
+  String get findInsideNone => 'There is one block inside: nothing to split.';
+
+  @override
+  String findInsideDone(String count) {
+    return 'Blocks found: $count. Undo with Ctrl+Z.';
   }
 }

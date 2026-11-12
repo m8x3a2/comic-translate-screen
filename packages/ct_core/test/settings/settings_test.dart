@@ -11,6 +11,97 @@ void main() {
   setUp(() => tmp = Directory.systemTemp.createTempSync('ct_settings_'));
   tearDown(() => tmp.deleteSync(recursive: true));
 
+  test('named server profiles round-trip separately from the original connection', () async {
+    final store = SettingsStore(File(p.join(tmp.path, 'settings.json')));
+    final s = AppSettings(
+      ownServerNames: {'a': 'Personal', 'b': 'Work'},
+      ownServerProfile: 'b',
+      ownServersByName: true,
+      plugins: {
+        'openai_compatible': {'model': 'original'},
+        'openai_compatible_a': {'model': 'first'},
+        'openai_compatible_b': {'model': 'second'},
+        'openrouter': {'model': 'router'},
+      },
+    );
+    await store.save(s);
+    final reopened = await store.load();
+    expect(reopened.ownServerNames, s.ownServerNames);
+    expect(reopened.ownServersByName, isTrue);
+    expect(reopened.pluginValues('openai_compatible')['model'], 'second');
+    expect(reopened.pluginStorageId('openai_compatible'), 'openai_compatible_b');
+    expect(reopened.pluginValues('openrouter')['model'], 'router');
+    reopened.ownServerProfile = 'a';
+    expect(reopened.pluginValues('openai_compatible')['model'], 'first');
+    reopened.ownServerProfile = '';
+    expect(reopened.pluginValues('openai_compatible')['model'], 'original');
+  });
+
+  test('shared request templates keep profile fields and can be removed from both profiles', () async {
+    final store = SettingsStore(File(p.join(tmp.path, 'settings.json')));
+    final s = AppSettings(
+      ownServerNames: {'a': 'Personal', 'b': 'Work'},
+      ownServerProfile: 'a',
+      ownServerOcrProfile: 'b',
+      requestTemplates: {
+        'shared': RequestTemplate(
+          name: 'Gateway',
+          chatPath: 'shared/chat',
+          keyStatusPath: 'credits',
+          keyStatusFields: {'Balance': 'data.balance'},
+        ),
+      },
+      plugins: {
+        for (final profile in ['a', 'b'])
+          AppSettings.ownServerStorageId(profile): {
+            'api_url': 'https://$profile.example/v1',
+            'model': 'model-$profile',
+            'chat_path': '$profile/chat',
+            'models_path': '$profile/models',
+            RequestTemplate.selectionKey: 'shared',
+          },
+        'openai_compatible_ocr': {'model': 'vision'},
+      },
+    );
+    await store.save(s);
+    final reopened = await store.load();
+    expect(reopened.requestTemplates['shared']?.name, 'Gateway');
+    for (final profile in ['a', 'b']) {
+      reopened.ownServerProfile = profile;
+      final config = reopened.pluginValues('openai_compatible');
+      expect(config['api_url'], 'https://$profile.example/v1');
+      expect(config['model'], 'model-$profile');
+      expect(config['chat_path'], 'shared/chat');
+      expect(config['models_path'], '$profile/models');
+      expect(config[RequestTemplate.keyStatusPathKey], 'credits');
+    }
+    expect(reopened.pluginValues('openai_compatible_ocr')['chat_path'], 'shared/chat');
+    expect(reopened.pluginValues('openai_compatible_ocr')['model'], 'vision');
+    reopened.requestTemplates['shared'] = RequestTemplate(name: 'Gateway v2', chatPath: 'v2/chat');
+    expect(reopened.pluginValues('openai_compatible')['chat_path'], 'v2/chat');
+    reopened.removeRequestTemplate('shared');
+    expect(reopened.plugins.values.any((values) => values.containsKey(RequestTemplate.selectionKey)), isFalse);
+    expect(reopened.pluginValues('openai_compatible')['chat_path'], 'b/chat');
+    expect(reopened.pluginValues('openai_compatible_ocr')['chat_path'], 'b/chat');
+  });
+
+  test('own server key slots persist without changing the original, other profiles or the OpenRouter key', () {
+    const apiKey = SecretSetting(key: 'api_key', label: 'API key');
+    const legacyOcrKey = SecretSetting(key: 'api_key', label: 'API key', sharedWith: 'openai_compatible');
+    final s = AppSettings(ownServerNames: {'a': 'A', 'b': 'B'}, ownServerProfile: 'a', ownServerOcrProfile: 'b');
+    s.setOwnServerKeys('openai_compatible_a', OwnServerKeys(activeId: '123', notes: {'123': 'Work'}));
+    s.setOwnServerKeys('openai_compatible_b', OwnServerKeys(activeId: null, notes: {'456': 'Backup'}));
+    final restored = AppSettings.fromJson(s.toJson());
+    expect(restored.pluginSettingSecretKey('openai_compatible', apiKey), 'plugin.openai_compatible_a.api_key.123');
+    expect(restored.pluginSettingSecretKey('openai_compatible_ocr', legacyOcrKey), isNull);
+    expect(restored.pluginSettingSecretKey('openrouter', apiKey), 'plugin.openrouter.api_key');
+    expect(restored.keysForOwnServer('openai_compatible_b').notes, {'456': 'Backup'});
+    restored.ownServerOcrProfile = null;
+    expect(restored.pluginSettingSecretKey('openai_compatible_ocr', legacyOcrKey), 'plugin.openai_compatible.api_key');
+    restored.ownServerProfile = '';
+    expect(restored.pluginSettingSecretKey('openai_compatible', apiKey), 'plugin.openai_compatible.api_key');
+  });
+
   test('defaults follow the original application', () {
     final s = AppSettings();
     expect(s.inpainter, 'lama');

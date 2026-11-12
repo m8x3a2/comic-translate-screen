@@ -94,8 +94,9 @@ void main() {
     expect(container.read(workspaceProvider).webtoon, isTrue);
     expect(find.byType(WebtoonStrip), findsOneWidget);
     // Fitted to the width: the first page and a half show; the pages within
-    // a screen below are ready, those further down are not built.
-    expect(find.byType(PageCanvas), findsNWidgets(4));
+    // a screen below are ready, those further down are not built (the line
+    // of the chosen models above the page leaves room for three).
+    expect(find.byType(PageCanvas), findsNWidgets(3));
     expect(container.read(workspaceProvider).current, 0);
 
     final strip = tester.getCenter(find.byType(WebtoonStrip));

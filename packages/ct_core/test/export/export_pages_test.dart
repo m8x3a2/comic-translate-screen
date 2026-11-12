@@ -55,6 +55,50 @@ void main() {
     expect(filesIn(inOrder.outputs.single), ['001.png', '002.png']);
   });
 
+  // Pages were taken out of the project after export even when nothing of
+  // them was written (cleaned pages asked for, a page not cleaned).
+  test('the pages written whole are told by id; a page without the picture asked for is not', () async {
+    final cleaned = ExportPage(
+      name: 'a',
+      id: '7',
+      translatedImage: await picture('a_t.png', 10),
+      cleanImage: await picture('a_c.png', 200),
+      recognized: {'block_0': 'A'},
+    );
+    final notCleaned = ExportPage(
+      name: 'b',
+      id: '8',
+      translatedImage: await picture('b_t.png', 20),
+      recognized: {'block_0': 'B'},
+    );
+    final pages = [cleaned, notCleaned];
+    for (final container in [ExportContainer.folder, ExportContainer.cbz, ExportContainer.pdf]) {
+      final out = p.join(
+        dir.path,
+        'clean_${container.name}${container == ExportContainer.folder ? '' : container.extension}',
+      );
+      final r = await exportPages(pages, ExportOptions(container: container, translated: false, cleaned: true), out);
+      expect(r.complete, {'7'}, reason: container.name);
+    }
+    // Its text is written, its cleaned picture is not: not whole.
+    final both = await exportPages(
+      pages,
+      const ExportOptions(translated: false, cleaned: true, recognizedText: true),
+      p.join(dir.path, 'clean_texts'),
+    );
+    expect(both.pages, 2);
+    expect(both.complete, {'7'});
+    // Texts only: any text written.
+    final texts = await exportPages(
+      pages,
+      const ExportOptions(translated: false, recognizedText: true),
+      p.join(dir.path, 'texts'),
+    );
+    expect(texts.complete, {'7', '8'});
+    final translated = await exportPages(pages, const ExportOptions(), p.join(dir.path, 'translated'));
+    expect(translated.complete, {'7', '8'});
+  });
+
   test('names from a template: text and a number from the chosen start', () async {
     final pages = await chapter('', ['page10', 'page2', 'x']);
     final out = p.join(dir.path, 'named');

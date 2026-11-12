@@ -42,7 +42,7 @@ class _ModelCatalogDialog extends ConsumerStatefulWidget {
 }
 
 class _ModelCatalogDialogState extends ConsumerState<_ModelCatalogDialog> {
-  late List<CatalogModel>? _models = _fetched[_hostKey];
+  late List<CatalogModel>? _models = widget.query.usesProfileCredentials ? null : _fetched[_hostKey];
   String? _error;
   var _loading = false;
   final _search = TextEditingController();
@@ -73,14 +73,19 @@ class _ModelCatalogDialogState extends ConsumerState<_ModelCatalogDialog> {
     log.info('model_catalog_request', {'host': widget.query.host});
     try {
       final models = await widget.query.run();
-      _fetched[_hostKey] = models;
+      if (!widget.query.usesProfileCredentials) _fetched[_hostKey] = models;
       log.info('model_catalog', {'models': models.length});
       if (mounted) setState(() => _models = models);
     } on TranslationException catch (e) {
       log.warn('model_catalog_failed', {'kind': e.kind.name, 'error': e.message});
       if (!mounted) return;
       final l = context.l10n;
-      setState(() => _error = l.modelsFailed(translationErrorLabel(l, e.kind)));
+      final label = translationErrorLabel(l, e.kind);
+      final detail = ref.read(servicesProvider).redactor.redact(e.message);
+      setState(() => _error = l.modelsFailed(l.withDetails(label, detail)));
+    } catch (e, stack) {
+      log.error('model_catalog_failed', e, stack);
+      if (mounted) setState(() => _error = context.l10n.modelsFailed(context.l10n.trErrOther));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -136,7 +141,12 @@ class _ModelCatalogDialogState extends ConsumerState<_ModelCatalogDialog> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(l.modelsHelp(widget.query.host), style: theme.textTheme.bodySmall),
+            Text(
+              widget.query.usesProfileCredentials
+                  ? l.ownServerModelsDialogHelp(widget.query.host)
+                  : l.modelsHelp(widget.query.host),
+              style: theme.textTheme.bodySmall,
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -208,13 +218,18 @@ class _ModelCatalogDialogState extends ConsumerState<_ModelCatalogDialog> {
                       itemBuilder: (context, i) {
                         final m = shown[i];
                         final current = m.id == widget.current;
+                        final metadata = details(m);
+                        final subtitle = [
+                          if (m.name.isNotEmpty && m.name != m.id) m.id,
+                          if (metadata.isNotEmpty) metadata,
+                        ];
                         return ListTile(
                           dense: true,
                           selected: current,
                           leading: Icon(current ? Icons.check_circle : Icons.smart_toy_outlined),
                           title: Text(m.name.isEmpty ? m.id : m.name),
-                          subtitle: Text('${m.id}\n${details(m)}'),
-                          isThreeLine: true,
+                          subtitle: subtitle.isEmpty ? null : Text(subtitle.join('\n')),
+                          isThreeLine: subtitle.length > 1,
                           onTap: () => Navigator.pop(context, m.id),
                         );
                       },

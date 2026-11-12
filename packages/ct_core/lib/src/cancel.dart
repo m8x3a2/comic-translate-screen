@@ -8,6 +8,9 @@ class CancelToken {
 
   bool get isCancelled => _cancelled;
 
+  /// How many listeners wait for a cancel (for the tests).
+  int get listenerCount => _listeners.length;
+
   void cancel() {
     if (_cancelled) return;
     _cancelled = true;
@@ -46,11 +49,18 @@ class CancelToken {
     final timer = Timer(duration, () {
       if (!done.isCompleted) done.complete();
     });
-    onCancel(() {
+    void stop() {
       timer.cancel();
       if (!done.isCompleted) done.complete();
-    });
-    await done.future;
+    }
+
+    onCancel(stop);
+    try {
+      await done.future;
+    } finally {
+      // Waited out: the listener goes (a long run waits many times).
+      _listeners.remove(stop);
+    }
     throwIfCancelled();
   }
 
@@ -61,6 +71,11 @@ class CancelToken {
 class _NeverCancelled extends CancelToken {
   @override
   void cancel() {}
+
+  /// Never called: not kept (this token lives as long as the program, and
+  /// what a listener holds — a process, a connection — would stay with it).
+  @override
+  void onCancel(void Function() listener) {}
 }
 
 class CancelledException implements Exception {

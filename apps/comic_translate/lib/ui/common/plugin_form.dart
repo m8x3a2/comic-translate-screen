@@ -8,37 +8,45 @@ import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../state/app_state.dart';
+import '../settings/own_server_key_field.dart';
 import 'info_hint.dart';
 import 'labels.dart';
 import 'model_catalog_dialog.dart';
+import 'plugin_secret_field.dart';
 import 'plugin_strings.dart';
 
 class PluginSettingsForm extends ConsumerWidget {
-  const PluginSettingsForm(this.info, {super.key});
+  const PluginSettingsForm(this.info, {super.key, this.hiddenFields = const {}, this.ownServerStorageId});
 
   final PluginInfo info;
+  final Set<String> hiddenFields;
+  final String? ownServerStorageId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final values = ref.watch(settingsProvider.select((s) => s.pluginValues(info.id)));
+    final storageId = ref.watch(settingsProvider.select((s) => ownServerStorageId ?? s.pluginStorageId(info.id)));
+    final values = ref.watch(
+      settingsProvider.select(
+        (s) => ownServerStorageId == null ? s.pluginValues(info.id) : s.pluginValuesForStorage(storageId),
+      ),
+    );
     final config = PluginConfig.resolve(info.settings, values);
-    void set(String key, Object? value) => ref
-        .read(settingsProvider.notifier)
-        .change((s) => s.plugins[info.id] = {...s.pluginValues(info.id), key: value});
+    final notifier = ref.read(settingsProvider.notifier);
+    void set(String key, Object? value) =>
+        notifier.change((s) => s.plugins[storageId] = {...?s.plugins[storageId], key: value});
     Widget row(SettingField field) =>
-        Padding(padding: const EdgeInsets.only(bottom: 12), child: _field(context, ref, config, field, set));
+        Padding(padding: const EdgeInsets.only(bottom: 12), child: _field(context, ref, config, field, set, storageId));
     final advanced = [
       for (final field in info.settings)
-        if (field.advanced) field,
+        if (field.advanced && !hiddenFields.contains(field.key)) field,
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final field in info.settings)
-          if (!field.advanced) row(field),
+          if (!field.advanced && !hiddenFields.contains(field.key)) row(field),
         // Rarely changed: folded.
         if (advanced.isNotEmpty)
           ExpansionTile(
@@ -58,8 +66,14 @@ class PluginSettingsForm extends ConsumerWidget {
     PluginConfig config,
     SettingField field,
     void Function(String key, Object? value) set,
+    String storageId,
   ) => switch (field) {
-    SecretSetting() => _SecretField(info, field),
+    SecretSetting() when info.id == 'openai_compatible' && field.key == 'api_key' => OwnServerKeyField(
+      info,
+      field,
+      storageId,
+    ),
+    SecretSetting() => PluginSecretField(info, field, field.storeKey(storageId)),
     BoolSetting() => SwitchListTile(
       contentPadding: EdgeInsets.zero,
       title: titleWithInfo(fieldLabel(context, info, field), fieldInfo(context, info, field)),
@@ -123,8 +137,9 @@ class PluginSettingsForm extends ConsumerWidget {
     Widget child,
     ValueChanged<String> pick,
   ) {
+    final custom = const {'openai_compatible', 'openai_compatible_ocr'}.contains(info.id);
     final query = info.modelCatalog?.call(config);
-    if (query == null || query.settingKey != field.key) return child;
+    if (custom ? field.key != 'model' : query?.settingKey != field.key) return child;
     final l = context.l10n;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,19 +149,71 @@ class PluginSettingsForm extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Tooltip(
-            message: l.modelsChooseHelp(query.host),
+            message: query == null
+                ? l.ownServerModelsNeedUrl
+                : query.usesProfileCredentials
+                ? l.ownServerModelsHelp(query.host)
+                : l.modelsChooseHelp(query.host),
             child: OutlinedButton.icon(
               onPressed: () async {
+                FocusScope.of(context).unfocus();
+                final settings = ref.read(settingsProvider);
+                final storageId = settings.pluginStorageId(info.id);
+                final current = PluginConfig.resolve(info.settings, settings.pluginValues(info.id));
+                final preview = info.modelCatalog?.call(current);
+                if (preview == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.ownServerModelsNeedUrl)));
+                  return;
+                }
+                var catalog = preview;
+                if (preview.usesProfileCredentials) {
+                  final services = ref.read(servicesProvider);
+                  final PluginConfig resolved;
+                  try {
+                    resolved = await services.pluginConfig(info.id, settings);
+                  } catch (e, stack) {
+                    services.appLog.error('model_catalog_config_failed', e, stack);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.trErrOther)));
+                    }
+                    return;
+                  }
+                  if (!context.mounted ||
+                      ModalRoute.of(context)?.isCurrent != true ||
+                      ref.read(settingsProvider).pluginStorageId(info.id) != storageId) {
+                    return;
+                  }
+                  catalog = info.modelCatalog!.call(resolved)!;
+                  if (resolved.secret('api_key') != null && info.endpointFor(resolved) != null) {
+                    final allowed = await showDialog<bool>(
+                      context: context,
+                      builder: (dialog) => AlertDialog(
+                        title: Text(l.ownServerLoadModels),
+                        content: Text(l.ownServerModelsConsent(catalog.host)),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(dialog, false), child: Text(l.cancel)),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(dialog, true),
+                            child: Text(l.ownServerLoadModels),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (allowed != true || !context.mounted) return;
+                  }
+                }
                 final id = await showModelCatalogDialog(
                   context,
-                  query,
-                  current: config.value<String>(field.key),
-                  vision: ref.read(settingsProvider).sendPageImage,
+                  catalog,
+                  current: current.value<String>(field.key),
+                  vision: !custom && settings.sendPageImage,
                 );
-                if (id != null) pick(id);
+                if (id != null && context.mounted && ref.read(settingsProvider).pluginStorageId(info.id) == storageId) {
+                  pick(id);
+                }
               },
               icon: const Icon(Icons.list_alt),
-              label: Text(l.modelsChoose),
+              label: Text(custom ? l.ownServerLoadModels : l.modelsChoose),
             ),
           ),
         ),
@@ -245,186 +312,4 @@ class _DebouncedTextFieldState extends State<DebouncedTextField> {
     },
     onSubmitted: (_) => _flush(),
   );
-}
-
-/// The last 4 characters of a saved key, to tell keys apart; nothing for
-/// short values, where 4 characters would give away too much.
-String secretTail(String? value) => value == null || value.length < 12 ? '' : value.substring(value.length - 4);
-
-/// A secret (API key): shows whether it is saved and its last 4 characters.
-/// What the user types can be shown before saving; the saved key is shown
-/// or copied only on request (and hidden again after a while). It never goes
-/// into logs or bug reports.
-class _SecretField extends ConsumerStatefulWidget {
-  const _SecretField(this.info, this.field);
-
-  final PluginInfo info;
-  final SecretSetting field;
-
-  @override
-  ConsumerState<_SecretField> createState() => _SecretFieldState();
-}
-
-class _SecretFieldState extends ConsumerState<_SecretField> {
-  final _controller = TextEditingController();
-  bool? _saved;
-  String _tail = '';
-  bool _show = false;
-
-  /// The saved key, while shown.
-  String? _revealed;
-  Timer? _hide;
-
-  String get _key => widget.field.storeKey(widget.info.id);
-
-  @override
-  void initState() {
-    super.initState();
-    _refresh();
-  }
-
-  Future<void> _refresh() async {
-    final value = await ref.read(servicesProvider).secrets.read(_key);
-    if (!mounted) return;
-    setState(() {
-      _saved = value != null && value.isNotEmpty;
-      _tail = secretTail(value);
-    });
-  }
-
-  /// Saving over a saved key replaces it.
-  Future<void> _save() async {
-    final value = _controller.text.trim();
-    if (value.isEmpty) return;
-    await ref.read(servicesProvider).secrets.write(_key, value);
-    _controller.clear();
-    _show = false;
-    _conceal();
-    await _refresh();
-  }
-
-  Future<void> _remove() async {
-    final l = context.l10n;
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: Text(l.secretRemoveTitle),
-        content: Text(l.secretRemoveBody),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: Text(l.cancel)),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: Text(l.delete)),
-        ],
-      ),
-    );
-    if (yes != true || !mounted) return;
-    await ref.read(servicesProvider).secrets.delete(_key);
-    _conceal();
-    await _refresh();
-  }
-
-  void _conceal() {
-    _hide?.cancel();
-    if (mounted) setState(() => _revealed = null);
-  }
-
-  Future<void> _reveal() async {
-    if (_revealed != null) return _conceal();
-    final value = await ref.read(servicesProvider).secrets.read(_key);
-    if (!mounted || value == null) return;
-    setState(() => _revealed = value);
-    _hide?.cancel();
-    _hide = Timer(const Duration(seconds: 30), _conceal);
-  }
-
-  Future<void> _copy() async {
-    final value = await ref.read(servicesProvider).secrets.read(_key);
-    if (value == null) return;
-    await Clipboard.setData(ClipboardData(text: value));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.l10n.secretCopied)));
-  }
-
-  @override
-  void dispose() {
-    _hide?.cancel();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final help = fieldHelp(context, widget.info, widget.field);
-    final saved = _saved ?? false;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                obscureText: !_show,
-                enableSuggestions: false,
-                autocorrect: false,
-                decoration: InputDecoration(
-                  labelText: [
-                    fieldLabel(context, widget.info, widget.field),
-                    if (_saved != null)
-                      saved ? (_tail.isEmpty ? l.secretSet : l.secretSavedTail(_tail)) : l.secretNotSet,
-                  ].join(' · '),
-                  hintText: saved ? l.secretReplaceHint : null,
-                  helperText: [if (help.isNotEmpty) help, l.savedSecurely].join(' '),
-                  helperMaxLines: 4,
-                  suffixIcon: IconButton(
-                    tooltip: _show ? l.secretHide : l.secretShow,
-                    icon: Icon(_show ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                    onPressed: () => setState(() => _show = !_show),
-                  ),
-                ),
-                onSubmitted: (_) => _save(),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: FilledButton.tonal(onPressed: _save, child: Text(saved ? l.secretReplace : l.save)),
-            ),
-            if (saved)
-              Padding(
-                padding: const EdgeInsets.only(top: 8, left: 4),
-                child: TextButton(onPressed: _remove, child: Text(l.secretRemove)),
-              ),
-          ],
-        ),
-        if (saved || widget.info.keyUrl.isNotEmpty)
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            children: [
-              // The service's page where keys are made, in the browser.
-              if (widget.info.keyUrl.isNotEmpty)
-                Tooltip(
-                  message: widget.info.keyUrl,
-                  child: TextButton.icon(
-                    onPressed: () => launchUrl(Uri.parse(widget.info.keyUrl)),
-                    icon: const Icon(Icons.open_in_new, size: 18),
-                    label: Text(l.secretGetKey),
-                  ),
-                ),
-              if (saved) ...[
-                TextButton.icon(
-                  onPressed: _reveal,
-                  icon: Icon(_revealed == null ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 18),
-                  label: Text(_revealed == null ? l.secretShowSaved : l.secretHideSaved),
-                ),
-                TextButton.icon(onPressed: _copy, icon: const Icon(Icons.copy, size: 18), label: Text(l.secretCopy)),
-                if (_revealed != null) SelectableText(_revealed!, style: const TextStyle(fontFamily: 'monospace')),
-              ],
-            ],
-          ),
-      ],
-    );
-  }
 }

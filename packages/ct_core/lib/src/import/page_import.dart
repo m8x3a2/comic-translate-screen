@@ -5,6 +5,7 @@
 /// PDF pages are rendered by the app.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
@@ -92,6 +93,16 @@ class ArchiveToolMissingException implements Exception {
 
   @override
   String toString() => 'Opening ${p.basename(archive)} needs 7-Zip (7-zip.org) or WinRAR installed.';
+}
+
+/// The archive has a password (pages in it are not opened).
+class ArchivePasswordException implements Exception {
+  ArchivePasswordException(this.archive);
+
+  final String archive;
+
+  @override
+  String toString() => '${p.basename(archive)} is protected by a password.';
 }
 
 class PageImportException implements Exception {
@@ -264,16 +275,22 @@ Future<List<ImportedPage>> _extractWithTool(String path, Directory outDir, Cance
   await tmp.create(recursive: true);
   try {
     final isUnrar = p.basename(tool).toLowerCase().startsWith('unrar');
+    // An empty password (`-p`, UnRAR `-p-`): an archive with a password fails
+    // at once instead of the tool waiting for one to be typed.
     final args = isUnrar
-        ? ['x', '-y', '-idq', path, '${tmp.path}${Platform.pathSeparator}']
-        : ['x', '-y', '-bd', '-o${tmp.path}', path];
+        ? ['x', '-y', '-idq', '-p-', path, '${tmp.path}${Platform.pathSeparator}']
+        : ['x', '-y', '-bd', '-p', '-o${tmp.path}', path];
     final process = await Process.start(tool, args);
     token.onCancel(process.kill);
+    // Nothing is ever typed in: a question gets no answer and the tool ends.
+    unawaited(process.stdin.close().catchError((Object _) {}));
     final stderrText = process.stderr.transform(const SystemEncoding().decoder).join();
-    await process.stdout.drain<void>();
+    final stdoutText = process.stdout.transform(const SystemEncoding().decoder).join();
     final code = await process.exitCode;
     token.throwIfCancelled();
     if (code != 0) {
+      final said = '${await stdoutText}\n${await stderrText}';
+      if (said.toLowerCase().contains('password')) throw ArchivePasswordException(path);
       throw PageImportException(
         '${p.basename(tool)} could not unpack ${p.basename(path)} (code $code): ${(await stderrText).trim()}',
       );

@@ -6,6 +6,7 @@ library;
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:ct_providers/ct_providers.dart' show readsThroughChat, translatesThroughChat;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,6 +22,7 @@ import '../common/content_kind_switch.dart';
 import '../common/key_bindings.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
+import '../common/plugin_strings.dart';
 import '../common/translator_history_dialog.dart';
 import '../settings/settings_place.dart';
 import 'batch_dialogs.dart';
@@ -512,6 +514,20 @@ class _ToolBar extends ConsumerWidget {
   }
 }
 
+String selectedEngineLabel(BuildContext context, WidgetRef ref, {required bool reader}) {
+  final l = context.l10n;
+  final settings = ref.watch(settingsProvider);
+  if (reader ? readsThroughChat(settings) : translatesThroughChat(settings)) return l.modelViaChat;
+  final registry = ref.watch(servicesProvider).registry;
+  final id = reader ? settings.ocr : settings.translator;
+  if (!registry.contains(id)) return id;
+  final info = registry.info(id);
+  final model = settings.pluginValues(id)['model'];
+  final name = pluginName(context, info);
+  if (model is String && model.trim().isNotEmpty) return '${model.trim()} · $name';
+  return info.field('model') == null ? name : '$name · ${l.modelNotSelected}';
+}
+
 /// The steps of the manual mode, in order.
 class _StepStrip extends ConsumerWidget {
   const _StepStrip({required this.page});
@@ -523,6 +539,18 @@ class _StepStrip extends ConsumerWidget {
     final l = context.l10n;
     final steps = ref.watch(stepsProvider);
     final busy = steps.running || ref.watch(batchProvider) is BatchRunning || page.status == PageStatus.running;
+    final settings = ref.watch(settingsProvider);
+    final together =
+        !readsThroughChat(settings) && (readingPlan(ref.watch(servicesProvider).registry, settings)?.together ?? false);
+    final ocrModel = selectedEngineLabel(context, ref, reader: true);
+    final ocr = together ? l.modelForCombined(ocrModel) : l.modelForOcr(ocrModel);
+    final translation = l.modelForTranslation(selectedEngineLabel(context, ref, reader: false));
+    Widget modelLabel(String value) => Expanded(
+      child: Tooltip(
+        message: value,
+        child: Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.labelSmall),
+      ),
+    );
     final items = [
       (ManualStep.detect, Icons.document_scanner_outlined, l.stepDetect, l.stepDetectHelp),
       (ManualStep.recognize, Icons.abc, l.stepRecognize, l.stepRecognizeHelp),
@@ -551,7 +579,11 @@ class _StepStrip extends ConsumerWidget {
               : Icon(icon, size: 20);
           children.add(
             Tooltip(
-              message: '$label — $help',
+              message: switch (step) {
+                ManualStep.recognize => '$label — $help\n$ocr',
+                ManualStep.translate => '$label — $help\n$translation',
+                _ => '$label — $help',
+              },
               child: compact
                   ? IconButton(onPressed: onPressed, icon: iconWidget)
                   : TextButton.icon(onPressed: onPressed, icon: iconWidget, label: Text(label)),
@@ -589,37 +621,41 @@ class _StepStrip extends ConsumerWidget {
             ],
           ),
         );
-        if (last == null) return strip;
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             strip,
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-              child: Row(
-                children: [
-                  Icon(Icons.timer_outlined, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      stepResultLine(context, last),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  // Translated or read over the network: what the model answered.
-                  if ((last.ms.containsKey(ManualStep.translate) && _overNetwork(ref)) ||
-                      (last.ms.containsKey(ManualStep.recognize) && _overNetwork(ref, reader: true)))
-                    TextButton.icon(
-                      onPressed: () => showTranslatorHistory(context, page: page.name),
-                      icon: const Icon(Icons.history, size: 16),
-                      label: Text(l.historyPage),
-                    ),
-                ],
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+              child: Row(children: [modelLabel(ocr), const SizedBox(width: 12), modelLabel(translation)]),
             ),
+            if (last != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.timer_outlined, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        stepResultLine(context, last),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    // Translated or read over the network: what the model answered.
+                    if ((last.ms.containsKey(ManualStep.translate) && _overNetwork(ref)) ||
+                        (last.ms.containsKey(ManualStep.recognize) && _overNetwork(ref, reader: true)))
+                      TextButton.icon(
+                        onPressed: () => showTranslatorHistory(context, page: page.name),
+                        icon: const Icon(Icons.history, size: 16),
+                        label: Text(l.historyPage),
+                      ),
+                  ],
+                ),
+              ),
           ],
         );
       },

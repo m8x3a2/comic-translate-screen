@@ -53,6 +53,11 @@ void main() {
   test('a broken draft is none; an empty one has nothing to keep', () async {
     File(p.join(dir.path, ExchangeDraft.fileName)).writeAsStringSync('{broken');
     expect(await ExchangeDraft.read(dir), isNull);
+    // JSON, but a field of the wrong kind: it threw past the window.
+    for (final json in ['{"version":1,"mode":"both","answer":42}', '{"parts":"a"}', '{"part":"2"}']) {
+      File(p.join(dir.path, ExchangeDraft.fileName)).writeAsStringSync(json);
+      expect(await ExchangeDraft.read(dir), isNull, reason: json);
+    }
     expect(const ExchangeDraft(mode: ExchangeMode.translate, answer: '  ').isEmpty, isTrue);
     expect(
       const ExchangeDraft(

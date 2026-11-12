@@ -14,11 +14,13 @@ import '../common/plugin_strings.dart';
 import '../settings/settings_screen.dart';
 import 'exchange_dialog.dart';
 import 'main_screen.dart' show showInExplorer;
+import 'translation_review.dart';
 
 class DialogBatchUi implements BatchUi {
-  DialogBatchUi(this.context);
+  DialogBatchUi(this.context, {this.testChat = false});
 
   final BuildContext context;
+  final bool testChat;
 
   @override
   Future<bool> exchange(ExchangeRequest request) async {
@@ -90,7 +92,9 @@ class DialogBatchUi implements BatchUi {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                translator.kind == PluginKind.ocr
+                testChat
+                    ? l.translatorTestNetwork(endpoint.host, where)
+                    : translator.kind == PluginKind.ocr
                     ? l.networkBodyReading(pluginName(context, translator), endpoint.host, where)
                     : l.networkBody(pluginName(context, translator), endpoint.host, where),
               ),
@@ -98,8 +102,10 @@ class DialogBatchUi implements BatchUi {
                 const SizedBox(height: 8),
                 Text(l.networkBodyImage),
               ],
-              const SizedBox(height: 8),
-              Text(l.networkOffline, style: Theme.of(c).textTheme.bodySmall),
+              if (!testChat) ...[
+                const SizedBox(height: 8),
+                Text(l.networkOffline, style: Theme.of(c).textTheme.bodySmall),
+              ],
             ],
           ),
         ),
@@ -142,7 +148,7 @@ class DialogBatchUi implements BatchUi {
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
           builder: (_) => SettingsScreen(
-            initial: translator.kind == PluginKind.ocr ? SettingsSection.tools : SettingsSection.translator,
+            initial: translator.kind == PluginKind.ocr ? SettingsSection.ocr : SettingsSection.translator,
           ),
         ),
       );
@@ -369,7 +375,20 @@ class _ReportDialog extends ConsumerWidget {
           ],
         ),
       ),
-      actions: [FilledButton(onPressed: () => Navigator.pop(context), child: Text(l.close))],
+      actions: [
+        if (report.untranslated.isNotEmpty)
+          TextButton(
+            onPressed: () {
+              final ws = ref.read(workspaceProvider);
+              final index = ws.pages.indexWhere((page) => page.id == report.untranslated.first.$1);
+              if (index >= 0) ref.read(workspaceProvider.notifier).select(index);
+              ref.read(translationReviewProvider.notifier).open();
+              Navigator.pop(context);
+            },
+            child: Text(l.translationReview),
+          ),
+        FilledButton(onPressed: () => Navigator.pop(context), child: Text(l.close)),
+      ],
     );
   }
 }

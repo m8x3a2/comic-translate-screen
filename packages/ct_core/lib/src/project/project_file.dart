@@ -192,9 +192,11 @@ class ProjectFile {
         for (final (position, page) in data.pages.indexed) {
           final fonts = <String, Object?>{};
           for (final b in page.blocks) {
-            final font = b.style?.fontFamily;
-            if (isFontFile(font) && !fonts.containsKey(font) && File(font!).existsSync()) {
-              fonts[font] = blobOf(font, p.basename(font));
+            // The block's font and the fonts of its single words.
+            for (final font in [b.style?.fontFamily, ...?b.style?.runs.map((r) => r.style.fontFamily)]) {
+              if (isFontFile(font) && !fonts.containsKey(font) && File(font!).existsSync()) {
+                fonts[font] = blobOf(font, p.basename(font));
+              }
             }
           }
           final json = jsonEncode({
@@ -277,6 +279,7 @@ class ProjectFile {
         final id = row['id'] as String;
         final j = (jsonDecode(row['json'] as String) as Map).cast<String, Object?>();
         final dir = Directory(p.join(filesDir.path, 'pages', _safeName(id)));
+        final work = Directory(p.join(dir.path, '_work'));
         final fonts = <String, String>{};
         for (final e in ((j['fonts'] as Map?) ?? const {}).entries) {
           final old = e.key as String;
@@ -291,8 +294,16 @@ class ProjectFile {
         for (final b in (j['blocks'] as List? ?? const [])) {
           final bj = (b as Map).cast<String, Object?>();
           final style = bj['style'];
-          if (style is Map && fonts.containsKey(style['font_family'])) {
-            bj['style'] = {...style.cast<String, Object?>(), 'font_family': fonts[style['font_family']]};
+          if (style is Map) {
+            // The fonts as unpacked here, for the block and its single words.
+            Map<String, Object?> moved(Map<Object?, Object?> s) => {
+              ...s.cast<String, Object?>(),
+              'font_family': ?fonts[s['font_family']] ?? s['font_family'],
+            };
+            bj['style'] = {
+              ...moved(style),
+              if (style['runs'] case final List runs) 'runs': [for (final r in runs) r is Map ? moved(r) : r],
+            };
           }
           blocks.add(TextBlock.fromJson(bj));
         }
@@ -301,10 +312,13 @@ class ProjectFile {
             id: id,
             name: j['name'] as String? ?? id,
             source: j['source'] as String?,
+            // The original keeps its own name; the program's pictures go into a
+            // folder of their own: a page named `clean.png` would otherwise be
+            // written over by its cleaned picture (and lost on the next save).
             image: materialize(j['image'], dir),
-            cleanImage: j['clean'] == null ? null : materialize(j['clean'], dir),
-            mask: j['mask'] == null ? null : materialize(j['mask'], dir),
-            overflow: j['overflow'] == null ? null : materialize(j['overflow'], dir),
+            cleanImage: j['clean'] == null ? null : materialize(j['clean'], work),
+            mask: j['mask'] == null ? null : materialize(j['mask'], work),
+            overflow: j['overflow'] == null ? null : materialize(j['overflow'], work),
             blocks: blocks,
             strokes: [
               for (final s in (j['strokes'] as List? ?? const []))

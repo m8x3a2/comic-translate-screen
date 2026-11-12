@@ -100,12 +100,14 @@ void main() {
   );
 
   testWidgets('start screen in Russian, with the privacy note', (tester) async {
+    desktopWindow(tester, size: const Size(800, 600));
     await tester.pumpWidget(app(fakeSettings()));
     await tester.pumpAndSettle();
     expect(find.text(AppInfo.name), findsOneWidget);
     expect(find.text('Открыть файлы…'), findsOneWidget);
     expect(find.text('Открыть папку…'), findsOneWidget);
     expect(find.textContaining('ничего никуда не отправляется'), findsOneWidget);
+    expect(find.byTooltip('Настройки').hitTestable(), findsOneWidget);
   });
 
   testWidgets('settings open on every section and switch the interface language', (tester) async {
@@ -115,7 +117,8 @@ void main() {
     await tester.pumpAndSettle();
     for (final title in [
       'Переводчик',
-      'Распознавание и очистка',
+      'Распознавание',
+      'Очистка',
       'Текст',
       'Увеличение',
       'Экспорт',
@@ -205,7 +208,9 @@ void main() {
     await tester.runAsync(() => container.read(workspaceProvider.notifier).addInputs([page.path]));
     await tester.pump();
     expect(find.text('Перевести'), findsOneWidget);
-    expect(find.byTooltip('Перевести всё'), findsOneWidget, reason: 'the whole label');
+    expect(find.byTooltip(RegExp(r'^Перевести всё\nOCR · .+\nПеревод · .+')), findsOneWidget);
+    expect(find.textContaining('OCR · '), findsOneWidget);
+    expect(find.textContaining('Перевод · '), findsOneWidget);
   });
 
   testWidgets('"Auto" is the first source language and explains itself', (tester) async {

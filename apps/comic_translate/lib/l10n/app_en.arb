@@ -1,4 +1,275 @@
 {
+  "chatContinueReply": "Continue from the interruption",
+  "chatContinuePrompt": "Continue from where the reply was interrupted without repeating the text already received.",
+  "chatContinueHelp": "Includes the incomplete reply in the new request. Regular messages skip that fragment.",
+  "chatResendAttachments": "Resend attachments from chat history",
+  "chatResendAttachmentsNotice": "This request also includes attachments from earlier messages.",
+  "trErrInterrupted": "the response stream closed without a completion signal",
+  "chatIncompleteResponse": "Incomplete response",
+  "translatorStream": "Stream response (SSE)",
+  "translatorStreamHelp": "The test chat shows text as it arrives if the server supports OpenAI Chat Completions streaming.",
+  "translatorStreamTemplateHelp": "Configure streaming in the template when a full Chat and translation HTTP request is active.",
+  "httpEditorFormatsHelp": "For SSE chat responses, set format to sse and text to the path of a text chunk. For multipart, use Content-Type: multipart/form-data and put files in the file field of the JSON body.",
+  "httpEditorCheckResponse": "Check pasted SSE",
+  "httpEditorSampleSse": "Paste the SSE events, including blank lines",
+  "httpEditorAttachFile": "Attach file",
+  "httpEditorRemoveFile": "Remove file",
+  "httpEditorFileTooLarge": "The file exceeds 10 MB.",
+  "httpEditorFileNeedsTemplate": "An attachment requires a multipart template with a file field set to files.",
+  "httpEditorFileConfirm": "The test sends the file {name}.",
+  "translatorTestFileConfirm": "Send attachments?",
+  "translatorTestFileNetwork": "The attachments and conversation will be sent to {destination}.",
+  "@httpEditorFileConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@translatorTestFileNetwork": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPromptPreset": "Prompt preset",
+  "modelPromptPresetStandard": "Built-in prompt",
+  "modelPromptPresetAdd": "Create preset",
+  "modelPromptPresetEdit": "Edit preset",
+  "modelPromptPresetNameRequired": "Enter a name.",
+  "modelPromptPresetNameTaken": "This name is already used.",
+  "modelPromptPresetTextRequired": "Enter the instructions.",
+  "modelPromptPresetHelp": "Selecting a preset copies its text into the editor. Save to apply the text and keep changes to the preset list.",
+  "ownServerAiGuide": "Setup prompt for an AI assistant",
+  "ownServerAiGuideCopy": "Copy the full prompt",
+  "chatsWorkspace": "Chats",
+  "chatUntitled": "Untitled chat",
+  "chatEmpty": "Write a message or attach an image.",
+  "chatNew": "New chat",
+  "chatNewFolder": "New folder",
+  "chatThreadTitle": "Chat title",
+  "chatConnection": "Connection",
+  "chatCreate": "Create",
+  "chatFolderName": "Folder name",
+  "chatPasswordHelp": "Chats and images in this folder will be encrypted. Keep the password. It cannot be recovered.",
+  "chatPassword": "Password",
+  "chatRepeatPassword": "Repeat password",
+  "chatPasswordMismatch": "Passwords differ",
+  "chatRequired": "Enter a value",
+  "chatUnlock": "Unlock folder",
+  "chatLock": "Lock folder now",
+  "chatProtect": "Set folder password",
+  "chatUnlockError": "Could not unlock the folder. Check the password.",
+  "chatStorageError": "Could not read or save the chat library. Check the folder and close any other instance using it.",
+  "chatStorageSettings": "Chat storage settings",
+  "chatStorageHelp": "Choose where to keep the chat library. Changing the location opens the library in the selected folder. The previous library stays in its folder.",
+  "chatChooseLocation": "Choose folder",
+  "chatRelock": "Ask for the folder password again",
+  "chatRelockRestart": "After restarting the app",
+  "chatRelock30": "30 minutes after unlocking",
+  "chatRelock60": "60 minutes after unlocking",
+  "chatRename": "Rename",
+  "chatPin": "Pin chat",
+  "chatUnpin": "Unpin chat",
+  "chatMove": "Move to folder",
+  "chatMovePrivacy": "After moving, the chat uses the protection settings of its destination.",
+  "chatDelete": "Delete chat",
+  "chatNoFolder": "Outside folders",
+  "chatUnlockToMove": "Unlock a protected folder before moving a chat into it.",
+  "chatAll": "All chats",
+  "chatChoose": "Choose or create a chat",
+  "chatTitleSearch": "Search chat titles",
+  "chatMessageSearch": "Search messages in this chat",
+  "chatNoMessagesFound": "No matching messages",
+  "chatConnectionMissing": "The chat's connection is unavailable.",
+  "chatOwnServerOriginal": "Own server · Original connection",
+  "chatOwnServerNamed": "Own server · {name}",
+  "@chatOwnServerNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "httpEditorOffline": "Check pasted JSON",
+  "httpEditorStatus": "HTTP status of the sample",
+  "httpEditorStatusError": "Enter a status code from 100 to 599.",
+  "httpEditorSampleJson": "Paste the response JSON",
+  "checkSample": "Check sample",
+  "fillPromptSample": "Use sample",
+  "requestTemplateImport": "Import JSON",
+  "requestTemplateExport": "Export JSON",
+  "requestTemplateImported": "Template imported and selected.",
+  "requestTemplateTransferError": "Could not transfer the template. Check the JSON format, paths and credentials.",
+  "openRouterTemplateHelp": "Applies to OpenRouter translation, test chat and network OCR. Select “Profile settings” to restore the built-in requests.",
+  "modelPromptEditor": "Prompt editor",
+  "modelPromptInstructions": "Custom instructions",
+  "modelPromptHelp": "These instructions are added to the built-in prompt. Leave them empty to use the built-in prompt alone. Keep the response format so the app can match the text to its frames.",
+  "modelPromptExample": "Expected response for two sample frames",
+  "modelPromptReply": "Paste a reply to check its format locally",
+  "modelPromptValid": "Both sample frames matched.",
+  "modelPromptInvalidJson": "The reply contains malformed JSON.",
+  "modelPromptMissing": "Missing or unusable response for {frames}.",
+  "modelViaChat": "External chat",
+  "modelNotSelected": "model not selected",
+  "modelForOcr": "OCR · {model}",
+  "modelForTranslation": "Translation · {model}",
+  "modelForCombined": "OCR · {model} (with translation)",
+  "@modelPromptMissing": {
+    "placeholders": {
+      "frames": {
+        "type": "String"
+      }
+    }
+  },
+  "@modelForOcr": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "@modelForTranslation": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "@modelForCombined": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "translationReview": "Review translation",
+  "translationReviewScope": "Pages without a chapter",
+  "translationReviewEmpty": "No flagged omissions",
+  "translationReviewNext": "Next",
+  "translationReviewRetry": "Translate omissions",
+  "ownServerProfile": "Server profile",
+  "requestTemplate": "Request template",
+  "httpEditorChat": "Chat and translation",
+  "httpEditorModels": "Model list",
+  "httpEditorOperations": "Full HTTP requests",
+  "httpEditorLegacy": "Compatibility settings",
+  "httpEditorBalance": "Balance",
+  "httpEditorRequest": "HTTP request",
+  "httpEditorResponse": "Response rules (JSON)",
+  "httpEditorSampleLabel": "Test message",
+  "httpEditorSampleMessage": "Reply with OK.",
+  "httpEditorHelp": "The path is relative to the profile’s base address. Leave a blank line between headers and the JSON body. Use the variables shown in the example to insert the active key or chat data.",
+  "httpEditorTips": "By default, HTTP 2xx is accepted. Set statuses to a list of specific codes. On 401, check the authorization header. On 404, check the path. If HTTP succeeds but extraction fails, compare the response rules to the returned JSON.",
+  "httpEditorPreview": "Preview",
+  "httpEditorSend": "Send test",
+  "httpEditorConfirm": "Send {request} using this profile? The test sends a real request and may use tokens or change data on the server.",
+  "httpEditorExtracted": "Extracted result",
+  "httpEditorResult": "HTTP test result",
+  "httpEditorCopy": "Copy report",
+  "httpEditorApply": "Use this request",
+  "@httpEditorConfirm": {"placeholders": {"request": {"type": "String"}}},
+  "requestTemplateNone": "Profile settings",
+  "requestTemplateHelp": "Blank template fields use the profile settings. Edits apply to every connection using this template.",
+  "requestTemplateAdd": "Create request template",
+  "requestTemplateEdit": "Edit request template",
+  "requestTemplateDelete": "Delete request template",
+  "requestTemplateDeleteHelp": "Delete “{name}”? Connections using it will return to their own request settings.",
+  "requestTemplateEditorHelp": "A template can be shared by several profiles. Enter the address, model and API key in each profile. Blank fields inherit profile settings. The grey examples are hints.",
+  "requestTemplateName": "Template name",
+  "requestTemplateNameRequired": "Enter a template name.",
+  "requestTemplateNameTaken": "A template with this name already exists.",
+  "requestTemplateChatPath": "Chat path",
+  "requestTemplateModelsPath": "Model list path",
+  "requestTemplateOptions": "Additional chat fields (JSON)",
+  "requestTemplateStatusPath": "Key details path",
+  "requestTemplateStatusPathHelp": "Optional GET request. The program uses the selected profile’s API key.",
+  "requestTemplateStatusFields": "Key details response fields (JSON)",
+  "requestTemplatePathError": "Enter paths relative to the profile’s API address, without a host or query parameters.",
+  "requestTemplateOptionsError": "Enter a JSON object without model, messages or stream.",
+  "requestTemplateCredentialsError": "Keep authorization fields and API keys in the profile’s API key field.",
+  "requestTemplateStatusError": "For key details, provide both a path and a JSON object that maps display labels to response fields.",
+  "requestTemplateStatusConsent": "Send the saved API key to {host} to request its details.",
+  "@requestTemplateDeleteHelp": {"placeholders": {"name": {"type": "String"}}},
+  "@requestTemplateStatusConsent": {"placeholders": {"host": {"type": "String"}}},
+  "ownServerOriginal": "Original connection",
+  "ownServerKeyActive": "Active API key",
+  "ownServerKeyFirst": "First key",
+  "ownServerKeyNumber": "Key {number}",
+  "ownServerKeyNone": "Without a key",
+  "ownServerKeyAdd": "Add API key",
+  "ownServerKeyEditNote": "Edit key note",
+  "ownServerKeyValue": "New API key",
+  "ownServerKeyNote": "Key note",
+  "ownServerKeyNoteHelp": "Optional. A label to help identify this key.",
+  "ownServerKeyRequired": "Enter an API key.",
+  "ownServerKeyNoteSecret": "Enter the key in the API key field. Use the note to describe it.",
+  "ownServerKeySaveFailed": "Could not save the key or note.",
+  "ownServerKeyRemoveBody": "The selected key and its note will be removed from this app. You can choose another saved key manually.",
+  "ownServerKeysSecureHelp": "Key values are stored in Windows secure storage. Requests use the key selected below.",
+  "@ownServerKeyNumber": {"placeholders": {"number": {"type": "int"}}},
+  "ownServerLoadModels": "Load models",
+  "ownServerModelsNeedUrl": "Enter a valid API base URL and relative models path in the settings.",
+  "ownServerModelsHelp": "Load the model list from {host} using the saved API key, if present.",
+  "ownServerSetupGuideTitle": "How to connect your own server",
+  "ownServerCopyGuide": "Copy instructions",
+  "ownServerGuideCopied": "Instructions copied",
+  "ownServerSetupGuide": "1. In Settings → Translator → Own server, add a profile with + and name it.\n2. Enter the base URL from your provider’s documentation. The app appends /chat/completions and /models to it. Include /v1 only if it is part of that base URL. For example, RelayModels documents https://api.relaymodels.com/v1. Use HTTP for localhost or your LAN only if the server calls for it.\n3. Save the API key in the API key field. Local servers can often work without a key. Press Load models to pick a model ID, or type it. Leave Model blank if your server can pick its own default.\n4. Send a short message in Test chat. Open Logs to see the request, HTTP status and response. Review any message text before sharing the logs. Share the service documentation and the redacted report when asking for help. Keep your key in the API key field.\n5. In More settings, you can change the relative endpoint paths and add or omit JSON fields. The expected response uses choices[].message.content for chat and data[].id for the model list.",
+  "ownServerOcrConnection": "Server connection for recognition",
+  "ownServerOcrSearch": "Search by name or address",
+  "ownServerOcrManual": "Separate address (previous settings)",
+  "ownServerOcrMissing": "Profile deleted. Select another connection.",
+  "ownServerOcrConnectionHelp": "Profiles are shared with Translator. Choose the recognition connection and vision model here.",
+  "ownServerOcrSharedSettings": "Shared connection settings",
+  "ownServerOcrSharedSettingsHelp": "Changes to the address, active key or template also apply in Translator when it uses this profile.",
+  "revokeNetworkInfo": "Remove this app’s saved permission for the server. The app will ask again before sending data. The API key stays saved.",
+  "translatorTestDiagnostics": "Logs",
+  "translatorTestDiagnosticsHelp": "Latest attempt in this chat. Authentication headers and image data are hidden. Check the message text before sharing.",
+  "translatorTestDiagnosticsEmpty": "Send a message to see the request and the server response.",
+  "translatorTestRequest": "Request",
+  "translatorTestResponse": "Response",
+  "translatorTestCopyDiagnostics": "Copy logs",
+  "@ownServerModelsHelp": {"placeholders": {"host": {"type": "String"}}},
+  "ownServerModelsDialogHelp": "The list comes from {host}. The saved key is used if present. Some servers report model IDs only, without capabilities or prices.",
+  "@ownServerModelsDialogHelp": {"placeholders": {"host": {"type": "String"}}},
+  "ownServerModelsConsent": "Send the saved API key to {host} to load its model list?",
+  "@ownServerModelsConsent": {"placeholders": {"host": {"type": "String"}}},
+  "ownServerAdd": "Add a connection",
+  "ownServerRename": "Rename connection",
+  "ownServerName": "Connection name",
+  "ownServerNameTaken": "A connection with this name already exists.",
+  "ownServerSearch": "Search by name, address or model",
+  "ownServerSortAdded": "By addition order",
+  "ownServerSortName": "By name",
+  "ownServerNoMatches": "No matching connections",
+  "ownServerRemoveTitle": "Delete this connection?",
+  "ownServerRemoveBody": "The profile, its settings and all its saved keys and notes will be deleted.",
+  "translatorTestChat": "Test chat",
+  "translatorTestHelp": "Send a short message to check the connection. The provider may charge for the request.",
+  "translatorTestMessage": "Message",
+  "translatorTestSend": "Send",
+  "translatorTestAttachImage": "Attach image (Ctrl+V to paste)",
+  "translatorTestPastedImage": "Pasted image",
+  "translatorTestRemoveImage": "Remove attachment",
+  "translatorTestImageHint": "Leave the message empty to transcribe the image.",
+  "translatorTestOcrPrompt": "Transcribe the text in the image exactly as written.",
+  "translatorTestInvalidImage": "Could not read the image. Use PNG, JPEG or WebP.",
+  "translatorTestImageTooLarge": "The image exceeds 10 MB or 24 megapixels.",
+  "translatorTestImageConfirm": "Send the image?",
+  "translatorTestImageNetwork": "The images and conversation will be sent to {destination}.",
+  "@translatorTestImageNetwork": {
+    "placeholders": {
+      "destination": {"type": "String"}
+    }
+  },
+  "translatorTestNetwork": "The chat sends the conversation to {host} ({where}).",
+  "@translatorTestNetwork": {
+    "placeholders": {
+      "host": {"type": "String"},
+      "where": {"type": "String"}
+    }
+  },
   "@@locale": "en",
   "appTitle": "Comic Translate Screen",
   "homeTagline": "Translate comics on your own computer",
@@ -297,7 +568,7 @@
     }
   },
   "openSettings": "Open settings",
-  "missingKeyBodyReading": "\"{name}\" sends the pictures of the bubbles to {host}, which needs an API key. It is the key of the translator of the same service: enter it in Settings → Recognition and cleaning or Settings → Translator (it is stored in Windows secure storage), or choose a local recognition.",
+  "missingKeyBodyReading": "\"{name}\" sends pictures of the bubbles to {host}, which needs an API key. Check the selected connection in Settings → Recognition or save the key in Settings → Translator. You can also choose local recognition.",
   "@missingKeyBodyReading": {
     "placeholders": {
       "name": {
@@ -331,7 +602,7 @@
       }
     }
   },
-  "trErrConfig": "the translator is not set up: enter the server address and model in Settings",
+  "trErrConfig": "the connection is not set up: check its address, model and request settings",
   "trErrAuth": "the server did not accept the API key; check the key in Settings",
   "trErrCredits": "the translator account has run out of money or credits",
   "trErrNotFound": "wrong server address or model name",
@@ -343,6 +614,7 @@
   "trErrCutOff": "the answer was cut off: the model ran out of \"Maximum answer length\" (translator settings → \"More settings\"). Raise it or lower \"Pages in one request\"; models that think first spend the length on thinking too",
   "trErrOther": "translation failed",
   "needsArchiveTool": "CBR, RAR, CB7 and 7Z need 7-Zip (7-zip.org) or WinRAR installed",
+  "archivePassword": "the archive is protected by a password: unpack it with 7-Zip or WinRAR and open the folder",
   "exportFailed": "Could not save the pages: {error}",
   "@exportFailed": {
     "placeholders": {
@@ -448,7 +720,8 @@
   "nothingToExport": "No translated pages yet",
   "settingsGeneral": "General",
   "settingsTranslator": "Translator",
-  "settingsTools": "Recognition and cleaning",
+  "settingsOcr": "Recognition",
+  "settingsCleaning": "Cleaning",
   "settingsText": "Text",
   "settingsUpscale": "Enlarging",
   "settingsExport": "Export",
@@ -651,7 +924,7 @@
   "stepTranslateHelp": "translates the recognized text of this page (finds and reads it first if needed)",
   "stepTranslateMore": "Read, translate or both",
   "stepReadAndTranslate": "Read and translate",
-  "stepReadAndTranslateHelp": "Reads every box again, then translates it.",
+  "stepReadAndTranslateHelp": "Reads every box again with the selected OCR engine, then passes the text to the selected translator.",
   "stepReadAndTranslateTogether": "Read and translate in one request",
   "stepReadAndTranslateTogetherHelp": "The model by key reads every box again and translates it in the same requests.",
   "stepMask": "Mask",
@@ -1316,7 +1589,7 @@
   "modelsLanguagesHelp": "Download only the languages you translate from. When a model is missing, the program offers to download it before translating.",
   "modelsExtra": "Extra",
   "modelsTextPrep": "Text preparation",
-  "modelsTextPrepHelp": "Neural networks that enlarge small text before recognition. Only the one chosen in \"Recognition and cleaning → Preparing small text\" is needed.",
+  "modelsTextPrepHelp": "Neural networks that enlarge small text before recognition. Only the one chosen in \"Recognition → Preparing small text\" is needed.",
   "modelsNeeded": "Download what “{language}” needs",
   "@modelsNeeded": {
     "placeholders": {
@@ -1331,7 +1604,7 @@
   "modelsLevelMedium": "Medium",
   "modelsLevelHigh": "High",
   "modelsLevelUltra": "Ultra",
-  "modelsLevelInfo": "Everything your settings need to work, and the models of the chosen level: recognition, preparation of small text and cleaning, for comics and for screens. The list and the total size come before the download. Your settings stay as they are: the levels are chosen in \"Recognition and cleaning\".",
+  "modelsLevelInfo": "Includes the models for the selected levels of recognition, small text preparation and cleaning, for comics and screens. The list and total size appear before the download. Set the levels in the Recognition and Cleaning sections.",
   "modelsVerifyAll": "Check all",
   "modelsNothingNeeded": "Everything needed is downloaded",
   "modelsSummary": "Downloaded {count} of {total} · {size} on disk",
@@ -1604,7 +1877,9 @@
   "minutesShort": "{value} min",
   "@minutesShort": {
     "placeholders": {
-      "value": {"type": "String"}
+      "value": {
+        "type": "String"
+      }
     }
   },
   "noTimeLimit": "No limit",
@@ -1668,7 +1943,7 @@
   "contentScreens": "Sites and games",
   "contentScreensHelp": "lines of ordinary text: screenshots, games, visual novels",
   "detectorScreens": "Text detection (sites and games)",
-  "tinyTextTryHigh": "Very small text (lines of about {px} px): mistakes are likely. Turn on the High level in \"Settings → Recognition and cleaning → Preparing small text\" and recognize again, or take a larger screenshot.",
+  "tinyTextTryHigh": "Very small text (lines of about {px} px): mistakes are likely. Turn on the High level in \"Settings → Recognition → Preparing small text\" and recognize again, or take a larger screenshot.",
   "@tinyTextTryHigh": {
     "placeholders": {
       "px": {
@@ -1984,17 +2259,17 @@
   },
   "chatCheckFit": "Check that translations fit",
   "chatCheckFitHelp": "After an answer is pasted, the app tries the translations in their bubbles and offers to ask the chat to shorten those too long.",
-  "chatPreset":"Instructions preset",
+  "chatPreset": "Instructions preset",
   "chatPresetStandard": "Standard",
   "chatPresetOwn": "Own (no name)",
   "chatPresetSave": "Save as a preset…",
   "chatPresetDelete": "Delete the preset",
   "chatPresetName": "Preset name",
   "chatPresetNameHelp": "The same name replaces that preset.",
-  "chatAnswerMarks":"Take off around the answer",
+  "chatAnswerMarks": "Take off around the answer",
   "chatAnswerMarksHelp": "Separated by spaces. Taken off only when it stands both at the start and at the end of an original or a translation; the end is found by itself (« → »). A lone * stays: the chat stresses a word with it.",
   "chatAnswerMarksDefault": "Back to the standard ones",
-  "chatFoundInPart":"Answers found in this part: {found} of {total}",
+  "chatFoundInPart": "Answers found in this part: {found} of {total}",
   "@chatFoundInPart": {
     "placeholders": {
       "found": {
@@ -2026,10 +2301,18 @@
   "chatPartItem": "Part {part} · pages {pages} · answers {answered} of {total}",
   "@chatPartItem": {
     "placeholders": {
-      "part": {"type": "int"},
-      "pages": {"type": "String"},
-      "answered": {"type": "int"},
-      "total": {"type": "int"}
+      "part": {
+        "type": "int"
+      },
+      "pages": {
+        "type": "String"
+      },
+      "answered": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "chatGalleryParts": "All parts",
@@ -2037,7 +2320,9 @@
   "chatPartsPrepare": "Prepare the other parts ({count})",
   "@chatPartsPrepare": {
     "placeholders": {
-      "count": {"type": "int"}
+      "count": {
+        "type": "int"
+      }
     }
   },
   "chatPartShown": "open now",
@@ -2260,7 +2545,7 @@
   },
   "chatNotExchangeFolder": "This folder has no exchange.json: it is not an exchange folder.",
   "stageExchange": "Waiting for the chat's answer",
-  "chatSettingsHelp": "The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Recognition and cleaning.",
+  "chatSettingsHelp": "The \"Chat\" button on the main screen works with any engines. For \"Translate all\" to open the exchange by itself, choose \"By hand through a chat AI\" as the translator and/or in Recognition.",
   "chatTogether": "Read and translate in one message",
   "chatTogetherHelp": "When both go through the chat. Off: first the reading, then a second round with the text to translate.",
   "chatPicturesTitle": "Pictures",
@@ -2613,6 +2898,47 @@
       "path": {
         "type": "String"
       },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "exportNothingWritten": "Nothing was saved: the pages chosen have no picture of the kind asked for (not cleaned yet, say)",
+  "exportSavedLeftOut": "Saved: {path}. Left out, with no picture of the kind asked for: {count}",
+  "@exportSavedLeftOut": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "exportSavedRemovedLeft": "Saved: {path}. Taken out of the project: {removed} (Ctrl+Z brings them back). Left in it, with no picture of the kind asked for: {left}",
+  "@exportSavedRemovedLeft": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      },
+      "removed": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "findInside": "Find blocks inside this box (columns, paragraphs)",
+  "findInsideWhich": "How to find blocks inside the box",
+  "findInsideAuto": "Auto: columns and paragraphs",
+  "findInsideColumns": "Columns only",
+  "findInsideParagraphs": "Paragraphs only",
+  "findInsideHint": "You can stretch the box first: text it missed is found too. If the box was recognized, the new blocks are recognized at once.",
+  "findInsideNone": "There is one block inside: nothing to split.",
+  "findInsideDone": "Blocks found: {count}. Undo with Ctrl+Z.",
+  "@findInsideDone": {
+    "placeholders": {
       "count": {
         "type": "String"
       }

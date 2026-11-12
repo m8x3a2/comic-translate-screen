@@ -63,10 +63,14 @@ void main() {
     expect(tester.widget<SwitchListTile>(testMode).value, isFalse, reason: 'the switch stays as it was');
     await tester.pump(const Duration(seconds: 20));
 
-    await tester.tap(find.widgetWithText(ListTile, 'Распознавание и очистка'));
+    await tester.tap(find.widgetWithText(ListTile, 'Распознавание'));
+    await tester.pumpAndSettle();
+    expect(find.text('Как очищать большие страницы'), findsNothing);
+    expect(find.byType(InfoHint), findsAtLeastNWidgets(2), reason: 'confidence and small text');
+    await tester.tap(find.widgetWithText(ListTile, 'Очистка'));
     await tester.pumpAndSettle();
     expect(find.text('Как очищать большие страницы'), findsOneWidget);
-    expect(find.byType(InfoHint), findsAtLeastNWidgets(3), reason: 'confidence, small text, large pages, size');
+    expect(find.byType(InfoHint), findsAtLeastNWidgets(2), reason: 'large pages and size');
   });
 
   testWidgets('models are grouped, explained, and can be downloaded together', (tester) async {

@@ -5,9 +5,11 @@ library;
 import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
+import 'package:ct_providers/ct_providers.dart' show httpRequestSpec, llmPromptSetting, llmStreamSetting;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_info.dart';
@@ -28,10 +30,14 @@ import '../shell_full/prompt_presets.dart';
 import 'gpu_section.dart';
 import 'keys_section.dart';
 import 'models_section.dart';
+import 'own_server_profiles.dart';
+import 'model_prompt.dart';
+import 'request_templates.dart';
 import 'settings_place.dart';
+import 'translator_test_chat.dart';
 import 'usage_section.dart';
 
-enum SettingsSection { general, translator, exchange, tools, text, upscale, export, keys, models, about }
+enum SettingsSection { general, translator, exchange, ocr, cleaning, text, upscale, export, keys, models, about }
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key, this.initial = SettingsSection.general, this.panel = false});
@@ -56,7 +62,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     SettingsSection.general => SettingsPart.general,
     SettingsSection.translator => SettingsPart.translator,
     SettingsSection.exchange => SettingsPart.exchange,
-    SettingsSection.tools => SettingsPart.tools,
+    SettingsSection.ocr => SettingsPart.ocr,
+    SettingsSection.cleaning => SettingsPart.cleaning,
     SettingsSection.text => SettingsPart.text,
     SettingsSection.upscale => SettingsPart.upscale,
     SettingsSection.export => SettingsPart.export,
@@ -73,7 +80,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       SettingsSection.general: (Icons.tune, l.settingsGeneral),
       SettingsSection.translator: (Icons.translate, l.settingsTranslator),
       SettingsSection.exchange: (Icons.forum_outlined, l.chatTitle),
-      SettingsSection.tools: (Icons.document_scanner_outlined, l.settingsTools),
+      SettingsSection.ocr: (Icons.document_scanner_outlined, l.settingsOcr),
+      SettingsSection.cleaning: (Icons.cleaning_services_outlined, l.settingsCleaning),
       SettingsSection.text: (Icons.text_fields, l.settingsText),
       SettingsSection.upscale: (Icons.zoom_out_map, l.settingsUpscale),
       SettingsSection.export: (Icons.save_alt, l.settingsExport),
@@ -82,6 +90,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       SettingsSection.about: (Icons.info_outline, l.settingsAbout),
     };
     final content = SingleChildScrollView(
+      key: ValueKey(_section),
       padding: widget.panel ? const EdgeInsets.fromLTRB(16, 16, 16, 24) : const EdgeInsets.fromLTRB(32, 24, 32, 32),
       child: Align(
         alignment: Alignment.topLeft,
@@ -101,7 +110,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   SettingsSection.general => const _GeneralSection(),
                   SettingsSection.translator => const _TranslatorSection(),
                   SettingsSection.exchange => const _ExchangeSection(),
-                  SettingsSection.tools => const _ToolsSection(),
+                  SettingsSection.ocr => const _OcrSection(),
+                  SettingsSection.cleaning => const _CleaningSection(),
                   SettingsSection.text => const _TextSection(),
                   SettingsSection.upscale => const _UpscaleSection(),
                   SettingsSection.export => const _ExportSection(),
@@ -570,7 +580,19 @@ class _TranslatorSection extends ConsumerWidget {
     final s = ref.watch(settingsProvider);
     final services = ref.watch(servicesProvider);
     final info = services.registry.contains(s.translator) ? services.registry.info(s.translator) : null;
-    final keyStatus = info?.keyStatus?.call(PluginConfig.resolve(info.settings, s.pluginValues(info.id)));
+    final storageId = s.pluginStorageId(s.translator);
+    final template = s.requestTemplateFor(storageId);
+    final config = info == null ? null : PluginConfig.resolve(info.settings, s.pluginValues(info.id));
+    final hasCustomChat = config != null && httpRequestSpec(config, HttpOperation.chat) != null;
+    final keyStatus = info?.keyStatus?.call(config!);
+    final apiKeyField = info?.field('api_key');
+    final keyScope = (
+      storageId,
+      apiKeyField is SecretSetting ? s.pluginSettingSecretKey(s.translator, apiKeyField) : null,
+      ref.watch(credentialRevisionProvider),
+      config?.values['api_url'],
+      keyStatus?.host,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -582,11 +604,63 @@ class _TranslatorSection extends ConsumerWidget {
               value: s.translator,
               onChanged: (v) => _change(ref, (s) => s.translator = v),
             ),
-            if (info != null) PluginSettingsForm(info, key: ValueKey(info.id)),
+            if (info?.id == 'openai_compatible') OwnServerProfiles(info!),
+            if (info?.id == 'openai_compatible' || info?.id == 'openrouter') RequestTemplates(storageId: storageId),
+            if (info != null)
+              PluginSettingsForm(
+                info,
+                key: ValueKey(storageId),
+                hiddenFields: {
+                  RequestTemplate.keyStatusPathKey,
+                  RequestTemplate.keyStatusFieldsKey,
+                  RequestTemplate.httpSettingKey,
+                  llmPromptSetting.key,
+                  llmStreamSetting.key,
+                  ...?template?.overrides.keys,
+                },
+              ),
+            if (info?.field(llmStreamSetting.key) != null)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(l.translatorStream),
+                subtitle: Text(hasCustomChat ? l.translatorStreamTemplateHelp : l.translatorStreamHelp),
+                value: config!.value<bool>(llmStreamSetting.key),
+                onChanged: hasCustomChat
+                    ? null
+                    : (value) => _change(ref, (s) {
+                        s.plugins[storageId] = {...?s.plugins[storageId], llmStreamSetting.key: value};
+                      }),
+              ),
+            if (info != null && const {'openai_compatible', 'openrouter'}.contains(info.id))
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () => showTranslatorTestChat(
+                    context,
+                    info,
+                    info.endpoint?.call(config!).host ?? '',
+                    config!.value<String>('model'),
+                  ),
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: Text(l.translatorTestChat),
+                ),
+              ),
+            if (info?.field(llmPromptSetting.key) != null) ModelPromptButton(pluginId: info!.id, storageId: storageId),
             if (info != null && info.privacy.sendsData && info.field('model') != null)
               PriceHint(info.id, '${s.pluginValues(info.id)['model'] ?? ''}'),
             if (info != null && keyStatus != null)
-              KeyStatusPanel(info, host: keyStatus.host, key: ValueKey('key_status.${info.id}.${keyStatus.host}')),
+              KeyStatusPanel(
+                info,
+                preview: keyStatus,
+                scope: keyScope,
+                key: ValueKey((
+                  keyScope,
+                  config?.values[RequestTemplate.keyStatusPathKey],
+                  config?.values[RequestTemplate.keyStatusFieldsKey],
+                  template?.http[HttpOperation.keyStatus]?.request,
+                  template?.http[HttpOperation.keyStatus]?.response,
+                )),
+              ),
           ],
         ),
         SettingsGroup(
@@ -650,20 +724,56 @@ class _TranslatorSection extends ConsumerWidget {
                 leading: const Icon(Icons.cloud_done_outlined),
                 title: Text(key.split('@').last),
                 subtitle: Text(key.split('@').first),
-                trailing: TextButton(
-                  onPressed: () => _change(ref, (s) => s.approvedNetworkPlugins.remove(key)),
-                  child: Text(l.revoke),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    InfoHint(l.revokeNetworkInfo),
+                    TextButton(
+                      onPressed: () => _change(ref, (s) => s.approvedNetworkPlugins.remove(key)),
+                      child: Text(l.revoke),
+                    ),
+                  ],
                 ),
               ),
           ],
         ),
+        if (info?.id == 'openai_compatible')
+          SettingsGroup(
+            children: [
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                title: Text(l.ownServerSetupGuideTitle),
+                children: [
+                  SelectableText(l.ownServerSetupGuide),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: l.ownServerSetupGuide));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.ownServerGuideCopied)));
+                      }
+                    },
+                    icon: const Icon(Icons.copy_outlined),
+                    label: Text(l.ownServerCopyGuide),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => showHelp(context, HelpTopic.ownServer),
+                    icon: const Icon(Icons.description_outlined),
+                    label: Text(l.ownServerAiGuide),
+                  ),
+                ],
+              ),
+            ],
+          ),
       ],
     );
   }
 }
 
-class _ToolsSection extends ConsumerWidget {
-  const _ToolsSection();
+class _OcrSection extends ConsumerWidget {
+  const _OcrSection();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -672,24 +782,49 @@ class _ToolsSection extends ConsumerWidget {
     final services = ref.watch(servicesProvider);
     Widget pluginWithForm(String label, PluginKind kind, String value, void Function(AppSettings s, String v) apply) {
       final info = services.registry.contains(value) ? services.registry.info(value) : null;
+      final ownOcr = info?.id == 'openai_compatible_ocr';
+      final profile = s.ownServerOcrProfile;
+      final connection = services.registry.contains('openai_compatible')
+          ? services.registry.info('openai_compatible')
+          : null;
       return SettingsGroup(
         children: [
           _PluginPicker(label: label, kind: kind, value: value, onChanged: (v) => _change(ref, (s) => apply(s, v))),
-          if (info != null && info.settings.isNotEmpty) PluginSettingsForm(info, key: ValueKey(info.id)),
+          if (ownOcr && connection != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  OwnServerProfiles(connection, forOcr: true),
+                  const SizedBox(height: 4),
+                  Text(l.ownServerOcrConnectionHelp, style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+          if (ownOcr &&
+              connection != null &&
+              profile != null &&
+              (profile.isEmpty || s.ownServerNames.containsKey(profile)))
+            _SharedOcrConnection(connection, AppSettings.ownServerStorageId(profile)),
+          if (info != null && info.settings.isNotEmpty)
+            PluginSettingsForm(
+              info,
+              key: ValueKey((info.id, ownOcr ? profile : null)),
+              hiddenFields: {
+                RequestTemplate.httpSettingKey,
+                llmPromptSetting.key,
+                if (ownOcr && profile != null) ...{'api_url', 'api_key', 'chat_path', 'models_path'},
+              },
+            ),
+          if (info?.field(llmPromptSetting.key) != null)
+            ModelPromptButton(pluginId: info!.id, storageId: info.id, reader: true),
           if (info != null && info.privacy.sendsData && info.field('model') != null)
             PriceHint(info.id, '${s.pluginValues(info.id)['model'] ?? ''}'),
         ],
       );
     }
 
-    final inpaint = s.inpaint;
-    InpaintConfig withInpaint({HdStrategy? strategy, int? resizeLimit, int? cropMargin, int? cropTriggerSize}) =>
-        InpaintConfig(
-          strategy: strategy ?? inpaint.strategy,
-          resizeLimit: resizeLimit ?? inpaint.resizeLimit,
-          cropMargin: cropMargin ?? inpaint.cropMargin,
-          cropTriggerSize: cropTriggerSize ?? inpaint.cropTriggerSize,
-        );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -701,11 +836,11 @@ class _ToolsSection extends ConsumerWidget {
             Text(l.contentKindInfo, style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
+        pluginWithForm(l.ocr, PluginKind.ocr, s.ocr, (s, v) => s.ocr = v),
         if (s.contentKind == ContentKind.screens)
           pluginWithForm(l.detectorScreens, PluginKind.detector, s.screenDetector, (s, v) => s.screenDetector = v)
         else
           pluginWithForm(l.detector, PluginKind.detector, s.detector, (s, v) => s.detector = v),
-        pluginWithForm(l.ocr, PluginKind.ocr, s.ocr, (s, v) => s.ocr = v),
         SettingsGroup(
           children: [
             if (leveledOcrIds.contains(s.ocr))
@@ -764,6 +899,67 @@ class _ToolsSection extends ConsumerWidget {
               _switch(l.checkLines, s.checkLines, (v) => _change(ref, (s) => s.checkLines = v), info: l.checkLinesInfo),
           ],
         ),
+      ],
+    );
+  }
+}
+
+class _SharedOcrConnection extends ConsumerWidget {
+  const _SharedOcrConnection(this.info, this.storageId);
+
+  final PluginInfo info;
+  final String storageId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final s = ref.watch(settingsProvider);
+    final template = s.requestTemplateFor(storageId);
+    final visible = {
+      'api_url',
+      'api_key',
+      if (template?.chatPath.isNotEmpty != true && template?.http[HttpOperation.chat] == null) 'chat_path',
+      if (template?.modelsPath.isNotEmpty != true && template?.http[HttpOperation.models] == null) 'models_path',
+    };
+    return ExpansionTile(
+      key: ValueKey(storageId),
+      tilePadding: EdgeInsets.zero,
+      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      title: Text(l.ownServerOcrSharedSettings),
+      subtitle: Text(l.ownServerOcrSharedSettingsHelp),
+      children: [
+        RequestTemplates(storageId: storageId, forOcr: true),
+        PluginSettingsForm(
+          info,
+          ownServerStorageId: storageId,
+          hiddenFields: {
+            for (final field in info.settings)
+              if (!visible.contains(field.key)) field.key,
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _CleaningSection extends ConsumerWidget {
+  const _CleaningSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final s = ref.watch(settingsProvider);
+    final inpaint = s.inpaint;
+    InpaintConfig withInpaint({HdStrategy? strategy, int? resizeLimit, int? cropMargin, int? cropTriggerSize}) =>
+        InpaintConfig(
+          strategy: strategy ?? inpaint.strategy,
+          resizeLimit: resizeLimit ?? inpaint.resizeLimit,
+          cropMargin: cropMargin ?? inpaint.cropMargin,
+          cropTriggerSize: cropTriggerSize ?? inpaint.cropTriggerSize,
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
         SettingsGroup(
           title: l.inpainter,
           children: [

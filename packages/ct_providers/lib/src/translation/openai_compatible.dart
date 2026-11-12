@@ -9,6 +9,8 @@ import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
 
+import 'http_request_editor.dart';
+
 /// The settings of a language model both translators have, folded under
 /// "More settings".
 const llmTemperatureSetting = DoubleSetting(
@@ -40,6 +42,30 @@ const llmTimeoutSetting = IntSetting(
   defaultValue: 120,
   min: 5,
   max: 3600,
+  advanced: true,
+);
+
+const llmPromptSetting = TextSetting(key: 'comic_prompt', label: 'Comic prompt', advanced: true);
+
+const llmStreamSetting = BoolSetting(key: 'stream_chat', label: 'Stream response (SSE)', defaultValue: false);
+
+const llmChatPathSetting = TextSetting(
+  key: 'chat_path',
+  label: 'Chat endpoint path',
+  help: 'Appended to the API base URL. Leave blank for chat/completions.',
+  advanced: true,
+);
+const llmModelsPathSetting = TextSetting(
+  key: 'models_path',
+  label: 'Models endpoint path',
+  help: 'Appended to the API base URL. Leave blank for models.',
+  advanced: true,
+);
+const llmRequestOptionsSetting = TextSetting(
+  key: 'request_options',
+  label: 'Additional request fields (JSON)',
+  help: 'A JSON object such as {"top_p": 0.9}. Use null to omit a field. Keep model, messages and stream unchanged.',
+  multiline: true,
   advanced: true,
 );
 
@@ -85,14 +111,20 @@ const openAiCompatibleInfo = PluginInfo(
     TextSetting(
       key: 'api_url',
       label: 'API URL',
-      help: 'Base URL ending in /v1, e.g. http://localhost:11434/v1 (Ollama) or https://api.deepseek.com/v1.',
+      help: 'Use the base URL documented by your server, e.g. http://localhost:11434/v1 for Ollama.',
       placeholder: 'http://localhost:11434/v1',
       isUrl: true,
     ),
-    TextSetting(key: 'model', label: 'Model', placeholder: 'qwen2.5:7b'),
+    TextSetting(
+      key: 'model',
+      label: 'Model',
+      help: 'Enter the model ID or leave blank if your server can choose its default.',
+      placeholder: 'qwen2.5:7b',
+    ),
     SecretSetting(key: 'api_key', label: 'API key', help: 'Not needed for most local servers.', optional: true),
     llmPagesSetting,
     llmResendSetting,
+    llmStreamSetting,
     llmTemperatureSetting,
     llmMaxTokensSetting,
     ChoiceSetting(
@@ -109,6 +141,13 @@ const openAiCompatibleInfo = PluginInfo(
       advanced: true,
     ),
     llmTimeoutSetting,
+    llmChatPathSetting,
+    llmModelsPathSetting,
+    llmRequestOptionsSetting,
+    TextSetting(key: RequestTemplate.keyStatusPathKey, label: 'Template key status path', advanced: true),
+    TextSetting(key: RequestTemplate.keyStatusFieldsKey, label: 'Template key status fields', advanced: true),
+    llmPromptSetting,
+    httpRequestTemplateSetting,
   ],
   endpoint: openAiCompatibleEndpoint,
   keyStatus: openAiCompatibleKeyStatus,
@@ -125,12 +164,39 @@ final openAiCompatibleFactory = PluginFactory<Translator>(openAiCompatibleInfo, 
     tokenLimitParam: config.value<String>('token_limit_param'),
     resendMissing: config.value<bool>('resend_missing'),
     timeout: Duration(seconds: config.value<int>('timeout')),
+    chatPath: config.value<String>('chat_path'),
+    requestOptions: config.value<String>('request_options'),
+    comicPrompt: config.value<String>(llmPromptSetting.key),
+    streamChat: config.value<bool>(llmStreamSetting.key),
+    httpChat: httpRequestSpec(config, HttpOperation.chat),
   );
 });
 
 /// The API URL of [config] without the slashes at the end.
 String openAiCompatibleUrl(PluginConfig config) =>
     config.value<String>('api_url').trim().replaceAll(RegExp(r'/+$'), '');
+
+/// Append a relative path while keeping the configured scheme, host and port.
+Uri? openAiCompatibleUri(String apiUrl, String path, String defaultPath) {
+  final base = Uri.tryParse(apiUrl.trim());
+  if (base == null ||
+      !const {'http', 'https'}.contains(base.scheme) ||
+      base.host.isEmpty ||
+      base.userInfo.isNotEmpty ||
+      base.hasQuery ||
+      base.hasFragment) {
+    return null;
+  }
+  final route = Uri.tryParse(path.trim().isEmpty ? defaultPath : path.trim());
+  if (route == null || route.hasScheme || route.hasAuthority || route.hasQuery || route.hasFragment) return null;
+  final segments = route.pathSegments.where((segment) => segment.isNotEmpty).toList();
+  if (segments.isEmpty || segments.any((segment) => segment == '..' || segment == '.')) return null;
+  final prefix = base.pathSegments.toList();
+  while (prefix.isNotEmpty && prefix.last.isEmpty) {
+    prefix.removeLast();
+  }
+  return base.replace(pathSegments: [...prefix, ...segments]);
+}
 
 /// Where a configuration sends data: on this computer for `localhost`, the
 /// local network for private addresses and `.local` names, otherwise the
@@ -176,12 +242,25 @@ class OpenAiCompatibleTranslator implements Translator {
     this.retryDelays = const [Duration(seconds: 2), Duration(seconds: 6)],
     this.info = openAiCompatibleInfo,
     this.resendMissing = true,
+    this.chatPath = '',
+    this.requestOptions = '',
+    this.comicPrompt = '',
+    this.streamChat = false,
+    this._httpChat,
     HttpClient Function()? httpClientFactory,
   }) : _httpClientFactory = httpClientFactory ?? _defaultClient;
 
   final String apiUrl;
   final String model;
   final String apiKey;
+  final String chatPath;
+  final String requestOptions;
+  final String comicPrompt;
+  final bool streamChat;
+  final HttpRequestSpec? _httpChat;
+  late final EditableHttpRequest? _customChat = _httpChat == null
+      ? null
+      : _parseHttpRequest(HttpOperation.chat, _httpChat);
 
   /// Bubbles the answer had nothing for are asked once more on their own.
   final bool resendMissing;
@@ -211,11 +290,12 @@ class OpenAiCompatibleTranslator implements Translator {
   /// Request body (`GPTTranslation._perform_translation`); [length] instead
   /// of [answerLength].
   Map<String, Object?> buildPayload(TranslationRequest request, {int? length}) {
-    final system = llmSystemPrompt(request.sourceLanguage, request.targetLanguage);
+    final standardPrompt = llmSystemPrompt(request.sourceLanguage, request.targetLanguage);
+    final system = comicPrompt.trim().isEmpty ? standardPrompt : '$standardPrompt\n\n$comicPrompt';
     final user = llmUserPrompt(request.extraContext, blocksToJson(request.blocks, keys: request.keys));
     final images = [?request.pageImage, ...request.pageImages];
     return {
-      'model': model,
+      if (model.trim().isNotEmpty) 'model': model.trim(),
       'messages': [
         {
           'role': 'system',
@@ -242,23 +322,128 @@ class OpenAiCompatibleTranslator implements Translator {
     };
   }
 
-  @override
-  Future<void> translate(TranslationRequest request, PluginContext context) async {
-    final base = apiUrl.trim().replaceAll(RegExp(r'/+$'), '');
-    final uri = Uri.tryParse('$base/chat/completions');
-    if (base.isEmpty || uri == null || !uri.hasScheme || uri.host.isEmpty) {
+  Uri chatUri() {
+    if (_customChat case final custom?) {
+      try {
+        return custom.url(apiUrl);
+      } on FormatException catch (error) {
+        throw TranslationException(error.message, kind: TranslationErrorKind.config);
+      }
+    }
+    final uri = openAiCompatibleUri(apiUrl, chatPath, 'chat/completions');
+    if (uri == null) {
       throw TranslationException(
-        'set the API URL of the OpenAI-compatible translator (e.g. https://openrouter.ai/api/v1)',
+        'set a valid HTTP(S) API base URL and a relative chat endpoint path',
         kind: TranslationErrorKind.config,
       );
     }
-    if (model.trim().isEmpty) {
+    if (info.id == 'openrouter' && model.trim().isEmpty) {
       throw TranslationException(
         'set the model name of the OpenAI-compatible translator',
         kind: TranslationErrorKind.config,
       );
     }
+    return uri;
+  }
 
+  /// Sends a conversation without adding the comic translation prompt.
+  Future<String> testChat(
+    List<Map<String, Object?>> messages,
+    CancelToken cancel,
+    EventLog log, {
+    void Function(String)? onRequest,
+    void Function(int status, String body)? onResponse,
+    void Function(String)? onText,
+    List<HttpTemplateFile>? files,
+  }) async {
+    try {
+      final uri = chatUri();
+      final payload = _withRequestOptions({
+        if (model.trim().isNotEmpty) 'model': model.trim(),
+        'messages': messages,
+        'temperature': temperature,
+        if (tokenLimitParam != 'none') tokenLimitParam: maxTokens,
+      });
+      final prepared =
+          _customChat?.prepare(apiUrl, apiKey, payload, files: files) ??
+          (streamChat ? PreparedHttpRequest.openAiChatStream(uri, apiKey, payload) : null);
+      onRequest?.call(prepared?.preview ?? 'POST $uri\n${_diagnosticJson(payload)}');
+      final partial = StringBuffer();
+      final (reply, _, _) = await _postWithRetries(
+        uri,
+        payload,
+        cancel,
+        log,
+        prepared: prepared,
+        onResponse: onResponse,
+        onText: onText == null
+            ? null
+            : (chunk) {
+                partial.write(chunk);
+                onText(_withoutApiKey(partial.toString()));
+              },
+      );
+      return _withoutApiKey(reply);
+    } on TranslationException catch (e) {
+      throw TranslationException(
+        _withoutApiKey(e.message),
+        kind: e.kind,
+        statusCode: e.statusCode,
+        reply: e.reply == null ? null : _withoutApiKey(e.reply!),
+      );
+    }
+  }
+
+  bool get acceptsTemplateFiles => _customChat?.acceptsFiles ?? false;
+
+  String _withoutApiKey(String text) => apiKey.isEmpty ? text : text.replaceAll(apiKey, '[redacted]');
+
+  String _diagnosticJson(Object? value) {
+    Object? clean(Object? value) => switch (value) {
+      Map() => {
+        for (final entry in value.entries)
+          '${entry.key}':
+              RegExp(
+                r'(authorization|api[_-]?key|password|secret|access[_-]?token|cookie)',
+                caseSensitive: false,
+              ).hasMatch('${entry.key}')
+              ? '[redacted]'
+              : clean(entry.value),
+      },
+      List() => [for (final item in value) clean(item)],
+      String() => _diagnosticText(value),
+      _ => value,
+    };
+    return _limitDiagnostic(_withoutApiKey(const JsonEncoder.withIndent('  ').convert(clean(value))));
+  }
+
+  String _diagnosticText(String text) => _withoutApiKey(
+    text,
+  ).replaceAll(RegExp(r'data:image/[^\s;,]+;base64,[A-Za-z0-9+/=_-]+', caseSensitive: false), '[image data omitted]');
+
+  static String _limitDiagnostic(String text) => text.length <= 24000 ? text : '${text.substring(0, 24000)}\n…';
+
+  Map<String, Object?> _withRequestOptions(Map<String, Object?> payload) {
+    if (_customChat != null || requestOptions.trim().isEmpty) return payload;
+    final Map<String, Object?> extra;
+    try {
+      extra = RequestTemplate.parseRequestOptions(requestOptions);
+    } on FormatException catch (error) {
+      throw TranslationException(
+        'invalid additional request fields: ${error.message}',
+        kind: TranslationErrorKind.config,
+      );
+    }
+    final result = {...payload, ...extra};
+    for (final key in extra.keys) {
+      if (extra[key] == null) result.remove(key);
+    }
+    return result;
+  }
+
+  @override
+  Future<void> translate(TranslationRequest request, PluginContext context) async {
+    final uri = chatUri();
     final reply = await _ask(request, context, uri);
     // Bubbles the answer had nothing for: asked once more, on their own. A
     // failed second request keeps what the first one gave.
@@ -280,10 +465,7 @@ class OpenAiCompatibleTranslator implements Translator {
     // The original only warns; a page with no translation at all would look
     // done but keep its text, so it is reported instead.
     if (request.blocks.isNotEmpty && request.blocks.every((b) => b.untranslated)) {
-      throw TranslationException(
-        'the model reply has no translations: ${_clip(reply)}',
-        kind: TranslationErrorKind.badReply,
-      );
+      throw NoTranslationsException('the model reply has no translations: ${_clip(reply)}');
     }
   }
 
@@ -339,14 +521,14 @@ class OpenAiCompatibleTranslator implements Translator {
       Map<String, Object?>? usage;
       String? finish;
       try {
-        (reply, usage, finish) = await _postWithRetries(uri, payload, context.cancel, log);
+        (reply, usage, finish) = await postChat(uri, payload, context.cancel, log);
       } on TranslationException catch (e) {
         // Some servers cap the answer lower (DeepSeek: 8192) and refuse the
         // raised length of a pack: asked once more with the setting's own.
-        if (payload[tokenLimitParam] != llmBatchMaxTokens || !_refusesLength(e)) rethrow;
+        if (_customChat != null || payload[tokenLimitParam] != llmBatchMaxTokens || !_refusesLength(e)) rethrow;
         log.warn('translate_length_refused', {'tokens': llmBatchMaxTokens, 'error': e.message});
         payload = buildPayload(request, length: maxTokens);
-        (reply, usage, finish) = await _postWithRetries(uri, payload, context.cancel, log);
+        (reply, usage, finish) = await postChat(uri, payload, context.cancel, log);
       }
       used = usageOf(usage, payload, reply, host: uri.host);
       log.info('translate_response', {
@@ -414,7 +596,7 @@ class OpenAiCompatibleTranslator implements Translator {
     Map<String, Object?> payload,
     CancelToken cancel,
     EventLog log,
-  ) => _postWithRetries(uri, payload, cancel, log);
+  ) => _postWithRetries(uri, _withRequestOptions(payload), cancel, log);
 
   /// Sends again after temporary failures (rate limit, server error, lost
   /// connection), waiting [retryDelays] (or the server's Retry-After, up to
@@ -423,13 +605,40 @@ class OpenAiCompatibleTranslator implements Translator {
     Uri uri,
     Map<String, Object?> payload,
     CancelToken cancel,
-    EventLog log,
-  ) async {
+    EventLog log, {
+    void Function(int status, String body)? onResponse,
+    void Function(String)? onText,
+    PreparedHttpRequest? prepared,
+  }) async {
+    if (_customChat case final custom?) {
+      final request = prepared ?? custom.prepare(apiUrl, apiKey, payload);
+      final reply = await request.send(
+        timeout: timeout,
+        cancel: cancel,
+        clientFactory: _httpClientFactory,
+        onText: onText,
+      );
+      if (onResponse != null) onResponse(reply.status, _diagnosticResponse(reply.body));
+      return custom.decode(reply, apiKey) as (String, Map<String, Object?>?, String?);
+    }
+    final streaming = streamChat ? prepared ?? PreparedHttpRequest.openAiChatStream(uri, apiKey, payload) : null;
+    var receivedText = false;
     for (var attempt = 0; ; attempt++) {
       try {
-        return await _post(uri, payload, cancel);
+        if (streaming == null) return await _post(uri, payload, cancel, onResponse);
+        final reply = await streaming.send(
+          timeout: timeout,
+          cancel: cancel,
+          clientFactory: _httpClientFactory,
+          onText: (chunk) {
+            receivedText = true;
+            onText?.call(chunk);
+          },
+        );
+        onResponse?.call(reply.status, _diagnosticResponse(reply.body));
+        return streaming.decodeOpenAiChatStream(reply);
       } on TranslationException catch (e) {
-        if (!e.kind.isTemporary || attempt >= retryDelays.length) rethrow;
+        if (receivedText || !e.kind.isTemporary || attempt >= retryDelays.length) rethrow;
         final wait = e is _RetryAfter && e.retryAfter != null
             ? (e.retryAfter! > const Duration(seconds: 30) ? const Duration(seconds: 30) : e.retryAfter!)
             : retryDelays[attempt];
@@ -452,6 +661,7 @@ class OpenAiCompatibleTranslator implements Translator {
     Uri uri,
     Map<String, Object?> payload,
     CancelToken cancel,
+    void Function(int status, String body)? onResponse,
   ) async {
     final client = _httpClientFactory()..connectionTimeout = timeout;
     if (!identical(cancel, CancelToken.none)) cancel.onCancel(() => client.close(force: true));
@@ -464,17 +674,8 @@ class OpenAiCompatibleTranslator implements Translator {
       req.add(bytes);
       final res = await req.close().timeout(timeout);
       final body = await res.transform(utf8.decoder).join().timeout(timeout);
-      if (res.statusCode < 200 || res.statusCode >= 300) {
-        final detail = _errorDetail(body);
-        final seconds = int.tryParse(res.headers.value('retry-after') ?? '');
-        throw _RetryAfter(
-          '${uri.host} answered HTTP ${res.statusCode}$detail',
-          kind: TranslationErrorKind.forStatus(res.statusCode, detail),
-          statusCode: res.statusCode,
-          retryAfter: seconds == null ? null : Duration(seconds: seconds),
-        );
-      }
-      return _content(body);
+      if (onResponse != null) onResponse(res.statusCode, _diagnosticResponse(body));
+      return _parseResponse(uri, res, body);
     } on TimeoutException {
       cancel.throwIfCancelled();
       throw TranslationException(
@@ -500,6 +701,29 @@ class OpenAiCompatibleTranslator implements Translator {
     } finally {
       client.close(force: true);
     }
+  }
+
+  String _diagnosticResponse(String body) {
+    try {
+      return _diagnosticJson(jsonDecode(body));
+    } on FormatException {
+      // Non-JSON replies are often proxy error pages.
+      return _limitDiagnostic(_diagnosticText(body));
+    }
+  }
+
+  (String, Map<String, Object?>?, String?) _parseResponse(Uri uri, HttpClientResponse res, String body) {
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      final detail = _errorDetail(_withoutApiKey(body));
+      final seconds = int.tryParse(res.headers.value('retry-after') ?? '');
+      throw _RetryAfter(
+        '${uri.host} answered HTTP ${res.statusCode}$detail',
+        kind: TranslationErrorKind.forStatus(res.statusCode, detail),
+        statusCode: res.statusCode,
+        retryAfter: seconds == null ? null : Duration(seconds: seconds),
+      );
+    }
+    return _content(body);
   }
 
   /// What a request used: the `usage` of the reply (tokens, and the cost on
@@ -641,11 +865,57 @@ class _RetryAfter extends TranslationException {
   final Duration? retryAfter;
 }
 
-/// OpenRouter tells what is left of a key's limit; other servers have no
-/// such request.
-KeyStatusQuery? openAiCompatibleKeyStatus(PluginConfig config) {
-  final base = openAiCompatibleUrl(config);
-  return isOpenRouterUrl(base) ? openRouterKeyQuery(base, config.secret('api_key') ?? '') : null;
+KeyStatusQuery? openAiCompatibleKeyStatus(PluginConfig config, {String? baseUrl}) {
+  final base = baseUrl ?? openAiCompatibleUrl(config);
+  final key = config.secret('api_key') ?? '';
+  if (httpRequestSpec(config, HttpOperation.keyStatus) case final spec?) {
+    return KeyStatusQuery(
+      host: Uri.tryParse(base)?.host ?? '',
+      hasKey: key.isNotEmpty,
+      custom: true,
+      run: () => _runHttpOperation<KeyStatus>(HttpOperation.keyStatus, spec, base, key),
+    );
+  }
+  final path = config.values[RequestTemplate.keyStatusPathKey] as String? ?? '';
+  if (path.isEmpty) return isOpenRouterUrl(base) ? openRouterKeyQuery(base, key) : null;
+  final uri = openAiCompatibleUri(base, path, path);
+  if (uri == null) return null;
+  return KeyStatusQuery(
+    host: uri.host,
+    hasKey: key.isNotEmpty,
+    custom: true,
+    run: () => _fetchTemplateKeyStatus(uri, key, config.value<String>(RequestTemplate.keyStatusFieldsKey)),
+  );
+}
+
+Future<KeyStatus> _fetchTemplateKeyStatus(Uri uri, String key, String fieldsJson) async {
+  final fields = RequestTemplate.parseKeyStatusFields(fieldsJson);
+  if (fields == null || fields.isEmpty) {
+    throw TranslationException('configure fields for the key status response', kind: TranslationErrorKind.config);
+  }
+  final json = await _openAiCompatibleGet(uri, apiKey: key, timeout: const Duration(seconds: 20), unwrapData: false);
+  final redactor = Redactor(secrets: [key]);
+  String safe(String text) {
+    final masked = redactor.redact(key.isEmpty ? text : text.replaceAll(key, Redactor.mask));
+    return masked.length > 240 ? '${masked.substring(0, 240)}…' : masked;
+  }
+
+  final values = <String, String>{};
+  for (final entry in fields.entries) {
+    Object? value = json;
+    for (final part in entry.value.split('.')) {
+      value = value is Map ? value[part] : null;
+    }
+    if (value is String) {
+      values[safe(entry.key)] = safe(value);
+    } else if (value is num || value is bool) {
+      values[safe(entry.key)] = '$value';
+    }
+  }
+  if (values.isEmpty) {
+    throw TranslationException('no matching fields in the key status response', kind: TranslationErrorKind.badReply);
+  }
+  return KeyStatus(fields: Map.unmodifiable(values));
 }
 
 /// The API of OpenRouter at [base] (`https://openrouter.ai/api/v1`).
@@ -666,7 +936,7 @@ Future<KeyStatus> fetchOpenRouterKeyStatus(
   Duration timeout = const Duration(seconds: 20),
   HttpClient Function()? httpClientFactory,
 }) async {
-  final data = await _openRouterGet(uri, apiKey: apiKey, timeout: timeout, httpClientFactory: httpClientFactory);
+  final data = await _openAiCompatibleGet(uri, apiKey: apiKey, timeout: timeout, httpClientFactory: httpClientFactory);
   if (data is! Map) {
     throw TranslationException(
       'unexpected reply format: ${OpenAiCompatibleTranslator._clip('$data')}',
@@ -676,11 +946,69 @@ Future<KeyStatus> fetchOpenRouterKeyStatus(
   return parseOpenRouterKeyStatus(data.cast<String, Object?>());
 }
 
-/// The models OpenRouter offers can be listed (no key needed); other
-/// servers are not asked.
-ModelCatalogQuery? openAiCompatibleModelCatalog(PluginConfig config) {
-  final base = openAiCompatibleUrl(config);
-  return isOpenRouterUrl(base) ? openRouterModelQuery(base) : null;
+/// Uses the same endpoint and credentials as the configured profile.
+ModelCatalogQuery? openAiCompatibleModelCatalog(PluginConfig config, {String? baseUrl}) {
+  final base = baseUrl ?? openAiCompatibleUrl(config);
+  final key = config.secret('api_key');
+  if (httpRequestSpec(config, HttpOperation.models) case final spec?) {
+    return ModelCatalogQuery(
+      host: Uri.tryParse(base)?.host ?? '',
+      settingKey: 'model',
+      usesProfileCredentials: true,
+      run: () => _runHttpOperation<List<CatalogModel>>(HttpOperation.models, spec, base, key ?? ''),
+    );
+  }
+  final uri = openAiCompatibleUri(base, config.value<String>('models_path'), 'models');
+  if (uri == null) return null;
+  return ModelCatalogQuery(
+    host: uri.host,
+    settingKey: 'model',
+    usesProfileCredentials: true,
+    run: () => fetchOpenAiCompatibleModels(uri, apiKey: key),
+  );
+}
+
+EditableHttpRequest _parseHttpRequest(
+  HttpOperation operation,
+  HttpRequestSpec spec, {
+  bool openRouterModelDefaults = false,
+}) {
+  try {
+    return EditableHttpRequest.parse(operation, spec, openRouterModelDefaults: openRouterModelDefaults);
+  } on FormatException catch (error) {
+    throw TranslationException('invalid HTTP template: ${error.message}', kind: TranslationErrorKind.config);
+  }
+}
+
+Future<T> _runHttpOperation<T>(HttpOperation operation, HttpRequestSpec spec, String base, String key) async {
+  final operationRequest = _parseHttpRequest(operation, spec, openRouterModelDefaults: isOpenRouterUrl(base));
+  try {
+    final request = operationRequest.prepare(base, key, const {});
+    final reply = await request.send(timeout: const Duration(seconds: 30));
+    return operationRequest.decode(reply, key) as T;
+  } on FormatException catch (error) {
+    throw TranslationException('invalid HTTP template: ${error.message}', kind: TranslationErrorKind.config);
+  }
+}
+
+Future<List<CatalogModel>> fetchOpenAiCompatibleModels(
+  Uri uri, {
+  String? apiKey,
+  Duration timeout = const Duration(seconds: 30),
+}) async {
+  final data = await _openAiCompatibleGet(uri, apiKey: apiKey, timeout: timeout);
+  if (data is! List) {
+    throw TranslationException('expected a list of models in data', kind: TranslationErrorKind.badReply);
+  }
+  return [
+    for (final entry in data.whereType<Map>())
+      if (entry['id'] case final String id when id.trim().isNotEmpty)
+        CatalogModel(
+          id: id,
+          name: entry['name'] is String ? entry['name'] as String : '',
+          vision: _modalities(entry, 'input_modalities', 'image'),
+        ),
+  ];
 }
 
 /// The model list of OpenRouter at [base].
@@ -696,7 +1024,7 @@ Future<List<CatalogModel>> fetchOpenRouterModels(
   Duration timeout = const Duration(seconds: 30),
   HttpClient Function()? httpClientFactory,
 }) async {
-  final data = await _openRouterGet(uri, timeout: timeout, httpClientFactory: httpClientFactory);
+  final data = await _openAiCompatibleGet(uri, timeout: timeout, httpClientFactory: httpClientFactory);
   if (data is! List) {
     throw TranslationException(
       'unexpected reply format: ${OpenAiCompatibleTranslator._clip('$data')}',
@@ -709,11 +1037,6 @@ Future<List<CatalogModel>> fetchOpenRouterModels(
 /// The `data` of OpenRouter's model list: models that answer with text.
 /// Prices come per token as strings; a negative one means "it depends".
 List<CatalogModel> parseOpenRouterModels(List<Object?> data) {
-  double? perMillion(Object? v) {
-    final price = v is num ? v.toDouble() : double.tryParse('$v');
-    return price == null || price < 0 ? null : price * 1000000;
-  }
-
   return [
     for (final m in data.whereType<Map>())
       if (m['id'] is String && _modalities(m, 'output_modalities', 'text'))
@@ -722,8 +1045,8 @@ List<CatalogModel> parseOpenRouterModels(List<Object?> data) {
           name: m['name'] as String? ?? '',
           description: m['description'] as String? ?? '',
           contextLength: (m['context_length'] as num?)?.toInt(),
-          promptPrice: perMillion((m['pricing'] as Map?)?['prompt']),
-          completionPrice: perMillion((m['pricing'] as Map?)?['completion']),
+          promptPrice: modelPricePerMillion((m['pricing'] as Map?)?['prompt']),
+          completionPrice: modelPricePerMillion((m['pricing'] as Map?)?['completion']),
           vision: _modalities(m, 'input_modalities', 'image'),
           created: m['created'] is num
               ? DateTime.fromMillisecondsSinceEpoch((m['created'] as num).toInt() * 1000, isUtc: true)
@@ -746,22 +1069,25 @@ bool _modalities(Map<Object?, Object?> model, String kind, String what) {
   return side.split('+').contains(what);
 }
 
-/// A GET of OpenRouter's API: the `data` of its JSON reply. The key goes
+/// A GET of the API: the `data` of its JSON reply. The key goes
 /// along only when given.
-Future<Object?> _openRouterGet(
+Future<Object?> _openAiCompatibleGet(
   Uri uri, {
   String? apiKey,
   required Duration timeout,
   HttpClient Function()? httpClientFactory,
+  bool unwrapData = true,
 }) async {
   final client = (httpClientFactory ?? OpenAiCompatibleTranslator._defaultClient)()..connectionTimeout = timeout;
   try {
     final req = await client.getUrl(uri).timeout(timeout);
-    if (apiKey != null) req.headers.set(HttpHeaders.authorizationHeader, 'Bearer $apiKey');
+    req.followRedirects = false;
+    if (apiKey != null && apiKey.isNotEmpty) req.headers.set(HttpHeaders.authorizationHeader, 'Bearer $apiKey');
     final res = await req.close().timeout(timeout);
     final body = await res.transform(utf8.decoder).join().timeout(timeout);
+    String safeBody() => apiKey == null || apiKey.isEmpty ? body : body.replaceAll(apiKey, '[redacted]');
     if (res.statusCode < 200 || res.statusCode >= 300) {
-      final detail = OpenAiCompatibleTranslator._errorDetail(body);
+      final detail = OpenAiCompatibleTranslator._errorDetail(safeBody());
       throw TranslationException(
         '${uri.host} answered HTTP ${res.statusCode}$detail',
         kind: TranslationErrorKind.forStatus(res.statusCode, detail),
@@ -773,13 +1099,14 @@ Future<Object?> _openRouterGet(
       json = jsonDecode(body);
     } on FormatException {
       throw TranslationException(
-        'the server reply is not JSON: ${OpenAiCompatibleTranslator._clip(body)}',
+        'the server reply is not JSON: ${OpenAiCompatibleTranslator._clip(safeBody())}',
         kind: TranslationErrorKind.badReply,
       );
     }
+    if (!unwrapData) return json;
     if (json is! Map || !json.containsKey('data')) {
       throw TranslationException(
-        'unexpected reply format: ${OpenAiCompatibleTranslator._clip(body)}',
+        'unexpected reply format: ${OpenAiCompatibleTranslator._clip(safeBody())}',
         kind: TranslationErrorKind.badReply,
       );
     }

@@ -9,9 +9,11 @@ class UsageCommand extends CtsCommand {
   UsageCommand(super.holder) {
     argParser
       ..addFlag('reset', negatable: false, help: 'Start the counter from zero.')
-      ..addFlag('balance',
-          negatable: false,
-          help: "Ask the translator's service what is left of the API key (sends the key to it; OpenRouter only).")
+      ..addFlag(
+        'balance',
+        negatable: false,
+        help: "Ask the translator's service for key details. This sends the saved key to the server.",
+      )
       ..addOption('translator', help: 'Translator plugin id for --balance (default from settings).');
   }
 
@@ -48,11 +50,14 @@ class UsageCommand extends CtsCommand {
       }
       final query = info.keyStatus?.call(await services.pluginConfig(id, settings));
       if (query == null) {
-        ctx.err.writeln('"${info.displayName}" with this server cannot tell what is left of the key (OpenRouter can).');
+        ctx.err.writeln('No key status request is configured for "${info.displayName}".');
         return ExitCodes.failure;
       }
       if (!query.hasKey) {
-        ctx.err.writeln('No API key saved for "${info.displayName}" (cts secrets set ${pluginSecretKey(id, 'api_key')}).');
+        final field = info.field('api_key');
+        final slot = field is SecretSetting ? settings.pluginSettingSecretKey(id, field) : null;
+        ctx.err.writeln('No active API key for "${info.displayName}".');
+        ctx.err.writeln(slot == null ? 'Select a key in Settings.' : 'Save it with: cts secrets set $slot');
         return ExitCodes.failure;
       }
       ctx.err.writeln('Sending the API key to ${query.host} to ask what is left of it.');
@@ -85,15 +90,19 @@ class UsageCommand extends CtsCommand {
         if (balance != null)
           'balance': {
             'host': balanceHost,
-            'limit': balance.limit,
-            'remaining': balance.remaining,
-            'used': balance.used,
-            'used_today': balance.usedToday,
-            'used_this_month': balance.usedThisMonth,
-            'limit_reset': balance.limitReset?.name,
-            'free_requests_today': balance.freeRequestsToday,
-            'free_requests_limit': balance.freeRequestsLimit,
-            'free_requests_left': balance.freeRequestsLeft,
+            if (balance.fields case final fields?)
+              'fields': fields
+            else ...{
+              'limit': balance.limit,
+              'remaining': balance.remaining,
+              'used': balance.used,
+              'used_today': balance.usedToday,
+              'used_this_month': balance.usedThisMonth,
+              'limit_reset': balance.limitReset?.name,
+              'free_requests_today': balance.freeRequestsToday,
+              'free_requests_limit': balance.freeRequestsLimit,
+              'free_requests_left': balance.freeRequestsLeft,
+            },
           },
       });
       return ExitCodes.ok;
@@ -101,10 +110,10 @@ class UsageCommand extends CtsCommand {
 
     String money(double v) => '\$${v.toStringAsFixed(moneyDecimals(v))}';
     String totals(UsageTotals t) => [
-          '${t.requests} request(s)',
-          '${t.estimated ? '~' : ''}${t.tokens} tokens (in ${t.inputTokens}, out ${t.outputTokens})',
-          if (t.cost != null) money(t.cost!),
-        ].join(', ');
+      '${t.requests} request(s)',
+      '${t.estimated ? '~' : ''}${t.tokens} tokens (in ${t.inputTokens}, out ${t.outputTokens})',
+      if (t.cost != null) money(t.cost!),
+    ].join(', ');
     if (report.entries.isEmpty) ctx.say('No requests to paid services counted yet.');
     for (final e in report.entries) {
       ctx.say('${e.model} @ ${e.host}');
@@ -113,13 +122,23 @@ class UsageCommand extends CtsCommand {
     }
     if (report.since != null) ctx.say('Counted since ${UsageLog.dayKey(report.since!)}, only on this computer.');
     final b = balance;
-    if (b != null) {
+    if (b?.fields case final fields?) {
       ctx.say('');
-      ctx.say('Key at $balanceHost: ${b.limit == null ? 'no limit' : 'limit ${money(b.limit!)}, left ${money(b.remaining ?? b.limit! - b.used)}'}, '
-          'spent ${money(b.used)} (today UTC ${money(b.usedToday)}, this month ${money(b.usedThisMonth)})'
-          '${b.limitReset == null ? '' : ', the limit resets ${b.limitReset!.name}'}.');
+      ctx.say('Key details from $balanceHost');
+      for (final entry in fields.entries) {
+        ctx.say('  ${entry.key} · ${entry.value}');
+      }
+    } else if (b != null) {
+      ctx.say('');
+      ctx.say(
+        'Key at $balanceHost: ${b.limit == null ? 'no limit' : 'limit ${money(b.limit!)}, left ${money(b.remaining ?? b.limit! - b.used)}'}, '
+        'spent ${money(b.used)} (today UTC ${money(b.usedToday)}, this month ${money(b.usedThisMonth)})'
+        '${b.limitReset == null ? '' : ', the limit resets ${b.limitReset!.name}'}.',
+      );
       if (b.freeRequestsLimit != null) {
-        ctx.say('Free models today: ${b.freeRequestsToday ?? 0} of ${b.freeRequestsLimit} requests, ${b.freeRequestsLeft} left.');
+        ctx.say(
+          'Free models today: ${b.freeRequestsToday ?? 0} of ${b.freeRequestsLimit} requests, ${b.freeRequestsLeft} left.',
+        );
       }
     }
     return ExitCodes.ok;

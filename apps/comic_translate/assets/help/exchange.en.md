@@ -15,7 +15,7 @@ Why:
 How it differs from the "OpenRouter" translator: OpenRouter works by itself, over the network, with an API key
 (Settings → Translator). The exchange is by hand, with no key, through the chat in your browser.
 
-Reading can do the same without hands: Settings → Recognition and cleaning → **"Model by key: OpenRouter"** (or
+Reading can do the same without hands: Settings → Recognition → **"Model by key: OpenRouter"** (or
 "own server"). The app sends the model the labelled sheets and these same instructions and puts the answer
 into the bubbles. The key is the translator's; the model is chosen apart and must see pictures (for example
 google/gemini-3.1-flash-lite: about $0.0005 a page). The app asks before it first sends anything.
@@ -32,7 +32,7 @@ one model reads better and another translates better. For one page or the picked
 - The **"Chat"** button on the main screen (or its menu): **"Read and translate through a chat…"**,
   **"Read through a chat…"**, **"Translate through a chat…"**. It works on the selected pages.
 - **"Translate all"** can open the exchange by itself too: choose **"By hand through a chat AI"** as the
-  translator (Settings → Translator) and/or for reading (Settings → Recognition and cleaning). The app then finds
+  translator (Settings → Translator) and/or for reading (Settings → Recognition). The app then finds
   the text on the pages, opens the exchange window, and after **"Apply and go on"** cleans and letters the pages.
 - **"Chat → Open an earlier exchange…"** opens an exchange made before (see below).
 
