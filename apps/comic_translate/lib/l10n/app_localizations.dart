@@ -2969,13 +2969,13 @@ abstract class AppLocalizations {
   /// No description provided for @toolBrush.
   ///
   /// In en, this message translates to:
-  /// **'Brush: paint what to clean (B)'**
+  /// **'Brush: paint what to clean (B). Shift + click: a straight line from the last point'**
   String get toolBrush;
 
   /// No description provided for @toolEraser.
   ///
   /// In en, this message translates to:
-  /// **'Eraser: remove parts of the mask (E)'**
+  /// **'Eraser: remove parts of the mask (E). Shift + click: a straight line from the last point'**
   String get toolEraser;
 
   /// No description provided for @brushSize.

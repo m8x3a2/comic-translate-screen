@@ -1658,10 +1658,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get toolText => 'Translation: move, resize and turn the text (T)';
 
   @override
-  String get toolBrush => 'Brush: paint what to clean (B)';
+  String get toolBrush =>
+      'Brush: paint what to clean (B). Shift + click: a straight line from the last point';
 
   @override
-  String get toolEraser => 'Eraser: remove parts of the mask (E)';
+  String get toolEraser =>
+      'Eraser: remove parts of the mask (E). Shift + click: a straight line from the last point';
 
   @override
   String get brushSize => 'Brush size ([ and ])';

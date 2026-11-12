@@ -94,6 +94,10 @@ class _Drag {
   double draftAngle = 0;
   final points = <Point2>[];
   var moved = false;
+
+  /// Shift + click: a straight line from the end of the last stroke; its end
+  /// follows the mouse until the button is let go.
+  var line = false;
 }
 
 class _PageCanvasState extends ConsumerState<PageCanvas> {
@@ -110,6 +114,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   /// in drawing programs.
   var _grab = false;
   var _inside = false;
+
+  /// Shift is held: a click of the brush or eraser draws a straight line.
+  var _shift = false;
 
   @override
   void initState() {
@@ -130,6 +137,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     final space = !typing && keys.logicalKeysPressed.contains(LogicalKeyboardKey.space);
     final grab = keys.isControlPressed || space;
     if (grab != _grab && mounted) setState(() => _grab = grab);
+    final shift = keys.isShiftPressed;
+    if (shift != _shift && mounted) setState(() => _shift = shift);
     // Space over the page is ours (it would press the focused button).
     return e.logicalKey == LogicalKeyboardKey.space && !typing && (_inside || _drag?.mode == _Mode.pan);
   }
@@ -227,6 +236,13 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     return Rect.fromLTRB(l, t, rr, b);
   }
 
+  /// Where a Shift + click line starts: the end of the last brush or eraser
+  /// stroke of the page (so undo moves it back too).
+  Offset? get _lineStart {
+    final last = widget.page.strokes.lastOrNull?.points.lastOrNull;
+    return last == null ? null : Offset(last.x, last.y);
+  }
+
   // Gestures.
 
   void _down(PointerDownEvent e) {
@@ -249,7 +265,12 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     } else {
       switch (editor.tool) {
         case EditorTool.brush || EditorTool.eraser:
-          drag = _Drag(_Mode.paint, p)..points.add(Point2(p.dx, p.dy));
+          final from = HardwareKeyboard.instance.isShiftPressed ? _lineStart : null;
+          drag = from == null
+              ? (_Drag(_Mode.paint, p)..points.add(Point2(p.dx, p.dy)))
+              : (_Drag(_Mode.paint, p)
+                  ..line = true
+                  ..points.addAll([Point2(from.dx, from.dy), Point2(p.dx, p.dy)]));
         case EditorTool.boxes:
           final sel = selected != null && selected < blocks.length ? _rectOf(blocks[selected].xyxy) : null;
           final handle = sel == null ? null : _hitHandle(sel, p);
@@ -302,7 +323,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     switch (d.mode) {
       case _Mode.paint:
         final last = d.points.last;
-        if ((Offset(last.x, last.y) - p).distance * _zoom >= 1.5) d.points.add(Point2(p.dx, p.dy));
+        if (d.line) {
+          d.points.last = Point2(p.dx, p.dy);
+        } else if ((Offset(last.x, last.y) - p).distance * _zoom >= 1.5) {
+          d.points.add(Point2(p.dx, p.dy));
+        }
       case _Mode.newBox:
         d.draft = Rect.fromPoints(d.start, p);
       case _Mode.moveBox || _Mode.moveText:
@@ -488,6 +513,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
                   areaOf: (i) => _textArea(page.blocks, i),
                   drag: d,
                   hover: editor.paints && !widget.readOnly && !_grab ? _hover : null,
+                  lineFrom: _shift && d == null ? _lineStart : null,
                   showBoxes: editor.tool == EditorTool.boxes || (editor.showBoxes && editor.tool == EditorTool.pan),
                   rotateHandle: _rotateHandle,
                 ),
@@ -562,6 +588,7 @@ class _OverlayPainter extends CustomPainter {
     required this.areaOf,
     required this.drag,
     required this.hover,
+    required this.lineFrom,
     required this.showBoxes,
     required this.rotateHandle,
   }) : super(repaint: transform);
@@ -576,6 +603,9 @@ class _OverlayPainter extends CustomPainter {
   final Rect Function(int index) areaOf;
   final _Drag? drag;
   final Offset? hover;
+
+  /// Shift is held: where a click would start its straight line.
+  final Offset? lineFrom;
   final bool showBoxes;
   final Offset Function(Rect area) rotateHandle;
 
@@ -681,6 +711,10 @@ class _OverlayPainter extends CustomPainter {
     final h = hover;
     if (h != null) {
       final r = editor.brushSize / 2;
+      if (lineFrom case final from?) {
+        canvas.drawLine(from, h, line(Colors.white, 2.5));
+        canvas.drawLine(from, h, line(editor.tool == EditorTool.eraser ? Colors.black : Colors.red, 1.2));
+      }
       canvas.drawCircle(h, r, line(Colors.white, 2.5));
       canvas.drawCircle(h, r, line(editor.tool == EditorTool.eraser ? Colors.black : Colors.red, 1.2));
     }

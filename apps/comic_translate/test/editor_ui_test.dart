@@ -203,6 +203,85 @@ void main() {
     expect(boxes(), 2);
   });
 
+  testWidgets('Shift + click draws a straight line of the mask from the last stroke', (tester) async {
+    final container = await openTranslatedPage(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyB);
+    await tester.pump();
+    final canvas = find.byType(PageCanvas);
+    for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    List<MaskStroke> strokes() => container.read(workspaceProvider).currentPage!.strokes;
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
+    final rect = tester.getRect(canvas);
+    Offset at(double x, double y) => rect.topLeft + Offset(rect.width * x, rect.height * y);
+    final a = at(0.2, 0.3);
+    await mouse.addPointer(location: a);
+    Future<void> click(Offset at) async {
+      await mouse.moveTo(at);
+      await tester.pump();
+      await mouse.down(at);
+      await tester.pump();
+      await mouse.up();
+      await tester.pump();
+    }
+
+    // Nothing painted yet: Shift + click is an ordinary dot.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await click(a);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    expect(strokes().single.points, hasLength(1));
+    final dot = strokes().single.points.single;
+
+    // A click without Shift: another dot, not joined.
+    final b = at(0.6, 0.3);
+    await click(b);
+    expect(strokes(), hasLength(2));
+    expect(strokes().last.points, hasLength(1));
+    final second = strokes().last.points.single;
+    expect(second.x, greaterThan(dot.x));
+
+    // Shift + click: one straight stroke from the last dot.
+    final c = at(0.6, 0.7);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await click(c);
+    expect(strokes(), hasLength(3));
+    final line = strokes().last;
+    expect(line.points, hasLength(2));
+    expect(line.points.first, second);
+    expect(line.points.last.x, closeTo(second.x, 0.01));
+    expect(line.points.last.y, greaterThan(second.y));
+    expect(line.erase, isFalse);
+
+    // The eraser draws its line from the end of the last one; the end follows the mouse while held.
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyE);
+    await tester.pump();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await mouse.moveTo(a);
+    await tester.pump();
+    await mouse.down(a);
+    for (var i = 0; i < 3; i++) {
+      await mouse.moveBy(Offset(rect.width * 0.05, rect.height * 0.05));
+      await tester.pump();
+    }
+    await mouse.up();
+    await tester.pump();
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    final erased = strokes().last;
+    expect(erased.erase, isTrue);
+    expect(erased.points, hasLength(2), reason: 'still a straight line');
+    expect(erased.points.first, line.points.last);
+    expect(erased.points.last.x, greaterThan(dot.x));
+
+    // Ctrl+Z takes back one line at a time.
+    await ctrl(tester, LogicalKeyboardKey.keyZ);
+    expect(strokes(), hasLength(3));
+    await ctrl(tester, LogicalKeyboardKey.keyZ);
+    expect(strokes(), hasLength(2));
+  });
+
   testWidgets('F1 lists the keyboard shortcuts', (tester) async {
     await openTranslatedPage(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.f1);

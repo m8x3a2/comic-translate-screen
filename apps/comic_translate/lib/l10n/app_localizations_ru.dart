@@ -1657,10 +1657,12 @@ class AppLocalizationsRu extends AppLocalizations {
       'Перевод: двигать, растягивать и поворачивать текст (T)';
 
   @override
-  String get toolBrush => 'Кисть: закрасить то, что нужно очистить (B)';
+  String get toolBrush =>
+      'Кисть: закрасить то, что нужно очистить (B). Shift + щелчок — прямая линия от прошлой точки';
 
   @override
-  String get toolEraser => 'Ластик: стереть лишнее из маски (E)';
+  String get toolEraser =>
+      'Ластик: стереть лишнее из маски (E). Shift + щелчок — прямая линия от прошлой точки';
 
   @override
   String get brushSize => 'Размер кисти ([ и ])';
