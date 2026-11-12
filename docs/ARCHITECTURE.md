@@ -192,6 +192,13 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   neighbour goes to the network, those letters were never removed (pieces of
   "happen" and "?" stayed on the test page). Here the letters of blocks left
   to the network are kept in the mask.
+- Mask tools (new): Shift + click with the brush or the eraser draws a straight
+  line from the end of the page's last stroke. "Fit to letters" (G,
+  `fit_mask.dart`): a click on a piece of the mask shrinks it to the letters in
+  it plus a margin (3 px by default); Shift + click picks pieces for the
+  button, which fits every piece when none is picked. The letters are the text
+  masker's (its map of the page is kept in the worker for the next clicks), or
+  what stands out from the colour along the piece's edge where it found none.
 - The heuristic line splitter of the original fails (IndexError) when a line
   box ends at the right or bottom edge of the crop, e.g. on an almost empty
   block enlarged for reading; the whole page then had no text. Here the box
