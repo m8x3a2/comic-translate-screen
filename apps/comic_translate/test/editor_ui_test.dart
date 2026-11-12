@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:comic_translate/bootstrap.dart';
 import 'package:comic_translate/state/app_state.dart';
+import 'package:comic_translate/state/background.dart';
 import 'package:comic_translate/state/batch.dart';
 import 'package:comic_translate/state/exchange.dart';
 import 'package:comic_translate/state/editor.dart';
@@ -108,6 +109,13 @@ void main() {
     return container;
   }
 
+  /// The tool bar may take another row: the page moves on in the frames after.
+  Future<void> settle(WidgetTester tester) async {
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+  }
+
   Future<void> ctrl(WidgetTester tester, LogicalKeyboardKey key) async {
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(key);
@@ -206,12 +214,13 @@ void main() {
   testWidgets('Shift + click draws a straight line of the mask from the last stroke', (tester) async {
     final container = await openTranslatedPage(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyB);
-    await tester.pump();
+    await settle(tester);
     final canvas = find.byType(PageCanvas);
     for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
       await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
       await tester.pump();
     }
+    await settle(tester);
     List<MaskStroke> strokes() => container.read(workspaceProvider).currentPage!.strokes;
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
     final rect = tester.getRect(canvas);
@@ -280,6 +289,98 @@ void main() {
     expect(strokes(), hasLength(3));
     await ctrl(tester, LogicalKeyboardKey.keyZ);
     expect(strokes(), hasLength(2));
+  });
+
+  testWidgets('"Fit to letters": a click fits one piece; Shift + click picks pieces for the button', (tester) async {
+    final container = await openTranslatedPage(tester);
+    final page = container.read(workspaceProvider).currentPage!;
+    // Letters: three bars; the same again farther right.
+    bool letter(int x, int y) =>
+        y >= 31 && y <= 41 && ((x >= 22 && x <= 40) || (x >= 82 && x <= 100)) && (x - 22) % 8 < 3;
+    final data = Uint8List(120 * 80 * 3)..fillRange(0, 120 * 80 * 3, 255);
+    for (var i = 0; i < 120 * 80; i++) {
+      if (letter(i % 120, i ~/ 120)) data.fillRange(i * 3, i * 3 + 3, 0);
+    }
+    await tester.runAsync(() => ImageCodec.writeFile(page.path, RgbImage(120, 80, data)));
+    final ws = container.read(workspaceProvider.notifier)..clearMask();
+    // Two rough pieces of the brush over the two words.
+    ws.addStroke(const MaskStroke(points: [Point2(25, 36), Point2(37, 36)], width: 22));
+    ws.addStroke(const MaskStroke(points: [Point2(85, 36), Point2(97, 36)], width: 22));
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyG);
+    await tester.pump();
+    expect(container.read(editorProvider).tool, EditorTool.fit);
+    await settle(tester);
+    final canvas = find.byType(PageCanvas);
+    for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    await settle(tester);
+    final rect = tester.getRect(canvas);
+    Offset at(double x, double y) => rect.topLeft + Offset(rect.width * x / 120, rect.height * y / 80);
+    PageEntry current() => container.read(workspaceProvider).currentPage!;
+    // The fitting draws the mask with dart:ui: it runs in real time.
+    Future<void> fitBy(Future<void> Function() act) async {
+      await tester.runAsync(() async {
+        await act();
+        for (var i = 0; i < 100 && !container.read(stepsProvider).running; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        for (var i = 0; i < 3000 && container.read(stepsProvider).running; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+      });
+      await tester.pump();
+    }
+
+    Future<GrayImage> mask() async => (await tester.runAsync(() => readGrayInBackground(current().maskPath!)))!;
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
+    await mouse.addPointer(location: at(18, 28));
+    Future<void> click(Offset where) async {
+      await mouse.moveTo(where);
+      await tester.pump();
+      await mouse.down(where);
+      await tester.pump();
+      await mouse.up();
+      await tester.pump();
+    }
+
+    // A click on the first piece: it shrinks to its letters, the second stays.
+    expect(find.text('Прижать все'), findsOneWidget);
+    await fitBy(() async {
+      await mouse.moveTo(at(18, 28));
+      await mouse.down(at(18, 28));
+      await mouse.up();
+    });
+    expect(current().strokes, isEmpty);
+    var m = await mask();
+    expect(m.data[35 * 120 + 23], 255, reason: 'a letter');
+    expect(m.data[30 * 120 + 18], 0, reason: 'away from the letters');
+    expect(m.data[30 * 120 + 78], 255, reason: 'the other piece as painted');
+
+    // One undo step brings the strokes back.
+    await ctrl(tester, LogicalKeyboardKey.keyZ);
+    expect(current().strokes, hasLength(2));
+    expect(current().maskPath, isNull);
+
+    // Shift + click picks; again on the same place unpicks.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await click(at(18, 28));
+    await click(at(78, 28));
+    expect(find.text('Прижать выбранные: 2'), findsOneWidget);
+    await click(at(18, 28));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    expect(find.text('Прижать выбранные: 1'), findsOneWidget);
+    expect(current().strokes, hasLength(2), reason: 'picking changes nothing');
+
+    // The button fits the picked piece only.
+    await fitBy(() => tester.tap(find.text('Прижать выбранные: 1')));
+    m = await mask();
+    expect(m.data[30 * 120 + 18], 255, reason: 'not picked: as painted');
+    expect(m.data[30 * 120 + 78], 0);
+    expect(m.data[35 * 120 + 83], 255);
+    expect(find.text('Прижать все'), findsOneWidget, reason: 'the picks are gone');
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('F1 lists the keyboard shortcuts', (tester) async {

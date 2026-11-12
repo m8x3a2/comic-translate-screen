@@ -841,6 +841,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case ShortcutAction.nextPage:
         ws.select(state.current + 1);
       case ShortcutAction.deselect:
+        // Esc drops the pieces picked for "Fit to letters" first.
+        if (ref.read(editorProvider).fitPicks.isNotEmpty) {
+          editor.clearFitPicks();
+          return true;
+        }
         if (state.selectedBlock == null) return false;
         ws.selectBlock(null);
       case ShortcutAction.pan:
@@ -853,6 +858,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         tool(EditorTool.brush);
       case ShortcutAction.eraser:
         tool(EditorTool.eraser);
+      case ShortcutAction.fitMask:
+        tool(EditorTool.fit);
       case ShortcutAction.brushSmaller:
         brushBy(-1);
       case ShortcutAction.brushLarger:

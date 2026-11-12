@@ -2984,6 +2984,54 @@ abstract class AppLocalizations {
   /// **'Brush size ([ and ])'**
   String get brushSize;
 
+  /// No description provided for @toolFitMask.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit to letters (G): a click on a red piece of the mask shrinks it around the letters. Shift + click picks several pieces for the \"Fit\" button'**
+  String get toolFitMask;
+
+  /// No description provided for @fitMargin.
+  ///
+  /// In en, this message translates to:
+  /// **'Margin around the letters'**
+  String get fitMargin;
+
+  /// No description provided for @fitAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit all'**
+  String get fitAll;
+
+  /// No description provided for @fitPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit picked: {n}'**
+  String fitPicked(int n);
+
+  /// No description provided for @fitButtonHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Fits the picked pieces of the mask to the letters. Shift + click on a piece picks it or unpicks it. With none picked: every piece of the mask on the page'**
+  String get fitButtonHelp;
+
+  /// No description provided for @fitNoPiece.
+  ///
+  /// In en, this message translates to:
+  /// **'No mask here: click a red piece'**
+  String get fitNoPiece;
+
+  /// No description provided for @fitNoLetters.
+  ///
+  /// In en, this message translates to:
+  /// **'No letters found (pieces: {n}); left as they were'**
+  String fitNoLetters(int n);
+
+  /// No description provided for @fitDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Pieces fitted: {n}'**
+  String fitDone(int n);
+
   /// No description provided for @clearMask.
   ///
   /// In en, this message translates to:
@@ -3385,6 +3433,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Eraser: unmark'**
   String get keyEraser;
+
+  /// No description provided for @keyFitMask.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit the mask to the letters'**
+  String get keyFitMask;
 
   /// No description provided for @keyUndo.
   ///

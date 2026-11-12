@@ -914,6 +914,35 @@
   "toolBrush": "Brush: paint what to clean (B). Shift + click: a straight line from the last point",
   "toolEraser": "Eraser: remove parts of the mask (E). Shift + click: a straight line from the last point",
   "brushSize": "Brush size ([ and ])",
+  "toolFitMask": "Fit to letters (G): a click on a red piece of the mask shrinks it around the letters. Shift + click picks several pieces for the \"Fit\" button",
+  "fitMargin": "Margin around the letters",
+  "fitAll": "Fit all",
+  "fitPicked": "Fit picked: {n}",
+  "@fitPicked": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "fitButtonHelp": "Fits the picked pieces of the mask to the letters. Shift + click on a piece picks it or unpicks it. With none picked: every piece of the mask on the page",
+  "fitNoPiece": "No mask here: click a red piece",
+  "fitNoLetters": "No letters found (pieces: {n}); left as they were",
+  "@fitNoLetters": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "fitDone": "Pieces fitted: {n}",
+  "@fitDone": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "clearMask": "Remove the whole mask",
   "undo": "Undo (Ctrl+Z)",
   "redo": "Redo (Ctrl+Y)",
@@ -1005,6 +1034,7 @@
   "keyText": "Move, resize and turn the translation",
   "keyBrush": "Brush: mark what to clean",
   "keyEraser": "Eraser: unmark",
+  "keyFitMask": "Fit the mask to the letters",
   "keyUndo": "Undo",
   "keyRedo": "Redo",
   "keyDelete": "Delete the selected box",

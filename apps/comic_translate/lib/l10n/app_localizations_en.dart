@@ -1669,6 +1669,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get brushSize => 'Brush size ([ and ])';
 
   @override
+  String get toolFitMask =>
+      'Fit to letters (G): a click on a red piece of the mask shrinks it around the letters. Shift + click picks several pieces for the \"Fit\" button';
+
+  @override
+  String get fitMargin => 'Margin around the letters';
+
+  @override
+  String get fitAll => 'Fit all';
+
+  @override
+  String fitPicked(int n) {
+    return 'Fit picked: $n';
+  }
+
+  @override
+  String get fitButtonHelp =>
+      'Fits the picked pieces of the mask to the letters. Shift + click on a piece picks it or unpicks it. With none picked: every piece of the mask on the page';
+
+  @override
+  String get fitNoPiece => 'No mask here: click a red piece';
+
+  @override
+  String fitNoLetters(int n) {
+    return 'No letters found (pieces: $n); left as they were';
+  }
+
+  @override
+  String fitDone(int n) {
+    return 'Pieces fitted: $n';
+  }
+
+  @override
   String get clearMask => 'Remove the whole mask';
 
   @override
@@ -1883,6 +1915,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyEraser => 'Eraser: unmark';
+
+  @override
+  String get keyFitMask => 'Fit the mask to the letters';
 
   @override
   String get keyUndo => 'Undo';

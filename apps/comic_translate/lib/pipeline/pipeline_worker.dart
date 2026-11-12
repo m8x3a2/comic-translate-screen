@@ -362,6 +362,21 @@ class PipelineWorker {
       await _job(_Op.inpaint, page, path: path, image: image, mask: mask, blocks: blocks, below: below, cancel: cancel)
           as CleanedImage;
 
+  /// "Fit to letters": the pieces of [mask] at [seeds] (none: every piece)
+  /// shrunk to the letters of the image at [path] plus [margin] pixels. The
+  /// letters come from the text masker when it is loaded (its map of the
+  /// page is kept for the next clicks), else by contrast.
+  Future<FitMaskResult> fitMask(
+    String page, {
+    required String path,
+    required GrayImage mask,
+    List<Point2> seeds = const [],
+    int margin = fitMaskMargin,
+    CancelToken? cancel,
+  }) async =>
+      await _job(_Op.fitMask, page, path: path, mask: mask, seeds: seeds, margin: margin, cancel: cancel)
+          as FitMaskResult;
+
   Future<Object?> _job(
     _Op op,
     String page, {
@@ -377,6 +392,8 @@ class PipelineWorker {
     bool read = true,
     bool translate = true,
     List<PackJob> pack = const [],
+    List<Point2> seeds = const [],
+    int margin = 0,
     CancelToken? cancel,
     void Function(String stage)? onStage,
   }) {
@@ -389,7 +406,25 @@ class PipelineWorker {
     _send(
       id,
       pending,
-      _Job(id, op, page, path, image, blocks, mask, source, target, parts, below, covered, read, translate, pack),
+      _Job(
+        id,
+        op,
+        page,
+        path,
+        image,
+        blocks,
+        mask,
+        source,
+        target,
+        parts,
+        below,
+        covered,
+        read,
+        translate,
+        pack,
+        seeds,
+        margin,
+      ),
     );
     // A cancel answers at once: the worker stops at its next checkpoint, and
     // what it sends back for this job is dropped (a step must not apply the
@@ -477,7 +512,7 @@ class _Pending<T> {
   final void Function(String stage)? onStage;
 }
 
-enum _Op { prepare, load, detect, recognize, translate, translatePack, readPack, mask, inpaint }
+enum _Op { prepare, load, detect, recognize, translate, translatePack, readPack, mask, inpaint, fitMask }
 
 // Messages main → worker.
 
@@ -498,6 +533,8 @@ class _Job {
     this.read = true,
     this.translate = true,
     this.pack = const [],
+    this.seeds = const [],
+    this.margin = 0,
   ]);
 
   final int id;
@@ -526,6 +563,10 @@ class _Job {
 
   /// The pages of one request ([_Op.translatePack], [_Op.readPack]).
   final List<PackJob> pack;
+
+  /// [_Op.fitMask]: the clicked pieces (none: all) and the margin.
+  final List<Point2> seeds;
+  final int margin;
 }
 
 /// One page of several translated (or read) in one request.
@@ -704,6 +745,10 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
   }
   toMain.send(_Ready(inbox.sendPort, recorder?.dir.path, recorder?.runId));
 
+  // The text masker's letters of the image last fitted ("fit to letters"
+  // clicks one after another on the same image).
+  (String, GrayImage?)? fitLetters;
+
   Future<Object?> run(_Job m, CancelToken token) async {
     if (m.op == _Op.load) {
       await load(m.parts);
@@ -858,6 +903,16 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
         );
         final (clean, overflow) = splitBelow(cleaned, mask, image.height);
         return CleanedImage(clean, overflow);
+      case _Op.fitMask:
+        final key = m.path ?? '';
+        var letters = fitLetters?.$1 == key && key.isNotEmpty ? fitLetters!.$2 : null;
+        if (letters == null) {
+          await token.checkpoint();
+          letters = await (await plugins.textMasker)?.letters(image, context);
+          fitLetters = (key, letters);
+        }
+        await token.checkpoint();
+        return fitMaskToLetters(image, m.mask!, m.seeds, letters: letters, margin: m.margin);
     }
   }
 

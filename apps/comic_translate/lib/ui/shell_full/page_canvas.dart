@@ -23,6 +23,7 @@ import '../../render/text_renderer.dart';
 import '../../state/editor.dart';
 import '../../state/page_layout.dart';
 import '../../state/workspace.dart';
+import 'fit_mask_action.dart';
 
 /// Handle size on screen, in logical pixels.
 const _handle = 9.0;
@@ -72,7 +73,7 @@ class PageCanvas extends ConsumerStatefulWidget {
   ConsumerState<PageCanvas> createState() => _PageCanvasState();
 }
 
-enum _Mode { tap, newBox, moveBox, resizeBox, moveText, resizeText, rotateText, paint, pan }
+enum _Mode { tap, newBox, moveBox, resizeBox, moveText, resizeText, rotateText, paint, pan, fit }
 
 /// A drag in progress.
 class _Drag {
@@ -303,6 +304,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           }
         case EditorTool.pan:
           drag = _Drag(_Mode.tap, p);
+        case EditorTool.fit:
+          drag = _Drag(_Mode.fit, p);
       }
     }
     setState(() => _drag = drag..current = p);
@@ -340,7 +343,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         if (a > 180) a -= 360;
         // Snaps to straight within 3 degrees.
         d.draftAngle = a.abs() < 3 ? 0 : double.parse(a.toStringAsFixed(1));
-      case _Mode.tap || _Mode.pan:
+      case _Mode.tap || _Mode.pan || _Mode.fit:
         break;
     }
     setState(() {});
@@ -358,6 +361,14 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         break;
       case _Mode.tap:
         if (!d.moved) _select(d.start);
+      case _Mode.fit:
+        if (d.moved) break;
+        final at = Point2(d.start.dx, d.start.dy);
+        if (HardwareKeyboard.instance.isShiftPressed) {
+          ref.read(editorProvider.notifier).toggleFitPick(widget.page.id, at, near: _handle / _zoom);
+        } else {
+          unawaited(runFitMask(context, ref, [at]));
+        }
       case _Mode.paint:
         final erase = ref.read(editorProvider).tool == EditorTool.eraser;
         ws.addStroke(MaskStroke(points: List.of(d.points), width: ref.read(editorProvider).brushSize, erase: erase));
@@ -416,6 +427,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       EditorTool.boxes => SystemMouseCursors.precise,
       EditorTool.text => SystemMouseCursors.move,
       EditorTool.pan => SystemMouseCursors.grab,
+      EditorTool.fit => SystemMouseCursors.precise,
     };
   }
 
@@ -706,6 +718,14 @@ class _OverlayPainter extends CustomPainter {
         e.draw(canvas, moved);
         canvas.restore();
       }
+    }
+
+    // Pieces picked for "Fit to letters": a ringed dot where each was clicked.
+    for (final pick in editor.picksOf(page.id)) {
+      final c = Offset(pick.x, pick.y);
+      canvas.drawCircle(c, 7 * px, Paint()..color = colors.tertiary);
+      canvas.drawCircle(c, 7 * px, line(Colors.white, 2));
+      canvas.drawCircle(c, 2.5 * px, Paint()..color = Colors.white);
     }
 
     final h = hover;

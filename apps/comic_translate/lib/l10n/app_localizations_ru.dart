@@ -1668,6 +1668,38 @@ class AppLocalizationsRu extends AppLocalizations {
   String get brushSize => 'Размер кисти ([ и ])';
 
   @override
+  String get toolFitMask =>
+      'Прижать к буквам (G): щелчок по красному куску маски сжимает его вокруг букв. Shift + щелчок — выбрать несколько кусков, потом кнопка «Прижать»';
+
+  @override
+  String get fitMargin => 'Запас вокруг букв';
+
+  @override
+  String get fitAll => 'Прижать все';
+
+  @override
+  String fitPicked(int n) {
+    return 'Прижать выбранные: $n';
+  }
+
+  @override
+  String get fitButtonHelp =>
+      'Прижимает выбранные куски маски к буквам. Выбрать кусок или снять выбор — Shift + щелчок по нему. Если ничего не выбрано — все куски маски на странице';
+
+  @override
+  String get fitNoPiece => 'Здесь нет маски: щёлкните по красному куску';
+
+  @override
+  String fitNoLetters(int n) {
+    return 'Букв не нашлось (кусков: $n) — оставлены как были';
+  }
+
+  @override
+  String fitDone(int n) {
+    return 'Прижато кусков: $n';
+  }
+
+  @override
   String get clearMask => 'Убрать всю маску';
 
   @override
@@ -1881,6 +1913,9 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keyEraser => 'Ластик: снять отметку';
+
+  @override
+  String get keyFitMask => 'Прижать маску к буквам';
 
   @override
   String get keyUndo => 'Отменить';

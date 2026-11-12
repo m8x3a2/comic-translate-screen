@@ -778,6 +778,79 @@ class StepsNotifier extends Notifier<StepState> {
     }
   }
 
+  /// "Fit to letters" on the current page: the pieces of its mask at [seeds]
+  /// (none: every piece) shrink to the letters inside them plus [margin]
+  /// pixels, as one undo step (the owner's idea). The letters are found in
+  /// what is under the mask now (the cleaned image after a cleaning). Null
+  /// when nothing ran (no mask, a step running, stopped, an error shown).
+  Future<FitMaskResult?> fitMask(BatchUi ui, List<Point2> seeds, {int margin = fitMaskMargin}) async {
+    if (state.running || ref.read(batchProvider) is BatchRunning) return null;
+    final page = ref.read(workspaceProvider).currentPage;
+    if (page == null || !page.hasMask) return null;
+    final services = ref.read(servicesProvider);
+    final log = services.appLog.child(stage: 'edit');
+    final cancel = _cancel = CancelToken();
+    state = StepState(pageId: page.id, step: ManualStep.mask, stage: 'loading');
+    final pool = ref.read(workerPoolProvider);
+    PipelineWorker? worker;
+    try {
+      const parts = {PipelinePart.textMask};
+      final ready = await ensureModels(
+        ref,
+        ui,
+        cancel,
+        parts: parts,
+        onProgress: (f) => state = state.copyWith(stage: 'download', download: f),
+      );
+      if (!ready) return null;
+      final (setup, key) = await currentWorkerSetup(ref);
+      worker = await pool.acquire(setup, key, log);
+      await worker.load(parts, cancel: cancel);
+      state = state.copyWith(stage: _stage(ManualStep.mask));
+      final sw = Stopwatch()..start();
+      final mask = await _currentMask(page);
+      final result = await worker.fitMask(
+        page.name,
+        path: page.basePath,
+        mask: mask,
+        seeds: seeds,
+        margin: margin,
+        cancel: cancel,
+      );
+      log.info('fit_mask', {
+        'pieces': seeds.isEmpty ? 'all' : seeds.length,
+        'fitted': result.fitted,
+        'empty': result.empty,
+        'ms': sw.elapsedMilliseconds,
+      });
+      if (result.fitted == 0) return result;
+      final file = p.join(ref.read(workspaceProvider.notifier).pageDir(page.id).path, 'mask_${_stamp()}.png');
+      await worker.save([MaskOutput(file, result.mask)]);
+      cancel.throwIfCancelled();
+      // Painted on meanwhile: that is kept, nothing is fitted.
+      final latest = ref.read(workspaceProvider).byId(page.id);
+      if (latest == null ||
+          latest.maskPath != page.maskPath ||
+          latest.basePath != page.basePath ||
+          !identical(latest.strokes, page.strokes)) {
+        return null;
+      }
+      ref.read(workspaceProvider.notifier).edit(page.id, (p) => p.copyWith(maskPath: file, strokes: const []));
+      return result;
+    } on CancelledException {
+      log.info('fit_mask_cancelled');
+      return null;
+    } catch (e, st) {
+      log.error('fit_mask_failed', e, st, {'page': page.name});
+      ui.showError(e);
+      return null;
+    } finally {
+      if (worker != null) pool.release();
+      _cancel = null;
+      state = const StepState();
+    }
+  }
+
   /// The generated mask plus the strokes, at the page's size (taller on a
   /// webtoon page whose mask reaches into the page below).
   Future<GrayImage> _currentMask(PageEntry page) async {

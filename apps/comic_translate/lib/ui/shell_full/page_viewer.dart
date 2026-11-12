@@ -26,6 +26,7 @@ import '../common/plugin_strings.dart';
 import '../common/translator_history_dialog.dart';
 import '../settings/settings_place.dart';
 import 'batch_dialogs.dart';
+import 'fit_mask_action.dart';
 import 'page_canvas.dart';
 import 'page_navigator.dart';
 import 'shortcuts_dialog.dart';
@@ -423,6 +424,34 @@ class _ToolBar extends ConsumerWidget {
                 tool(EditorTool.text, Icons.text_fields_outlined, l.toolText),
                 tool(EditorTool.brush, Icons.brush_outlined, l.toolBrush),
                 tool(EditorTool.eraser, Icons.auto_fix_off_outlined, l.toolEraser),
+                tool(EditorTool.fit, Icons.compress, l.toolFitMask),
+                if (editor.tool == EditorTool.fit) ...[
+                  Tooltip(
+                    message: l.fitMargin,
+                    child: SizedBox(
+                      width: 120,
+                      child: Slider(
+                        value: editor.fitMargin.toDouble(),
+                        max: maxFitMargin.toDouble(),
+                        divisions: maxFitMargin,
+                        onChanged: (v) => notifier.setFitMargin(v.round()),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 44, child: Text('${editor.fitMargin} px')),
+                  Tooltip(
+                    message: l.fitButtonHelp,
+                    child: FilledButton.tonalIcon(
+                      onPressed: page != null && page.hasMask && !ref.watch(stepsProvider).running
+                          ? () => runFitMask(context, ref, editor.picksOf(page.id))
+                          : null,
+                      icon: const Icon(Icons.compress, size: 18),
+                      label: Text(
+                        editor.picksOf(page?.id).isEmpty ? l.fitAll : l.fitPicked(editor.picksOf(page?.id).length),
+                      ),
+                    ),
+                  ),
+                ],
                 if (editor.paints) ...[
                   Tooltip(
                     message: l.brushSize,
