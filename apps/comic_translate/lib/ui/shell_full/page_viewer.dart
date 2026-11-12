@@ -399,161 +399,179 @@ class _ToolBar extends ConsumerWidget {
         backgroundColor: editor.tool == t ? Theme.of(context).colorScheme.secondaryContainer : null,
       ),
     );
+    // Two rows: the views and the tools across the whole width; under them what
+    // the current tool offers, then the page and history buttons. The options
+    // of a tool never push a tool onto another row.
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 2),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                SegmentedButton<ViewMode>(
-                  segments: [
-                    ButtonSegment(value: ViewMode.original, label: Text(l.viewOriginal)),
-                    ButtonSegment(value: ViewMode.result, label: Text(l.viewTranslated)),
-                    ButtonSegment(value: ViewMode.mask, label: Text(l.viewMask), tooltip: l.viewMaskHelp),
-                  ],
-                  selected: {editor.view},
-                  onSelectionChanged: (s) => notifier.setView(s.first),
-                  showSelectedIcon: false,
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SegmentedButton<ViewMode>(
+                segments: [
+                  ButtonSegment(value: ViewMode.original, label: Text(l.viewOriginal)),
+                  ButtonSegment(value: ViewMode.result, label: Text(l.viewTranslated)),
+                  ButtonSegment(value: ViewMode.mask, label: Text(l.viewMask), tooltip: l.viewMaskHelp),
+                ],
+                selected: {editor.view},
+                onSelectionChanged: (s) => notifier.setView(s.first),
+                showSelectedIcon: false,
+              ),
+              if (editor.view == ViewMode.mask)
+                IconButton(
+                  tooltip: l.maskOnly,
+                  isSelected: editor.maskOnly,
+                  onPressed: notifier.toggleMaskOnly,
+                  icon: const Icon(Icons.contrast),
+                  style: IconButton.styleFrom(
+                    backgroundColor: editor.maskOnly ? Theme.of(context).colorScheme.secondaryContainer : null,
+                  ),
                 ),
-                if (editor.view == ViewMode.mask)
-                  IconButton(
-                    tooltip: l.maskOnly,
-                    isSelected: editor.maskOnly,
-                    onPressed: notifier.toggleMaskOnly,
-                    icon: const Icon(Icons.contrast),
-                    style: IconButton.styleFrom(
-                      backgroundColor: editor.maskOnly ? Theme.of(context).colorScheme.secondaryContainer : null,
-                    ),
-                  ),
-                const SizedBox(width: 8),
-                tool(EditorTool.pan, Icons.pan_tool_outlined, l.toolPan),
-                tool(EditorTool.boxes, Icons.crop_free, l.toolBoxes),
-                tool(EditorTool.text, Icons.text_fields_outlined, l.toolText),
-                tool(EditorTool.brush, Icons.brush_outlined, l.toolBrush),
-                tool(EditorTool.eraser, Icons.auto_fix_off_outlined, l.toolEraser),
-                tool(EditorTool.fit, Icons.compress, l.toolFitMask),
-                if (editor.tool == EditorTool.fit) ...[
-                  Tooltip(
-                    message: l.fitMargin,
-                    child: SizedBox(
-                      width: 120,
-                      child: Slider(
-                        value: editor.fitMargin.toDouble(),
-                        max: maxFitMargin.toDouble(),
-                        divisions: maxFitMargin,
-                        onChanged: (v) => notifier.setFitMargin(v.round()),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 44, child: Text('${editor.fitMargin} px')),
-                  // One width for "all" and "picked": the tool bar must not wrap
-                  // anew (the page would move under the mouse) while picking.
-                  Tooltip(
-                    message: l.fitButtonHelp,
-                    child: SizedBox(
-                      width: 190,
-                      child: FilledButton.tonalIcon(
-                        onPressed: page != null && page.hasMask && !ref.watch(stepsProvider).running
-                            ? () => runFitMask(context, ref, editor.picksOf(page.id))
-                            : null,
-                        icon: const Icon(Icons.compress, size: 18),
-                        label: Text(
-                          editor.picksOf(page?.id).isEmpty ? l.fitAll : l.fitPicked(editor.picksOf(page?.id).length),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 8),
+              tool(EditorTool.pan, Icons.pan_tool_outlined, l.toolPan),
+              tool(EditorTool.boxes, Icons.crop_free, l.toolBoxes),
+              tool(EditorTool.text, Icons.text_fields_outlined, l.toolText),
+              tool(EditorTool.brush, Icons.brush_outlined, l.toolBrush),
+              tool(EditorTool.eraser, Icons.auto_fix_off_outlined, l.toolEraser),
+              tool(EditorTool.fit, Icons.compress, l.toolFitMask),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (editor.tool == EditorTool.fit) ...[
+                      Tooltip(
+                        message: l.fitMargin,
+                        child: SizedBox(
+                          width: 120,
+                          child: Slider(
+                            value: editor.fitMargin.toDouble(),
+                            max: maxFitMargin.toDouble(),
+                            divisions: maxFitMargin,
+                            onChanged: (v) => notifier.setFitMargin(v.round()),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
-                if (editor.paints) ...[
-                  Tooltip(
-                    message: l.brushSize,
-                    child: SizedBox(
-                      width: 150,
-                      child: Slider(
-                        value: editor.brushSize,
-                        min: minBrushSize,
-                        max: maxBrushSize,
-                        onChanged: notifier.setBrushSize,
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 44, child: Text('${editor.brushSize.round()} px')),
-                  IconButton(
-                    tooltip: l.clearMask,
-                    onPressed: page != null && page.hasMask
-                        ? () => ref.read(workspaceProvider.notifier).clearMask()
-                        : null,
-                    icon: const Icon(Icons.layers_clear_outlined),
-                  ),
-                ],
-                if (editor.tool == EditorTool.boxes)
-                  MenuAnchor(
-                    menuChildren: [
-                      MenuItemButton(
-                        leadingIcon: const Icon(Icons.zoom_out_map),
-                        onPressed: () => ref.read(workspaceProvider.notifier).growAllBlocks(allBoxesStep),
-                        child: Text(l.boxesGrow('$allBoxesStep')),
-                      ),
-                      MenuItemButton(
-                        leadingIcon: const Icon(Icons.zoom_in_map),
-                        onPressed: () => ref.read(workspaceProvider.notifier).growAllBlocks(-allBoxesStep),
-                        child: Text(l.boxesShrink('$allBoxesStep')),
-                      ),
-                      MenuItemButton(
-                        leadingIcon: const Icon(Icons.delete_sweep_outlined),
-                        onPressed: () => ref.read(workspaceProvider.notifier).deleteAllBlocks(),
-                        child: Text(l.boxesDeleteAll),
+                      SizedBox(width: 44, child: Text('${editor.fitMargin} px')),
+                      // One width for "all" and "picked": the tool bar must not wrap
+                      // anew (the page would move under the mouse) while picking.
+                      Tooltip(
+                        message: l.fitButtonHelp,
+                        child: SizedBox(
+                          width: 190,
+                          child: FilledButton.tonalIcon(
+                            onPressed: page != null && page.hasMask && !ref.watch(stepsProvider).running
+                                ? () => runFitMask(context, ref, editor.picksOf(page.id))
+                                : null,
+                            icon: const Icon(Icons.compress, size: 18),
+                            label: Text(
+                              editor.picksOf(page?.id).isEmpty
+                                  ? l.fitAll
+                                  : l.fitPicked(editor.picksOf(page?.id).length),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
-                    builder: (context, controller, _) => TextButton.icon(
-                      onPressed: page == null || page.blocks.isEmpty
-                          ? null
-                          : () => controller.isOpen ? controller.close() : controller.open(),
-                      icon: const Icon(Icons.select_all),
-                      label: Text(l.boxesAll),
-                    ),
-                  ),
-                if (editor.tool == EditorTool.pan)
-                  FilterChip(
-                    label: Text(l.showBoxes),
-                    selected: editor.showBoxes,
-                    onSelected: (_) => notifier.toggleBoxes(),
-                  ),
-              ],
-            ),
-          ),
-          ContentKindSwitch(compact: true, onSwitched: (_) => _offerFindAgain(context, ref)),
-          const SizedBox(width: 4),
-          Tooltip(
-            message: l.webtoonModeHelp,
-            child: FilterChip(
-              avatar: const Icon(Icons.view_day_outlined, size: 18),
-              label: Text(l.webtoonMode),
-              selected: ws.webtoon,
-              showCheckmark: false,
-              onSelected: (on) => ref.read(workspaceProvider.notifier).setWebtoon(on),
-            ),
-          ),
-          IconButton(
-            tooltip: l.shortcutsTooltip,
-            onPressed: () => showShortcuts(context),
-            icon: const Icon(Icons.keyboard_outlined),
-          ),
-          IconButton(
-            tooltip: l.undo,
-            onPressed: ws.canUndo ? () => ref.read(workspaceProvider.notifier).undo() : null,
-            icon: const Icon(Icons.undo),
-          ),
-          IconButton(
-            tooltip: l.redo,
-            onPressed: ws.canRedo ? () => ref.read(workspaceProvider.notifier).redo() : null,
-            icon: const Icon(Icons.redo),
+                    if (editor.paints) ...[
+                      Tooltip(
+                        message: l.brushSize,
+                        child: SizedBox(
+                          width: 150,
+                          child: Slider(
+                            value: editor.brushSize,
+                            min: minBrushSize,
+                            max: maxBrushSize,
+                            onChanged: notifier.setBrushSize,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 44, child: Text('${editor.brushSize.round()} px')),
+                      IconButton(
+                        tooltip: l.clearMask,
+                        onPressed: page != null && page.hasMask
+                            ? () => ref.read(workspaceProvider.notifier).clearMask()
+                            : null,
+                        icon: const Icon(Icons.layers_clear_outlined),
+                      ),
+                    ],
+                    if (editor.tool == EditorTool.boxes)
+                      MenuAnchor(
+                        menuChildren: [
+                          MenuItemButton(
+                            leadingIcon: const Icon(Icons.zoom_out_map),
+                            onPressed: () => ref.read(workspaceProvider.notifier).growAllBlocks(allBoxesStep),
+                            child: Text(l.boxesGrow('$allBoxesStep')),
+                          ),
+                          MenuItemButton(
+                            leadingIcon: const Icon(Icons.zoom_in_map),
+                            onPressed: () => ref.read(workspaceProvider.notifier).growAllBlocks(-allBoxesStep),
+                            child: Text(l.boxesShrink('$allBoxesStep')),
+                          ),
+                          MenuItemButton(
+                            leadingIcon: const Icon(Icons.delete_sweep_outlined),
+                            onPressed: () => ref.read(workspaceProvider.notifier).deleteAllBlocks(),
+                            child: Text(l.boxesDeleteAll),
+                          ),
+                        ],
+                        builder: (context, controller, _) => TextButton.icon(
+                          onPressed: page == null || page.blocks.isEmpty
+                              ? null
+                              : () => controller.isOpen ? controller.close() : controller.open(),
+                          icon: const Icon(Icons.select_all),
+                          label: Text(l.boxesAll),
+                        ),
+                      ),
+                    if (editor.tool == EditorTool.pan)
+                      FilterChip(
+                        label: Text(l.showBoxes),
+                        selected: editor.showBoxes,
+                        onSelected: (_) => notifier.toggleBoxes(),
+                      ),
+                  ],
+                ),
+              ),
+              ContentKindSwitch(compact: true, onSwitched: (_) => _offerFindAgain(context, ref)),
+              const SizedBox(width: 4),
+              Tooltip(
+                message: l.webtoonModeHelp,
+                child: FilterChip(
+                  avatar: const Icon(Icons.view_day_outlined, size: 18),
+                  label: Text(l.webtoonMode),
+                  selected: ws.webtoon,
+                  showCheckmark: false,
+                  onSelected: (on) => ref.read(workspaceProvider.notifier).setWebtoon(on),
+                ),
+              ),
+              IconButton(
+                tooltip: l.shortcutsTooltip,
+                onPressed: () => showShortcuts(context),
+                icon: const Icon(Icons.keyboard_outlined),
+              ),
+              IconButton(
+                tooltip: l.undo,
+                onPressed: ws.canUndo ? () => ref.read(workspaceProvider.notifier).undo() : null,
+                icon: const Icon(Icons.undo),
+              ),
+              IconButton(
+                tooltip: l.redo,
+                onPressed: ws.canRedo ? () => ref.read(workspaceProvider.notifier).redo() : null,
+                icon: const Icon(Icons.redo),
+              ),
+            ],
           ),
         ],
       ),
