@@ -1514,6 +1514,24 @@ abstract class AppLocalizations {
   /// **'Translation'**
   String get viewTranslated;
 
+  /// No description provided for @viewMask.
+  ///
+  /// In en, this message translates to:
+  /// **'Mask'**
+  String get viewMask;
+
+  /// No description provided for @viewMaskHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'What will be cleaned: in red over the picture, without the translation. Bright red goes to the network, light red is only filled with plain background. Opens by itself with the brush, the eraser and \"Fit\"'**
+  String get viewMaskHelp;
+
+  /// No description provided for @maskOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Mask only: white on black, without the picture (small holes and forgotten bits show)'**
+  String get maskOnly;
+
   /// No description provided for @showBoxes.
   ///
   /// In en, this message translates to:
@@ -3005,7 +3023,7 @@ abstract class AppLocalizations {
   /// No description provided for @fitPicked.
   ///
   /// In en, this message translates to:
-  /// **'Fit picked: {n}'**
+  /// **'Fit ({n})'**
   String fitPicked(int n);
 
   /// No description provided for @fitButtonHelp.

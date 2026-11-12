@@ -413,11 +413,22 @@ class _ToolBar extends ConsumerWidget {
                   segments: [
                     ButtonSegment(value: ViewMode.original, label: Text(l.viewOriginal)),
                     ButtonSegment(value: ViewMode.result, label: Text(l.viewTranslated)),
+                    ButtonSegment(value: ViewMode.mask, label: Text(l.viewMask), tooltip: l.viewMaskHelp),
                   ],
                   selected: {editor.view},
                   onSelectionChanged: (s) => notifier.setView(s.first),
                   showSelectedIcon: false,
                 ),
+                if (editor.view == ViewMode.mask)
+                  IconButton(
+                    tooltip: l.maskOnly,
+                    isSelected: editor.maskOnly,
+                    onPressed: notifier.toggleMaskOnly,
+                    icon: const Icon(Icons.contrast),
+                    style: IconButton.styleFrom(
+                      backgroundColor: editor.maskOnly ? Theme.of(context).colorScheme.secondaryContainer : null,
+                    ),
+                  ),
                 const SizedBox(width: 8),
                 tool(EditorTool.pan, Icons.pan_tool_outlined, l.toolPan),
                 tool(EditorTool.boxes, Icons.crop_free, l.toolBoxes),
@@ -439,15 +450,22 @@ class _ToolBar extends ConsumerWidget {
                     ),
                   ),
                   SizedBox(width: 44, child: Text('${editor.fitMargin} px')),
+                  // One width for "all" and "picked": the tool bar must not wrap
+                  // anew (the page would move under the mouse) while picking.
                   Tooltip(
                     message: l.fitButtonHelp,
-                    child: FilledButton.tonalIcon(
-                      onPressed: page != null && page.hasMask && !ref.watch(stepsProvider).running
-                          ? () => runFitMask(context, ref, editor.picksOf(page.id))
-                          : null,
-                      icon: const Icon(Icons.compress, size: 18),
-                      label: Text(
-                        editor.picksOf(page?.id).isEmpty ? l.fitAll : l.fitPicked(editor.picksOf(page?.id).length),
+                    child: SizedBox(
+                      width: 190,
+                      child: FilledButton.tonalIcon(
+                        onPressed: page != null && page.hasMask && !ref.watch(stepsProvider).running
+                            ? () => runFitMask(context, ref, editor.picksOf(page.id))
+                            : null,
+                        icon: const Icon(Icons.compress, size: 18),
+                        label: Text(
+                          editor.picksOf(page?.id).isEmpty ? l.fitAll : l.fitPicked(editor.picksOf(page?.id).length),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ),

@@ -807,6 +807,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get viewTranslated => 'Перевод';
 
   @override
+  String get viewMask => 'Маска';
+
+  @override
+  String get viewMaskHelp =>
+      'Что будет очищено: красным поверх картинки, без перевода. Ярко-красное сотрёт нейросеть, светлое — только заливка ровного фона. Открывается само при кисти, ластике и «Прижать»';
+
+  @override
+  String get maskOnly =>
+      'Только маска: белым на чёрном, без картинки (видно мелкие дырки и забытые куски)';
+
+  @override
   String get showBoxes => 'Рамки текста';
 
   @override
@@ -1679,7 +1690,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String fitPicked(int n) {
-    return 'Прижать выбранные: $n';
+    return 'Прижать ($n)';
   }
 
   @override

@@ -438,19 +438,22 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     final selected = widget.active ? ref.watch(workspaceProvider.select((s) => s.selectedBlock)) : null;
     final colors = Theme.of(context).colorScheme;
     final result = editor.view == ViewMode.result;
+    // The mask view: what cleaning works on with the mask over it, no translation.
+    final maskView = editor.view == ViewMode.mask;
+    final maskOnly = maskView && editor.maskOnly;
     _ensureMask(page.maskPath);
     final layout = result ? ref.watch(pageLayoutOfProvider(page.id)) : null;
     final engines = ref.watch(pageEnginesProvider(page.id)).value;
-    final overflow = result && widget.strip ? page.overflowPath : null;
+    final overflow = (result || (maskView && !maskOnly)) && widget.strip ? page.overflowPath : null;
     final d = _drag;
-    final showMask = result && (editor.paints || page.hasMask);
+    final showMask = maskView || (result && (editor.paints || page.hasMask));
     final draftStroke = d?.mode == _Mode.paint
         ? MaskStroke(points: d!.points, width: editor.brushSize, erase: editor.tool == EditorTool.eraser)
         : null;
     // While text is moved or rotated, it is drawn by the overlay.
     final dragged = d != null && d.moved && (d.mode == _Mode.moveText || d.mode == _Mode.rotateText) ? d.index : null;
     final hiddenItem = dragged == null || layout == null ? null : layout.blockIndex.indexOf(dragged);
-    final image = result ? page.basePath : page.path;
+    final image = result || maskView ? page.basePath : page.path;
     return MouseRegion(
       cursor: _cursor(editor),
       onEnter: (_) => _inside = true,
@@ -478,7 +481,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
           children: [
             Positioned.fill(
-              child: needsTiles(widget.size)
+              child: maskOnly
+                  ? const ColoredBox(color: Colors.black)
+                  : needsTiles(widget.size)
                   ? TiledImage(path: image)
                   : Image.file(
                       File(image),
@@ -506,7 +511,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
               ),
             if (showMask)
               Positioned.fill(
-                child: RepaintBoundary(child: CustomPaint(painter: _MaskPainter(_mask, page.strokes, draftStroke))),
+                child: RepaintBoundary(
+                  child: CustomPaint(painter: _MaskPainter(_mask, page.strokes, draftStroke, solid: maskOnly)),
+                ),
               ),
             if (layout != null && engines != null)
               Positioned.fill(
@@ -538,28 +545,37 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   }
 }
 
-/// The mask in translucent red: the generated mask, then the strokes.
+/// The mask in translucent red: the generated mask, then the strokes. [solid]
+/// ("mask only"): opaque white on the black page, the fill-only margin gray.
 class _MaskPainter extends CustomPainter {
-  _MaskPainter(this.base, this.strokes, this.draft);
+  _MaskPainter(this.base, this.strokes, this.draft, {this.solid = false});
 
   final ImageTiles? base;
   final List<MaskStroke> strokes;
   final MaskStroke? draft;
+  final bool solid;
 
   /// Gray PNG → red with the gray value as alpha.
   static const _redFromGray = ColorFilter.matrix([0, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0]);
 
+  /// Gray PNG → white with the gray value as alpha.
+  static const _whiteFromGray = ColorFilter.matrix([0, 0, 0, 0, 255, 0, 0, 0, 0, 255, 0, 0, 0, 0, 255, 1, 0, 0, 0, 0]);
+
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.saveLayer(Offset.zero & size, Paint()..color = const Color.fromRGBO(0, 0, 0, 0.45));
-    base?.paint(canvas, Paint()..colorFilter = _redFromGray);
-    paintStrokes(canvas, [...strokes, ?draft], const Color(0xFFFF0000));
+    canvas.saveLayer(Offset.zero & size, Paint()..color = Color.fromRGBO(0, 0, 0, solid ? 1 : 0.45));
+    base?.paint(canvas, Paint()..colorFilter = solid ? _whiteFromGray : _redFromGray);
+    paintStrokes(canvas, [...strokes, ?draft], solid ? Colors.white : const Color(0xFFFF0000));
     canvas.restore();
   }
 
   @override
   bool shouldRepaint(_MaskPainter old) =>
-      old.base != base || old.strokes != strokes || old.draft != draft || (draft?.points.length ?? 0) > 0;
+      old.base != base ||
+      old.strokes != strokes ||
+      old.draft != draft ||
+      old.solid != solid ||
+      (draft?.points.length ?? 0) > 0;
 }
 
 /// The translation, as export draws it.

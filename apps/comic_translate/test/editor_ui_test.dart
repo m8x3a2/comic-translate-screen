@@ -367,19 +367,65 @@ void main() {
     await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
     await click(at(18, 28));
     await click(at(78, 28));
-    expect(find.text('Прижать выбранные: 2'), findsOneWidget);
+    expect(find.text('Прижать (2)'), findsOneWidget);
     await click(at(18, 28));
     await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
-    expect(find.text('Прижать выбранные: 1'), findsOneWidget);
+    expect(find.text('Прижать (1)'), findsOneWidget);
     expect(current().strokes, hasLength(2), reason: 'picking changes nothing');
 
     // The button fits the picked piece only.
-    await fitBy(() => tester.tap(find.text('Прижать выбранные: 1')));
+    await fitBy(() => tester.tap(find.text('Прижать (1)')));
     m = await mask();
     expect(m.data[30 * 120 + 18], 255, reason: 'not picked: as painted');
     expect(m.data[30 * 120 + 78], 0);
     expect(m.data[35 * 120 + 83], 255);
     expect(find.text('Прижать все'), findsOneWidget, reason: 'the picks are gone');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the mask view: opened by the mask tools; "mask only" on black', (tester) async {
+    final container = await openTranslatedPage(tester);
+    EditorState editor() => container.read(editorProvider);
+    final view = find.descendant(of: find.byType(SegmentedButton<ViewMode>), matching: find.text('Маска'));
+    expect(view, findsOneWidget);
+
+    for (final (key, wanted) in [
+      (LogicalKeyboardKey.keyB, ViewMode.mask),
+      (LogicalKeyboardKey.keyT, ViewMode.result),
+      (LogicalKeyboardKey.keyE, ViewMode.mask),
+      (LogicalKeyboardKey.keyH, ViewMode.mask),
+      (LogicalKeyboardKey.keyG, ViewMode.mask),
+    ]) {
+      await tester.sendKeyEvent(key);
+      await tester.pump();
+      expect(editor().view, wanted, reason: '$key');
+    }
+
+    // "Mask only": a black page instead of the picture.
+    for (var i = 0; i < 50 && find.byType(PageCanvas).evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    Finder black() => find.descendant(
+      of: find.byType(PageCanvas),
+      matching: find.byWidgetPredicate((w) => w is ColoredBox && w.color == Colors.black),
+    );
+    expect(black(), findsNothing);
+    await tester.tap(find.byIcon(Icons.contrast));
+    await tester.pump();
+    expect(editor().maskOnly, isTrue);
+    expect(black(), findsOneWidget);
+
+    // The text tool has nothing to edit in the mask view; the translation view shows it again.
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyT);
+    await tester.pump();
+    await tester.tap(view);
+    await tester.pump();
+    expect(editor().tool, EditorTool.pan);
+    await tester.tap(find.text('Перевод'));
+    await tester.pump();
+    expect(find.byIcon(Icons.contrast), findsNothing);
+    expect(black(), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -544,9 +590,11 @@ void main() {
     final container = await openTranslatedPage(tester);
     container.read(workspaceProvider.notifier).clearMask();
     await tester.pump();
-    expect(find.text('Маска'), findsOneWidget);
+    // The step button (the view "Маска" has the same word).
+    final maskStep = find.byIcon(Icons.layers_outlined);
+    expect(maskStep, findsOneWidget);
     await tester.runAsync(() async {
-      await tester.tap(find.text('Маска'));
+      await tester.tap(maskStep);
       for (var i = 0; i < 100 && !container.read(stepsProvider).running; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 10));
       }
@@ -557,6 +605,7 @@ void main() {
     await tester.pump();
     expect(container.read(workspaceProvider).currentPage!.maskPath, isNotNull);
     expect(container.read(editorProvider).tool, EditorTool.brush);
+    expect(container.read(editorProvider).view, ViewMode.mask, reason: 'the mask is shown to correct it');
     expect(tester.takeException(), isNull);
   });
 

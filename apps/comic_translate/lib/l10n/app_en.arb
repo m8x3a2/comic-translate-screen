@@ -327,6 +327,9 @@
   "languageAutoHint": "Source language: found by the letters of each bubble (Latin, Cyrillic, Japanese, Korean, Chinese). For English pages, choosing English reads more accurately.",
   "viewOriginal": "Original",
   "viewTranslated": "Translation",
+  "viewMask": "Mask",
+  "viewMaskHelp": "What will be cleaned: in red over the picture, without the translation. Bright red goes to the network, light red is only filled with plain background. Opens by itself with the brush, the eraser and \"Fit\"",
+  "maskOnly": "Mask only: white on black, without the picture (small holes and forgotten bits show)",
   "showBoxes": "Text boxes",
   "zoomFit": "Fit to window",
   "zoomActual": "Actual size",
@@ -917,7 +920,7 @@
   "toolFitMask": "Fit to letters (G): a click on a red piece of the mask shrinks it around the letters. Shift + click picks several pieces for the \"Fit\" button",
   "fitMargin": "Margin around the letters",
   "fitAll": "Fit all",
-  "fitPicked": "Fit picked: {n}",
+  "fitPicked": "Fit ({n})",
   "@fitPicked": {
     "placeholders": {
       "n": {

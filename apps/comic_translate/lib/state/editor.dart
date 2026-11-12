@@ -35,6 +35,10 @@ enum ViewMode {
   /// The cleaned page with the translation drawn over it (the original until
   /// cleaned).
   result,
+
+  /// What cleaning works on (the original, or the cleaned page) with the
+  /// mask over it and no translation (the owner's idea).
+  mask,
 }
 
 class EditorState {
@@ -46,7 +50,11 @@ class EditorState {
     this.fitMargin = fitMaskMargin,
     this.fitPicks = const [],
     this.fitPage,
+    this.maskOnly = false,
   });
+
+  /// The mask view shows the mask alone: white on black, without the page.
+  final bool maskOnly;
 
   final EditorTool tool;
   final ViewMode view;
@@ -78,7 +86,9 @@ class EditorState {
     int? fitMargin,
     List<Point2>? fitPicks,
     String? fitPage,
+    bool? maskOnly,
   }) => EditorState(
+    maskOnly: maskOnly ?? this.maskOnly,
     tool: tool ?? this.tool,
     view: view ?? this.view,
     brushSize: brushSize ?? this.brushSize,
@@ -113,16 +123,27 @@ class EditorNotifier extends Notifier<EditorState> {
   EditorState build() => const EditorState();
 
   void setTool(EditorTool tool) {
-    // Painting and editing text need the page they change.
-    final view = tool == EditorTool.pan || tool == EditorTool.boxes ? state.view : ViewMode.result;
+    // The mask tools open the mask view, the text tool the translation.
+    final view = switch (tool) {
+      EditorTool.pan || EditorTool.boxes => state.view,
+      EditorTool.text => ViewMode.result,
+      EditorTool.brush || EditorTool.eraser || EditorTool.fit => ViewMode.mask,
+    };
     state = state.copyWith(tool: tool, view: view);
     if (tool != EditorTool.fit) clearFitPicks();
   }
 
   void setView(ViewMode view) {
-    final tool = view == ViewMode.original && state.tool != EditorTool.boxes ? EditorTool.pan : state.tool;
+    final tool = switch (view) {
+      ViewMode.original when state.tool != EditorTool.boxes => EditorTool.pan,
+      // No translation is shown to edit.
+      ViewMode.mask when state.tool == EditorTool.text => EditorTool.pan,
+      _ => state.tool,
+    };
     state = state.copyWith(view: view, tool: tool);
   }
+
+  void toggleMaskOnly() => state = state.copyWith(maskOnly: !state.maskOnly);
 
   void setBrushSize(double size) => state = state.copyWith(brushSize: size.clamp(minBrushSize, maxBrushSize));
 

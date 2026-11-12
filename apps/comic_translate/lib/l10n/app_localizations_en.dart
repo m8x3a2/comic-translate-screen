@@ -808,6 +808,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get viewTranslated => 'Translation';
 
   @override
+  String get viewMask => 'Mask';
+
+  @override
+  String get viewMaskHelp =>
+      'What will be cleaned: in red over the picture, without the translation. Bright red goes to the network, light red is only filled with plain background. Opens by itself with the brush, the eraser and \"Fit\"';
+
+  @override
+  String get maskOnly =>
+      'Mask only: white on black, without the picture (small holes and forgotten bits show)';
+
+  @override
   String get showBoxes => 'Text boxes';
 
   @override
@@ -1680,7 +1691,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String fitPicked(int n) {
-    return 'Fit picked: $n';
+    return 'Fit ($n)';
   }
 
   @override
