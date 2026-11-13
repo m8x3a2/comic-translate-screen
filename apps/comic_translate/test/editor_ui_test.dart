@@ -512,6 +512,20 @@ void main() {
     expect(count(m, red), 0);
     expect(count(m, black), 5 * 2 * 20);
 
+    // A wider margin around the letters: the mask grows, on the same letters.
+    expect(find.text('1 px'), findsOneWidget);
+    bool anywhere(int x, int y) => true;
+    final narrow = count(m, anywhere);
+    await settled(() async => container.read(pipetteProvider.notifier).setMargin(3));
+    expect(find.text('3 px'), findsOneWidget);
+    m = await mask();
+    expect(count(m, anywhere), greaterThan(narrow));
+    expect(count(m, red), 0);
+    // Bars at x 72–97 (two wide, four apart), rows 30–49, grown by 3 px:
+    // x 69–100, rows 27–52, the gaps closed.
+    expect(count(m, (x, y) => y >= 27 && y < 53 && x >= 69 && x <= 100), 26 * 32);
+    expect(count(m, anywhere), 26 * 32);
+
     // The whole go of the pipette is one undo step.
     await ctrl(tester, LogicalKeyboardKey.keyZ);
     expect(current().maskPath, isNull);

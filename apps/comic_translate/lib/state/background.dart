@@ -29,8 +29,11 @@ Future<Uint8List> colourMaskPngInBackground(
   List<(int, int, int)> colours,
   double tolerance,
   List<BBox>? regions,
+  int margin,
 ) => Isolate.run(
-  () => ImageCodec.encodeGrayPng(maskByColours(image, base, colours, tolerance: tolerance, regions: regions)),
+  () => ImageCodec.encodeGrayPng(
+    maskByColours(image, base, colours, tolerance: tolerance, regions: regions, grow: margin),
+  ),
 );
 
 /// The colour and the transparency of the image in [path].

@@ -693,6 +693,26 @@ class _ColourMaskOptions extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
+                  // The margin sits here, not on the line above: there it
+                  // would wrap the tool bar onto one more line.
+                  Tooltip(
+                    message: l.fitMargin,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.open_in_full, size: 16),
+                        SizedBox(
+                          width: 100,
+                          child: Slider(
+                            value: pipette.margin.toDouble(),
+                            max: maxPipetteMargin.toDouble(),
+                            divisions: maxPipetteMargin,
+                            onChanged: (v) => ref.read(pipetteProvider.notifier).setMargin(v.round()),
+                          ),
+                        ),
+                        SizedBox(width: 44, child: Text('${pipette.margin} px')),
+                      ],
+                    ),
+                  ),
                   Text('$where: ', style: Theme.of(context).textTheme.bodySmall),
                   ...swatches,
                 ],

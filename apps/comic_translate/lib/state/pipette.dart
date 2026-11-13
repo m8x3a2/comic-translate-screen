@@ -17,11 +17,17 @@ import 'background.dart';
 import 'steps.dart';
 import 'workspace.dart';
 
+/// The pipette's default margin around the letters, in pixels (the owner
+/// asked for one like «Прижать к буквам» has: a wider mask cleans better).
+const pipetteMargin = 1;
+const maxPipetteMargin = 12;
+
 class PipetteState {
   const PipetteState({
     this.pageId,
     this.colours = const [],
     this.tolerance = pipetteTolerance,
+    this.margin = pipetteMargin,
     this.mask,
     this.busy = false,
   });
@@ -31,8 +37,11 @@ class PipetteState {
   final String? mask;
   final List<(int, int, int)> colours;
 
-  /// How far (ΔE) a colour may be from a picked one.
+  /// How faint a blend of a picked colour still counts (see [maskByColours]).
   final double tolerance;
+
+  /// Pixels added around the letters found.
+  final int margin;
 
   /// The mask is being drawn again.
   final bool busy;
@@ -42,13 +51,15 @@ class PipetteState {
   List<(int, int, int)> coloursOf(PageEntry? page) =>
       page != null && page.id == pageId && page.maskPath == mask && page.strokes.isEmpty ? colours : const [];
 
-  PipetteState copyWith({List<(int, int, int)>? colours, double? tolerance, String? mask, bool? busy}) => PipetteState(
-    pageId: pageId,
-    colours: colours ?? this.colours,
-    tolerance: tolerance ?? this.tolerance,
-    mask: mask ?? this.mask,
-    busy: busy ?? this.busy,
-  );
+  PipetteState copyWith({List<(int, int, int)>? colours, double? tolerance, int? margin, String? mask, bool? busy}) =>
+      PipetteState(
+        pageId: pageId,
+        colours: colours ?? this.colours,
+        tolerance: tolerance ?? this.tolerance,
+        margin: margin ?? this.margin,
+        mask: mask ?? this.mask,
+        busy: busy ?? this.busy,
+      );
 }
 
 final pipetteProvider = NotifierProvider<PipetteNotifier, PipetteState>(PipetteNotifier.new);
@@ -113,6 +124,13 @@ class PipetteNotifier extends Notifier<PipetteState> {
     _later = Timer(const Duration(milliseconds: 250), () => unawaited(_apply()));
   }
 
+  /// A new margin around the letters; the mask follows like for [setTolerance].
+  void setMargin(int margin) {
+    state = state.copyWith(margin: margin.clamp(0, maxPipetteMargin));
+    _later?.cancel();
+    _later = Timer(const Duration(milliseconds: 250), () => unawaited(_apply()));
+  }
+
   /// Picks up where the pipette left [page], or starts anew from its mask now.
   Future<void> _start(PageEntry page) async {
     if (_imagePath != page.basePath) {
@@ -127,7 +145,7 @@ class PipetteNotifier extends Notifier<PipetteState> {
         : await currentPageMask(page);
     _base = mask;
     _session++;
-    state = PipetteState(pageId: page.id, mask: page.maskPath, tolerance: state.tolerance);
+    state = PipetteState(pageId: page.id, mask: page.maskPath, tolerance: state.tolerance, margin: state.margin);
   }
 
   Future<void> _apply() async {
@@ -142,7 +160,7 @@ class PipetteNotifier extends Notifier<PipetteState> {
     state = state.copyWith(busy: true);
     try {
       final regions = pipetteRegions(page, ws.selectedBlock, image.width, image.height);
-      final png = await colourMaskPngInBackground(image, base, state.colours, state.tolerance, regions);
+      final png = await colourMaskPngInBackground(image, base, state.colours, state.tolerance, regions, state.margin);
       if (run != _run) return;
       final file = p.join(
         ref.read(workspaceProvider.notifier).pageDir(page.id).path,
