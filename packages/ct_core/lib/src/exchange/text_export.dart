@@ -83,21 +83,25 @@ class TextExportOptions {
 /// The text of [pages]: their translations when [translation], else their
 /// originals. [heading] is the heading of a page with [textExportPageNumber]
 /// and [textExportPageName] in it (used when [TextExportOptions.headings]).
+/// [skipEmpty]: bubbles with no text are left out even with labels (a
+/// request to a chat), and so are pages without any text.
 String exportedText(
   List<ExchangePage> pages, {
   required bool translation,
   required TextExportOptions options,
   required String heading,
+  bool skipEmpty = false,
 }) {
   final parts = <String>[];
   for (final page in pages) {
+    if (skipEmpty && !page.blocks.any((b) => _oneLine(translation ? b.translation : b.text).isNotEmpty)) continue;
     final lines = [
       if (options.headings)
         heading.replaceAll(textExportPageNumber, '${page.number}').replaceAll(textExportPageName, page.name).trim(),
     ];
     for (final (i, b) in page.blocks.indexed) {
       final text = _oneLine(translation ? b.translation : b.text);
-      if (text.isEmpty && !options.labels) continue;
+      if (text.isEmpty && (skipEmpty || !options.labels)) continue;
       final tag = options.speakers && b.speaker != null ? '[${b.speaker!.tag}] ' : '';
       final label = options.labels ? '${ExchangeLabel(page.number, i + 1)} ' : '';
       lines.add('$label$tag$text'.trim());

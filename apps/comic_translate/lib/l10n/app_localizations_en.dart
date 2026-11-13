@@ -3585,6 +3585,84 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get textExportCopyRequest => 'Copy with a request to translate';
+
+  @override
+  String textExportCopiedRequest(String language) {
+    return 'Copied: a request to translate into $language and the original with labels. Paste it into a chat: Ctrl+V. The chat\'s answer goes into \"Load text…\".';
+  }
+
+  @override
+  String get textImportMenu => 'Load text…';
+
+  @override
+  String get textImportTitle => 'Load text';
+
+  @override
+  String get textImportHelp =>
+      'Paste a chat\'s answer to the exported text, or open a txt file. Lines find their bubbles by the labels [02-003]; bubbles without an answer stay as they are. A label is the number of the page and of the bubble now: if pages were moved or frames removed after the export, check the list \"What changes\".';
+
+  @override
+  String get textImportTarget => 'Into:';
+
+  @override
+  String get textImportToTranslation => 'Translation';
+
+  @override
+  String get textImportToOriginal => 'Recognized text';
+
+  @override
+  String get textImportArrowHint =>
+      'A line \"original --> translation\" fills both the text and the translation.';
+
+  @override
+  String get textImportAnswer => 'The chat\'s answer or the text of a file';
+
+  @override
+  String get textImportPaste => 'Paste from the clipboard';
+
+  @override
+  String get textImportOpen => 'Open txt…';
+
+  @override
+  String get textImportChanges => 'What changes';
+
+  @override
+  String textImportSummary(String answered, String changed, String missing) {
+    return 'Answers: $answered. Bubbles to change: $changed. Without an answer: $missing (they stay as they are).';
+  }
+
+  @override
+  String textImportUnknown(String labels) {
+    return 'No such bubbles: $labels';
+  }
+
+  @override
+  String get textImportNoLabels =>
+      'The text has no labels like [01-003]. Export the text with \"Labels before the lines\" and ask the chat to keep the labels.';
+
+  @override
+  String get textImportNothing =>
+      'Nothing changes: it is all as in the bubbles.';
+
+  @override
+  String get textImportEmpty =>
+      'Paste the text here: what changes will show up.';
+
+  @override
+  String get textImportApply => 'Apply';
+
+  @override
+  String textImportApplied(String count) {
+    return 'Bubbles changed: $count. Undo: Ctrl+Z.';
+  }
+
+  @override
+  String textImportFileError(String error) {
+    return 'Could not read the file: $error';
+  }
+
+  @override
   String get glossaryApply => 'Done';
 
   @override

@@ -17,6 +17,7 @@ import '../../state/export.dart';
 import '../../state/project.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
+import 'text_import_dialog.dart';
 
 Future<void> showTextExportDialog(BuildContext context) =>
     showDialog<void>(context: context, builder: (_) => const _TextExportDialog());
@@ -126,6 +127,25 @@ class _TextExportDialogState extends ConsumerState<_TextExportDialog> {
     _remember();
     await Clipboard.setData(ClipboardData(text: text));
     if (mounted) setState(() => _note = context.l10n.textExportCopied);
+  }
+
+  /// The originals with labels (bubbles without text left out) after a
+  /// request to translate them, for any chat; the answer goes back through
+  /// "Load text".
+  Future<void> _copyWithRequest(List<ExchangePage> pages) async {
+    _remember();
+    final ws = ref.read(workspaceProvider);
+    final first = ws.byId(pages.first.id) ?? ws.pages.first;
+    final language = first.targetOf(ref.read(settingsProvider));
+    final text = exportedText(
+      pages,
+      translation: false,
+      options: _o.copyWith(labels: true),
+      heading: _o.heading.trim().isEmpty ? '${context.l10n.textExportPage} $textExportPageNumber' : _o.heading,
+      skipEmpty: true,
+    );
+    await Clipboard.setData(ClipboardData(text: '${textTranslateRequest(language)}\n\n$text'));
+    if (mounted) setState(() => _note = context.l10n.textExportCopiedRequest(language));
   }
 
   @override
@@ -285,6 +305,20 @@ class _TextExportDialogState extends ConsumerState<_TextExportDialog> {
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text(l.close)),
+        TextButton.icon(
+          onPressed: () {
+            // This window goes; the navigator stays for the next one.
+            final navigator = Navigator.of(context)..pop();
+            showTextImportDialog(navigator.context);
+          },
+          icon: const Icon(Icons.input),
+          label: Text(l.textImportMenu),
+        ),
+        TextButton.icon(
+          onPressed: pages == null || pages.isEmpty ? null : () => _copyWithRequest(pages),
+          icon: const Icon(Icons.forum_outlined),
+          label: Text(l.textExportCopyRequest),
+        ),
         TextButton.icon(
           onPressed: pages == null || pages.isEmpty ? null : () => _copy(shown),
           icon: const Icon(Icons.copy),

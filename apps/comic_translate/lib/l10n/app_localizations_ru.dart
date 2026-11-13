@@ -3585,6 +3585,83 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get textExportCopyRequest => 'Копировать с просьбой перевести';
+
+  @override
+  String textExportCopiedRequest(String language) {
+    return 'Скопировано: просьба перевести на $language и оригинал с метками. Вставьте в чат: Ctrl+V. Ответ чата — в «Загрузить текст…».';
+  }
+
+  @override
+  String get textImportMenu => 'Загрузить текст…';
+
+  @override
+  String get textImportTitle => 'Загрузить текст';
+
+  @override
+  String get textImportHelp =>
+      'Вставьте ответ чата на выгруженный текст или откройте txt-файл. Строки находят свои пузыри по меткам [02-003]; пузыри без ответа остаются как есть. Метка — номер страницы и пузыря сейчас: если после выгрузки страницы переставляли или рамки удаляли, проверьте список «Что изменится».';
+
+  @override
+  String get textImportTarget => 'Куда:';
+
+  @override
+  String get textImportToTranslation => 'Перевод';
+
+  @override
+  String get textImportToOriginal => 'Распознанный текст';
+
+  @override
+  String get textImportArrowHint =>
+      'Строка «оригинал --> перевод» заполняет и текст, и перевод.';
+
+  @override
+  String get textImportAnswer => 'Ответ чата или текст файла';
+
+  @override
+  String get textImportPaste => 'Вставить из буфера';
+
+  @override
+  String get textImportOpen => 'Открыть txt…';
+
+  @override
+  String get textImportChanges => 'Что изменится';
+
+  @override
+  String textImportSummary(String answered, String changed, String missing) {
+    return 'Ответов: $answered. Изменится пузырей: $changed. Без ответа: $missing (останутся как есть).';
+  }
+
+  @override
+  String textImportUnknown(String labels) {
+    return 'Таких пузырей нет: $labels';
+  }
+
+  @override
+  String get textImportNoLabels =>
+      'В тексте нет меток вида [01-003]. Выгрузите текст с галочкой «Метки перед строками» и попросите чат сохранить метки.';
+
+  @override
+  String get textImportNothing => 'Ничего не изменится: всё как в пузырях.';
+
+  @override
+  String get textImportEmpty =>
+      'Вставьте сюда текст — здесь появится, что изменится.';
+
+  @override
+  String get textImportApply => 'Применить';
+
+  @override
+  String textImportApplied(String count) {
+    return 'Изменено пузырей: $count. Отменить: Ctrl+Z.';
+  }
+
+  @override
+  String textImportFileError(String error) {
+    return 'Не удалось прочитать файл: $error';
+  }
+
+  @override
   String get glossaryApply => 'Готово';
 
   @override

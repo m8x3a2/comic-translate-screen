@@ -47,6 +47,7 @@ import 'page_viewer.dart';
 import 'repeats_dialog.dart';
 import 'shortcuts_dialog.dart';
 import 'text_export_dialog.dart';
+import 'text_import_dialog.dart';
 import 'text_panel.dart';
 import 'translation_review.dart';
 
@@ -1042,6 +1043,11 @@ class _TopBar extends ConsumerWidget {
             leadingIcon: const Icon(Icons.notes),
             onPressed: hasPages ? () => showTextExportDialog(context) : null,
             child: Text(l.textExportMenu),
+          ),
+          MenuItemButton(
+            leadingIcon: const Icon(Icons.input),
+            onPressed: chatEnabled ? () => showTextImportDialog(context) : null,
+            child: Text(l.textImportMenu),
           ),
           const Divider(),
           MenuItemButton(

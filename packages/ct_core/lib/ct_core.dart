@@ -34,6 +34,7 @@ export 'src/exchange/exchange_settings.dart';
 export 'src/exchange/exchange_sheets.dart';
 export 'src/exchange/model_reading.dart';
 export 'src/exchange/text_export.dart';
+export 'src/exchange/text_import.dart';
 export 'src/image/cv_bridge.dart';
 export 'src/image/ico.dart';
 export 'src/image/raster.dart';

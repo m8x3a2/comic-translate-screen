@@ -2249,6 +2249,68 @@
       }
     }
   },
+  "textExportCopyRequest": "Copy with a request to translate",
+  "textExportCopiedRequest": "Copied: a request to translate into {language} and the original with labels. Paste it into a chat: Ctrl+V. The chat's answer goes into \"Load text…\".",
+  "@textExportCopiedRequest": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "textImportMenu": "Load text…",
+  "textImportTitle": "Load text",
+  "textImportHelp": "Paste a chat's answer to the exported text, or open a txt file. Lines find their bubbles by the labels [02-003]; bubbles without an answer stay as they are. A label is the number of the page and of the bubble now: if pages were moved or frames removed after the export, check the list \"What changes\".",
+  "textImportTarget": "Into:",
+  "textImportToTranslation": "Translation",
+  "textImportToOriginal": "Recognized text",
+  "textImportArrowHint": "A line \"original --> translation\" fills both the text and the translation.",
+  "textImportAnswer": "The chat's answer or the text of a file",
+  "textImportPaste": "Paste from the clipboard",
+  "textImportOpen": "Open txt…",
+  "textImportChanges": "What changes",
+  "textImportSummary": "Answers: {answered}. Bubbles to change: {changed}. Without an answer: {missing} (they stay as they are).",
+  "@textImportSummary": {
+    "placeholders": {
+      "answered": {
+        "type": "String"
+      },
+      "changed": {
+        "type": "String"
+      },
+      "missing": {
+        "type": "String"
+      }
+    }
+  },
+  "textImportUnknown": "No such bubbles: {labels}",
+  "@textImportUnknown": {
+    "placeholders": {
+      "labels": {
+        "type": "String"
+      }
+    }
+  },
+  "textImportNoLabels": "The text has no labels like [01-003]. Export the text with \"Labels before the lines\" and ask the chat to keep the labels.",
+  "textImportNothing": "Nothing changes: it is all as in the bubbles.",
+  "textImportEmpty": "Paste the text here: what changes will show up.",
+  "textImportApply": "Apply",
+  "textImportApplied": "Bubbles changed: {count}. Undo: Ctrl+Z.",
+  "@textImportApplied": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "textImportFileError": "Could not read the file: {error}",
+  "@textImportFileError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "glossaryApply": "Done",
   "chatNewTerms": "The chat suggests for the glossary:",
   "chatNewTermsAdd": "Add to the glossary",

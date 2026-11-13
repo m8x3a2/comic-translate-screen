@@ -126,6 +126,9 @@ void main() {
     // The last part, far below: the contents scroll to it.
     final heading = find.descendant(of: find.byType(MarkdownBody), matching: find.text('Советы', findRichText: true));
     expect(tester.getTopLeft(heading).dy, greaterThan(1000));
+    // The contents are long too: their last line may be below the window.
+    await tester.ensureVisible(find.widgetWithText(ListTile, 'Советы'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'Советы'));
     await tester.pumpAndSettle();
     expect(tester.getTopLeft(heading).dy, lessThan(500));

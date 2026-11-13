@@ -1144,6 +1144,114 @@ void main() {
     expect(find.text('Не понял «7»: страниц всего 2'), findsOneWidget);
   });
 
+  testWidgets('"Load text": a request copied for a chat, its answer back into the bubbles', (tester) async {
+    await tester.runAsync(() => start(fakeSettings()));
+    String? clipboard;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') clipboard = (call.arguments as Map)['text'] as String?;
+      if (call.method == 'Clipboard.getData') return {'text': clipboard};
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    tester.view
+      ..physicalSize = const Size(1600, 1000)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final ids = [for (final page in pages()) page.id];
+    for (final (n, id) in ids.indexed) {
+      container
+          .read(workspaceProvider.notifier)
+          .edit(
+            id,
+            (p) => p.copyWith(
+              blocks: [
+                TextBlock(xyxy: const BBox(0, 0, 10, 10), text: 'Hi $n', translation: 'Привет $n')
+                  ..speaker = Speaker.female,
+                TextBlock(xyxy: const BBox(0, 20, 10, 30)),
+              ],
+            ),
+          );
+    }
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          locale: const Locale('ru'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) =>
+                  TextButton(onPressed: () => showTextExportDialog(context), child: const Text('open')),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // The request: the originals with labels, the empty bubbles left out.
+    await tester.tap(find.text('Копировать с просьбой перевести'));
+    await tester.pump();
+    final language = container.read(settingsProvider).targetLanguage;
+    expect(clipboard, startsWith('Translate the lines below into $language.'));
+    expect(clipboard, endsWith('\n\nСтраница 1\n[01-001] [f] Hi 0\n\nСтраница 2\n[02-001] [f] Hi 1\n'));
+    expect(find.textContaining('Скопировано: просьба перевести на $language'), findsOneWidget);
+
+    // From the export window to "Load text".
+    await tester.tap(find.text('Загрузить текст…'));
+    await tester.pumpAndSettle();
+    expect(find.text('Загрузить текст'), findsOneWidget);
+    expect(find.text('Вставьте сюда текст — здесь появится, что изменится.'), findsOneWidget);
+
+    // The copied request pasted back as it is: nothing changes.
+    await tester.tap(find.text('Вставить из буфера'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Распознанный текст'));
+    await tester.pump();
+    expect(find.text('Ничего не изменится: всё как в пузырях.'), findsOneWidget);
+    expect(find.text('Применить'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(
+            find.ancestor(of: find.text('Применить'), matching: find.byWidgetPredicate((w) => w is FilledButton)),
+          )
+          .onPressed,
+      isNull,
+    );
+
+    // Without labels.
+    await tester.enterText(find.byType(TextField), 'Здравствуй\nПриветик');
+    await tester.pump();
+    expect(find.textContaining('В тексте нет меток вида [01-003]'), findsOneWidget);
+
+    // The chat's answer into the translations.
+    await tester.tap(find.text('Перевод'));
+    await tester.enterText(
+      find.byType(TextField),
+      'Вот перевод:\n\nСтраница 1\n[01-001] [f] Здравствуй\n[01-002]\n**Страница 2**\n[02-001] Hi 1 --> Приветик\n'
+      '[05-001] Лишнее',
+    );
+    await tester.pump();
+    expect(find.text('Ответов: 2. Изменится пузырей: 2. Без ответа: 0 (останутся как есть).'), findsOneWidget);
+    expect(find.text('Таких пузырей нет: [05-001]'), findsOneWidget);
+    expect(find.text('→ Здравствуй'), findsOneWidget);
+    expect(find.text('Привет 0'), findsOneWidget);
+    await tester.tap(find.text('Применить'));
+    await tester.pumpAndSettle();
+    expect(find.text('Загрузить текст'), findsNothing);
+    expect(find.text('Изменено пузырей: 2. Отменить: Ctrl+Z.'), findsOneWidget);
+    final ws = container.read(workspaceProvider);
+    expect([for (final id in ids) ws.byId(id)!.blocks.first.translation], ['Здравствуй', 'Приветик']);
+    expect([for (final id in ids) ws.byId(id)!.blocks.first.text], ['Hi 0', 'Hi 1']);
+    expect(ws.byId(ids.first)!.blocks.last.translation, '');
+
+    // One undo step per page.
+    container.read(workspaceProvider.notifier).undo(); // the open page: the first
+    expect(container.read(workspaceProvider).byId(ids.first)!.blocks.first.translation, 'Привет 0');
+  });
+
   testWidgets('another round for the missing pieces and the ones asked again; earlier answers stay', (tester) async {
     await tester.runAsync(() => start(fakeSettings()));
     await openWindow(

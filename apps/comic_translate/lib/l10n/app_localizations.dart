@@ -6170,6 +6170,132 @@ abstract class AppLocalizations {
   /// **'Saved:\n{paths}'**
   String textExportSaved(String paths);
 
+  /// No description provided for @textExportCopyRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy with a request to translate'**
+  String get textExportCopyRequest;
+
+  /// No description provided for @textExportCopiedRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied: a request to translate into {language} and the original with labels. Paste it into a chat: Ctrl+V. The chat\'s answer goes into \"Load text…\".'**
+  String textExportCopiedRequest(String language);
+
+  /// No description provided for @textImportMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Load text…'**
+  String get textImportMenu;
+
+  /// No description provided for @textImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Load text'**
+  String get textImportTitle;
+
+  /// No description provided for @textImportHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a chat\'s answer to the exported text, or open a txt file. Lines find their bubbles by the labels [02-003]; bubbles without an answer stay as they are. A label is the number of the page and of the bubble now: if pages were moved or frames removed after the export, check the list \"What changes\".'**
+  String get textImportHelp;
+
+  /// No description provided for @textImportTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Into:'**
+  String get textImportTarget;
+
+  /// No description provided for @textImportToTranslation.
+  ///
+  /// In en, this message translates to:
+  /// **'Translation'**
+  String get textImportToTranslation;
+
+  /// No description provided for @textImportToOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognized text'**
+  String get textImportToOriginal;
+
+  /// No description provided for @textImportArrowHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A line \"original --> translation\" fills both the text and the translation.'**
+  String get textImportArrowHint;
+
+  /// No description provided for @textImportAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'The chat\'s answer or the text of a file'**
+  String get textImportAnswer;
+
+  /// No description provided for @textImportPaste.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste from the clipboard'**
+  String get textImportPaste;
+
+  /// No description provided for @textImportOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open txt…'**
+  String get textImportOpen;
+
+  /// No description provided for @textImportChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'What changes'**
+  String get textImportChanges;
+
+  /// No description provided for @textImportSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Answers: {answered}. Bubbles to change: {changed}. Without an answer: {missing} (they stay as they are).'**
+  String textImportSummary(String answered, String changed, String missing);
+
+  /// No description provided for @textImportUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'No such bubbles: {labels}'**
+  String textImportUnknown(String labels);
+
+  /// No description provided for @textImportNoLabels.
+  ///
+  /// In en, this message translates to:
+  /// **'The text has no labels like [01-003]. Export the text with \"Labels before the lines\" and ask the chat to keep the labels.'**
+  String get textImportNoLabels;
+
+  /// No description provided for @textImportNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing changes: it is all as in the bubbles.'**
+  String get textImportNothing;
+
+  /// No description provided for @textImportEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the text here: what changes will show up.'**
+  String get textImportEmpty;
+
+  /// No description provided for @textImportApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get textImportApply;
+
+  /// No description provided for @textImportApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles changed: {count}. Undo: Ctrl+Z.'**
+  String textImportApplied(String count);
+
+  /// No description provided for @textImportFileError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the file: {error}'**
+  String textImportFileError(String error);
+
   /// No description provided for @glossaryApply.
   ///
   /// In en, this message translates to:

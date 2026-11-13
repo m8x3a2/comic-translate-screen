@@ -239,6 +239,21 @@ original, the translation or both (then two files: `…_original.txt` and `…_t
 attach them to the chat as context, for example the dialogues of earlier chapters. The labels are the same as
 in the exchange. The right side shows how the file will look.
 
+**"Copy with a request to translate"**: the original with labels (empty bubbles left out) under a short request
+in English: translate into your language, keep the labels. Paste it into any chat: no pictures needed, so free
+models without pictures will do too.
+
+## Load text
+
+**"Chat → Load text…"** (and a button in the "Export text" window): the chat's answer back into the bubbles.
+Paste the answer (or open a txt file) and choose where it goes: **"Translation"** or **"Recognized text"** (when
+you load a corrected original). A line `original --> translation` fills both. Lines find their bubbles by the
+labels `[02-003]`; bubbles without an answer and empty lines change nothing. On the right, "What changes" shows
+the old and the new text; "Apply" writes it, Ctrl+Z undoes it.
+
+A label is the number of the page and of the bubble **now**. If pages were moved or frames removed after the
+export, the text may land in the wrong bubble: look at the list before "Apply".
+
 ## Settings
 
 Settings → Exchange with a chat AI:
