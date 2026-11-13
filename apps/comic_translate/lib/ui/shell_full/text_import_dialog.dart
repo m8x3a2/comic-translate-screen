@@ -148,8 +148,9 @@ class _TextImportDialogState extends ConsumerState<TextImportDialog> {
       ),
       TextField(
         controller: _text,
-        minLines: wide ? 16 : 8,
-        maxLines: wide ? 16 : 8,
+        // Short enough for the buttons below to show in a window 1000 px tall.
+        minLines: wide ? 11 : 7,
+        maxLines: wide ? 11 : 7,
         style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
         decoration: InputDecoration(
           border: const OutlineInputBorder(),
@@ -198,7 +199,7 @@ class _TextImportDialogState extends ConsumerState<TextImportDialog> {
         ),
       const SizedBox(height: 8),
       Container(
-        height: wide ? 380 : 220,
+        height: wide ? 300 : 220,
         width: double.infinity,
         decoration: BoxDecoration(
           border: Border.all(color: theme.colorScheme.outlineVariant),
@@ -264,10 +265,14 @@ class _ChangeRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final b = change.before, a = change.after;
+    final l = context.l10n;
     final old = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline);
-    Widget pair(String before, String after) => Column(
+    // Both change (a line with an arrow): each part says what it is.
+    final both = a.text != b.text && a.translation != b.translation;
+    Widget pair(String what, String before, String after) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (both) Text(what, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary)),
         if (before.trim().isNotEmpty) Text(before, style: old),
         Text('→ $after'),
       ],
@@ -284,8 +289,9 @@ class _ChangeRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (a.text != b.text) pair(b.text, a.text),
-              if (a.translation != b.translation) pair(b.translation, a.translation),
+              if (a.text != b.text) pair(l.textImportToOriginal, b.text, a.text),
+              if (both) const SizedBox(height: 4),
+              if (a.translation != b.translation) pair(l.textImportToTranslation, b.translation, a.translation),
             ],
           ),
         ),
