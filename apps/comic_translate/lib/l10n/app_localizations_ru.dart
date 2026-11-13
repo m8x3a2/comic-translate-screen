@@ -1691,7 +1691,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get colourModeHelp =>
-      'Маска по цвету букв. Где ищет пипетка: в выбранной рамке, иначе во всех рамках страницы, а если рамок нет — по всей странице. Авто — программа сама ищет цветные буквы на рисунке во время шага «Маска» (то же, что в настройках «Удаление текста»). Пипетка — щёлкайте по буквам, их цвет добавится в маску. Выкл — цвет не ищется';
+      'Маска по цвету букв. Где ищет пипетка: в выбранной рамке, иначе во всех рамках страницы, а если рамок нет — по всей странице (выбор — рядом с цветами). Авто — программа сама ищет цветные буквы на рисунке во время шага «Маска» (то же, что в настройках «Удаление текста»). Пипетка — щёлкайте по буквам, их цвет добавится в маску. Выкл — цвет не ищется';
 
   @override
   String get colourAuto => 'Авто';
@@ -1724,6 +1724,29 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get pipetteWherePage => 'вся страница';
+
+  @override
+  String pipetteWhereLetters(String where) {
+    return 'буквы: $where';
+  }
+
+  @override
+  String pipetteWhereEverything(String where) {
+    return 'всё: $where';
+  }
+
+  @override
+  String get pipetteScopeLetters => 'Буквы в рамках';
+
+  @override
+  String get pipetteScopeBoxes => 'Всё в рамках';
+
+  @override
+  String get pipetteScopePage => 'Вся страница';
+
+  @override
+  String get pipetteScopeHelp =>
+      'Где искать цвет. Буквы в рамках — только куски цвета, целиком лежащие в рамке: рисунок того же цвета вокруг пузыря выходит за рамку и не берётся. Всё в рамках — весь цвет в рамке (с небольшим запасом). Вся страница — везде. Если рамок нет — вся страница';
 
   @override
   String get fitAll => 'Прижать все';

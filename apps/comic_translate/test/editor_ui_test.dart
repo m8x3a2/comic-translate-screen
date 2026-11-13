@@ -451,8 +451,16 @@ void main() {
     await tester.pump();
     expect(container.read(editorProvider).tool, EditorTool.pick);
     expect(container.read(editorProvider).view, ViewMode.mask);
-    expect(find.text('вся страница: '), findsOneWidget);
+    expect(find.text('вся страница'), findsOneWidget, reason: 'no boxes: the whole page');
     expect(find.text('Щёлкните по букве'), findsOneWidget);
+    // Where to look: a menu at the label; letters in the boxes by default.
+    expect(container.read(pipetteProvider).scope, PipetteScope.letters);
+    await tester.tap(find.text('вся страница'));
+    await tester.pumpAndSettle();
+    expect(find.text('Буквы в рамках'), findsOneWidget);
+    await tester.tap(find.text('Всё в рамках').last);
+    await tester.pumpAndSettle();
+    expect(container.read(pipetteProvider).scope, PipetteScope.boxes);
 
     final canvas = find.byType(PageCanvas);
     for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {

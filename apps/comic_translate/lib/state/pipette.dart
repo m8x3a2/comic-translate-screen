@@ -22,12 +22,18 @@ import 'workspace.dart';
 const pipetteMargin = 1;
 const maxPipetteMargin = 12;
 
+/// Where the pipette looks (the owner's wish): the letters in the boxes (pieces of the colour lying whole inside a
+/// box: the drawing of the same colour around a bubble, running off the box, stays out), everything of the colour in
+/// the boxes, or the whole page. Without boxes it is always the whole page.
+enum PipetteScope { letters, boxes, page }
+
 class PipetteState {
   const PipetteState({
     this.pageId,
     this.colours = const [],
     this.tolerance = pipetteTolerance,
     this.margin = pipetteMargin,
+    this.scope = PipetteScope.letters,
     this.mask,
     this.busy = false,
   });
@@ -43,6 +49,8 @@ class PipetteState {
   /// Pixels added around the letters found.
   final int margin;
 
+  final PipetteScope scope;
+
   /// The mask is being drawn again.
   final bool busy;
 
@@ -51,24 +59,37 @@ class PipetteState {
   List<(int, int, int)> coloursOf(PageEntry? page) =>
       page != null && page.id == pageId && page.maskPath == mask && page.strokes.isEmpty ? colours : const [];
 
-  PipetteState copyWith({List<(int, int, int)>? colours, double? tolerance, int? margin, String? mask, bool? busy}) =>
-      PipetteState(
-        pageId: pageId,
-        colours: colours ?? this.colours,
-        tolerance: tolerance ?? this.tolerance,
-        margin: margin ?? this.margin,
-        mask: mask ?? this.mask,
-        busy: busy ?? this.busy,
-      );
+  PipetteState copyWith({
+    List<(int, int, int)>? colours,
+    double? tolerance,
+    int? margin,
+    PipetteScope? scope,
+    String? mask,
+    bool? busy,
+  }) => PipetteState(
+    pageId: pageId,
+    colours: colours ?? this.colours,
+    tolerance: tolerance ?? this.tolerance,
+    margin: margin ?? this.margin,
+    scope: scope ?? this.scope,
+    mask: mask ?? this.mask,
+    busy: busy ?? this.busy,
+  );
 }
 
 final pipetteProvider = NotifierProvider<PipetteNotifier, PipetteState>(PipetteNotifier.new);
 
 /// Where the pipette looks on [page]: the selected block, else every block,
-/// else the whole page (null).
-List<BBox>? pipetteRegions(PageEntry page, int? selected, int width, int height) {
+/// else the whole page (null; always for [PipetteScope.page]).
+List<BBox>? pipetteRegions(
+  PageEntry page,
+  int? selected,
+  int width,
+  int height, [
+  PipetteScope scope = PipetteScope.letters,
+]) {
   final blocks = page.blocks;
-  if (blocks.isEmpty) return null;
+  if (blocks.isEmpty || scope == PipetteScope.page) return null;
   return textRegions(selected != null && selected < blocks.length ? [blocks[selected]] : blocks, width, height);
 }
 
@@ -124,6 +145,14 @@ class PipetteNotifier extends Notifier<PipetteState> {
     _later = Timer(const Duration(milliseconds: 250), () => unawaited(_apply()));
   }
 
+  /// Where to look; the mask follows at once.
+  void setScope(PipetteScope scope) {
+    if (scope == state.scope) return;
+    state = state.copyWith(scope: scope);
+    _later?.cancel();
+    unawaited(_apply());
+  }
+
   /// A new margin around the letters; the mask follows like for [setTolerance].
   void setMargin(int margin) {
     state = state.copyWith(margin: margin.clamp(0, maxPipetteMargin));
@@ -145,7 +174,13 @@ class PipetteNotifier extends Notifier<PipetteState> {
         : await currentPageMask(page);
     _base = mask;
     _session++;
-    state = PipetteState(pageId: page.id, mask: page.maskPath, tolerance: state.tolerance, margin: state.margin);
+    state = PipetteState(
+      pageId: page.id,
+      mask: page.maskPath,
+      tolerance: state.tolerance,
+      margin: state.margin,
+      scope: state.scope,
+    );
   }
 
   Future<void> _apply() async {
@@ -159,8 +194,16 @@ class PipetteNotifier extends Notifier<PipetteState> {
     final session = _session;
     state = state.copyWith(busy: true);
     try {
-      final regions = pipetteRegions(page, ws.selectedBlock, image.width, image.height);
-      final png = await colourMaskPngInBackground(image, base, state.colours, state.tolerance, regions, state.margin);
+      final regions = pipetteRegions(page, ws.selectedBlock, image.width, image.height, state.scope);
+      final png = await colourMaskPngInBackground(
+        image,
+        base,
+        state.colours,
+        state.tolerance,
+        regions,
+        state.margin,
+        wholePieces: regions != null && state.scope == PipetteScope.letters,
+      );
       if (run != _run) return;
       final file = p.join(
         ref.read(workspaceProvider.notifier).pageDir(page.id).path,

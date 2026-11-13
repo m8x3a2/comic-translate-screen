@@ -29,10 +29,11 @@ Future<Uint8List> colourMaskPngInBackground(
   List<(int, int, int)> colours,
   double tolerance,
   List<BBox>? regions,
-  int margin,
-) => Isolate.run(
+  int margin, {
+  bool wholePieces = false,
+}) => Isolate.run(
   () => ImageCodec.encodeGrayPng(
-    maskByColours(image, base, colours, tolerance: tolerance, regions: regions, grow: margin),
+    maskByColours(image, base, colours, tolerance: tolerance, regions: regions, grow: margin, wholePieces: wholePieces),
   ),
 );
 

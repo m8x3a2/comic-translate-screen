@@ -1692,7 +1692,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get colourModeHelp =>
-      'The mask by the colour of the letters. The pipette looks in the selected box, else in all boxes of the page, else over the whole page. Auto: coloured letters over the drawing are looked for by the Mask step (as in the settings, Text removal). Pipette: click letters to add their colour to the mask. Off: no colour search';
+      'The mask by the colour of the letters. The pipette looks in the selected box, else in all boxes of the page, else over the whole page (the choice is next to the colours). Auto: coloured letters over the drawing are looked for by the Mask step (as in the settings, Text removal). Pipette: click letters to add their colour to the mask. Off: no colour search';
 
   @override
   String get colourAuto => 'Auto';
@@ -1725,6 +1725,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pipetteWherePage => 'whole page';
+
+  @override
+  String pipetteWhereLetters(String where) {
+    return 'letters: $where';
+  }
+
+  @override
+  String pipetteWhereEverything(String where) {
+    return 'everything: $where';
+  }
+
+  @override
+  String get pipetteScopeLetters => 'Letters in the boxes';
+
+  @override
+  String get pipetteScopeBoxes => 'Everything in the boxes';
+
+  @override
+  String get pipetteScopePage => 'Whole page';
+
+  @override
+  String get pipetteScopeHelp =>
+      'Where to look for the colour. Letters in the boxes: only pieces of the colour lying whole inside a box; the drawing of the same colour around a bubble runs off the box and is not taken. Everything in the boxes: all of the colour in a box (with a small margin). Whole page: everywhere. Without boxes, the whole page';
 
   @override
   String get fitAll => 'Fit all';

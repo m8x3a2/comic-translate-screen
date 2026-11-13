@@ -75,6 +75,13 @@ double _minShare(double tolerance) =>
 /// a blend still counts (from the solid colour only to faint edges) and how
 /// far off the blend a pixel may be (ΔE, at most [_maxDistance], less for
 /// fainter blends), so other colours of the drawing never come in.
+///
+/// With [wholePieces] only pieces of the colours lying whole inside a region
+/// count: a piece that runs off the region's edge is the drawing around the
+/// text, not a letter (black letters in a bubble on a black background, the
+/// owner's breakfast page). Letters stay inside a text box grown a little,
+/// on paper and over a drawing alike. (A first try, the bubble as the largest
+/// patch of paper, lost the letters over the hatching on the bunny photo.)
 GrayImage maskByColours(
   RgbImage image,
   GrayImage base,
@@ -82,6 +89,7 @@ GrayImage maskByColours(
   double tolerance = pipetteTolerance,
   List<BBox>? regions,
   int grow = 1,
+  bool wholePieces = false,
 }) {
   final w = image.width, h = math.min(image.height, base.height);
   final out = GrayImage(base.width, base.height, Uint8List.fromList(base.data));
@@ -118,6 +126,7 @@ GrayImage maskByColours(
       }
     }
     if (!any) continue;
+    if (wholePieces) _dropEdgePieces(hit);
     final grown = grow > 0 ? imkDilate(hit, StructuringElement.rect(2 * grow + 1, 2 * grow + 1)) : hit;
     for (var y = 0; y < bh; y++) {
       for (var x = 0; x < bw; x++) {
@@ -126,6 +135,39 @@ GrayImage maskByColours(
     }
   }
   return out;
+}
+
+/// Clears the 8-connected pieces of [hit] that touch its edge.
+void _dropEdgePieces(GrayImage hit) {
+  final w = hit.width, h = hit.height, d = hit.data;
+  final queue = Int32List(w * h);
+  var head = 0, tail = 0;
+  void seed(int at) {
+    if (d[at] == 0) return;
+    d[at] = 0;
+    queue[tail++] = at;
+  }
+
+  for (var x = 0; x < w; x++) {
+    seed(x);
+    seed((h - 1) * w + x);
+  }
+  for (var y = 0; y < h; y++) {
+    seed(y * w);
+    seed(y * w + w - 1);
+  }
+  while (head < tail) {
+    final at = queue[head++];
+    final x = at % w, y = at ~/ w;
+    for (var dy = -1; dy <= 1; dy++) {
+      final ny = y + dy;
+      if (ny < 0 || ny >= h) continue;
+      for (var dx = -1; dx <= 1; dx++) {
+        final nx = x + dx;
+        if (nx >= 0 && nx < w) seed(ny * w + nx);
+      }
+    }
+  }
 }
 
 /// Whether pixel [p] is a blend of letter colour [c] and background [paper]

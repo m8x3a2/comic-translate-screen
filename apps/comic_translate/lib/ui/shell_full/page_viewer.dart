@@ -624,11 +624,14 @@ class _ColourMaskOptions extends ConsumerWidget {
       final page = ws.currentPage;
       final colours = pipette.coloursOf(page);
       final selected = ws.selectedBlock;
-      final where = page == null || page.blocks.isEmpty
-          ? l.pipetteWherePage
-          : selected != null && selected < page.blocks.length
+      final boxes = selected != null && page != null && selected < page.blocks.length
           ? l.pipetteWhereBlock(selected + 1)
           : l.pipetteWhereAll;
+      final where = page == null || page.blocks.isEmpty || pipette.scope == PipetteScope.page
+          ? l.pipetteWherePage
+          : pipette.scope == PipetteScope.letters
+          ? l.pipetteWhereLetters(boxes)
+          : l.pipetteWhereEverything(boxes);
       String hex((int, int, int) c) => '#${[c.$1, c.$2, c.$3].map((v) => v.toRadixString(16).padLeft(2, '0')).join()}';
       final swatches = <Widget>[
         if (colours.isEmpty) Text(l.pipetteHint, style: Theme.of(context).textTheme.bodySmall),
@@ -713,7 +716,28 @@ class _ColourMaskOptions extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Text('$where: ', style: Theme.of(context).textTheme.bodySmall),
+                  PopupMenuButton<PipetteScope>(
+                    tooltip: l.pipetteScopeHelp,
+                    initialValue: pipette.scope,
+                    onSelected: ref.read(pipetteProvider.notifier).setScope,
+                    itemBuilder: (_) => [
+                      for (final (scope, label) in [
+                        (PipetteScope.letters, l.pipetteScopeLetters),
+                        (PipetteScope.boxes, l.pipetteScopeBoxes),
+                        (PipetteScope.page, l.pipetteScopePage),
+                      ])
+                        PopupMenuItem(value: scope, child: Text(label)),
+                    ],
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4, right: 6),
+                      child: Row(
+                        children: [
+                          Text(where, style: Theme.of(context).textTheme.bodySmall),
+                          const Icon(Icons.arrow_drop_down, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
                   ...swatches,
                 ],
               ),

@@ -3023,7 +3023,7 @@ abstract class AppLocalizations {
   /// No description provided for @colourModeHelp.
   ///
   /// In en, this message translates to:
-  /// **'The mask by the colour of the letters. The pipette looks in the selected box, else in all boxes of the page, else over the whole page. Auto: coloured letters over the drawing are looked for by the Mask step (as in the settings, Text removal). Pipette: click letters to add their colour to the mask. Off: no colour search'**
+  /// **'The mask by the colour of the letters. The pipette looks in the selected box, else in all boxes of the page, else over the whole page (the choice is next to the colours). Auto: coloured letters over the drawing are looked for by the Mask step (as in the settings, Text removal). Pipette: click letters to add their colour to the mask. Off: no colour search'**
   String get colourModeHelp;
 
   /// No description provided for @colourAuto.
@@ -3079,6 +3079,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'whole page'**
   String get pipetteWherePage;
+
+  /// No description provided for @pipetteWhereLetters.
+  ///
+  /// In en, this message translates to:
+  /// **'letters: {where}'**
+  String pipetteWhereLetters(String where);
+
+  /// No description provided for @pipetteWhereEverything.
+  ///
+  /// In en, this message translates to:
+  /// **'everything: {where}'**
+  String pipetteWhereEverything(String where);
+
+  /// No description provided for @pipetteScopeLetters.
+  ///
+  /// In en, this message translates to:
+  /// **'Letters in the boxes'**
+  String get pipetteScopeLetters;
+
+  /// No description provided for @pipetteScopeBoxes.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything in the boxes'**
+  String get pipetteScopeBoxes;
+
+  /// No description provided for @pipetteScopePage.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole page'**
+  String get pipetteScopePage;
+
+  /// No description provided for @pipetteScopeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to look for the colour. Letters in the boxes: only pieces of the colour lying whole inside a box; the drawing of the same colour around a bubble runs off the box and is not taken. Everything in the boxes: all of the colour in a box (with a small margin). Whole page: everywhere. Without boxes, the whole page'**
+  String get pipetteScopeHelp;
 
   /// No description provided for @fitAll.
   ///

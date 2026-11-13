@@ -91,6 +91,38 @@ void main() {
     }
   });
 
+  test('whole pieces only: the drawing of the letters\' colour around a bubble stays out', () {
+    // Black page; a white bubble (x 10–69, y 10–49) with black letters
+    // (bars) inside; the region is a box a little larger than the bubble.
+    const w = 80, h = 60;
+    final data = Uint8List(w * h * 3);
+    bool letter(int x, int y) => y >= 25 && y < 35 && x >= 20 && x < 60 && x % 6 < 2;
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < w; x++) {
+        final paper = x >= 10 && x < 70 && y >= 10 && y < 50 && !letter(x, y);
+        if (paper) data.fillRange((y * w + x) * 3, (y * w + x) * 3 + 3, 255);
+      }
+    }
+    final image = RgbImage(w, h, data);
+    int count(GrayImage m, bool Function(int x, int y) where) {
+      var n = 0;
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          if (where(x, y) && m.data[y * w + x] != 0) n++;
+        }
+      }
+      return n;
+    }
+
+    bool outside(int x, int y) => !(x >= 10 && x < 70 && y >= 10 && y < 50);
+    const region = [BBox(5, 5, 75, 55)];
+    final all = maskByColours(image, GrayImage.zeros(w, h), [(0, 0, 0)], regions: region, grow: 0);
+    expect(count(all, outside), greaterThan(0), reason: 'everything of the colour: the background too');
+    final whole = maskByColours(image, GrayImage.zeros(w, h), [(0, 0, 0)], regions: region, grow: 2, wholePieces: true);
+    expect(count(whole, letter), 6 * 2 * 10, reason: 'bars at x 24, 30 … 54');
+    expect(count(whole, outside), 0);
+  });
+
   test('only inside the regions; the base mask is kept; grown by a pixel', () {
     final base = GrayImage.zeros(_w, _h + 10)..data[_w * 2 + 2] = 128;
     final m = maskByColours(_page(), base, [(150, 20, 20), (0, 0, 0)], regions: [const BBox(0, 0, 60, _h)]);
