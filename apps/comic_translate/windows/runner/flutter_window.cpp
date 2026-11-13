@@ -159,10 +159,12 @@ bool FlutterWindow::SetIcon(const std::wstring& which) {
   const int small_px = GetSystemMetricsForDpi(SM_CXSMICON, dpi);
   HICON new_big = nullptr;
   HICON new_small = nullptr;
-  if (which == L"blue" || which == L"navy" || which.empty()) {
+  if (which == L"green" || which == L"blue" || which == L"navy" ||
+      which.empty()) {
     HINSTANCE module = GetModuleHandle(nullptr);
-    LPCWSTR id = MAKEINTRESOURCE(which == L"navy" ? IDI_NAVY_ICON
-                                                  : IDI_APP_ICON);
+    LPCWSTR id = MAKEINTRESOURCE(which == L"navy"   ? IDI_NAVY_ICON
+                                 : which == L"blue" ? IDI_BLUE_ICON
+                                                    : IDI_APP_ICON);
     new_big = static_cast<HICON>(
         LoadImageW(module, id, IMAGE_ICON, big_px, big_px, LR_DEFAULTCOLOR));
     new_small = static_cast<HICON>(

@@ -1,18 +1,21 @@
 # /// script
 # dependencies = ["pillow>=10", "numpy"]
 # ///
-"""Builds the program icon for Windows, Android and Linux from the owner's pictures.
+"""Builds the program icons for Windows, Android and Linux.
 
     uv run tools/icons/make_icons.py            # write all icons
     uv run tools/icons/make_icons.py --sheet F  # also a check sheet (16-256 on light/dark)
 
-Sources (tools/icons/src, made by the owner in a picture generator, 1254x1254 on white):
-  main_blue.png      the icon (default): cat in a frame + speech bubble on a blue rounded square
-  main_navy.png      the same on dark navy (second built-in variant)
-  no_background.png  cat in a frame + bubble without the square (Android adaptive foreground)
-  silhouette.png     one-colour silhouette (Android 13+ themed icon)
+The default icon ("translator", green) is drawn here: a grey card with あ behind a green speech bubble
+with A. It is the exe's main icon and the Android/Linux icon. Needs Windows (the あ comes from Yu Gothic).
 
-Sizes 16-24 px use a simplified picture (only the cat in its frame, no corner marks and no bubble text):
+Two spare icons, chosen in Settings → General, come from the owner's pictures (tools/icons/src,
+made in a picture generator, 1254x1254 on white):
+  main_blue.png      cat in a frame + speech bubble on a blue rounded square
+  main_navy.png      the same on dark navy
+  (no_background.png and silhouette.png: the cat's Android layers, no longer used)
+
+Sizes 16-24 px use simplified pictures (translator: no あ; cats: only the cat in its frame):
 at that size the full picture turns into noise.
 """
 
@@ -128,6 +131,48 @@ def small_icon(name: str) -> Image.Image:
     base.alpha_composite(src.crop(SMALL_CROP).resize((n, n), Image.LANCZOS), (a1, a1))
     base.putalpha(shape.getchannel("A"))
     return _square(base, MASTER)
+
+
+# ---------------------------------------------------------------- the translator icon (default)
+
+GREEN = (22, 163, 104)
+GREEN_DARK = (12, 118, 74)  # the fold of the bubble's tail
+CARD = (226, 229, 234)
+CARD_TEXT = (95, 99, 104)
+LATIN_FONT = APP / "assets" / "fonts" / "PTSans-Bold.ttf"  # OFL, bundled with the app
+JP_FONT = Path("C:/Windows/Fonts/YuGothB.ttc")  # Windows font, only drawn into the picture
+
+
+def translator_icon(small: bool = False, mono: bool = False) -> Image.Image:
+    """Grey card with あ (the original) behind a green speech bubble with A (the translation).
+
+    `small`: for 16-24 px — no あ (it turns into a grey smudge there).
+    `mono`: one white silhouette with the letters cut out (Android themed icon)."""
+    from PIL import ImageFont
+
+    k = 2048
+    im = Image.new("RGBA", (k, k), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    clear = (0, 0, 0, 0)
+    white = (255, 255, 255, 255)
+    card = white if mono else CARD + (255,)
+    main = white if mono else GREEN + (255,)
+    fold = white if mono else GREEN_DARK + (255,)
+    d.rounded_rectangle((k * 0.40, k * 0.22, k * 0.92, k * 0.80), radius=k * 0.07, fill=card)
+    if not small:
+        jp = ImageFont.truetype(str(JP_FONT), int(k * 0.26))
+        d.text((k * 0.735, k * 0.53), "あ", font=jp, fill=clear if mono else CARD_TEXT + (255,), anchor="mm")
+    x0, y0, x1, y1 = k * 0.08, k * 0.14, k * 0.60, k * 0.68
+    if mono:  # a gap between the bubble and the card, else they merge into one blob
+        g = k * 0.025
+        d.rounded_rectangle((x0 - g, y0 - g, x1 + g, y1 + g), radius=k * 0.07 + g, fill=clear)
+        d.polygon([(k * 0.28, y1), (k * 0.55, y1), (k * 0.575, k * 0.89)], fill=clear)
+    d.polygon([(k * 0.36, y1 - 2), (k * 0.52, y1 - 2), (k * 0.56, k * 0.86)], fill=fold)
+    d.polygon([(k * 0.30, y1 - 2), (k * 0.48, y1 - 2), (k * 0.56, k * 0.86)], fill=main)
+    d.rounded_rectangle((x0, y0, x1, y1), radius=k * 0.07, fill=main)
+    latin = ImageFont.truetype(str(LATIN_FONT), int(k * (0.44 if small else 0.40)))
+    d.text(((x0 + x1) / 2, (y0 + y1) / 2 + k * 0.005), "A", font=latin, fill=clear if mono else white, anchor="mm")
+    return _square(im.resize((MASTER, MASTER), Image.LANCZOS), MASTER)
 
 
 def foreground() -> Image.Image:
@@ -284,28 +329,43 @@ def main() -> None:
     ap.add_argument("--sheet", type=Path, help="write a check sheet to this png")
     args = ap.parse_args()
 
+    green, green_s = translator_icon(), translator_icon(small=True)
     blue, navy = main_icon("main_blue.png"), main_icon("main_navy.png")
     blue_s, navy_s = small_icon("main_blue.png"), small_icon("main_navy.png")
-    fg, mono = foreground(), monochrome()
-    bg = _bg_color(SRC / "main_blue.png")
+    fg, mono = _square(green, MASTER), translator_icon(mono=True)
+    bg = (255, 255, 255)
 
+    res = APP / "windows" / "runner" / "resources"
+    green_frames = ico_frames(green, green_s)
+    # the exe's main icon (IDI_APP_ICON); the cats are spare ones, switched in Settings → General
+    write_ico(green_frames, res / "app_icon.ico")
     blue_frames = ico_frames(blue, blue_s)
-    write_ico(blue_frames, APP / "windows" / "runner" / "resources" / "app_icon.ico")
+    write_ico(blue_frames, res / "app_icon_blue.ico")  # IDI_BLUE_ICON
+    navy_frames = ico_frames(navy, navy_s)
+    write_ico(navy_frames, res / "app_icon_navy.ico")  # IDI_NAVY_ICON
     icons = APP / "assets" / "icon"
     icons.mkdir(parents=True, exist_ok=True)
-    navy_frames = ico_frames(navy, navy_s)
-    # second built-in icon, switched in Settings → General (resource IDI_NAVY_ICON)
-    write_ico(navy_frames, APP / "windows" / "runner" / "resources" / "app_icon_navy.ico")
-    scaled(blue, 512).save(icons / "app_icon_blue_512.png", optimize=True)  # Linux
-    scaled(navy, 512).save(icons / "app_icon_navy_512.png", optimize=True)
-    # small pictures for the icon choice in the settings (bundled with the app)
-    scaled(blue, 96).save(icons / "preview_blue.png", optimize=True)
-    scaled(navy, 96).save(icons / "preview_navy.png", optimize=True)
-    write_android(blue, fg, mono, bg)
+    for name, img in [("green", green), ("blue", blue), ("navy", navy)]:
+        scaled(img, 512).save(icons / f"app_icon_{name}_512.png", optimize=True)  # Linux
+        # small pictures for the icon choice in the settings (bundled with the app)
+        scaled(img, 96).save(icons / f"preview_{name}.png", optimize=True)
+    write_android(_on_white(green), fg, mono, bg)
 
     if args.sheet:
-        sheet([("blue", blue_frames), ("navy", navy_frames)], [("android", android_preview(blue, fg, mono, bg))], args.sheet)
-    print("ok; android background", "#%02X%02X%02X" % bg)
+        sheet(
+            [("green", green_frames), ("blue", blue_frames), ("navy", navy_frames)],
+            [("android", android_preview(_on_white(green), fg, mono, bg))],
+            args.sheet,
+        )
+    print("ok")
+
+
+def _on_white(img: Image.Image) -> Image.Image:
+    """Android's legacy launcher icon: the drawing on a white rounded square."""
+    out = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    ImageDraw.Draw(out).rounded_rectangle((0, 0, img.width - 1, img.height - 1), radius=img.width * 0.2, fill="white")
+    out.alpha_composite(_square(img, img.width, 0.8))
+    return out
 
 
 if __name__ == "__main__":

@@ -98,10 +98,59 @@ void main() {
     });
   });
 
-  test('without its file the own icon falls back to the blue one', () {
-    expect(appIconSource('custom', services.paths), 'blue');
+  test('without its file the own icon falls back to the green one', () {
+    expect(appIconSource('custom', services.paths), 'green');
+    expect(appIconSource('green', services.paths), 'green');
     expect(appIconSource('navy', services.paths), 'navy');
     expect(appIconSource('blue', services.paths), 'blue');
+    expect(appIconSource('pink', services.paths), 'green');
+    final exe = Platform.resolvedExecutable;
+    expect(shortcutIconLocation('green', services.paths), '$exe,0');
+    expect(shortcutIconLocation('navy', services.paths), '$exe,1');
+    expect(shortcutIconLocation('blue', services.paths), '$exe,2');
+  });
+
+  testWidgets('the own picture can be removed; the green icon comes back', (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.runAsync(() async {
+      final source = File(p.join('windows', 'runner', 'resources', 'app_icon_navy.ico'));
+      await makeCustomIcon(source.path, services.paths);
+    });
+    expect(services.paths.customIcon.existsSync(), isTrue);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          servicesProvider.overrideWithValue(services),
+          initialSettingsProvider.overrideWithValue(fakeSettings()..appIcon = 'custom'),
+          workerRegistryProvider.overrideWithValue(fakeRegistry),
+          settingsProvider.overrideWith(_MemorySettings.new),
+        ],
+        child: const ComicTranslateApp(),
+      ),
+    );
+    await tester.pump();
+    expect(iconCalls, [services.paths.customIcon.path]);
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    await tester.pumpAndSettle();
+    final remove = find.text('Убрать свою картинку');
+    await tester.ensureVisible(remove);
+    await tester.runAsync(() async {
+      await tester.tap(remove);
+      bool left() => services.paths.customIcon.existsSync() || services.paths.customIconPreview.existsSync();
+      for (var i = 0; i < 50 && left(); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    });
+    await tester.pumpAndSettle();
+    expect(services.paths.customIcon.existsSync(), isFalse);
+    expect(services.paths.customIconPreview.existsSync(), isFalse);
+    final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+    expect(container.read(settingsProvider).appIcon, 'green');
+    expect(iconCalls.last, 'green');
+    expect(find.text('Убрать свою картинку'), findsNothing);
+    expect(find.text('Своя картинка убрана, снова стоит зелёная иконка.'), findsOneWidget);
   });
 
   testWidgets('the window gets the icon at start and when another one is chosen', (tester) async {
@@ -120,16 +169,18 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(iconCalls, ['blue']);
+    expect(iconCalls, ['green']);
     await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
-    final navy = find.text('Тёмно-синяя');
+    expect(find.text('Зелёная'), findsOneWidget);
+    expect(find.text('Убрать свою картинку'), findsNothing);
+    final navy = find.text('Кот на тёмном');
     await tester.ensureVisible(navy);
     await tester.tap(navy);
     await tester.pumpAndSettle();
     final container = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
     expect(container.read(settingsProvider).appIcon, 'navy');
-    expect(iconCalls, ['blue', 'navy']);
+    expect(iconCalls, ['green', 'navy']);
     expect(find.text('Обновить ярлыки'), findsOneWidget);
   });
 }

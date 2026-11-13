@@ -34,8 +34,8 @@ class FlutterWindow : public Win32Window {
   // The window's style, position and maximized state come back on exit.
   void SetFullScreen(bool full_screen);
 
-  // The icon of the window and its taskbar button: "blue" (the exe's own),
-  // "navy" (the second built-in one) or the path of an .ico file. Returns
+  // The icon of the window and its taskbar button: "green" (the exe's own),
+  // "blue"/"navy" (the spare cats) or the path of an .ico file. Returns
   // false when the file cannot be loaded (the icon stays as it was).
   bool SetIcon(const std::wstring& which);
 

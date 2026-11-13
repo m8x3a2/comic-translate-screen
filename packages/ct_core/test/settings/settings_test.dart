@@ -291,11 +291,17 @@ void main() {
     expect(await store.keys(), ['plugin.x.api_key', 'plugin.y.token']);
   });
 
-  test('program icon is kept, and an unknown value falls back to the blue one', () {
-    expect(AppSettings().appIcon, 'blue');
+  test('program icon is kept, and an unknown value falls back to the green one', () {
+    expect(AppSettings().appIcon, 'green');
+    expect(AppSettings.fromJson(AppSettings(appIcon: 'blue').toJson()).appIcon, 'blue');
     expect(AppSettings().toJson()['ui'], isNot(contains('app_icon')));
     final navy = AppSettings.fromJson(AppSettings(appIcon: 'navy').toJson());
     expect(navy.appIcon, 'navy');
-    expect(AppSettings.fromJson({'ui': {'app_icon': 'pink'}}).appIcon, 'blue');
+    expect(
+      AppSettings.fromJson({
+        'ui': {'app_icon': 'pink'},
+      }).appIcon,
+      'green',
+    );
   });
 }

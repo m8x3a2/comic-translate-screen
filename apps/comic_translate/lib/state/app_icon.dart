@@ -1,10 +1,11 @@
-/// The program icon (Settings → General → Program icon): the blue one built
-/// into the exe, the navy one (second icon resource) or the user's picture.
+/// The program icon (Settings → General → Program icon): the green
+/// translator built into the exe as its main icon, the spare cats (blue and
+/// navy, more icon resources) or the user's picture.
 ///
 /// The window and its taskbar button change at once (`setIcon` of the window
 /// channel, WM_SETICON in `windows/runner/flutter_window.cpp`); shortcuts get
 /// the icon by [updateShortcuts]. The exe's own icon in Explorer is fixed at
-/// build time and stays blue.
+/// build time and stays green.
 library;
 
 import 'dart:convert';
@@ -21,12 +22,12 @@ import 'window_mode.dart' show windowChannel;
 /// Picture files the user can pick for the icon.
 const appIconPictureTypes = ['png', 'jpg', 'jpeg', 'bmp', 'webp', 'gif', 'ico'];
 
-/// The settings value → what the window channel loads: `blue`, `navy` or the
-/// path of the user's .ico (`blue` when that file is gone).
+/// The settings value → what the window channel loads: `green`, `blue`,
+/// `navy` or the path of the user's .ico (`green` when that file is gone).
 String appIconSource(String setting, AppPaths paths) {
-  if (setting == 'navy') return 'navy';
+  if (setting == 'blue' || setting == 'navy') return setting;
   if (setting == 'custom' && paths.customIcon.existsSync()) return paths.customIcon.path;
-  return 'blue';
+  return 'green';
 }
 
 /// Puts the icon on the window and its taskbar button. False when it could not
@@ -89,6 +90,14 @@ Future<void> makeCustomIcon(String source, AppPaths paths) async {
   PaintingBinding.instance.imageCache.evict(FileImage(paths.customIconPreview));
 }
 
+/// Deletes the user's icon and its preview (nothing happens when there is none).
+Future<void> deleteCustomIcon(AppPaths paths) async {
+  for (final f in [paths.customIcon, paths.customIconPreview]) {
+    if (f.existsSync()) await f.delete();
+  }
+  PaintingBinding.instance.imageCache.evict(FileImage(paths.customIconPreview));
+}
+
 bool _looksLikeIco(Uint8List b) => b.length > 6 && b[0] == 0 && b[1] == 0 && b[2] == 1 && b[3] == 0;
 
 Future<ui.Image> _decode(Uint8List bytes) async {
@@ -131,14 +140,15 @@ Future<ui.Image> _draw(ui.Image img, int width, int height, Rect dst) {
   return picture.toImage(width, height).whenComplete(picture.dispose);
 }
 
-/// What a shortcut's icon points at: the exe's own icons by number (0 blue,
-/// 1 navy) or the user's .ico.
+/// What a shortcut's icon points at: the exe's own icons by number (in the
+/// order of their resource ids: 0 green, 1 navy, 2 blue) or the user's .ico.
 String shortcutIconLocation(String setting, AppPaths paths) {
   final source = appIconSource(setting, paths);
   final exe = Platform.resolvedExecutable;
   return switch (source) {
-    'blue' => '$exe,0',
+    'green' => '$exe,0',
     'navy' => '$exe,1',
+    'blue' => '$exe,2',
     _ => '$source,0',
   };
 }

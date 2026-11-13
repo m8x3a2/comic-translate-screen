@@ -1,5 +1,6 @@
-/// Settings → General → Program icon: blue, dark blue or the user's own
-/// picture, and "Update shortcuts" ([lib/state/app_icon.dart]).
+/// Settings → General → Program icon: the green translator, the blue or dark
+/// cat or the user's own picture (which can be removed again), and "Update
+/// shortcuts" ([lib/state/app_icon.dart]).
 library;
 
 import 'package:ct_core/ct_core.dart';
@@ -58,6 +59,30 @@ class _AppIconChoiceState extends ConsumerState<AppIconChoice> {
     if (already && !await applyAppIcon('custom', _paths)) _say(l.appIconNotLoaded);
   }
 
+  /// Deletes the user's picture; when it was the chosen icon, the green one
+  /// comes back, and the shortcuts can be updated right from the message.
+  Future<void> _removePicture() async {
+    final l = context.l10n;
+    final wasChosen = ref.read(settingsProvider).appIcon == 'custom';
+    try {
+      await deleteCustomIcon(_paths);
+    } on Object catch (e) {
+      _say(l.appIconRemoveFailed('$e'));
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _revision++);
+    if (!wasChosen) {
+      _say(l.appIconRemoved);
+      return;
+    }
+    _choose('green');
+    _say(
+      l.appIconRemovedBack,
+      action: SnackBarAction(label: l.updateShortcuts, onPressed: _updateShortcuts),
+    );
+  }
+
   Future<void> _updateShortcuts() async {
     final l = context.l10n;
     final location = shortcutIconLocation(ref.read(settingsProvider).appIcon, _paths);
@@ -111,6 +136,12 @@ class _AppIconChoiceState extends ConsumerState<AppIconChoice> {
           runSpacing: 12,
           children: [
             _IconTile(
+              label: l.appIconGreen,
+              selected: icon == 'green' || (icon == 'custom' && !hasCustom),
+              onTap: _busy ? null : () => _choose('green'),
+              child: Image.asset('assets/icon/preview_green.png', width: 48, height: 48),
+            ),
+            _IconTile(
               label: l.appIconBlue,
               selected: icon == 'blue',
               onTap: _busy ? null : () => _choose('blue'),
@@ -141,6 +172,12 @@ class _AppIconChoiceState extends ConsumerState<AppIconChoice> {
                 onPressed: _busy ? null : _pickPicture,
                 icon: const Icon(Icons.add_photo_alternate_outlined),
                 label: Text(l.appIconOther),
+              ),
+            if (hasCustom)
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _removePicture,
+                icon: const Icon(Icons.delete_outline),
+                label: Text(l.appIconRemove),
               ),
             Row(
               mainAxisSize: MainAxisSize.min,

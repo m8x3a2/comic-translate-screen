@@ -3026,11 +3026,23 @@
     }
   },
   "appIcon": "Program icon",
-  "appIconBlue": "Blue",
-  "appIconNavy": "Dark blue",
+  "appIconGreen": "Green",
+  "appIconBlue": "Cat on blue",
+  "appIconNavy": "Cat on dark",
+  "appIconRemove": "Remove your picture",
+  "appIconRemoved": "Your picture is removed.",
+  "appIconRemovedBack": "Your picture is removed; the green icon is back.",
+  "appIconRemoveFailed": "Could not remove the picture: {error}",
+  "@appIconRemoveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "appIconCustom": "Your picture…",
   "appIconOther": "Another picture…",
-  "appIconHelp": "The window and its taskbar button change at once. The icon of comic_translate.exe itself in its folder always stays blue.",
+  "appIconHelp": "The window and its taskbar button change at once. The icon of comic_translate.exe itself in its folder always stays green.",
   "appIconBadPicture": "Could not read this picture: {error}",
   "@appIconBadPicture": {
     "placeholders": {

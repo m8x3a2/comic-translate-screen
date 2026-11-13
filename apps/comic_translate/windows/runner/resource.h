@@ -3,8 +3,9 @@
 // Used by Runner.rc
 //
 #define IDI_APP_ICON                    101
-// The second built-in icon (dark navy), "Settings → General → Program icon".
+// Spare built-in icons (the cat, dark navy and blue), "Settings → General → Program icon".
 #define IDI_NAVY_ICON                   102
+#define IDI_BLUE_ICON                   103
 
 // Next default values for new objects
 //

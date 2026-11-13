@@ -87,7 +87,7 @@ class AppSettings {
     this.showNavigator = false,
     this.settingsView = 'full',
     this.settingsLastView = 'full',
-    this.appIcon = 'blue',
+    this.appIcon = 'green',
     this.testMode = false,
     this.autoBugReport = true,
     this.projectAutosave = true,
@@ -262,12 +262,12 @@ class AppSettings {
   String settingsView;
   String settingsLastView;
 
-  /// The icon of the window and taskbar: [appIcons] — `blue` (the program's
-  /// own), `navy` (the second built-in one) or `custom` (the user's picture,
+  /// The icon of the window and taskbar: [appIcons] — `green` (the program's
+  /// own, the translator), `blue`/`navy` (the spare cats) or `custom` (the user's picture,
   /// [AppPaths.customIcon]).
   String appIcon;
 
-  static const appIcons = ['blue', 'navy', 'custom'];
+  static const appIcons = ['green', 'blue', 'navy', 'custom'];
 
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
@@ -442,7 +442,7 @@ class AppSettings {
       if (showNavigator) 'show_navigator': true,
       if (settingsView != 'full') 'settings_view': settingsView,
       if (settingsLastView != 'full') 'settings_last_view': settingsLastView,
-      if (appIcon != 'blue') 'app_icon': appIcon,
+      if (appIcon != 'green') 'app_icon': appIcon,
     },
     'test_mode': testMode,
     'auto_bug_report': autoBugReport,
@@ -567,7 +567,7 @@ class AppSettings {
       showNavigator: ui['show_navigator'] == true,
       settingsView: const {'panel', 'last'}.contains(ui['settings_view']) ? ui['settings_view'] as String : 'full',
       settingsLastView: ui['settings_last_view'] == 'panel' ? 'panel' : 'full',
-      appIcon: appIcons.contains(ui['app_icon']) ? ui['app_icon'] as String : 'blue',
+      appIcon: appIcons.contains(ui['app_icon']) ? ui['app_icon'] as String : 'green',
       testMode: pick(json, 'test_mode', defaults.testMode),
       autoBugReport: pick(json, 'auto_bug_report', defaults.autoBugReport),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),

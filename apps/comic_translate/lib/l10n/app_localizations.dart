@@ -7898,17 +7898,47 @@ abstract class AppLocalizations {
   /// **'Program icon'**
   String get appIcon;
 
+  /// No description provided for @appIconGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get appIconGreen;
+
   /// No description provided for @appIconBlue.
   ///
   /// In en, this message translates to:
-  /// **'Blue'**
+  /// **'Cat on blue'**
   String get appIconBlue;
 
   /// No description provided for @appIconNavy.
   ///
   /// In en, this message translates to:
-  /// **'Dark blue'**
+  /// **'Cat on dark'**
   String get appIconNavy;
+
+  /// No description provided for @appIconRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove your picture'**
+  String get appIconRemove;
+
+  /// No description provided for @appIconRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Your picture is removed.'**
+  String get appIconRemoved;
+
+  /// No description provided for @appIconRemovedBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Your picture is removed; the green icon is back.'**
+  String get appIconRemovedBack;
+
+  /// No description provided for @appIconRemoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove the picture: {error}'**
+  String appIconRemoveFailed(String error);
 
   /// No description provided for @appIconCustom.
   ///
@@ -7925,7 +7955,7 @@ abstract class AppLocalizations {
   /// No description provided for @appIconHelp.
   ///
   /// In en, this message translates to:
-  /// **'The window and its taskbar button change at once. The icon of comic_translate.exe itself in its folder always stays blue.'**
+  /// **'The window and its taskbar button change at once. The icon of comic_translate.exe itself in its folder always stays green.'**
   String get appIconHelp;
 
   /// No description provided for @appIconBadPicture.

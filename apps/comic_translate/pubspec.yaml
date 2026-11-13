@@ -118,6 +118,7 @@ flutter:
     - assets/samples/speed_test_page.jpg
     # Help pages, one per topic and language (lib/ui/common/help_dialog.dart).
     - assets/help/
+    - assets/icon/preview_green.png
     - assets/icon/preview_blue.png
     - assets/icon/preview_navy.png
     # English words for splitting glued words after OCR (MIT, see the licence file).

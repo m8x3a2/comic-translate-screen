@@ -4623,10 +4623,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appIcon => 'Program icon';
 
   @override
-  String get appIconBlue => 'Blue';
+  String get appIconGreen => 'Green';
 
   @override
-  String get appIconNavy => 'Dark blue';
+  String get appIconBlue => 'Cat on blue';
+
+  @override
+  String get appIconNavy => 'Cat on dark';
+
+  @override
+  String get appIconRemove => 'Remove your picture';
+
+  @override
+  String get appIconRemoved => 'Your picture is removed.';
+
+  @override
+  String get appIconRemovedBack =>
+      'Your picture is removed; the green icon is back.';
+
+  @override
+  String appIconRemoveFailed(String error) {
+    return 'Could not remove the picture: $error';
+  }
 
   @override
   String get appIconCustom => 'Your picture…';
@@ -4636,7 +4654,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appIconHelp =>
-      'The window and its taskbar button change at once. The icon of comic_translate.exe itself in its folder always stays blue.';
+      'The window and its taskbar button change at once. The icon of comic_translate.exe itself in its folder always stays green.';
 
   @override
   String appIconBadPicture(String error) {

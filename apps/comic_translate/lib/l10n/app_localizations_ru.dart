@@ -4621,10 +4621,28 @@ class AppLocalizationsRu extends AppLocalizations {
   String get appIcon => 'Иконка программы';
 
   @override
-  String get appIconBlue => 'Синяя';
+  String get appIconGreen => 'Зелёная';
 
   @override
-  String get appIconNavy => 'Тёмно-синяя';
+  String get appIconBlue => 'Кот на синем';
+
+  @override
+  String get appIconNavy => 'Кот на тёмном';
+
+  @override
+  String get appIconRemove => 'Убрать свою картинку';
+
+  @override
+  String get appIconRemoved => 'Своя картинка убрана.';
+
+  @override
+  String get appIconRemovedBack =>
+      'Своя картинка убрана, снова стоит зелёная иконка.';
+
+  @override
+  String appIconRemoveFailed(String error) {
+    return 'Не удалось убрать картинку: $error';
+  }
 
   @override
   String get appIconCustom => 'Своя картинка…';
@@ -4634,7 +4652,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get appIconHelp =>
-      'Окно и его кнопка на панели задач меняются сразу. Значок самого файла comic_translate.exe в папке программы всегда остаётся синим.';
+      'Окно и его кнопка на панели задач меняются сразу. Значок самого файла comic_translate.exe в папке программы всегда остаётся зелёным.';
 
   @override
   String appIconBadPicture(String error) {

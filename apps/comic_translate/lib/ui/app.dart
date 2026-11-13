@@ -120,7 +120,7 @@ class _ComicTranslateAppState extends ConsumerState<ComicTranslateApp> {
     );
     autoBugReportEnabled = ref.read(settingsProvider).autoBugReport;
     ref.listenManual(settingsProvider.select((s) => s.autoBugReport), (_, on) => autoBugReportEnabled = on);
-    // The icon chosen in the settings (the exe itself always has the blue one).
+    // The icon chosen in the settings (the exe itself always has the green one).
     final paths = ref.read(servicesProvider).paths;
     applyAppIcon(ref.read(settingsProvider).appIcon, paths);
     ref.listenManual(settingsProvider.select((s) => s.appIcon), (_, icon) => applyAppIcon(icon, paths));
