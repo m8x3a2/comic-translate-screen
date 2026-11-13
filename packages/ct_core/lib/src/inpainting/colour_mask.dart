@@ -10,10 +10,12 @@ import '../imaging/morphology.dart';
 import '../model/geometry.dart';
 import '../model/text_block.dart';
 
-/// Default colour tolerance (CIE76 ΔE).
+/// Default colour tolerance (CIE76 ΔE). The top of the range is wide on
+/// purpose (the owner's wish): to clean a page well the mask sometimes has to
+/// take the soft edges of the letters too.
 const pipetteTolerance = 20.0;
 const minPipetteTolerance = 4.0;
-const maxPipetteTolerance = 60.0;
+const maxPipetteTolerance = 100.0;
 
 /// The colour at ([x], [y]) of [image]: the median of the 3×3 pixels around
 /// it (a click on a thin stroke of a letter often lands on its edge).
