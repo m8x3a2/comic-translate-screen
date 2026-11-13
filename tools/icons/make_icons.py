@@ -294,8 +294,13 @@ def main() -> None:
     icons = APP / "assets" / "icon"
     icons.mkdir(parents=True, exist_ok=True)
     navy_frames = ico_frames(navy, navy_s)
-    scaled(blue, 512).save(icons / "app_icon_blue_512.png", optimize=True)  # Linux, About window
+    # second built-in icon, switched in Settings → General (resource IDI_NAVY_ICON)
+    write_ico(navy_frames, APP / "windows" / "runner" / "resources" / "app_icon_navy.ico")
+    scaled(blue, 512).save(icons / "app_icon_blue_512.png", optimize=True)  # Linux
     scaled(navy, 512).save(icons / "app_icon_navy_512.png", optimize=True)
+    # small pictures for the icon choice in the settings (bundled with the app)
+    scaled(blue, 96).save(icons / "preview_blue.png", optimize=True)
+    scaled(navy, 96).save(icons / "preview_navy.png", optimize=True)
     write_android(blue, fg, mono, bg)
 
     if args.sheet:

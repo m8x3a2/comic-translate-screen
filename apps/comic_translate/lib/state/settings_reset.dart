@@ -28,6 +28,7 @@ void resetSettings(AppSettings s, PluginRegistry registry, {SettingsPart? part})
           ..showNavigator = d.showNavigator
           ..settingsView = d.settingsView
           ..settingsLastView = d.settingsLastView
+          ..appIcon = d.appIcon
           ..hiddenPanels.clear();
       case SettingsPart.translator:
         s

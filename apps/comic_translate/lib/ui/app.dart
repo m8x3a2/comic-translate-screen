@@ -10,6 +10,7 @@ import '../app_info.dart';
 import '../bootstrap.dart';
 import '../l10n/app_localizations.dart';
 import '../pipeline/pipeline_worker.dart' show GpuFallback, gpuFallbacks;
+import '../state/app_icon.dart' show applyAppIcon;
 import '../state/app_state.dart';
 import '../state/gpu_check.dart' show shortGpuReason;
 import '../state/window_mode.dart';
@@ -119,6 +120,10 @@ class _ComicTranslateAppState extends ConsumerState<ComicTranslateApp> {
     );
     autoBugReportEnabled = ref.read(settingsProvider).autoBugReport;
     ref.listenManual(settingsProvider.select((s) => s.autoBugReport), (_, on) => autoBugReportEnabled = on);
+    // The icon chosen in the settings (the exe itself always has the blue one).
+    final paths = ref.read(servicesProvider).paths;
+    applyAppIcon(ref.read(settingsProvider).appIcon, paths);
+    ref.listenManual(settingsProvider.select((s) => s.appIcon), (_, icon) => applyAppIcon(icon, paths));
   }
 
   @override

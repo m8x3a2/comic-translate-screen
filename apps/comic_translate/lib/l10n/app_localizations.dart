@@ -7891,6 +7891,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Blocks found: {count}. Undo with Ctrl+Z.'**
   String findInsideDone(String count);
+
+  /// No description provided for @appIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Program icon'**
+  String get appIcon;
+
+  /// No description provided for @appIconBlue.
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get appIconBlue;
+
+  /// No description provided for @appIconNavy.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark blue'**
+  String get appIconNavy;
+
+  /// No description provided for @appIconCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Your picture…'**
+  String get appIconCustom;
+
+  /// No description provided for @appIconOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Another picture…'**
+  String get appIconOther;
+
+  /// No description provided for @appIconHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The window and its taskbar button change at once. The icon of comic_translate.exe itself in its folder always stays blue.'**
+  String get appIconHelp;
+
+  /// No description provided for @appIconBadPicture.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read this picture: {error}'**
+  String appIconBadPicture(String error);
+
+  /// No description provided for @appIconNotLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Windows could not load this icon; the window keeps the old one.'**
+  String get appIconNotLoaded;
+
+  /// No description provided for @updateShortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Update shortcuts'**
+  String get updateShortcuts;
+
+  /// No description provided for @updateShortcutsInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcuts of this program on the desktop, in Start and pinned to the taskbar get the chosen icon. Windows may take a moment to redraw them.'**
+  String get updateShortcutsInfo;
+
+  /// No description provided for @shortcutsUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcuts updated: {count}'**
+  String shortcutsUpdated(int count);
+
+  /// No description provided for @shortcutsNoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No shortcuts found'**
+  String get shortcutsNoneTitle;
+
+  /// No description provided for @shortcutsNoneBody.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no shortcuts to this copy of the program on the desktop, in Start or on the taskbar. Put one on the desktop?'**
+  String get shortcutsNoneBody;
+
+  /// No description provided for @createDesktopShortcut.
+  ///
+  /// In en, this message translates to:
+  /// **'Put on the desktop'**
+  String get createDesktopShortcut;
+
+  /// No description provided for @shortcutCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortcut created: {path}'**
+  String shortcutCreated(String path);
+
+  /// No description provided for @shortcutsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the shortcuts: {error}'**
+  String shortcutsFailed(String error);
 }
 
 class _AppLocalizationsDelegate

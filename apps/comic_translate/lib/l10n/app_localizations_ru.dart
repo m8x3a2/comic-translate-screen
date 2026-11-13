@@ -4616,4 +4616,64 @@ class AppLocalizationsRu extends AppLocalizations {
   String findInsideDone(String count) {
     return 'Найдено блоков: $count. Отменить — Ctrl+Z.';
   }
+
+  @override
+  String get appIcon => 'Иконка программы';
+
+  @override
+  String get appIconBlue => 'Синяя';
+
+  @override
+  String get appIconNavy => 'Тёмно-синяя';
+
+  @override
+  String get appIconCustom => 'Своя картинка…';
+
+  @override
+  String get appIconOther => 'Другая картинка…';
+
+  @override
+  String get appIconHelp =>
+      'Окно и его кнопка на панели задач меняются сразу. Значок самого файла comic_translate.exe в папке программы всегда остаётся синим.';
+
+  @override
+  String appIconBadPicture(String error) {
+    return 'Не удалось прочитать картинку: $error';
+  }
+
+  @override
+  String get appIconNotLoaded =>
+      'Windows не смогла загрузить эту иконку; у окна осталась прежняя.';
+
+  @override
+  String get updateShortcuts => 'Обновить ярлыки';
+
+  @override
+  String get updateShortcutsInfo =>
+      'Ярлыки этой программы на рабочем столе, в «Пуске» и закреплённые на панели задач получат выбранную иконку. Windows может перерисовать их не сразу.';
+
+  @override
+  String shortcutsUpdated(int count) {
+    return 'Обновлено ярлыков: $count';
+  }
+
+  @override
+  String get shortcutsNoneTitle => 'Ярлыков не нашлось';
+
+  @override
+  String get shortcutsNoneBody =>
+      'На рабочем столе, в «Пуске» и на панели задач нет ярлыков на эту копию программы. Создать ярлык на рабочем столе?';
+
+  @override
+  String get createDesktopShortcut => 'Создать на рабочем столе';
+
+  @override
+  String shortcutCreated(String path) {
+    return 'Ярлык создан: $path';
+  }
+
+  @override
+  String shortcutsFailed(String error) {
+    return 'Не удалось изменить ярлыки: $error';
+  }
 }

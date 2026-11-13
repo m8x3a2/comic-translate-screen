@@ -1,17 +1,36 @@
 #include "flutter_window.h"
 
 #include <flutter/standard_method_codec.h>
+#include <shlobj.h>
 
 #include <optional>
 #include <string>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "resource.h"
+
+namespace {
+
+// UTF-8 from Dart to the UTF-16 Windows wants.
+std::wstring Wide(const std::string& utf8) {
+  const int n = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, nullptr, 0);
+  std::wstring wide(n > 0 ? n - 1 : 0, L'\0');
+  if (n > 1) {
+    MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, wide.data(), n);
+  }
+  return wide;
+}
+
+}  // namespace
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project,
                              bool visible)
     : project_(project), visible_(visible) {}
 
-FlutterWindow::~FlutterWindow() {}
+FlutterWindow::~FlutterWindow() {
+  if (big_icon_ != nullptr) DestroyIcon(big_icon_);
+  if (small_icon_ != nullptr) DestroyIcon(small_icon_);
+}
 
 bool FlutterWindow::OnCreate() {
   if (!Win32Window::OnCreate()) {
@@ -53,15 +72,18 @@ bool FlutterWindow::OnCreate() {
             result->Error("bad_args", "setTitle expects a string");
             return;
           }
-          // UTF-8 from Dart to the UTF-16 Windows wants.
-          const int n = MultiByteToWideChar(CP_UTF8, 0, title->c_str(), -1,
-                                            nullptr, 0);
-          std::wstring wide(n > 0 ? n - 1 : 0, L'\0');
-          if (n > 1) {
-            MultiByteToWideChar(CP_UTF8, 0, title->c_str(), -1, wide.data(),
-                                n);
+          SetWindowTextW(GetHandle(), Wide(*title).c_str());
+          result->Success();
+        } else if (call.method_name() == "setIcon") {
+          const auto* which = std::get_if<std::string>(call.arguments());
+          if (which == nullptr) {
+            result->Error("bad_args", "setIcon expects a string");
+            return;
           }
-          SetWindowTextW(GetHandle(), wide.c_str());
+          result->Success(flutter::EncodableValue(SetIcon(Wide(*which))));
+        } else if (call.method_name() == "refreshShellIcons") {
+          // Shortcuts got a new icon: Explorer redraws them now, not later.
+          SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
           result->Success();
         } else {
           result->NotImplemented();
@@ -125,6 +147,45 @@ void FlutterWindow::SetFullScreen(bool full_screen) {
     }
   }
   full_screen_ = full_screen;
+}
+
+bool FlutterWindow::SetIcon(const std::wstring& which) {
+  HWND hwnd = GetHandle();
+  if (hwnd == nullptr) {
+    return false;
+  }
+  const UINT dpi = GetDpiForWindow(hwnd);
+  const int big_px = GetSystemMetricsForDpi(SM_CXICON, dpi);
+  const int small_px = GetSystemMetricsForDpi(SM_CXSMICON, dpi);
+  HICON new_big = nullptr;
+  HICON new_small = nullptr;
+  if (which == L"blue" || which == L"navy" || which.empty()) {
+    HINSTANCE module = GetModuleHandle(nullptr);
+    LPCWSTR id = MAKEINTRESOURCE(which == L"navy" ? IDI_NAVY_ICON
+                                                  : IDI_APP_ICON);
+    new_big = static_cast<HICON>(
+        LoadImageW(module, id, IMAGE_ICON, big_px, big_px, LR_DEFAULTCOLOR));
+    new_small = static_cast<HICON>(
+        LoadImageW(module, id, IMAGE_ICON, small_px, small_px, LR_DEFAULTCOLOR));
+  } else {
+    new_big = static_cast<HICON>(LoadImageW(nullptr, which.c_str(), IMAGE_ICON,
+                                            big_px, big_px, LR_LOADFROMFILE));
+    new_small = static_cast<HICON>(LoadImageW(
+        nullptr, which.c_str(), IMAGE_ICON, small_px, small_px, LR_LOADFROMFILE));
+  }
+  if (new_big == nullptr || new_small == nullptr) {
+    if (new_big != nullptr) DestroyIcon(new_big);
+    if (new_small != nullptr) DestroyIcon(new_small);
+    return false;
+  }
+  SendMessage(hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(new_big));
+  SendMessage(hwnd, WM_SETICON, ICON_SMALL,
+              reinterpret_cast<LPARAM>(new_small));
+  if (big_icon_ != nullptr) DestroyIcon(big_icon_);
+  if (small_icon_ != nullptr) DestroyIcon(small_icon_);
+  big_icon_ = new_big;
+  small_icon_ = new_small;
+  return true;
 }
 
 void FlutterWindow::OnDestroy() {

@@ -4618,4 +4618,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String findInsideDone(String count) {
     return 'Blocks found: $count. Undo with Ctrl+Z.';
   }
+
+  @override
+  String get appIcon => 'Program icon';
+
+  @override
+  String get appIconBlue => 'Blue';
+
+  @override
+  String get appIconNavy => 'Dark blue';
+
+  @override
+  String get appIconCustom => 'Your picture…';
+
+  @override
+  String get appIconOther => 'Another picture…';
+
+  @override
+  String get appIconHelp =>
+      'The window and its taskbar button change at once. The icon of comic_translate.exe itself in its folder always stays blue.';
+
+  @override
+  String appIconBadPicture(String error) {
+    return 'Could not read this picture: $error';
+  }
+
+  @override
+  String get appIconNotLoaded =>
+      'Windows could not load this icon; the window keeps the old one.';
+
+  @override
+  String get updateShortcuts => 'Update shortcuts';
+
+  @override
+  String get updateShortcutsInfo =>
+      'Shortcuts of this program on the desktop, in Start and pinned to the taskbar get the chosen icon. Windows may take a moment to redraw them.';
+
+  @override
+  String shortcutsUpdated(int count) {
+    return 'Shortcuts updated: $count';
+  }
+
+  @override
+  String get shortcutsNoneTitle => 'No shortcuts found';
+
+  @override
+  String get shortcutsNoneBody =>
+      'There are no shortcuts to this copy of the program on the desktop, in Start or on the taskbar. Put one on the desktop?';
+
+  @override
+  String get createDesktopShortcut => 'Put on the desktop';
+
+  @override
+  String shortcutCreated(String path) {
+    return 'Shortcut created: $path';
+  }
+
+  @override
+  String shortcutsFailed(String error) {
+    return 'Could not change the shortcuts: $error';
+  }
 }

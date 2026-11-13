@@ -27,6 +27,7 @@ import '../common/plugin_strings.dart';
 import '../common/translator_history_dialog.dart';
 import '../shell_full/main_screen.dart' show showInExplorer;
 import '../shell_full/prompt_presets.dart';
+import 'app_icon_section.dart';
 import 'gpu_section.dart';
 import 'keys_section.dart';
 import 'models_section.dart';
@@ -508,6 +509,7 @@ class _GeneralSection extends ConsumerWidget {
             const GpuSwitch(),
           ],
         ),
+        if (Platform.isWindows) SettingsGroup(title: l.appIcon, children: const [AppIconChoice()]),
         SettingsGroup(
           title: l.settingsProjects,
           children: [

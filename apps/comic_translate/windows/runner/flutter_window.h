@@ -7,6 +7,7 @@
 #include <flutter/method_channel.h>
 
 #include <memory>
+#include <string>
 
 #include "win32_window.h"
 
@@ -33,6 +34,11 @@ class FlutterWindow : public Win32Window {
   // The window's style, position and maximized state come back on exit.
   void SetFullScreen(bool full_screen);
 
+  // The icon of the window and its taskbar button: "blue" (the exe's own),
+  // "navy" (the second built-in one) or the path of an .ico file. Returns
+  // false when the file cannot be loaded (the icon stays as it was).
+  bool SetIcon(const std::wstring& which);
+
   // The project to run.
   flutter::DartProject project_;
 
@@ -51,6 +57,10 @@ class FlutterWindow : public Win32Window {
   LONG saved_style_ = 0;
   LONG saved_ex_style_ = 0;
   RECT saved_rect_{};
+
+  // Icons set by SetIcon (destroyed when replaced or with the window).
+  HICON big_icon_ = nullptr;
+  HICON small_icon_ = nullptr;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

@@ -3024,5 +3024,49 @@
         "type": "String"
       }
     }
+  },
+  "appIcon": "Program icon",
+  "appIconBlue": "Blue",
+  "appIconNavy": "Dark blue",
+  "appIconCustom": "Your picture…",
+  "appIconOther": "Another picture…",
+  "appIconHelp": "The window and its taskbar button change at once. The icon of comic_translate.exe itself in its folder always stays blue.",
+  "appIconBadPicture": "Could not read this picture: {error}",
+  "@appIconBadPicture": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "appIconNotLoaded": "Windows could not load this icon; the window keeps the old one.",
+  "updateShortcuts": "Update shortcuts",
+  "updateShortcutsInfo": "Shortcuts of this program on the desktop, in Start and pinned to the taskbar get the chosen icon. Windows may take a moment to redraw them.",
+  "shortcutsUpdated": "Shortcuts updated: {count}",
+  "@shortcutsUpdated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shortcutsNoneTitle": "No shortcuts found",
+  "shortcutsNoneBody": "There are no shortcuts to this copy of the program on the desktop, in Start or on the taskbar. Put one on the desktop?",
+  "createDesktopShortcut": "Put on the desktop",
+  "shortcutCreated": "Shortcut created: {path}",
+  "@shortcutCreated": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "shortcutsFailed": "Could not change the shortcuts: {error}",
+  "@shortcutsFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -20,6 +20,11 @@ class AppPaths {
   /// Font files the user added (Settings → Text).
   Directory get fonts => _dir('fonts');
   File get settingsFile => File(p.join(root.path, 'settings.json'));
+
+  /// The user's own program icon (Settings → General): the .ico Windows
+  /// loads, and a PNG of it for the settings to show.
+  File get customIcon => File(p.join(root.path, 'icon', 'custom.ico'));
+  File get customIconPreview => File(p.join(root.path, 'icon', 'custom.png'));
   File get appLog => File(p.join(logs.path, 'app.jsonl'));
 
   /// The local usage counter of paid services ([UsageLog]).

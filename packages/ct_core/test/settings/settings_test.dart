@@ -290,4 +290,12 @@ void main() {
     expect(redactor.redact('use new-secret-22'), 'use ***');
     expect(await store.keys(), ['plugin.x.api_key', 'plugin.y.token']);
   });
+
+  test('program icon is kept, and an unknown value falls back to the blue one', () {
+    expect(AppSettings().appIcon, 'blue');
+    expect(AppSettings().toJson()['ui'], isNot(contains('app_icon')));
+    final navy = AppSettings.fromJson(AppSettings(appIcon: 'navy').toJson());
+    expect(navy.appIcon, 'navy');
+    expect(AppSettings.fromJson({'ui': {'app_icon': 'pink'}}).appIcon, 'blue');
+  });
 }
