@@ -202,8 +202,12 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   The view "Mask" shows what cleaning works on with the mask and no
   translation ("mask only": white on black). The mask pipette (I,
   `colour_mask.dart`, `state/pipette.dart`): a click on a letter adds its
-  colour (median of 3×3); every pixel within the tolerance (CIE76 ΔE, 20 by
-  default) inside the text regions (the selected block, else all blocks,
+  colour (median of 3×3); every pixel that is a blend of that colour with the
+  region's background or with black ink (a letter's soft edge, or the letter
+  over a line of the drawing) joins the mask: the tolerance (4–100, 20 by
+  default) sets how faint a blend counts and how far off it (CIE76 ΔE, at most
+  30) a pixel may be. A plain "within ΔE" test took the grey drawing at 70+;
+  this never does. It looks inside the text regions (the selected block, else all blocks,
   else the page) joins the mask, grown by a pixel, on top of the mask the
   page had before the pipette; one undo step per go. "Auto / Off" next to it
   is the `colour_letters` setting.

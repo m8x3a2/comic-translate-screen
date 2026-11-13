@@ -1713,7 +1713,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pipetteTolerance =>
-      'Colour precision: to the right wider (more of the letters\' edges, but of the drawing too), to the left stricter';
+      'Colour precision: to the right wider (the faint edges of the letters too), to the left the colour itself only. A drawing of another colour is never taken';
 
   @override
   String pipetteWhereBlock(int n) {

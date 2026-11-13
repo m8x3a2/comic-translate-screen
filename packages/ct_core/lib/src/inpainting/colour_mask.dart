@@ -49,10 +49,32 @@ BBox? _region(TextBlock b, int w, int h) {
   return BBox(math.max(0, r.x1), math.max(0, r.y1), math.min(w, r.x2), math.min(h, r.y2));
 }
 
+/// The largest colour distance (ΔE) of the pipette. A plain "within ΔE of the
+/// colour" test reaches other colours as the tolerance grows: from red on the
+/// owner's bunny photo the black and grey drawing is ≈75 away, so at 70+ the
+/// drawing came in and at 90 the whole page. Beyond this the tolerance widens
+/// only along the blend of the letter with its background (see
+/// [maskByColours]).
+const _maxDistance = 30.0;
+
+/// Black ink of the drawing under coloured letters.
+const _ink = (0.0, 0.0, 0.0);
+
+/// How far from the background a blended pixel must still be (as the share
+/// of the letter's colour in it) at [tolerance].
+double _minShare(double tolerance) =>
+    1 - 0.85 * ((tolerance - minPipetteTolerance) / (maxPipetteTolerance - minPipetteTolerance)).clamp(0, 1);
+
 /// [base] (the mask before the pipette, the image's size or taller) with the
-/// pixels of [image] within [tolerance] (ΔE) of any of [colours] added as
-/// letters (255), grown by [grow] pixels, inside [regions] (the whole image
-/// when null).
+/// letters of [colours] in [image] added (255), grown by [grow] pixels, inside
+/// [regions] (the whole image when null).
+///
+/// A pixel is a letter when it looks like a blend of a picked colour and the
+/// region's background (its most common other colour): letter edges, soft
+/// from anti-aliasing or a photo, are such blends. [tolerance] sets how faint
+/// a blend still counts (from the solid colour only to faint edges) and how
+/// far off the blend a pixel may be (ΔE, at most [_maxDistance], less for
+/// fainter blends), so other colours of the drawing never come in.
 GrayImage maskByColours(
   RgbImage image,
   GrayImage base,
@@ -64,26 +86,28 @@ GrayImage maskByColours(
   final w = image.width, h = math.min(image.height, base.height);
   final out = GrayImage(base.width, base.height, Uint8List.fromList(base.data));
   if (colours.isEmpty) return out;
-  final targets = [for (final (r, g, b) in colours) _lab(r, g, b)];
-  final limit = tolerance * tolerance;
+  final distance = math.min(tolerance, _maxDistance);
+  final minShare = _minShare(tolerance);
   for (final box in regions ?? [BBox(0, 0, w, h)]) {
     final x1 = math.max(0, box.x1), y1 = math.max(0, box.y1);
     final x2 = math.min(w, box.x2), y2 = math.min(h, box.y2);
     if (x2 <= x1 || y2 <= y1) continue;
     final bw = x2 - x1, bh = y2 - y1;
+    final paper = _background(image, x1, y1, x2, y2, colours);
     final hit = GrayImage.zeros(bw, bh);
     var any = false;
-    // Colours repeat a lot on a page: each is converted once.
+    // Colours repeat a lot on a page: each is checked once.
     final cache = <int, bool>{};
     for (var y = y1; y < y2; y++) {
       for (var x = x1; x < x2; x++) {
         final i = (y * w + x) * 3;
         final key = (image.data[i] << 16) | (image.data[i + 1] << 8) | image.data[i + 2];
         final near = cache[key] ??= () {
-          final (l, a, bb) = _lab(image.data[i], image.data[i + 1], image.data[i + 2]);
-          for (final (tl, ta, tb) in targets) {
-            final d = (l - tl) * (l - tl) + (a - ta) * (a - ta) + (bb - tb) * (bb - tb);
-            if (d <= limit) return true;
+          final p = (image.data[i], image.data[i + 1], image.data[i + 2]);
+          for (final c in colours) {
+            // A letter blends with the paper at its edges and with the
+            // dark lines of the drawing where it lies over them.
+            if (_isLetter(p, c, paper, minShare, distance) || _isLetter(p, c, _ink, minShare, distance)) return true;
           }
           return false;
         }();
@@ -104,9 +128,77 @@ GrayImage maskByColours(
   return out;
 }
 
+/// Whether pixel [p] is a blend of letter colour [c] and background [paper]
+/// with at least [minShare] of [c] in it, within [distance] ΔE (less for
+/// fainter blends: near the background every colour is close to the blend).
+/// Without a background only the colour itself counts.
+bool _isLetter(
+  (int, int, int) p,
+  (int, int, int) c,
+  (double, double, double)? paper,
+  double minShare,
+  double distance,
+) {
+  final (pr, pg, pb) = p;
+  final (cr, cg, cb) = c;
+  var share = 1.0;
+  var (qr, qg, qb) = (cr.toDouble(), cg.toDouble(), cb.toDouble());
+  if (paper != null) {
+    final (br, bg, bb) = paper;
+    final vr = cr - br, vg = cg - bg, vb = cb - bb;
+    final len2 = vr * vr + vg * vg + vb * vb;
+    // A colour too close to the background has no blend to follow.
+    if (len2 >= 40 * 40) {
+      share = (((pr - br) * vr + (pg - bg) * vg + (pb - bb) * vb) / len2).clamp(0.0, 1.0);
+      if (share < minShare) return false;
+      (qr, qg, qb) = (br + share * vr, bg + share * vg, bb + share * vb);
+    }
+  }
+  final (l, a, b) = _lab(pr.toDouble(), pg.toDouble(), pb.toDouble());
+  final (ql, qa, qb2) = _lab(qr, qg, qb);
+  final d2 = (l - ql) * (l - ql) + (a - qa) * (a - qa) + (b - qb2) * (b - qb2);
+  final limit = distance * share;
+  return d2 <= limit * limit;
+}
+
+/// The background of the region: the mean of its most common colour (in
+/// 16-level bins), leaving out pixels near [colours] (a region full of big
+/// letters); null when no colour covers 2% of it.
+(double, double, double)? _background(RgbImage image, int x1, int y1, int x2, int y2, List<(int, int, int)> colours) {
+  // Sums in doubles: a 12-megapixel page of white overflows 32 bits.
+  final count = Int32List(4096), sr = Float64List(4096), sg = Float64List(4096), sb = Float64List(4096);
+  final d = image.data, w = image.width;
+  for (var y = y1; y < y2; y++) {
+    for (var x = x1; x < x2; x++) {
+      final i = (y * w + x) * 3;
+      final r = d[i], g = d[i + 1], b = d[i + 2];
+      var letter = false;
+      for (final (cr, cg, cb) in colours) {
+        if ((r - cr) * (r - cr) + (g - cg) * (g - cg) + (b - cb) * (b - cb) < 80 * 80) {
+          letter = true;
+          break;
+        }
+      }
+      if (letter) continue;
+      final k = (r >> 4) << 8 | (g >> 4) << 4 | b >> 4;
+      count[k]++;
+      sr[k] += r;
+      sg[k] += g;
+      sb[k] += b;
+    }
+  }
+  var best = 0;
+  for (var k = 1; k < 4096; k++) {
+    if (count[k] > count[best]) best = k;
+  }
+  final n = count[best];
+  if (n == 0 || n * 50 < (x2 - x1) * (y2 - y1)) return null;
+  return (sr[best] / n, sg[best] / n, sb[best] / n);
+}
+
 /// sRGB → CIE L*a*b* (D65).
-(double, double, double) _lab(int r8, int g8, int b8) {
-  double lin(int c) {
+(double, double, double) _lab(double r8, double g8, double b8) {
+  double lin(double c) {
     final v = c / 255;
     return v <= 0.04045 ? v / 12.92 : math.pow((v + 0.055) / 1.055, 2.4).toDouble();
   }

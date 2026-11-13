@@ -54,6 +54,43 @@ void main() {
     expect(_count(black, 60, _w), 7 * 2 * 20);
   });
 
+  test('a wide tolerance takes the soft edges of the letters, never the grey drawing', () {
+    // White paper; columns: red letter, its edges (blends with the paper and
+    // with black ink under it), and the drawing in black and greys.
+    const columns = [
+      [200, 40, 40], // 0 the letter
+      [228, 148, 148], // 1 half-faded edge
+      [244, 205, 205], // 2 faint edge
+      [120, 24, 24], // 3 the letter over black ink
+      [0, 0, 0], // 4 drawing
+      [60, 60, 60], // 5
+      [150, 150, 150], // 6
+      [200, 200, 200], // 7
+      [235, 235, 235], // 8
+    ];
+    const w = 40, h = 4;
+    final data = Uint8List(w * h * 3)..fillRange(0, w * h * 3, 255);
+    for (var y = 0; y < h; y++) {
+      for (var i = 0; i < columns.length; i++) {
+        data.setRange((y * w + i * 4) * 3, (y * w + i * 4) * 3 + 3, columns[i]);
+      }
+    }
+    final image = RgbImage(w, h, data);
+    List<int> taken(double tolerance) {
+      final m = maskByColours(image, GrayImage.zeros(w, h), [(200, 40, 40)], tolerance: tolerance, grow: 0);
+      return [
+        for (var i = 0; i < columns.length; i++)
+          if (m.data[i * 4] != 0) i,
+      ];
+    }
+
+    expect(taken(pipetteTolerance), [0]);
+    expect(taken(maxPipetteTolerance), [0, 1, 2, 3]);
+    for (var t = minPipetteTolerance; t <= maxPipetteTolerance; t += 8) {
+      expect(taken(t).where((i) => i >= 4), isEmpty, reason: 'tolerance $t');
+    }
+  });
+
   test('only inside the regions; the base mask is kept; grown by a pixel', () {
     final base = GrayImage.zeros(_w, _h + 10)..data[_w * 2 + 2] = 128;
     final m = maskByColours(_page(), base, [(150, 20, 20), (0, 0, 0)], regions: [const BBox(0, 0, 60, _h)]);

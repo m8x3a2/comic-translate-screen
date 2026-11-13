@@ -3059,7 +3059,7 @@ abstract class AppLocalizations {
   /// No description provided for @pipetteTolerance.
   ///
   /// In en, this message translates to:
-  /// **'Colour precision: to the right wider (more of the letters\' edges, but of the drawing too), to the left stricter'**
+  /// **'Colour precision: to the right wider (the faint edges of the letters too), to the left the colour itself only. A drawing of another colour is never taken'**
   String get pipetteTolerance;
 
   /// No description provided for @pipetteWhereBlock.

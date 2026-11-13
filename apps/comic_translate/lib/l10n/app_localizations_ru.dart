@@ -1712,7 +1712,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get pipetteTolerance =>
-      'Точность цвета: вправо — шире (больше краёв букв, но и рисунка), влево — строже';
+      'Точность цвета: вправо — шире (и бледные края букв), влево — только сам цвет. Рисунок другого цвета не берётся';
 
   @override
   String pipetteWhereBlock(int n) {
