@@ -207,7 +207,11 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   over a line of the drawing) joins the mask: the tolerance (4–100, 20 by
   default) sets how faint a blend counts and how far off it (CIE76 ΔE, at most
   30) a pixel may be. A plain "within ΔE" test took the grey drawing at 70+;
-  this never does. It looks inside the text regions (the selected block, else all blocks,
+  this never does. A margin slider (0–12 px) grows what it found. "Where to
+  look" (default "letters in the boxes"): pieces of the colour that run off
+  the edge of a box's region are the drawing, not letters (black letters in a
+  bubble on a black background), and are left out; "everything in the boxes"
+  keeps them; "whole page" ignores the boxes. It looks inside the text regions (the selected block, else all blocks,
   else the page) joins the mask, grown by a pixel, on top of the mask the
   page had before the pipette; one undo step per go. "Auto / Off" next to it
   is the `colour_letters` setting.
