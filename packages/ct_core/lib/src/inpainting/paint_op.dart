@@ -48,17 +48,18 @@ class PaintOp {
   /// ARGB colour of the brush and the fill (always opaque).
   final int color;
 
-  /// The fill's pixels: rows as `y, x1, x2` triples, `x2` exclusive.
+  /// The pixels of a fill, or of an eraser or "original" made with an
+  /// outline: rows as `y, x1, x2` triples, `x2` exclusive. Empty for strokes.
   final List<int> runs;
 
-  bool get isStroke => kind != PaintKind.fill;
+  bool get isStroke => runs.isEmpty && kind != PaintKind.fill;
 
   Map<String, Object?> toJson() => {
     'kind': kind.name,
     if (isStroke) 'points': [for (final p in points) p.toJson()],
     if (isStroke) 'width': width,
     if (kind == PaintKind.brush || kind == PaintKind.fill) 'color': color,
-    if (kind == PaintKind.fill) 'runs': runs,
+    if (!isStroke) 'runs': runs,
   };
 
   factory PaintOp.fromJson(Map<String, Object?> j) => PaintOp(
@@ -103,13 +104,26 @@ RgbImage bakePaints(
   final data = out.data;
   final orig = original != null && original.width == w && original.height == h ? original.data : null;
   for (final op in ops) {
-    if (op.kind == PaintKind.fill) {
+    if (!op.isStroke) {
+      // A fill, or an eraser / "original" made with an outline: every pixel
+      // of the runs takes the colour, the cleaned page or the original.
+      if (op.kind == PaintKind.original && orig == null) continue;
       final r = (op.color >> 16) & 0xFF, g = (op.color >> 8) & 0xFF, b = op.color & 0xFF;
+      final from = switch (op.kind) {
+        PaintKind.erase => base.data,
+        PaintKind.original => orig,
+        _ => null,
+      };
       for (var k = 0; k + 2 < op.runs.length; k += 3) {
         final y = op.runs[k];
         if (y < 0 || y >= h) continue;
         final x1 = op.runs[k + 1].clamp(0, w), x2 = op.runs[k + 2].clamp(0, w);
-        for (var i = (y * w + x1) * 3, end = (y * w + x2) * 3; i < end; i += 3) {
+        final start = (y * w + x1) * 3, end = (y * w + x2) * 3;
+        if (from != null) {
+          data.setRange(start, end, from, start);
+          continue;
+        }
+        for (var i = start; i < end; i += 3) {
           data[i] = r;
           data[i + 1] = g;
           data[i + 2] = b;

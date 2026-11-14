@@ -69,13 +69,28 @@ class ProjectPage {
 }
 
 class ProjectData {
-  const ProjectData({required this.pages, this.state = const {}});
+  const ProjectData({required this.pages, this.state = const {}, this.shelf = const []});
 
   final List<ProjectPage> pages;
 
   /// Project-wide values of the app (current page, ...); JSON values only.
   final Map<String, Object?> state;
+
+  /// The shelf: bubbles and pictures taken off the pages, to put on others.
+  final List<ShelfEntry> shelf;
 }
+
+/// A bubble or a picture on the shelf.
+class ShelfEntry {
+  const ShelfEntry.bubble(TextBlock this.block) : picture = null;
+  const ShelfEntry.picture(PagePicture this.picture) : block = null;
+
+  final TextBlock? block;
+  final PagePicture? picture;
+}
+
+/// The key of the shelf in the stored project state.
+const _shelfKey = '_shelf';
 
 /// What a project file holds, read without opening its pages.
 class ProjectInfo {
@@ -234,7 +249,16 @@ class ProjectFile {
         for (final gone in existing.keys) {
           db.execute('DELETE FROM pages WHERE id = ?', [gone]);
         }
-        db.execute('INSERT OR REPLACE INTO project(id, json) VALUES(1, ?)', [jsonEncode(data.state)]);
+        final shelf = [
+          for (final (i, item) in data.shelf.indexed)
+            if (item.block case final b?)
+              {'block': b.toJson()}
+            else if (item.picture case final pic? when File(pic.path).existsSync())
+              {'image': blobOf(pic.path, 'shelf_$i${p.extension(pic.path)}'), 'box': pic.box.toJson()},
+        ];
+        db.execute('INSERT OR REPLACE INTO project(id, json) VALUES(1, ?)', [
+          jsonEncode({...data.state, if (shelf.isNotEmpty) _shelfKey: shelf}),
+        ]);
 
         var removed = 0;
         for (final row in db.select('SELECT hash FROM blobs')) {
@@ -360,9 +384,19 @@ class ProjectFile {
       }
       final project = db.select('SELECT json FROM project WHERE id = 1');
       final state = project.isEmpty
-          ? const <String, Object?>{}
-          : (jsonDecode(project.first['json'] as String) as Map).cast<String, Object?>();
-      return ProjectData(pages: pages, state: state);
+          ? <String, Object?>{}
+          : {...(jsonDecode(project.first['json'] as String) as Map).cast<String, Object?>()};
+      final shelfDir = Directory(p.join(filesDir.path, 'shelf'));
+      final shelf = [
+        for (final item in (state.remove(_shelfKey) as List? ?? const []))
+          if (item is Map && item['block'] is Map)
+            ShelfEntry.bubble(TextBlock.fromJson((item['block'] as Map).cast<String, Object?>()))
+          else if (item is Map && item['image'] != null)
+            ShelfEntry.picture(
+              PagePicture(path: materialize(item['image'], shelfDir), box: BBox.fromJson(item['box'])),
+            ),
+      ];
+      return ProjectData(pages: pages, state: state, shelf: shelf);
     } finally {
       db.close();
     }

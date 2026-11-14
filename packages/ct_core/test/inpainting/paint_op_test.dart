@@ -81,6 +81,25 @@ void main() {
       expect(px(base, 3, 2), (0, 0, 0));
     });
 
+    test('an outline can erase touch-ups or bring back the original inside it', () {
+      final clean = RgbImage.filled(10, 10, 255, 255, 255);
+      final original = RgbImage.filled(10, 10, 1, 2, 3);
+      final out = bakePaints(clean, const [
+        PaintOp(kind: PaintKind.fill, color: 0xFF00FF00, runs: [0, 0, 10, 1, 0, 10]),
+        PaintOp(kind: PaintKind.erase, runs: [0, 0, 5]),
+        PaintOp(kind: PaintKind.original, runs: [1, 5, 10, 3, 0, 2]),
+      ], original: original);
+      expect(px(out, 2, 0), (255, 255, 255), reason: 'erased: the cleaned page');
+      expect(px(out, 7, 0), (0, 255, 0));
+      expect(px(out, 2, 1), (0, 255, 0));
+      expect(px(out, 7, 1), (1, 2, 3), reason: 'the original');
+      expect(px(out, 1, 3), (1, 2, 3));
+      expect(px(out, 5, 5), (255, 255, 255));
+      const op = PaintOp(kind: PaintKind.erase, runs: [1, 2, 3]);
+      expect(op.isStroke, isFalse);
+      expect(PaintOp.fromJson(op.toJson()).runs, [1, 2, 3]);
+    });
+
     test('strokes off the page are ignored', () {
       final base = RgbImage.filled(10, 10, 1, 2, 3);
       final out = bakePaints(base, [

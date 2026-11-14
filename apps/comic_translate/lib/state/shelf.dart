@@ -1,7 +1,7 @@
 /// The shelf beside the page (the owner's idea, step 7): a bubble or a
 /// picture put there leaves its page, and is taken out on another one (a
-/// clipboard of this program). It lasts until the program is closed; the
-/// changes of the pages are undo steps as usual.
+/// clipboard of this program). It is kept in the project; the changes of
+/// the pages are undo steps as usual.
 library;
 
 import 'dart:math' as math;
@@ -13,13 +13,7 @@ import '../render/mask_raster.dart' show imageFileSize;
 import 'workspace.dart';
 
 /// A bubble (with its text, translation and look) or a picture on the shelf.
-class ShelfItem {
-  const ShelfItem.bubble(TextBlock this.block) : picture = null;
-  const ShelfItem.picture(PagePicture this.picture) : block = null;
-
-  final TextBlock? block;
-  final PagePicture? picture;
-}
+typedef ShelfItem = ShelfEntry;
 
 final shelfProvider = NotifierProvider<ShelfNotifier, List<ShelfItem>>(ShelfNotifier.new);
 
@@ -74,6 +68,9 @@ class ShelfNotifier extends Notifier<List<ShelfItem>> {
     }
     state = [...state]..removeAt(index);
   }
+
+  /// The shelf of a project just opened (or none when the pages are closed).
+  void replace(List<ShelfItem> items) => state = items;
 
   /// Throws item [index] away.
   void remove(int index) {

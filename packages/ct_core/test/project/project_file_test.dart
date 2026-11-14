@@ -110,10 +110,37 @@ void main() {
         ],
       ),
     );
-    final back = ProjectFile.load(path, Directory(p.join(dir.path, 'open'))).pages.single.pictures;
+    final loaded = ProjectFile.load(path, Directory(p.join(dir.path, 'open')));
+    final back = loaded.pages.single.pictures;
     expect(back.map((x) => x.box), [const BBox(-5, 10, 40, 60), const BBox(0, 0, 4, 4)]);
     expect(File(back.first.path).readAsBytesSync(), [9, 9, 9]);
     expect(File(back.last.path).readAsBytesSync(), [7, 7]);
+  });
+
+  test('the shelf is kept: bubbles with their translation, pictures with their files', () {
+    final meme = file('shelf.png', [4, 5, 6]);
+    final path = p.join(dir.path, 'shelf.ctsproj');
+    ProjectFile.save(
+      path,
+      ProjectData(
+        pages: [
+          ProjectPage(id: 'a', name: '001.png', image: file('001.png', [1])),
+        ],
+        state: const {'current': 0},
+        shelf: [
+          ShelfEntry.bubble(block('Hi')),
+          ShelfEntry.picture(PagePicture(path: meme, box: const BBox(1, 2, 3, 4))),
+        ],
+      ),
+    );
+    final back = ProjectFile.load(path, Directory(p.join(dir.path, 'open')));
+    expect(back.state, {'current': 0}, reason: 'the shelf is not in the state');
+    expect(back.shelf.first.block!.translation, '[ru] Hi');
+    expect(back.shelf.last.picture!.box, const BBox(1, 2, 3, 4));
+    expect(File(back.shelf.last.picture!.path).readAsBytesSync(), [4, 5, 6]);
+    // Saved again without a shelf: none comes back.
+    ProjectFile.save(path, ProjectData(pages: back.pages, state: back.state));
+    expect(ProjectFile.load(path, Directory(p.join(dir.path, 'again'))).shelf, isEmpty);
   });
 
   // A font given to one word only was neither stored nor found again.

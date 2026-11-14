@@ -22,11 +22,13 @@ import '../../pipeline/page_pipeline.dart';
 import '../../render/image_tiles.dart';
 import '../../render/mask_raster.dart';
 import '../../render/text_renderer.dart';
+import '../../state/app_state.dart';
 import '../../state/editor.dart';
 import '../../state/page_layout.dart';
 import '../../state/paint_tools.dart';
 import '../../state/pipette.dart';
 import '../../state/workspace.dart';
+import '../common/key_bindings.dart';
 import 'fit_mask_action.dart';
 
 /// Handle size on screen, in logical pixels.
@@ -170,6 +172,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   /// Alt is held: a click of the drawing tool takes a colour.
   var _alt = false;
 
+  /// The key of "Peek at the original" is held: the page before any change
+  /// is shown, nothing over it.
+  var _peek = false;
+  PhysicalKeyboardKey? _peekKey;
+
   /// The corners of the polygon being clicked (area mode), and the last
   /// click, to notice a double click.
   var _poly = <Point2>[];
@@ -200,6 +207,17 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     if (grab != _grab && mounted) setState(() => _grab = grab);
     final shift = keys.isShiftPressed;
     if (shift != _shift && mounted) setState(() => _shift = shift);
+    // Matched like every shortcut (by the key's place, whatever the
+    // keyboard layout); it lasts while that key is held.
+    if (e is KeyDownEvent &&
+        KeyBindings.of(ref.read(settingsProvider)).actionFor(e, typing: typing) == ShortcutAction.peekOriginal) {
+      _peekKey = e.physicalKey;
+    } else if (_peekKey != null &&
+        (e.physicalKey == _peekKey && e is KeyUpEvent || !keys.physicalKeysPressed.contains(_peekKey))) {
+      _peekKey = null;
+    }
+    final peek = _peekKey != null;
+    if (peek != _peek && mounted) setState(() => _peek = peek);
     final alt = keys.isAltPressed;
     if (alt != _alt && mounted) {
       setState(() => _alt = alt);
@@ -354,7 +372,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     ref
         .read(workspaceProvider.notifier)
         .addPaint(
-          PaintOp(kind: PaintKind.fill, color: ref.read(editorProvider).paintColor, runs: runs),
+          PaintOp(kind: ref.read(editorProvider).outlineKind, color: ref.read(editorProvider).paintColor, runs: runs),
           pageId: widget.page.id,
         );
   }
@@ -384,14 +402,15 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   /// none. The polygon's last side follows the mouse.
   List<Offset>? _outlineDraft(EditorState editor) {
     final d = _drag;
-    if (editor.tool != EditorTool.draw || editor.drawMode != DrawMode.area) return null;
-    if (editor.areaShape == AreaShape.polygon) {
+    final shape = editor.outlineShape;
+    if (shape == null) return null;
+    if (shape == AreaShape.polygon) {
       if (_poly.isEmpty) return null;
       return [for (final p in _poly) Offset(p.x, p.y), ?_hover];
     }
     if (d == null || d.mode != _Mode.shape || !d.moved) return null;
     final a = Point2(d.start.dx, d.start.dy), b = Point2(d.current.dx, d.current.dy);
-    final points = switch (editor.areaShape) {
+    final points = switch (shape) {
       AreaShape.lasso => d.points,
       AreaShape.rectangle => rectanglePoints(a, b),
       AreaShape.ellipse => ellipsePoints(a, b),
@@ -581,7 +600,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           drag = _Drag(_Mode.colour, p);
         case EditorTool.draw when editor.drawMode == DrawMode.fill:
           drag = _Drag(_Mode.fill, p);
-        case EditorTool.draw when editor.drawMode == DrawMode.area:
+        case EditorTool.draw when editor.outlineShape != null:
           drag = _Drag(_Mode.shape, p)..points.add(Point2(p.dx, p.dy));
         case EditorTool.draw:
           final from = HardwareKeyboard.instance.isShiftPressed ? _lineStart : null;
@@ -593,7 +612,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       }
     }
     setState(() => _drag = drag..current = p);
-    final outlined = drag.mode == _Mode.shape && editor.areaShape != AreaShape.polygon;
+    final outlined = drag.mode == _Mode.shape && editor.outlineShape != AreaShape.polygon;
     if (drag.mode == _Mode.paint || drag.mode == _Mode.draw || outlined) {
       ref.read(strokeActiveProvider.notifier).set(true);
     }
@@ -695,7 +714,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       case _Mode.shape:
         final editor = ref.read(editorProvider);
         final a = Point2(d.start.dx, d.start.dy), b = Point2(d.current.dx, d.current.dy);
-        switch (editor.areaShape) {
+        switch (editor.outlineShape) {
+          case null:
+            break;
           case AreaShape.polygon:
             if (!d.moved) _polygonClick(d.start);
           case AreaShape.lasso:
@@ -831,14 +852,15 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     final engines = ref.watch(pageEnginesProvider(page.id)).value;
     final overflow = (result || (maskView && !maskOnly)) && widget.strip ? page.overflowPath : null;
     final d = _drag;
-    final showMask = !preview && (maskView || (result && (editor.paints || page.hasMask)));
+    final peek = _peek;
+    final showMask = !preview && !peek && (maskView || (result && (editor.paints || page.hasMask)));
     final draftStroke = d?.mode == _Mode.paint
         ? MaskStroke(points: d!.points, width: editor.brushSize, erase: editor.tool == EditorTool.eraser)
         : null;
     // The touch-ups lie over the cleaned page, under the translation.
     final draftPaint = d?.mode == _Mode.draw ? _paintOf(editor, d!.points) : null;
-    final showPaints = result && (page.paints.isNotEmpty || draftPaint != null);
-    final showPictures = result && page.pictures.isNotEmpty;
+    final showPaints = result && !peek && (page.paints.isNotEmpty || draftPaint != null);
+    final showPictures = result && !peek && page.pictures.isNotEmpty;
     if (showPictures) _ensurePictures(page.pictures);
     final pictureSelected = widget.active ? ref.watch(pictureSelectionProvider.notifier).of(page.id) : null;
     ref.watch(pictureSelectionProvider);
@@ -850,11 +872,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       showPaints && (paintsUseOriginal(page.paints) || draftPaint?.kind == PaintKind.original) ? page.path : null,
     );
     final picking = _picksColour(editor);
-    final polygon =
-        !widget.readOnly &&
-        editor.tool == EditorTool.draw &&
-        editor.drawMode == DrawMode.area &&
-        editor.areaShape == AreaShape.polygon;
+    final polygon = !widget.readOnly && editor.outlineShape == AreaShape.polygon;
     // Another tool or shape drops the polygon being clicked.
     if (!polygon && _poly.isNotEmpty) _poly = [];
     final hoverColour = picking ? ref.watch(paintToolsProvider.select((s) => s.hover)) : null;
@@ -869,7 +887,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
             for (final i in dragged)
               if (layout.blockIndex.indexOf(i) case final k when k >= 0) k,
           };
-    final image = result || maskView ? page.basePath : page.path;
+    final image = (result || maskView) && !peek ? page.basePath : page.path;
     return MouseRegion(
       cursor: _cursor(editor),
       onEnter: (_) => _inside = true,
@@ -949,11 +967,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
                   child: CustomPaint(painter: _MaskPainter(_mask, page.strokes, draftStroke, solid: maskOnly)),
                 ),
               ),
-            if (layout != null && engines != null)
+            if (layout != null && engines != null && !peek)
               Positioned.fill(
                 child: RepaintBoundary(child: CustomPaint(painter: _TextPainter(layout, engines, hiddenItems))),
               ),
-            if (!preview)
+            if (!preview && !peek)
               Positioned.fill(
                 child: CustomPaint(
                   painter: _OverlayPainter(
@@ -1079,6 +1097,31 @@ class _PaintsPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     canvas.saveLayer(Offset.zero & size, Paint());
     for (final op in [...ops, ?draft]) {
+      // An eraser or "original" made with an outline.
+      if (!op.isStroke && op.kind != PaintKind.fill) {
+        final path = _fillPath(op);
+        if (op.kind == PaintKind.erase) {
+          canvas.drawPath(
+            path,
+            Paint()
+              ..blendMode = BlendMode.clear
+              ..isAntiAlias = false,
+          );
+        } else if (original case final o?) {
+          final bounds = path.getBounds();
+          canvas.saveLayer(bounds, Paint());
+          canvas.clipRect(bounds);
+          canvas.drawPath(
+            path,
+            Paint()
+              ..color = Colors.white
+              ..isAntiAlias = false,
+          );
+          o.paint(canvas, Paint()..blendMode = BlendMode.srcIn);
+          canvas.restore();
+        }
+        continue;
+      }
       switch (op.kind) {
         case PaintKind.fill:
           canvas.drawPath(
@@ -1371,7 +1414,12 @@ class _OverlayPainter extends CustomPainter {
     if (outline case final o? when o.isNotEmpty) {
       final path = Path()..addPolygon(o, closedOutline);
       if (o.length >= 3) {
-        canvas.drawPath(Path()..addPolygon(o, true), Paint()..color = Color(editor.paintColor).withValues(alpha: 0.4));
+        final tint = switch (editor.outlineKind) {
+          PaintKind.erase => Colors.white,
+          PaintKind.original => Colors.blue,
+          _ => Color(editor.paintColor),
+        };
+        canvas.drawPath(Path()..addPolygon(o, true), Paint()..color = tint.withValues(alpha: 0.4));
       }
       canvas.drawPath(path, line(Colors.white, 3));
       canvas.drawPath(path, line(Colors.black, 1.2));

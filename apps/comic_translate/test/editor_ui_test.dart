@@ -434,6 +434,42 @@ void main() {
     expect(paints(), hasLength(2));
     expect(paints().last.kind, PaintKind.fill);
 
+    // The eraser with a rectangle: one erase step over the area.
+    container.read(editorProvider.notifier)
+      ..setDrawMode(DrawMode.eraser)
+      ..setEraseShape(AreaShape.rectangle);
+    await tester.pump();
+    await mouse.moveTo(at(0.05, 0.05));
+    await mouse.down(at(0.05, 0.05));
+    for (var i = 1; i <= 3; i++) {
+      await mouse.moveTo(at(0.05 + 0.1 * i, 0.05 + 0.1 * i));
+      await tester.pump();
+    }
+    await mouse.up();
+    await tester.pump();
+    expect(paints(), hasLength(3));
+    expect(paints().last.kind, PaintKind.erase);
+    expect(paints().last.runs, isNotEmpty);
+    expect(paints().last.isStroke, isFalse);
+
+    // Holding O shows the original page: the touch-ups are not drawn meanwhile.
+    bool touchUpsShown() => find
+        .byWidgetPredicate((w) => w is CustomPaint && w.painter.runtimeType.toString() == '_PaintsPainter')
+        .evaluate()
+        .isNotEmpty;
+    expect(touchUpsShown(), isTrue);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.keyO);
+    await tester.pump();
+    expect(touchUpsShown(), isFalse);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.keyO);
+    await tester.pump();
+    expect(touchUpsShown(), isTrue);
+    container.read(editorProvider.notifier)
+      ..setDrawMode(DrawMode.area)
+      ..setAreaShape(AreaShape.polygon);
+    await tester.pump();
+    final before = paints().length;
+
     // Two corners and Esc: nothing.
     await click(at(0.6, 0.9));
     await click(at(0.9, 0.9));
@@ -441,7 +477,7 @@ void main() {
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
-    expect(paints(), hasLength(2));
+    expect(paints(), hasLength(before));
     await mouse.removePointer();
     await tester.runAsync(() => Future<void>.delayed(WorkspaceNotifier.paintDelay * 2));
     await tester.pump();

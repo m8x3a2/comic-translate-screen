@@ -5001,7 +5001,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String previewToggle(String key) {
-    return 'Как будет в итоге ($key): страница как при экспорте, без рамок и маски. Ещё раз — обратно';
+    return 'Как будет в итоге ($key): страница как при экспорте, без рамок и маски. Ещё раз — обратно. Держите O — исходная страница';
   }
 
   @override
@@ -5053,7 +5053,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get pictureAddHelp =>
-      'Картинка встанет в середину страницы. Выберите сначала пузырь — она встанет в него';
+      'Картинка встанет в середину страницы. Выберите сначала пузырь — она встанет в него. Ctrl+V — вставить картинку, скопированную в браузере';
 
   @override
   String pictureAddIntoBubble(String number) {
@@ -5098,4 +5098,18 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get shelfThrow => 'Выбросить';
+
+  @override
+  String get eraseShapeHelp =>
+      'Кисть или контур: с контуром стирается или возвращается сразу всё внутри него';
+
+  @override
+  String get eraseShapeBrush => 'Кисть';
+
+  @override
+  String get pasteNoPicture =>
+      'В буфере нет картинки. Скопируйте её (в браузере: правой кнопкой по картинке — «Копировать изображение») и снова нажмите Ctrl+V';
+
+  @override
+  String get keyPeekOriginal => 'Подглядеть оригинал (держать)';
 }

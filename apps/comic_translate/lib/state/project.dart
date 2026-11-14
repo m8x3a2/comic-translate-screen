@@ -20,6 +20,7 @@ import 'package:path/path.dart' as p;
 
 import '../app_info.dart';
 import 'app_state.dart';
+import 'shelf.dart';
 import 'workspace.dart';
 
 bool isProjectPath(String path) => p.extension(path).toLowerCase() == ProjectFile.extension;
@@ -104,7 +105,12 @@ PageEntry pageEntryOf(ProjectPage page) => PageEntry(
   targetLanguage: page.state['target_language'] as String?,
 );
 
-ProjectData projectDataOf(WorkspaceState ws, {Map<String, Object?> extra = const {}}) => ProjectData(
+ProjectData projectDataOf(
+  WorkspaceState ws, {
+  Map<String, Object?> extra = const {},
+  List<ShelfEntry> shelf = const [],
+}) => ProjectData(
+  shelf: shelf,
   pages: [for (final page in ws.pages) projectPageOf(page)],
   state: {
     'current': ws.current,
@@ -184,6 +190,9 @@ class ProjectNotifier extends Notifier<ProjectState> {
     ref.listen(workspaceProvider.select((s) => s.webtoon), (prev, next) {
       if (!_loading && prev != next && ref.read(workspaceProvider).pages.isNotEmpty) _changed();
     });
+    ref.listen(shelfProvider, (prev, next) {
+      if (!_loading && !identical(prev, next) && ref.read(workspaceProvider).pages.isNotEmpty) _changed();
+    });
     ref.listen(workspaceProvider.select((s) => s.glossary), (prev, next) {
       if (!_loading && prev != next && ref.read(workspaceProvider).pages.isNotEmpty) _changed();
     });
@@ -213,6 +222,7 @@ class ProjectNotifier extends Notifier<ProjectState> {
 
   /// All pages were closed: the project is closed too.
   void _closed() {
+    ref.read(shelfProvider.notifier).replace(const []);
     _autosave?.cancel();
     _recovery?.cancel();
     _recovery = null;
@@ -237,7 +247,7 @@ class ProjectNotifier extends Notifier<ProjectState> {
     if (path == null || ws.pages.isEmpty) return false;
     if (to == null && !state.dirty) return true;
     final revision = _revision;
-    final data = projectDataOf(ws);
+    final data = projectDataOf(ws, shelf: ref.read(shelfProvider));
     final replace = to != null && (state.path == null || !p.equals(to, state.path!));
     state = state.copyWith(saving: true);
     final sw = Stopwatch()..start();
@@ -307,6 +317,7 @@ class ProjectNotifier extends Notifier<ProjectState> {
             session: session,
           );
       _loaded = ref.read(workspaceProvider).pages;
+      ref.read(shelfProvider.notifier).replace(data.shelf);
     } finally {
       _loading = false;
     }
@@ -360,7 +371,11 @@ class ProjectNotifier extends Notifier<ProjectState> {
       try {
         final ws = ref.read(workspaceProvider);
         if (!state.dirty || ws.pages.isEmpty || !_owns()) return;
-        final data = projectDataOf(ws, extra: {if (state.path != null) 'project_path': state.path});
+        final data = projectDataOf(
+          ws,
+          extra: {if (state.path != null) 'project_path': state.path},
+          shelf: ref.read(shelfProvider),
+        );
         final sw = Stopwatch()..start();
         await _saveInBackground(_recoveryFile.path, data, false);
         _log.info('recovery_saved', {'pages': data.pages.length, 'ms': sw.elapsedMilliseconds});

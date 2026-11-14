@@ -163,6 +163,37 @@ class DrawOptions extends ConsumerWidget {
                             ),
                     ),
                   ] else if (editor.drawMode != DrawMode.pipette) ...[
+                    // The eraser and "original": a brush, or an outline.
+                    if (editor.drawMode == DrawMode.eraser || editor.drawMode == DrawMode.original)
+                      PopupMenuButton<int>(
+                        tooltip: l.eraseShapeHelp,
+                        initialValue: editor.eraseShape?.index ?? -1,
+                        onSelected: (i) => notifier.setEraseShape(i < 0 ? null : AreaShape.values[i]),
+                        itemBuilder: (_) => [
+                          for (final (i, icon, label) in [
+                            (-1, Icons.brush, l.eraseShapeBrush),
+                            (AreaShape.lasso.index, Icons.gesture, l.areaLasso),
+                            (AreaShape.polygon.index, Icons.polyline_outlined, l.areaPolygon),
+                            (AreaShape.rectangle.index, Icons.crop_square, l.areaRectangle),
+                            (AreaShape.ellipse.index, Icons.circle_outlined, l.areaEllipse),
+                          ])
+                            PopupMenuItem(
+                              value: i,
+                              child: ListTile(dense: true, leading: Icon(icon), title: Text(label)),
+                            ),
+                        ],
+                        child: SizedBox(
+                          width: 34,
+                          height: 34,
+                          child: Icon(switch (editor.eraseShape) {
+                            null => Icons.brush,
+                            AreaShape.lasso => Icons.gesture,
+                            AreaShape.polygon => Icons.polyline_outlined,
+                            AreaShape.rectangle => Icons.crop_square,
+                            AreaShape.ellipse => Icons.circle_outlined,
+                          }, size: 20),
+                        ),
+                      ),
                     Expanded(
                       child: Tooltip(
                         message: l.brushSize,
@@ -174,7 +205,10 @@ class DrawOptions extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    SizedBox(width: 46, child: Text('${editor.paintSize.round()} px')),
+                    SizedBox(
+                      width: editor.drawMode == DrawMode.brush ? 46 : 40,
+                      child: Text('${editor.paintSize.round()} px'),
+                    ),
                   ],
                 ],
               ),

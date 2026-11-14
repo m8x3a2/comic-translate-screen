@@ -8507,7 +8507,7 @@ abstract class AppLocalizations {
   /// No description provided for @previewToggle.
   ///
   /// In en, this message translates to:
-  /// **'As it will be ({key}): the page as export makes it, without boxes and mask. Again: back'**
+  /// **'As it will be ({key}): the page as export makes it, without boxes and mask. Again: back. Hold O: the original page'**
   String previewToggle(String key);
 
   /// No description provided for @previewOn.
@@ -8591,7 +8591,7 @@ abstract class AppLocalizations {
   /// No description provided for @pictureAddHelp.
   ///
   /// In en, this message translates to:
-  /// **'The picture goes into the middle of the page. Select a bubble first to put it into the bubble'**
+  /// **'The picture goes into the middle of the page. Select a bubble first to put it into the bubble. Ctrl+V lays a picture copied in a browser'**
   String get pictureAddHelp;
 
   /// No description provided for @pictureAddIntoBubble.
@@ -8665,6 +8665,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Throw away'**
   String get shelfThrow;
+
+  /// No description provided for @eraseShapeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Brush or outline: with an outline, everything inside it is erased or brought back at once'**
+  String get eraseShapeHelp;
+
+  /// No description provided for @eraseShapeBrush.
+  ///
+  /// In en, this message translates to:
+  /// **'Brush'**
+  String get eraseShapeBrush;
+
+  /// No description provided for @pasteNoPicture.
+  ///
+  /// In en, this message translates to:
+  /// **'No picture in the clipboard. Copy one (in a browser: right click on it, Copy image) and press Ctrl+V again'**
+  String get pasteNoPicture;
+
+  /// No description provided for @keyPeekOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Peek at the original (hold)'**
+  String get keyPeekOriginal;
 }
 
 class _AppLocalizationsDelegate

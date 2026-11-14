@@ -7,6 +7,7 @@ import 'package:comic_translate/state/app_state.dart';
 import 'package:comic_translate/state/batch.dart';
 import 'package:comic_translate/state/exchange.dart';
 import 'package:comic_translate/state/project.dart';
+import 'package:comic_translate/state/shelf.dart';
 import 'package:comic_translate/state/workspace.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -215,6 +216,24 @@ void main() {
     expect(c.read(workspaceProvider).pages.first.paints, isEmpty);
     ws.undo();
     expect(c.read(workspaceProvider).pages.first.paints, hasLength(1));
+  });
+
+  test('the shelf is kept in the project; closing the pages empties it', () async {
+    final c = start();
+    await openPages(c);
+    final ws = c.read(workspaceProvider);
+    translate(c, ws.pages.first.id, 'На полку');
+    c.read(shelfProvider.notifier).putBubbles([0]);
+    expect(c.read(shelfProvider).single.block!.translation, 'На полку');
+    final path = p.join(dir.path, 'out', 'shelf.ctsproj');
+    expect(await c.read(projectProvider.notifier).save(to: path), isTrue);
+    c.read(workspaceProvider.notifier).clear();
+    expect(c.read(shelfProvider), isEmpty);
+    await c.read(projectProvider.notifier).open(path);
+    expect(c.read(shelfProvider).single.block!.translation, 'На полку');
+    expect(c.read(projectProvider).dirty, isFalse);
+    c.read(shelfProvider.notifier).remove(0);
+    expect(c.read(projectProvider).dirty, isTrue, reason: 'a change of the shelf is a change of the project');
   });
 
   test('autosave can be turned off; Ctrl+S still saves', () async {

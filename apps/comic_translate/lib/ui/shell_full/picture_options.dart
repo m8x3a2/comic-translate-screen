@@ -48,25 +48,35 @@ Future<void> addPictureFromFile(BuildContext context, WidgetRef ref) async {
     acceptedTypeGroups: [XTypeGroup(label: l.pictureFiles, extensions: pictureTypes)],
   );
   if (file == null) return;
+  final error = await layPicture(ref, source: file.path);
+  if (error != null) messenger.showSnackBar(SnackBar(content: Text(l.pictureUnreadable(error))));
+}
+
+/// Lays a picture on the current page, into the selected bubble when there
+/// is one, and selects it: the file [source] (copied) or the PNG [png]
+/// (a picture pasted from the clipboard). The reason when it cannot.
+Future<String?> layPicture(WidgetRef ref, {String? source, List<int>? png}) async {
   final ws = ref.read(workspaceProvider);
   final page = ws.currentPage;
-  if (page == null) return;
+  if (page == null) return null;
   final notifier = ref.read(workspaceProvider.notifier);
   try {
-    final dest = p.join(
-      notifier.pageDir(page.id).path,
-      'picture_${DateTime.now().microsecondsSinceEpoch}${p.extension(file.path).toLowerCase()}',
-    );
-    await File(file.path).copy(dest);
+    final ext = source == null ? '.png' : p.extension(source).toLowerCase();
+    final dest = p.join(notifier.pageDir(page.id).path, 'picture_${DateTime.now().microsecondsSinceEpoch}$ext');
+    if (source != null) {
+      await File(source).copy(dest);
+    } else {
+      await File(dest).writeAsBytes(png!, flush: true);
+    }
     // Read once: a file the program cannot read is not laid.
     final (image, _) = await readRgbaInBackground(dest);
     final (pw, ph) = await imageFileSize(page.path);
-    final selected = ws.selected;
-    final box = placePicture(image.width, image.height, area: selected?.xyxy, pageWidth: pw, pageHeight: ph);
+    final box = placePicture(image.width, image.height, area: ws.selected?.xyxy, pageWidth: pw, pageHeight: ph);
     final index = notifier.addPicture(page.id, PagePicture(path: dest, box: box));
     ref.read(pictureSelectionProvider.notifier).select(page.id, index);
+    return null;
   } on Object catch (e) {
-    messenger.showSnackBar(SnackBar(content: Text(l.pictureUnreadable('$e'))));
+    return '$e';
   }
 }
 

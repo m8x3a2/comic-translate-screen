@@ -88,6 +88,8 @@ enum ViewMode {
   mask,
 }
 
+const Object _same = Object();
+
 class EditorState {
   const EditorState({
     this.tool = EditorTool.pan,
@@ -106,7 +108,30 @@ class EditorState {
     this.fillSpots = true,
     this.preview = false,
     this.areaShape = AreaShape.lasso,
+    this.eraseShape,
   });
+
+  /// The eraser and "original" of the drawing tool work with an outline
+  /// instead of a brush (null: the brush).
+  final AreaShape? eraseShape;
+
+  /// The outline the drawing tool draws now: the area mode's, or the
+  /// eraser's / "original"'s when they work with one; null for a brush.
+  AreaShape? get outlineShape => tool != EditorTool.draw
+      ? null
+      : switch (drawMode) {
+          DrawMode.area => areaShape,
+          DrawMode.eraser || DrawMode.original => eraseShape,
+          _ => null,
+        };
+
+  /// What an outline does: fills with the colour, erases the touch-ups or
+  /// brings back the original.
+  PaintKind get outlineKind => switch (drawMode) {
+    DrawMode.eraser => PaintKind.erase,
+    DrawMode.original => PaintKind.original,
+    _ => PaintKind.fill,
+  };
 
   /// The outline the area mode draws.
   final AreaShape areaShape;
@@ -158,7 +183,8 @@ class EditorState {
   /// The drawing tool paints strokes (brush, eraser, original).
   bool get drawsStrokes =>
       tool == EditorTool.draw &&
-      (drawMode == DrawMode.brush || drawMode == DrawMode.eraser || drawMode == DrawMode.original);
+      (drawMode == DrawMode.brush ||
+          ((drawMode == DrawMode.eraser || drawMode == DrawMode.original) && eraseShape == null));
 
   /// A brush outline follows the mouse.
   bool get showsBrush => paints || drawsStrokes;
@@ -186,8 +212,10 @@ class EditorState {
     bool? fillSpots,
     bool? preview,
     AreaShape? areaShape,
+    Object? eraseShape = _same,
   }) => EditorState(
     areaShape: areaShape ?? this.areaShape,
+    eraseShape: identical(eraseShape, _same) ? this.eraseShape : eraseShape as AreaShape?,
     maskOnly: maskOnly ?? this.maskOnly,
     drawMode: drawMode ?? this.drawMode,
     paintSize: paintSize ?? this.paintSize,
@@ -314,6 +342,9 @@ class EditorNotifier extends Notifier<EditorState> {
   void toggleFillSpots() => state = state.copyWith(fillSpots: !state.fillSpots);
 
   void setAreaShape(AreaShape shape) => state = state.copyWith(areaShape: shape);
+
+  /// The eraser and "original" work with [shape] (null: the brush).
+  void setEraseShape(AreaShape? shape) => state = state.copyWith(eraseShape: shape);
 
   /// Turns "As it will be" on or off.
   void togglePreview() => state = state.copyWith(preview: !state.preview);

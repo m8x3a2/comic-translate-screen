@@ -3303,7 +3303,7 @@
   "fillSpots": "Spots too",
   "fillSpotsHelp": "The fill also covers spots inside what it fills: leftover letters, smudges. Off: only the colour clicked",
   "clearPaints": "Remove every touch-up of this page",
-  "previewToggle": "As it will be ({key}): the page as export makes it, without boxes and mask. Again: back",
+  "previewToggle": "As it will be ({key}): the page as export makes it, without boxes and mask. Again: back. Hold O: the original page",
   "@previewToggle": {"placeholders": {"key": {"type": "String"}}},
   "previewOn": "As it will be. Back: {key} or click here",
   "@previewOn": {"placeholders": {"key": {"type": "String"}}},
@@ -3320,7 +3320,7 @@
   "pictureUnreadable": "Could not read the picture: {error}",
   "@pictureUnreadable": {"placeholders": {"error": {"type": "String"}}},
   "pictureAdd": "Add a picture…",
-  "pictureAddHelp": "The picture goes into the middle of the page. Select a bubble first to put it into the bubble",
+  "pictureAddHelp": "The picture goes into the middle of the page. Select a bubble first to put it into the bubble. Ctrl+V lays a picture copied in a browser",
   "pictureAddIntoBubble": "The picture goes into bubble {number}",
   "@pictureAddIntoBubble": {"placeholders": {"number": {"type": "String"}}},
   "pictureToShelf": "Put the selected picture on the shelf",
@@ -3335,5 +3335,9 @@
   "shelfPicture": "Picture",
   "shelfBubbleEmpty": "Bubble without text",
   "shelfTakeHelp": "Click: onto this page",
-  "shelfThrow": "Throw away"
+  "shelfThrow": "Throw away",
+  "eraseShapeHelp": "Brush or outline: with an outline, everything inside it is erased or brought back at once",
+  "eraseShapeBrush": "Brush",
+  "pasteNoPicture": "No picture in the clipboard. Copy one (in a browser: right click on it, Copy image) and press Ctrl+V again",
+  "keyPeekOriginal": "Peek at the original (hold)"
 }

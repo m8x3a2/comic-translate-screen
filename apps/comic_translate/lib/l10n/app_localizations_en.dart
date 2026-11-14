@@ -5005,7 +5005,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String previewToggle(String key) {
-    return 'As it will be ($key): the page as export makes it, without boxes and mask. Again: back';
+    return 'As it will be ($key): the page as export makes it, without boxes and mask. Again: back. Hold O: the original page';
   }
 
   @override
@@ -5057,7 +5057,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pictureAddHelp =>
-      'The picture goes into the middle of the page. Select a bubble first to put it into the bubble';
+      'The picture goes into the middle of the page. Select a bubble first to put it into the bubble. Ctrl+V lays a picture copied in a browser';
 
   @override
   String pictureAddIntoBubble(String number) {
@@ -5102,4 +5102,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shelfThrow => 'Throw away';
+
+  @override
+  String get eraseShapeHelp =>
+      'Brush or outline: with an outline, everything inside it is erased or brought back at once';
+
+  @override
+  String get eraseShapeBrush => 'Brush';
+
+  @override
+  String get pasteNoPicture =>
+      'No picture in the clipboard. Copy one (in a browser: right click on it, Copy image) and press Ctrl+V again';
+
+  @override
+  String get keyPeekOriginal => 'Peek at the original (hold)';
 }

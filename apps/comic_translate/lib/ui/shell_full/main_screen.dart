@@ -45,6 +45,7 @@ import 'page_grid.dart';
 import 'page_list.dart';
 import '../chats/chats_screen.dart';
 import 'page_viewer.dart';
+import 'picture_options.dart';
 import 'repeats_dialog.dart';
 import 'shortcuts_dialog.dart';
 import 'text_export_dialog.dart';
@@ -396,6 +397,32 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case null:
         _snack(l.pasteNothing);
     }
+  }
+
+  /// Ctrl+V in the pictures tool: the picture of the clipboard (or its
+  /// first picture file) is laid on the current page.
+  Future<void> _pastePicture() async {
+    final l = context.l10n;
+    String? error;
+    switch (readClipboardPages()) {
+      case ClipboardFiles(:final paths):
+        final file = paths.where((f) => pictureTypes.contains(p.extension(f).toLowerCase().replaceFirst('.', '')));
+        if (file.isEmpty) {
+          _snack(l.pasteNoPicture);
+          return;
+        }
+        error = await layPicture(ref, source: file.first);
+      case final ClipboardPicture picture:
+        try {
+          error = await layPicture(ref, png: await _pngInBackground(picture));
+        } catch (e) {
+          error = '$e';
+        }
+      case null:
+        _snack(l.pasteNoPicture);
+        return;
+    }
+    if (error != null && mounted) _snack(l.pictureUnreadable(error));
   }
 
   /// The file window; the pages go to [at] (the end by default).
@@ -827,7 +854,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         if (!running) _pickFiles();
       case ShortcutAction.paste:
         if (running || state.importing) return false;
-        _paste();
+        // The pictures tool: a picture onto the page, not a new page.
+        if (ref.read(editorProvider).tool == EditorTool.pictures && state.pages.isNotEmpty) {
+          _pastePicture();
+        } else {
+          _paste();
+        }
       case ShortcutAction.save || ShortcutAction.saveAs:
         if (state.pages.isNotEmpty) _saveProject(asNew: action == ShortcutAction.saveAs);
       case ShortcutAction.translateAll:
@@ -874,6 +906,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         tool(EditorTool.draw);
       case ShortcutAction.pictures:
         tool(EditorTool.pictures);
+      case ShortcutAction.peekOriginal:
+        // Shown by the page while the key is held (see PageCanvas).
+        return state.pages.isNotEmpty;
       case ShortcutAction.preview:
         if (state.pages.isEmpty) return false;
         editor.togglePreview();
