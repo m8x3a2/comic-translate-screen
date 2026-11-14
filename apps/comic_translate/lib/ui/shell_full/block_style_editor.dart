@@ -235,7 +235,10 @@ class BlockStyleEditor extends ConsumerWidget {
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
+              // No tick inside: the chosen one shows by its colour, and a
+              // narrow panel keeps the whole label.
               FilterChip(
+                showCheckmark: false,
                 label: Text(l.sizeAuto),
                 selected: s.fontSizePt == null && s.sourceSizePx == null,
                 visualDensity: VisualDensity.compact,
@@ -244,6 +247,7 @@ class BlockStyleEditor extends ConsumerWidget {
                 ),
               ),
               FilterChip(
+                showCheckmark: false,
                 label: Text(l.fromSource),
                 tooltip: l.sizeFromSource,
                 selected: s.sourceSizePx != null,
