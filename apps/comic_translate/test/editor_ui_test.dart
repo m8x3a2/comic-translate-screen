@@ -926,6 +926,8 @@ void main() {
     expect((b[1].style?.fontSizePt, b[1].style?.angle, b[2].style?.fontSizePt), (7, null, null));
     expect(b[0].style?.fontSizePt, 30);
     expect(find.textContaining('Оформление изменено у пузырей: 2'), findsOneWidget);
+    // The ticks are kept for next time, also after a restart.
+    expect(container.read(settingsProvider).lookParts, unorderedEquals([for (final p in LookPart.usual) p.name]));
   });
 
   testWidgets('on the page: Ctrl + click picks boxes, a picked box drags the others along', (tester) async {
@@ -981,5 +983,129 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
     expect(ws().blockSelection, isEmpty);
+  });
+
+  testWidgets('the picked bubbles merge into one; what differs between them is told', (tester) async {
+    final container = await openThreeBubbles(tester);
+    final ws = container.read(workspaceProvider.notifier);
+    List<TextBlock> blocks() => container.read(workspaceProvider).currentPage!.blocks;
+    ws.styleBlock(1, (s) => s.copyWith(bold: true));
+    ws.pickAllBlocks();
+    await tester.pump();
+    // "Bold, italic…" differ (only the second is bold); the colour does not.
+    final style = find.ancestor(of: find.text('Начертание'), matching: find.byType(Column)).first;
+    expect(find.descendant(of: style, matching: find.text('разные')), findsOneWidget);
+    expect(find.text('разные'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Объединить в один пузырь'));
+    await tester.pump();
+    expect(blocks().length, 1);
+    expect(blocks().single.translation, 'Один Два Три');
+    expect(blocks().single.xyxy, const BBox(4, 10, 112, 40));
+    expect(container.read(workspaceProvider).selectedBlock, 0);
+    ws.undo();
+    expect(blocks().length, 3);
+  });
+
+  testWidgets('Ctrl+Shift+C copies the look of a bubble, Ctrl+Shift+V puts it into the selected ones', (tester) async {
+    final container = await openThreeBubbles(tester);
+    final ws = container.read(workspaceProvider.notifier);
+    List<TextBlock> blocks() => container.read(workspaceProvider).currentPage!.blocks;
+    Future<void> ctrlShift(LogicalKeyboardKey key) async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(key);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pump();
+    }
+
+    ws.styleBlock(0, (s) => s.copyWith(color: 0xFF1976D2, italic: true, fontSizePt: 40));
+    ws.selectBlock(1);
+    await tester.pump();
+    FocusManager.instance.primaryFocus?.unfocus();
+    await ctrlShift(LogicalKeyboardKey.keyV);
+    expect(find.text('Сначала скопируйте оформление пузыря: Ctrl+Shift+C.'), findsOneWidget);
+    ws.selectBlock(0);
+    await tester.pump();
+    await ctrlShift(LogicalKeyboardKey.keyC);
+    expect(find.textContaining('Оформление пузыря 1 скопировано'), findsOneWidget);
+    ws.pickBlocks([1, 2]);
+    ws.pickBlock(0);
+    await tester.pump();
+    expect(container.read(workspaceProvider).blockSelection, [1, 2]);
+    await ctrlShift(LogicalKeyboardKey.keyV);
+    // The usual parts: the colour and italic, not the size.
+    expect(
+      [for (final b in blocks().skip(1)) (b.style?.color, b.style?.italic, b.style?.fontSizePt)],
+      [(0xFF1976D2, true, null), (0xFF1976D2, true, null)],
+    );
+    expect(find.textContaining('Оформление вставлено в пузыри: 2'), findsOneWidget);
+    ws.undo();
+    expect(blocks()[1].style, isNull, reason: 'one undo step');
+  });
+
+  testWidgets('"Auto look": the size of the original letters, the colour and bold back to automatic', (tester) async {
+    final container = await openThreeBubbles(tester);
+    final ws = container.read(workspaceProvider.notifier);
+    List<TextBlock> blocks() => container.read(workspaceProvider).currentPage!.blocks;
+    ws.changeBlocks([0, 1, 2], (b, i) {
+      b.sourceStyle = SourceStyle(letterPx: 20.0 + i);
+      b.style = BlockStyle(color: 0xFFD32F2F, bold: true, fontSizePt: 9, alignment: TextAlignment.left);
+    });
+    ws.pickBlocks([0, 2]);
+    await tester.pump();
+    final auto = find.text('Авто…');
+    await tester.ensureVisible(auto);
+    await tester.pump();
+    await tester.tap(auto);
+    await tester.pumpAndSettle();
+    expect(find.text('Авто оформление по оригиналу'), findsOneWidget);
+    expect(find.text('Выбранные пузыри (2)'), findsOneWidget);
+    // Without the font (no fonts to compare in a test).
+    await tester.tap(find.widgetWithText(FilterChip, 'Шрифт'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(FilledButton, 'Применить'));
+    await tester.pumpAndSettle();
+    final b = blocks();
+    expect(
+      [
+        for (final x in [b[0], b[2]]) (x.style?.color, x.style?.bold, x.style?.fontSizePt),
+      ],
+      [(null, null, null), (null, null, null)],
+    );
+    expect(b[0].style?.sourceSizePx, isNotNull);
+    expect(b[0].style?.alignment, TextAlignment.left, reason: 'the alignment is the user\'s own');
+    expect((b[1].style?.color, b[1].style?.fontSizePt), (0xFFD32F2F, 9), reason: 'not picked');
+    expect(find.textContaining('Оформление изменено у пузырей: 2'), findsOneWidget);
+  });
+
+  testWidgets('Shift + drag over an empty place picks the bubbles inside the rectangle', (tester) async {
+    final container = await openThreeBubbles(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
+    await tester.pump();
+    await settle(tester);
+    final canvas = find.byType(PageCanvas);
+    for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    await settle(tester);
+    final rect = tester.getRect(canvas);
+    Offset at(double x, double y) => rect.topLeft + Offset(rect.width * x / 120, rect.height * y / 80);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
+    await mouse.addPointer(location: at(2, 5));
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await mouse.down(at(2, 5));
+    await tester.pump();
+    for (var i = 1; i <= 4; i++) {
+      await mouse.moveTo(at(2 + 74 * i / 4, 5 + 40 * i / 4));
+      await tester.pump();
+    }
+    await mouse.up();
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.pump();
+    expect(container.read(workspaceProvider).blockSelection, [0, 1]);
+    expect(container.read(workspaceProvider).currentPage!.blocks.length, 3, reason: 'no new box drawn');
   });
 }

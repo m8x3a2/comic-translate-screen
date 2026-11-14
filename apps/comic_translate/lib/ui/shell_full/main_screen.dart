@@ -21,6 +21,7 @@ import '../../services/file_clipboard.dart';
 import '../../pipeline/pipeline_worker.dart' show GpuFallback, gpuFallbacks;
 import '../../state/app_state.dart';
 import '../../state/batch.dart';
+import '../../state/block_looks.dart';
 import '../../state/editor.dart';
 import '../../state/exchange.dart';
 import '../../state/export.dart';
@@ -302,8 +303,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       );
   }
 
-  void _snack(String text, {SnackBarAction? action}) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text), action: action, showCloseIcon: true));
+  /// [replace]: the message shown now goes at once (quick key actions).
+  void _snack(String text, {SnackBarAction? action, bool replace = false}) {
+    final messenger = ScaffoldMessenger.of(context);
+    if (replace) messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(content: Text(text), action: action, showCloseIcon: true));
+  }
 
   /// Opens [paths] as pages at [at] (the end by default); [open] goes to the
   /// first one. A project among them is opened instead.
@@ -867,6 +872,24 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         brushBy(-1);
       case ShortcutAction.brushLarger:
         brushBy(1);
+      case ShortcutAction.copyLook:
+        // The look of the selected bubble, for Ctrl+Shift+V on others.
+        final b = state.selected;
+        if (b == null) return false;
+        ref.read(copiedLookProvider.notifier).set(b.style ?? const BlockStyle());
+        _snack(context.l10n.lookCopied('${state.selectedBlock! + 1}'), replace: true);
+      case ShortcutAction.pasteLook:
+        final look = ref.read(copiedLookProvider);
+        final which = state.blockSelection;
+        if (busy || which.isEmpty) return false;
+        if (look == null) {
+          _snack(context.l10n.lookNothingCopied, replace: true);
+          return true;
+        }
+        final names = ref.read(settingsProvider).lookParts;
+        final parts = names == null ? LookPart.usual : LookPart.parseAll(names);
+        ws.styleBlocks(which, (s, _) => s.withPartsOf(look, parts));
+        _snack(context.l10n.lookPasted('${which.length}'), replace: true);
       case ShortcutAction.deleteBox:
         // The picked bubbles all go; else the selected one.
         final which = state.blockSelection;

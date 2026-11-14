@@ -3673,6 +3673,80 @@ class AppLocalizationsEn extends AppLocalizations {
   String get findInsidePicked => 'Find blocks inside each picked one';
 
   @override
+  String get keyCopyLook => 'Copy the look of the selected bubble';
+
+  @override
+  String get keyPasteLook =>
+      'Paste the look into the selected bubbles (the parts ticked in \"Apply to others…\")';
+
+  @override
+  String lookCopied(String number) {
+    return 'The look of bubble $number is copied. Ctrl+Shift+V puts it into the selected bubbles.';
+  }
+
+  @override
+  String get lookNothingCopied =>
+      'Copy the look of a bubble first: Ctrl+Shift+C.';
+
+  @override
+  String lookPasted(String count) {
+    return 'Look pasted into $count bubbles. Undo: Ctrl+Z.';
+  }
+
+  @override
+  String get lookMixed => 'differ';
+
+  @override
+  String get mergePicked => 'Merge into one bubble';
+
+  @override
+  String get autoLookButton => 'Auto…';
+
+  @override
+  String get autoLookMenu => 'Auto look from the original…';
+
+  @override
+  String get autoLookTitle => 'Auto look from the original';
+
+  @override
+  String get autoLookHelp =>
+      'The program looks at the original letters: it picks the closest font, sets the size as in the original, and turns the colour, bold, italic and outline back to automatic, which follow the original (bold, italic and outline when \"Look as in the original\" is on in the settings). Bubbles whose original letters are not measured (very small text, or read through a chat without measuring) keep their font and size.';
+
+  @override
+  String get autoLookColours =>
+      'Colour, bold, italic, outline from the original';
+
+  @override
+  String get autoLookEach => 'Each bubble its own font';
+
+  @override
+  String get autoLookOne => 'One font for all';
+
+  @override
+  String autoLookThisBubble(String number) {
+    return 'This bubble ($number)';
+  }
+
+  @override
+  String get autoLookWorking => 'Choosing the look…';
+
+  @override
+  String autoLookDone(String count) {
+    return 'Look changed in $count bubbles. Undo: Ctrl+Z.';
+  }
+
+  @override
+  String autoLookUnmeasured(String count) {
+    return 'Without measured original letters (font and size kept): $count.';
+  }
+
+  @override
+  String get pickArea => 'Pick every bubble inside the rectangle';
+
+  @override
+  String get mousePickArea => 'Shift + drag over an empty place';
+
+  @override
   String get pickAllBlocks => 'Pick every bubble of the page';
 
   @override

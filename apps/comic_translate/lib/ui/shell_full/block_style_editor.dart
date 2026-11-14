@@ -15,6 +15,7 @@ import '../../state/page_layout.dart';
 import '../../state/workspace.dart';
 import '../common/fonts.dart';
 import '../common/labels.dart';
+import 'auto_look.dart';
 import 'font_suggest.dart';
 
 const _colors = [
@@ -66,11 +67,58 @@ class BlockStyleEditor extends ConsumerWidget {
     final fonts = {...availableFonts(), ...ref.watch(addedFontsProvider), if (font.isNotEmpty) font};
     final small = theme.textTheme.labelMedium;
 
+    // Several bubbles: the rows where they differ say so (the values shown
+    // are the ones of bubble [index]).
+    final lettering = PageLettering.of(page.blocks);
+    bool differs(Object? Function(int i, TextBlock b, RenderSettings r, BlockStyle s) of) =>
+        many &&
+        {
+              for (final i in targets)
+                of(
+                  i,
+                  page.blocks[i],
+                  blockRenderSettings(page.blocks[i], settings.render, lettering),
+                  page.blocks[i].style ?? const BlockStyle(),
+                ),
+            }.length >
+            1;
+    final mixed = <String>{
+      if (differs((_, _, _, s) => s.preset)) l.lookPreset,
+      if (differs((_, _, r, s) => s.fontFamily ?? r.fontFamily)) l.font,
+      // Automatic sizes differ by nature (each fits its bubble): only set ones count.
+      if (differs((_, _, _, s) => (s.fontSizePt, s.sourceSizePx != null))) l.fontSize,
+      if (differs((_, _, _, s) => s.color)) l.textColor,
+      if (differs((_, _, r, _) => (r.outline, r.outlineWidth))) l.outline,
+      if (differs((_, _, _, s) => s.outlineColor)) l.outlineColor,
+      if (differs((_, _, r, _) => r.alignment)) l.alignment,
+      if (differs((_, _, r, s) => (r.bold, r.italic, r.underline, s.vertical ?? false))) l.textStyle,
+      if (differs((_, b, _, _) => drawnInCapitals(b, settings))) l.textCase,
+      if (differs((_, _, r, _) => (r.hyphenate, r.shapeFit))) l.textFit,
+      if (differs((_, _, r, _) => r.lineSpacing)) l.lineSpacing,
+      if (differs((_, _, _, s) => s.angle ?? 0)) l.rotation,
+    };
+
     Widget row(String label, Widget child) => Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          SizedBox(width: 96, child: Text(label, style: small)),
+          SizedBox(
+            width: 96,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: small),
+                if (mixed.contains(label))
+                  Text(
+                    l.lookMixed,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.tertiary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+              ],
+            ),
+          ),
           Expanded(child: child),
         ],
       ),
@@ -397,6 +445,11 @@ class BlockStyleEditor extends ConsumerWidget {
               onPressed: () => showApplyLookDialog(context, ref, index, picked: many ? targets : const []),
             ),
             TextButton.icon(
+              icon: const Icon(Icons.auto_fix_high_outlined, size: 18),
+              label: Text(l.autoLookButton),
+              onPressed: () => showAutoLookDialog(context, ref, picked: targets),
+            ),
+            TextButton.icon(
               icon: const Icon(Icons.format_clear, size: 18),
               label: Text(l.styleReset),
               onPressed: targets.every((i) => page.blocks[i].style == null)
@@ -422,6 +475,9 @@ Future<void> showApplyLookDialog(BuildContext context, WidgetRef ref, int source
   final result = await showDialog<(Set<LookPart>, LookScope)>(
     context: context,
     builder: (_) => _ApplyLookDialog(
+      initial: ref.read(settingsProvider).lookParts == null
+          ? LookPart.usual
+          : LookPart.parseAll(ref.read(settingsProvider).lookParts),
       number: source + 1,
       picked: picked.length,
       onPage: page.blocks.length,
@@ -430,23 +486,25 @@ Future<void> showApplyLookDialog(BuildContext context, WidgetRef ref, int source
     ),
   );
   if (result == null) return;
-  _lastLookParts = result.$1;
+  // Ticked the same way next time, also after a restart.
+  ref.read(settingsProvider.notifier).change((s) => s.lookParts = [for (final p in result.$1) p.name]);
   final from = page.blocks[source].style ?? const BlockStyle();
   final count = applyLook(ref, from, result.$1, result.$2, source: source, picked: picked);
   messenger.showSnackBar(SnackBar(content: Text(l.lookApplyDone('$count')), showCloseIcon: true));
 }
 
-/// The parts ticked last time (while the program runs).
-Set<LookPart> _lastLookParts = LookPart.usual;
-
 class _ApplyLookDialog extends StatefulWidget {
   const _ApplyLookDialog({
+    required this.initial,
     required this.number,
     required this.picked,
     required this.onPage,
     required this.pickedPages,
     required this.allPages,
   });
+
+  /// The parts ticked when the window opens (the ones of last time).
+  final Set<LookPart> initial;
 
   /// The source bubble's number.
   final int number;
@@ -459,7 +517,7 @@ class _ApplyLookDialog extends StatefulWidget {
 }
 
 class _ApplyLookDialogState extends State<_ApplyLookDialog> {
-  late final _parts = {..._lastLookParts};
+  late final _parts = {...widget.initial};
   late LookScope _scope = widget.picked > 1 ? LookScope.picked : LookScope.page;
 
   @override

@@ -3672,6 +3672,79 @@ class AppLocalizationsRu extends AppLocalizations {
   String get findInsidePicked => 'Найти блоки внутри каждого выбранного';
 
   @override
+  String get keyCopyLook => 'Копировать оформление выбранного пузыря';
+
+  @override
+  String get keyPasteLook =>
+      'Вставить оформление в выбранные пузыри (части — как отмечено в «Применить к другим…»)';
+
+  @override
+  String lookCopied(String number) {
+    return 'Оформление пузыря $number скопировано. Ctrl+Shift+V — вставить в выбранные пузыри.';
+  }
+
+  @override
+  String get lookNothingCopied =>
+      'Сначала скопируйте оформление пузыря: Ctrl+Shift+C.';
+
+  @override
+  String lookPasted(String count) {
+    return 'Оформление вставлено в пузыри: $count. Отменить: Ctrl+Z.';
+  }
+
+  @override
+  String get lookMixed => 'разные';
+
+  @override
+  String get mergePicked => 'Объединить в один пузырь';
+
+  @override
+  String get autoLookButton => 'Авто…';
+
+  @override
+  String get autoLookMenu => 'Авто оформление по оригиналу…';
+
+  @override
+  String get autoLookTitle => 'Авто оформление по оригиналу';
+
+  @override
+  String get autoLookHelp =>
+      'Программа смотрит на буквы оригинала: подбирает самый похожий шрифт, ставит размер как в оригинале, а цвет, жирный, курсив и обводку возвращает к автоматическим — они берутся с оригинала (жирный, курсив и обводка — если в настройках включено «Оформление как в оригинале»). Пузыри, где буквы оригинала не измерены (очень мелкий текст или распознано через чат без замера), шрифт и размер не меняют.';
+
+  @override
+  String get autoLookColours => 'Цвет, жирный, курсив, обводка — с оригинала';
+
+  @override
+  String get autoLookEach => 'Каждому пузырю свой шрифт';
+
+  @override
+  String get autoLookOne => 'Один шрифт на все';
+
+  @override
+  String autoLookThisBubble(String number) {
+    return 'Этот пузырь ($number)';
+  }
+
+  @override
+  String get autoLookWorking => 'Подбираю оформление…';
+
+  @override
+  String autoLookDone(String count) {
+    return 'Оформление изменено у пузырей: $count. Отменить: Ctrl+Z.';
+  }
+
+  @override
+  String autoLookUnmeasured(String count) {
+    return 'Без замера букв оригинала (шрифт и размер не менялись): $count.';
+  }
+
+  @override
+  String get pickArea => 'Выбрать все пузыри внутри прямоугольника';
+
+  @override
+  String get mousePickArea => 'Shift + перетаскивание по пустому месту';
+
+  @override
   String get pickAllBlocks => 'Выбрать все пузыри страницы';
 
   @override

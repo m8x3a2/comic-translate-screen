@@ -138,14 +138,8 @@ int applyLook(
   List<int> picked = const [],
 }) {
   if (parts.isEmpty) return 0;
-  final ws = ref.read(workspaceProvider);
-  final open = ws.currentPage;
-  final List<(PageEntry, List<int>)> targets = switch (scope) {
-    LookScope.picked => _targets(ref, null, picked),
-    LookScope.page => open == null ? const [] : [(open, _all(open))],
-    LookScope.pickedPages => [for (final page in ws.stepPages) (page, _all(page))],
-    LookScope.allPages => [for (final page in ws.pages) (page, _all(page))],
-  };
+  final open = ref.read(workspaceProvider).currentPage;
+  final targets = lookTargets(ref, scope, picked);
   var count = 0;
   for (final (page, which) in targets) {
     _restyle(ref, page, which, (b, i) {
@@ -160,3 +154,32 @@ int applyLook(
 }
 
 List<int> _all(PageEntry page) => [for (var i = 0; i < page.blocks.length; i++) i];
+
+/// The pages and their bubbles in [scope] ([picked]: the bubbles of the open
+/// page for [LookScope.picked]).
+List<(PageEntry, List<int>)> lookTargets(WidgetRef ref, LookScope scope, List<int> picked) {
+  final ws = ref.read(workspaceProvider);
+  final open = ws.currentPage;
+  return switch (scope) {
+    LookScope.picked => _targets(ref, null, picked),
+    LookScope.page => open == null ? const [] : [(open, _all(open))],
+    LookScope.pickedPages => [for (final page in ws.stepPages) (page, _all(page))],
+    LookScope.allPages => [for (final page in ws.pages) (page, _all(page))],
+  };
+}
+
+/// Gives bubbles [which] of [page] the styles [style] returns (null: the
+/// automatic look), as one undo step when anything changes.
+void restyleBlocks(WidgetRef ref, PageEntry page, List<int> which, BlockStyle? Function(TextBlock b, int i) style) =>
+    _restyle(ref, page, which, style);
+
+/// The look copied with Ctrl+Shift+C, put on other bubbles with
+/// Ctrl+Shift+V (the parts ticked in "Apply to others"); null: none yet.
+final copiedLookProvider = NotifierProvider<CopiedLook, BlockStyle?>(CopiedLook.new);
+
+class CopiedLook extends Notifier<BlockStyle?> {
+  @override
+  BlockStyle? build() => null;
+
+  void set(BlockStyle look) => state = look;
+}

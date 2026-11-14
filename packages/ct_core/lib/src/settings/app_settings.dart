@@ -88,6 +88,7 @@ class AppSettings {
     this.settingsView = 'full',
     this.settingsLastView = 'full',
     this.appIcon = 'green',
+    this.lookParts,
     this.testMode = false,
     this.autoBugReport = true,
     this.projectAutosave = true,
@@ -269,6 +270,10 @@ class AppSettings {
 
   static const appIcons = ['green', 'blue', 'navy', 'custom'];
 
+  /// The parts ticked last in "Apply to others" (`LookPart` names); null:
+  /// the usual ones.
+  List<String>? lookParts;
+
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
@@ -443,6 +448,7 @@ class AppSettings {
       if (settingsView != 'full') 'settings_view': settingsView,
       if (settingsLastView != 'full') 'settings_last_view': settingsLastView,
       if (appIcon != 'green') 'app_icon': appIcon,
+      if (lookParts != null) 'look_parts': lookParts,
     },
     'test_mode': testMode,
     'auto_bug_report': autoBugReport,
@@ -568,6 +574,7 @@ class AppSettings {
       settingsView: const {'panel', 'last'}.contains(ui['settings_view']) ? ui['settings_view'] as String : 'full',
       settingsLastView: ui['settings_last_view'] == 'panel' ? 'panel' : 'full',
       appIcon: appIcons.contains(ui['app_icon']) ? ui['app_icon'] as String : 'green',
+      lookParts: ui['look_parts'] is List ? [...(ui['look_parts'] as List).whereType<String>()] : null,
       testMode: pick(json, 'test_mode', defaults.testMode),
       autoBugReport: pick(json, 'auto_bug_report', defaults.autoBugReport),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),

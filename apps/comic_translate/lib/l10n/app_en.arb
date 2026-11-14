@@ -2314,6 +2314,61 @@
     }
   },
   "findInsidePicked": "Find blocks inside each picked one",
+  "keyCopyLook": "Copy the look of the selected bubble",
+  "keyPasteLook": "Paste the look into the selected bubbles (the parts ticked in \"Apply to others…\")",
+  "lookCopied": "The look of bubble {number} is copied. Ctrl+Shift+V puts it into the selected bubbles.",
+  "@lookCopied": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "lookNothingCopied": "Copy the look of a bubble first: Ctrl+Shift+C.",
+  "lookPasted": "Look pasted into {count} bubbles. Undo: Ctrl+Z.",
+  "@lookPasted": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "lookMixed": "differ",
+  "mergePicked": "Merge into one bubble",
+  "autoLookButton": "Auto…",
+  "autoLookMenu": "Auto look from the original…",
+  "autoLookTitle": "Auto look from the original",
+  "autoLookHelp": "The program looks at the original letters: it picks the closest font, sets the size as in the original, and turns the colour, bold, italic and outline back to automatic, which follow the original (bold, italic and outline when \"Look as in the original\" is on in the settings). Bubbles whose original letters are not measured (very small text, or read through a chat without measuring) keep their font and size.",
+  "autoLookColours": "Colour, bold, italic, outline from the original",
+  "autoLookEach": "Each bubble its own font",
+  "autoLookOne": "One font for all",
+  "autoLookThisBubble": "This bubble ({number})",
+  "@autoLookThisBubble": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "autoLookWorking": "Choosing the look…",
+  "autoLookDone": "Look changed in {count} bubbles. Undo: Ctrl+Z.",
+  "@autoLookDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "autoLookUnmeasured": "Without measured original letters (font and size kept): {count}.",
+  "@autoLookUnmeasured": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pickArea": "Pick every bubble inside the rectangle",
+  "mousePickArea": "Shift + drag over an empty place",
   "pickAllBlocks": "Pick every bubble of the page",
   "pickHint": "Several bubbles at once: Ctrl+click adds or removes a bubble, Shift+click takes all of them up to it (on the page and in this list).",
   "pickedCount": "Bubbles picked: {count}",

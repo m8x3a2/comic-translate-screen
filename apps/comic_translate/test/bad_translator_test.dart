@@ -250,8 +250,10 @@ void main() {
     final report = await translateAll();
     expect(report.done, 3);
     expect(pages().first.blocks.single.translation, long);
+    // Before the fix it took minutes; under a busy computer (tests and a
+    // build at once) seconds may grow past the usual 30 s of a test.
     expect(sw.elapsed, lessThan(const Duration(seconds: 60)));
-  });
+  }, timeout: const Timeout(Duration(minutes: 2)));
 
   test('the server does not answer in time: told, the run stops', () async {
     respond = (n, req) async {

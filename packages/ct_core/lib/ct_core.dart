@@ -43,6 +43,7 @@ export 'src/import/repeated_files.dart';
 export 'src/imaging/mahotas.dart';
 export 'src/imaging/pil.dart';
 export 'src/imaging/py_compat.dart';
+export 'src/model/block_merge.dart';
 export 'src/model/geometry.dart';
 export 'src/model/language.dart';
 export 'src/model/text_block.dart';

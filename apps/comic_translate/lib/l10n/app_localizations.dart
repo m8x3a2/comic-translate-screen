@@ -6314,6 +6314,126 @@ abstract class AppLocalizations {
   /// **'Find blocks inside each picked one'**
   String get findInsidePicked;
 
+  /// No description provided for @keyCopyLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the look of the selected bubble'**
+  String get keyCopyLook;
+
+  /// No description provided for @keyPasteLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the look into the selected bubbles (the parts ticked in \"Apply to others…\")'**
+  String get keyPasteLook;
+
+  /// No description provided for @lookCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'The look of bubble {number} is copied. Ctrl+Shift+V puts it into the selected bubbles.'**
+  String lookCopied(String number);
+
+  /// No description provided for @lookNothingCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy the look of a bubble first: Ctrl+Shift+C.'**
+  String get lookNothingCopied;
+
+  /// No description provided for @lookPasted.
+  ///
+  /// In en, this message translates to:
+  /// **'Look pasted into {count} bubbles. Undo: Ctrl+Z.'**
+  String lookPasted(String count);
+
+  /// No description provided for @lookMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'differ'**
+  String get lookMixed;
+
+  /// No description provided for @mergePicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge into one bubble'**
+  String get mergePicked;
+
+  /// No description provided for @autoLookButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto…'**
+  String get autoLookButton;
+
+  /// No description provided for @autoLookMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto look from the original…'**
+  String get autoLookMenu;
+
+  /// No description provided for @autoLookTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto look from the original'**
+  String get autoLookTitle;
+
+  /// No description provided for @autoLookHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The program looks at the original letters: it picks the closest font, sets the size as in the original, and turns the colour, bold, italic and outline back to automatic, which follow the original (bold, italic and outline when \"Look as in the original\" is on in the settings). Bubbles whose original letters are not measured (very small text, or read through a chat without measuring) keep their font and size.'**
+  String get autoLookHelp;
+
+  /// No description provided for @autoLookColours.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour, bold, italic, outline from the original'**
+  String get autoLookColours;
+
+  /// No description provided for @autoLookEach.
+  ///
+  /// In en, this message translates to:
+  /// **'Each bubble its own font'**
+  String get autoLookEach;
+
+  /// No description provided for @autoLookOne.
+  ///
+  /// In en, this message translates to:
+  /// **'One font for all'**
+  String get autoLookOne;
+
+  /// No description provided for @autoLookThisBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'This bubble ({number})'**
+  String autoLookThisBubble(String number);
+
+  /// No description provided for @autoLookWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Choosing the look…'**
+  String get autoLookWorking;
+
+  /// No description provided for @autoLookDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Look changed in {count} bubbles. Undo: Ctrl+Z.'**
+  String autoLookDone(String count);
+
+  /// No description provided for @autoLookUnmeasured.
+  ///
+  /// In en, this message translates to:
+  /// **'Without measured original letters (font and size kept): {count}.'**
+  String autoLookUnmeasured(String count);
+
+  /// No description provided for @pickArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick every bubble inside the rectangle'**
+  String get pickArea;
+
+  /// No description provided for @mousePickArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Shift + drag over an empty place'**
+  String get mousePickArea;
+
   /// No description provided for @pickAllBlocks.
   ///
   /// In en, this message translates to:

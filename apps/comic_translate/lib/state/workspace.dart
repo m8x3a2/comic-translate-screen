@@ -10,6 +10,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:ct_core/ct_core.dart';
+import 'package:ct_core/ct_core.dart' as ct show mergeBlocks;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
@@ -792,6 +793,19 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     _setPicks(now, primary: now.contains(index) ? index : null);
   }
 
+  /// Adds bubbles [indexes] of the current page to the picked ones (a
+  /// rectangle drawn with Shift); the first of them is shown when nothing
+  /// was selected.
+  void pickBlocks(Iterable<int> indexes) {
+    final n = state.currentPage?.blocks.length ?? 0;
+    final add = [
+      for (final i in indexes)
+        if (i >= 0 && i < n) i,
+    ];
+    if (add.isEmpty) return;
+    _setPicks({...state.blockSelection, ...add}, primary: state.selectedBlock ?? add.first);
+  }
+
   /// Picks every bubble of the current page.
   void pickAllBlocks() {
     final n = state.currentPage?.blocks.length ?? 0;
@@ -1027,6 +1041,25 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     final s = change(b.style ?? const BlockStyle(), i);
     b.style = s.isEmpty ? null : s;
   }, mergeKey: mergeKey);
+
+  /// Makes blocks [indexes] of the current page one block (in their order,
+  /// where the first of them was) as one undo step, and selects it.
+  void mergeBlocks(Iterable<int> indexes) {
+    final page = state.currentPage;
+    final which = indexes.where((i) => i >= 0 && i < (page?.blocks.length ?? 0)).toSet().toList()..sort();
+    if (page == null || which.length < 2) return;
+    final merged = ct.mergeBlocks([for (final i in which) page.blocks[i]]);
+    edit(
+      page.id,
+      (p) => p.copyWith(
+        blocks: [
+          for (final (i, b) in p.blocks.indexed)
+            if (i == which.first) merged else if (!which.contains(i)) b,
+        ],
+      ),
+    );
+    state = state.copyWith(selectedBlock: which.first);
+  }
 
   /// Takes blocks [indexes] of the current page out as one undo step.
   void deleteBlocks(Iterable<int> indexes) {

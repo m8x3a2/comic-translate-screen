@@ -19,8 +19,8 @@ import '../common/fonts.dart';
 import '../common/labels.dart';
 
 /// A font that might be chosen, by its setting (a family or a font file).
-class _Candidate {
-  _Candidate(this.setting, this.family, this.distance);
+class FontCandidate {
+  FontCandidate(this.setting, this.family, this.distance);
 
   final String setting;
 
@@ -32,9 +32,17 @@ class _Candidate {
 /// How many fonts are suggested.
 const _shown = 3;
 
-/// The fonts closest to the page's lettering, closest first.
-Future<List<_Candidate>> _rank(LetteringShape target, String sample, List<String> settings) async {
-  final out = <_Candidate>[];
+/// The fonts that can be chosen, as settings: the bundled ones (the default
+/// one as '') and the ones added by the user.
+List<String> fontChoices(WidgetRef ref) => [
+  for (final f in bundledFonts) f.family == defaultFontFamily ? '' : f.family,
+  ...ref.read(addedFontsProvider),
+];
+
+/// The fonts closest to the lettering [target] when they write [sample],
+/// closest first.
+Future<List<FontCandidate>> rankFonts(LetteringShape target, String sample, List<String> settings) async {
+  final out = <FontCandidate>[];
   for (final setting in settings) {
     final String family;
     try {
@@ -50,7 +58,7 @@ Future<List<_Candidate>> _rank(LetteringShape target, String sample, List<String
       TextBlock(xyxy: box, lines: [TextLine.box(box)], text: sample, fontColor: [0, 0, 0]),
     );
     final shape = style == null ? null : LetteringShape.of(style, sample);
-    if (shape != null) out.add(_Candidate(setting, family, target.distance(shape)));
+    if (shape != null) out.add(FontCandidate(setting, family, target.distance(shape)));
   }
   return out..sort((a, b) => a.distance.compareTo(b.distance));
 }
@@ -98,12 +106,9 @@ Future<void> showFontSuggestions(BuildContext context, WidgetRef ref, {int? bloc
       : sourceBlocks.first;
   var sample = shown.text.trim();
   if (sample.length > 28) sample = sample.substring(0, 28).trim();
-  final settings = [
-    for (final f in bundledFonts) f.family == defaultFontFamily ? '' : f.family,
-    ...ref.read(addedFontsProvider),
-  ];
+  final settings = fontChoices(ref);
   final crop = _cropPng(page.path, shown.xyxy);
-  final ranked = _rank(target, sample, settings);
+  final ranked = rankFonts(target, sample, settings);
   if (!context.mounted) return;
   await showDialog<void>(
     context: context,
@@ -123,7 +128,7 @@ class _SuggestDialog extends ConsumerWidget {
   const _SuggestDialog({required this.crop, required this.ranked, required this.preview, this.block});
 
   final Future<Uint8List> crop;
-  final Future<List<_Candidate>> ranked;
+  final Future<List<FontCandidate>> ranked;
   final String preview;
   final int? block;
 
@@ -131,7 +136,7 @@ class _SuggestDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final theme = Theme.of(context);
-    void choose(_Candidate c, {required bool all}) {
+    void choose(FontCandidate c, {required bool all}) {
       if (all) {
         ref.read(settingsProvider.notifier).change((s) => s.render = s.render.copyWith(fontFamily: c.setting));
       } else {

@@ -11,6 +11,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:ct_core/ct_core.dart' hide TextDirection;
+import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -74,7 +75,7 @@ class PageCanvas extends ConsumerStatefulWidget {
   ConsumerState<PageCanvas> createState() => _PageCanvasState();
 }
 
-enum _Mode { tap, picked, newBox, moveBox, resizeBox, moveText, resizeText, rotateText, paint, pan, fit, pick }
+enum _Mode { tap, picked, area, newBox, moveBox, resizeBox, moveText, resizeText, rotateText, paint, pan, fit, pick }
 
 /// A drag in progress.
 class _Drag {
@@ -274,7 +275,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     void pick(int hit) => ref.read(workspaceProvider.notifier).pickBlock(hit, range: keys.isShiftPressed);
     _Drag drag;
     if (widget.readOnly) {
-      drag = _Drag(_Mode.tap, p);
+      drag = _Drag(keys.isShiftPressed ? _Mode.area : _Mode.tap, p);
     } else {
       switch (editor.tool) {
         case EditorTool.brush || EditorTool.eraser:
@@ -297,6 +298,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
             // A picked box drags the other picked ones along.
             if (!picks.contains(hit)) ref.read(workspaceProvider.notifier).selectBlock(hit);
             drag = _Drag(_Mode.moveBox, p, index: hit, rect: _rectOf(blocks[hit].xyxy));
+          } else if (keys.isShiftPressed) {
+            drag = _Drag(_Mode.area, p);
           } else {
             drag = _Drag(_Mode.newBox, p);
           }
@@ -320,11 +323,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
               if (!picks.contains(hit)) ref.read(workspaceProvider.notifier).selectBlock(hit);
               drag = _Drag(_Mode.moveText, p, index: hit, rect: _textArea(blocks, hit));
             } else {
-              drag = _Drag(_Mode.tap, p);
+              drag = _Drag(keys.isShiftPressed ? _Mode.area : _Mode.tap, p);
             }
           }
         case EditorTool.pan:
-          drag = _Drag(_Mode.tap, p);
+          drag = _Drag(keys.isShiftPressed ? _Mode.area : _Mode.tap, p);
         case EditorTool.fit:
           drag = _Drag(_Mode.fit, p);
         case EditorTool.pick:
@@ -356,7 +359,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         } else if ((Offset(last.x, last.y) - p).distance * _zoom >= 1.5) {
           d.points.add(Point2(p.dx, p.dy));
         }
-      case _Mode.newBox:
+      case _Mode.newBox || _Mode.area:
         d.draft = Rect.fromPoints(d.start, p);
       case _Mode.moveBox || _Mode.moveText:
         d.draft = d.rect!.shift(delta);
@@ -387,6 +390,18 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         if (d.ctrlClick && !d.moved && !widget.readOnly) _select(d.start, pick: true);
       case _Mode.picked:
         break;
+      case _Mode.area:
+        if (!d.moved || d.draft == null) {
+          _select(d.start, pick: true);
+          break;
+        }
+        // Bubbles whose middle is inside the rectangle join the picked ones.
+        final area = d.draft!;
+        final blocks = widget.page.blocks;
+        ws.pickBlocks([
+          for (final (i, b) in blocks.indexed)
+            if (area.contains(_rectOf(b.xyxy).center)) i,
+        ]);
       case _Mode.tap:
         if (!d.moved) _select(d.start);
       case _Mode.fit:
@@ -426,7 +441,18 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         }
       case _Mode.moveText || _Mode.resizeText:
         final box = d.draft == null ? null : _boxOf(d.draft!);
-        if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
+        final picks = ref.read(workspaceProvider).pickedBlocks;
+        if (d.moved && d.mode == _Mode.moveText && picks.length > 1 && picks.contains(d.index) && d.draft != null) {
+          // The texts of the picked bubbles move together, as one undo step.
+          final shift = d.draft!.topLeft - d.rect!.topLeft;
+          final blocks = widget.page.blocks;
+          final drawn = _drawn(widget.page);
+          final areas = {
+            for (final i in picks)
+              if (drawn.contains(i) && i < blocks.length) i: _boxOf(_textArea(blocks, i).shift(shift)),
+          };
+          ws.styleBlocks(areas.keys, (s, i) => s.copyWith(textBox: areas[i]));
+        } else if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
           ws.styleBlock(d.index!, (s) => s.copyWith(textBox: box));
         } else if (!d.moved) {
           // A double click on a text: type its translation in the panel.
@@ -499,8 +525,15 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         ? MaskStroke(points: d!.points, width: editor.brushSize, erase: editor.tool == EditorTool.eraser)
         : null;
     // While text is moved or rotated, it is drawn by the overlay.
-    final dragged = d != null && d.moved && (d.mode == _Mode.moveText || d.mode == _Mode.rotateText) ? d.index : null;
-    final hiddenItem = dragged == null || layout == null ? null : layout.blockIndex.indexOf(dragged);
+    final dragged = d != null && d.moved && (d.mode == _Mode.moveText || d.mode == _Mode.rotateText)
+        ? (d.mode == _Mode.moveText && picked.length > 1 && picked.contains(d.index) ? picked : {d.index!})
+        : const <int>{};
+    final hiddenItems = layout == null
+        ? const <int>{}
+        : {
+            for (final i in dragged)
+              if (layout.blockIndex.indexOf(i) case final k when k >= 0) k,
+          };
     final image = result || maskView ? page.basePath : page.path;
     return MouseRegion(
       cursor: _cursor(editor),
@@ -565,7 +598,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
               ),
             if (layout != null && engines != null)
               Positioned.fill(
-                child: RepaintBoundary(child: CustomPaint(painter: _TextPainter(layout, engines, hiddenItem))),
+                child: RepaintBoundary(child: CustomPaint(painter: _TextPainter(layout, engines, hiddenItems))),
               ),
             Positioned.fill(
               child: CustomPaint(
@@ -634,21 +667,22 @@ class _TextPainter extends CustomPainter {
   final RenderLayout layout;
   final TextEngines engines;
 
-  /// Item drawn by the overlay while dragged.
-  final int? hidden;
+  /// Items drawn by the overlay while dragged.
+  final Set<int> hidden;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
     canvas.scale(1 / layout.scale);
     for (final (k, item) in layout.items.indexed) {
-      if (k != hidden) engines.draw(canvas, item);
+      if (!hidden.contains(k)) engines.draw(canvas, item);
     }
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(_TextPainter old) => old.layout != layout || old.engines != engines || old.hidden != hidden;
+  bool shouldRepaint(_TextPainter old) =>
+      old.layout != layout || old.engines != engines || !setEquals(old.hidden, hidden);
 }
 
 /// Boxes, text boxes, handles, drafts and the brush outline; sizes follow
@@ -742,12 +776,26 @@ class _OverlayPainter extends CustomPainter {
       if (d?.mode == _Mode.newBox && d!.draft != null) canvas.drawRect(d.draft!, line(colors.tertiary, 2));
     }
 
+    // Shift + drag: the rectangle that picks bubbles.
+    if (d?.mode == _Mode.area && d!.draft != null) {
+      canvas.drawRect(d.draft!, Paint()..color = colors.tertiary.withValues(alpha: 0.12));
+      _dashed(canvas, d.draft!, line(colors.tertiary, 1.5), 6 * px);
+    }
+
     if (editor.tool == EditorTool.text && layout != null) {
       for (final i in layout!.blockIndex) {
         if (i >= blocks.length) continue;
         final isSel = i == selected || picked.contains(i);
         var r = areaOf(i);
-        if (d != null && d.index == i && d.draft != null) r = d.draft!;
+        if (d != null && d.index == i && d.draft != null) {
+          r = d.draft!;
+        } else if (d != null &&
+            d.mode == _Mode.moveText &&
+            d.draft != null &&
+            picked.contains(d.index) &&
+            picked.contains(i)) {
+          r = r.shift(d.draft!.topLeft - d.rect!.topLeft);
+        }
         _dashed(
           canvas,
           r,
@@ -771,8 +819,10 @@ class _OverlayPainter extends CustomPainter {
         e != null &&
         layout != null &&
         (d.mode == _Mode.moveText || d.mode == _Mode.rotateText)) {
-      final k = layout!.blockIndex.indexOf(d.index!);
-      if (k >= 0) {
+      final group = d.mode == _Mode.moveText && picked.length > 1 && picked.contains(d.index) ? picked : {d.index!};
+      for (final i in group) {
+        final k = layout!.blockIndex.indexOf(i);
+        if (k < 0) continue;
         final item = layout!.items[k];
         final s = layout!.scale;
         final shift = d.mode == _Mode.moveText ? (d.current - d.start) * s : Offset.zero;

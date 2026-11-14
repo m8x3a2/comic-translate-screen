@@ -21,6 +21,7 @@ import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../common/panels.dart';
 import '../common/translator_history_dialog.dart';
+import 'auto_look.dart';
 import 'batch_dialogs.dart';
 import 'block_style_editor.dart';
 import 'find_replace.dart';
@@ -672,6 +673,7 @@ class _GroupEditor extends ConsumerWidget {
                         Icons.view_column_outlined,
                         () => _findInsideMany(context, ref, picked),
                       ),
+                      action(l.mergePicked, Icons.merge_type, () => ws.mergeBlocks(picked)),
                       action(l.deletePicked, Icons.delete_outline, () => ws.deleteBlocks(picked)),
                     ],
                   ),
@@ -807,6 +809,7 @@ class _LookMenu extends ConsumerWidget {
         item(Icons.text_fields, l.caseToggle, () => toggleCapitals(ref)),
         item(Icons.format_size, l.sizeFromSourcePages, () => _sourceSize(context, ref)),
         item(Icons.format_clear, l.styleResetPages, () => resetLooks(ref)),
+        item(Icons.auto_fix_high_outlined, l.autoLookMenu, () => showAutoLookDialog(context, ref)),
         const PopupMenuDivider(),
         CheckedPopupMenuItem(
           value: () => ref.read(settingsProvider.notifier).change((s) => s.showLookInPanel = !s.showLookInPanel),
