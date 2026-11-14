@@ -406,7 +406,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
     }
 
-    // A rectangle over the left half: everything inside is filled.
+    // A rectangle over the left half: it becomes the selection, nothing is painted yet.
     await mouse.moveTo(at(0.1, 0.1));
     await mouse.down(at(0.1, 0.1));
     for (var i = 1; i <= 4; i++) {
@@ -417,22 +417,49 @@ void main() {
     await mouse.up();
     await tester.pump();
     expect(container.read(strokeActiveProvider), isFalse);
-    expect(paints().single.kind, PaintKind.fill);
-    expect(paints().single.color, 0xFF00FF00);
-    final rows = {for (var k = 0; k < paints().single.runs.length; k += 3) paints().single.runs[k]};
+    expect(paints(), isEmpty);
+    final sel = container.read(selectionProvider)!;
+    final rows = {for (var k = 0; k < sel.runs.length; k += 3) sel.runs[k]};
     expect(rows.length, greaterThan(40), reason: 'about 72 of the 80 rows');
 
-    // A polygon: three corners and Enter.
-    container.read(editorProvider.notifier).setAreaShape(AreaShape.polygon);
+    // The bar over the page fills the selection.
+    await tester.tap(find.text('Залить'));
     await tester.pump();
-    await click(at(0.6, 0.2));
-    await click(at(0.9, 0.2));
-    await click(at(0.75, 0.8));
-    expect(paints(), hasLength(1), reason: 'not closed yet');
+    expect(paints().single.kind, PaintKind.fill);
+    expect(paints().single.color, 0xFF00FF00);
+    expect(paints().single.runs, sel.runs);
+
+    // A brush stroke across the whole page stays inside the selection.
+    container.read(editorProvider.notifier).setDrawMode(DrawMode.brush);
+    await tester.pump();
+    await mouse.moveTo(at(0.05, 0.3));
+    await mouse.down(at(0.05, 0.3));
+    for (var i = 1; i <= 5; i++) {
+      await mouse.moveTo(at(0.05 + 0.18 * i, 0.3));
+      await tester.pump();
+    }
+    await mouse.up();
+    await tester.pump();
+    expect(paints().last.kind, PaintKind.brush);
+    expect(paints().last.clip, sel.runs);
+
+    // A polygon: three corners and Enter make a new selection.
+    container.read(editorProvider.notifier)
+      ..setDrawMode(DrawMode.area)
+      ..setAreaShape(AreaShape.polygon);
+    await tester.pump();
+    // (Below the selection bar at the top, above the zoom buttons at the bottom.)
+    await click(at(0.6, 0.4));
+    await click(at(0.9, 0.4));
+    await click(at(0.75, 0.7));
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
     expect(paints(), hasLength(2));
-    expect(paints().last.kind, PaintKind.fill);
+    expect(container.read(selectionProvider)!.outline, hasLength(3));
+    // Esc drops it.
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(container.read(selectionProvider), isNull);
 
     // The eraser with a rectangle: one erase step over the area.
     container.read(editorProvider.notifier)

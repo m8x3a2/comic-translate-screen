@@ -8531,7 +8531,7 @@ abstract class AppLocalizations {
   /// No description provided for @drawArea.
   ///
   /// In en, this message translates to:
-  /// **'Area: fills everything inside an outline with the chosen colour, letters and drawing too. Pick the outline on the right'**
+  /// **'Selection: outline an area (pick the shape on the right). While it is selected, the brush, eraser, original and fill work only inside it; the bar above the page fills it, brings back the original or erases the touch-ups in it. Esc drops it'**
   String get drawArea;
 
   /// No description provided for @areaLasso.
@@ -8707,6 +8707,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'On the desk beside the page: drag it onto the page (any page) to put it there'**
   String get pasteboardHelp;
+
+  /// No description provided for @selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Selection'**
+  String get selection;
+
+  /// No description provided for @selectionFill.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill'**
+  String get selectionFill;
+
+  /// No description provided for @selectionOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get selectionOriginal;
+
+  /// No description provided for @selectionErase.
+  ///
+  /// In en, this message translates to:
+  /// **'Erase touch-ups'**
+  String get selectionErase;
+
+  /// No description provided for @selectionDrop.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop (Esc)'**
+  String get selectionDrop;
 }
 
 class _AppLocalizationsDelegate

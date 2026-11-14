@@ -368,12 +368,22 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   /// Fills everything inside [outline] with the drawing colour (one undo
   /// step); nothing when it covers no pixel.
   void _fillOutline(List<Point2> outline) {
-    final runs = polygonRuns(outline, widget.size.width.round(), widget.size.height.round());
+    var runs = polygonRuns(outline, widget.size.width.round(), widget.size.height.round());
     if (runs.isEmpty) return;
+    final editor = ref.read(editorProvider);
+    // The selection mode: the outline becomes the selection.
+    if (editor.drawMode == DrawMode.area) {
+      ref.read(selectionProvider.notifier).set(PageSelection(widget.page.id, outline, runs));
+      return;
+    }
+    if (ref.read(selectionProvider.notifier).of(widget.page.id) case final sel?) {
+      runs = intersectRuns(runs, sel.runs);
+      if (runs.isEmpty) return;
+    }
     ref
         .read(workspaceProvider.notifier)
         .addPaint(
-          PaintOp(kind: ref.read(editorProvider).outlineKind, color: ref.read(editorProvider).paintColor, runs: runs),
+          PaintOp(kind: editor.outlineKind, color: editor.paintColor, runs: runs),
           pageId: widget.page.id,
         );
   }
@@ -826,7 +836,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   }
 
   /// The touch-up a stroke along [points] makes with the drawing tool.
-  static PaintOp _paintOf(EditorState editor, List<Point2> points) => PaintOp(
+  PaintOp _paintOf(EditorState editor, List<Point2> points) => PaintOp(
+    // Inside the selection only.
+    clip: ref.read(selectionProvider.notifier).of(widget.page.id)?.runs ?? const [],
     kind: switch (editor.drawMode) {
       DrawMode.eraser => PaintKind.erase,
       DrawMode.original => PaintKind.original,
@@ -879,6 +891,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         : null;
     // The touch-ups lie over the cleaned page, under the translation.
     final draftPaint = d?.mode == _Mode.draw ? _paintOf(editor, d!.points) : null;
+    ref.watch(selectionProvider);
+    final selection = widget.active ? ref.read(selectionProvider.notifier).of(page.id) : null;
     final showPaints = result && !peek && (page.paints.isNotEmpty || draftPaint != null);
     final showPictures = result && !peek && page.pictures.isNotEmpty;
     if (showPictures) _ensurePictures(page.pictures);
@@ -1028,6 +1042,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
                     drag: d,
                     hover: hovers && !polygon && !widget.readOnly && !_grab ? _hover : null,
                     outline: _outlineDraft(editor),
+                    selection: selection == null ? null : [for (final p in selection.outline) Offset(p.x, p.y)],
                     pictureBoxes: editor.tool == EditorTool.pictures && !widget.readOnly
                         ? [
                             for (final (i, pic) in page.pictures.indexed)
@@ -1099,6 +1114,17 @@ class _PaintsPainter extends CustomPainter {
   /// The shape of each fill (made once).
   static final _fills = Expando<Path>();
 
+  /// The shape of each selection strokes are kept in (made once).
+  static final _clipPaths = Expando<Path>();
+
+  static Path _runsPath(List<int> r) {
+    final path = Path();
+    for (var k = 0; k + 2 < r.length; k += 3) {
+      path.addRect(Rect.fromLTRB(r[k + 1].toDouble(), r[k].toDouble(), r[k + 2].toDouble(), r[k] + 1.0));
+    }
+    return path;
+  }
+
   static Path _fillPath(PaintOp op) => _fills[op] ??= () {
     final path = Path();
     final r = op.runs;
@@ -1163,6 +1189,12 @@ class _PaintsPainter extends CustomPainter {
         }
         continue;
       }
+      // A stroke made inside a selection stays inside it.
+      final clipped = op.isStroke && op.clip.isNotEmpty;
+      if (clipped) {
+        canvas.save();
+        canvas.clipPath(_clipPaths[op.clip] ??= _runsPath(op.clip));
+      }
       switch (op.kind) {
         case PaintKind.fill:
           canvas.drawPath(
@@ -1185,6 +1217,7 @@ class _PaintsPainter extends CustomPainter {
           o.paint(canvas, Paint()..blendMode = BlendMode.srcIn);
           canvas.restore();
       }
+      if (clipped) canvas.restore();
     }
     canvas.restore();
   }
@@ -1274,6 +1307,7 @@ class _OverlayPainter extends CustomPainter {
     required this.drag,
     required this.hover,
     this.outline,
+    this.selection,
     this.closedOutline = true,
     this.pictureBoxes = const [],
     this.pictureSelected,
@@ -1302,6 +1336,9 @@ class _OverlayPainter extends CustomPainter {
   /// lightly with the drawing colour; the polygon's corners are marked.
   final List<Offset>? outline;
   final bool closedOutline;
+
+  /// The outline of the selection of the page.
+  final List<Offset>? selection;
 
   /// The pictures tool: where each picture lies, and the selected one.
   final List<Rect> pictureBoxes;
@@ -1457,14 +1494,32 @@ class _OverlayPainter extends CustomPainter {
       }
     }
 
+    if (selection case final sel? when sel.length >= 3) {
+      final path = Path()..addPolygon(sel, true);
+      canvas.drawPath(path, Paint()..color = colors.tertiary.withValues(alpha: 0.08));
+      canvas.drawPath(path, line(Colors.white, 2.5));
+      final dash = line(Colors.black, 1.2);
+      for (var i = 0; i < sel.length; i++) {
+        final a = sel[i], b = sel[(i + 1) % sel.length];
+        final len = (b - a).distance;
+        if (len == 0) continue;
+        final dir = (b - a) / len;
+        for (var t = 0.0; t < len; t += 10 * px) {
+          canvas.drawLine(a + dir * t, a + dir * math.min(t + 5 * px, len), dash);
+        }
+      }
+    }
+
     if (outline case final o? when o.isNotEmpty) {
       final path = Path()..addPolygon(o, closedOutline);
       if (o.length >= 3) {
-        final tint = switch (editor.outlineKind) {
-          PaintKind.erase => Colors.white,
-          PaintKind.original => Colors.blue,
-          _ => Color(editor.paintColor),
-        };
+        final tint = editor.drawMode == DrawMode.area
+            ? colors.tertiary
+            : switch (editor.outlineKind) {
+                PaintKind.erase => Colors.white,
+                PaintKind.original => Colors.blue,
+                _ => Color(editor.paintColor),
+              };
         canvas.drawPath(Path()..addPolygon(o, true), Paint()..color = tint.withValues(alpha: 0.4));
       }
       canvas.drawPath(path, line(Colors.white, 3));

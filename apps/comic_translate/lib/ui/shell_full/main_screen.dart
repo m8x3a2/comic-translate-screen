@@ -876,7 +876,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case ShortcutAction.nextPage:
         ws.select(state.current + 1);
       case ShortcutAction.deselect:
-        // Esc leaves "As it will be" first.
+        // Esc drops the selection of the drawing tool first.
+        if (ref.read(selectionProvider) != null) {
+          ref.read(selectionProvider.notifier).clear();
+          return true;
+        }
+        // Then it leaves "As it will be".
         if (ref.read(editorProvider).preview) {
           editor.togglePreview();
           return true;

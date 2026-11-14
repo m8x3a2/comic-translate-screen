@@ -3309,7 +3309,7 @@
   "@previewOn": {"placeholders": {"key": {"type": "String"}}},
   "keyDraw": "Drawing",
   "keyPreview": "As it will be",
-  "drawArea": "Area: fills everything inside an outline with the chosen colour, letters and drawing too. Pick the outline on the right",
+  "drawArea": "Selection: outline an area (pick the shape on the right). While it is selected, the brush, eraser, original and fill work only inside it; the bar above the page fills it, brings back the original or erases the touch-ups in it. Esc drops it",
   "areaLasso": "Lasso: draw the outline by hand with the button held",
   "areaPolygon": "By points: click the corners; a click on the first one, a double click or Enter fills. Backspace takes the last corner back, Esc drops it all",
   "areaRectangle": "Rectangle: drag from corner to corner",
@@ -3343,5 +3343,10 @@
   "pictureOpacity": "Opacity of the selected picture: {percent} %. Less lets the page show through",
   "@pictureOpacity": {"placeholders": {"percent": {"type": "String"}}},
   "picturesBack": "Bring back pictures lost past the page's edges",
-  "pasteboardHelp": "On the desk beside the page: drag it onto the page (any page) to put it there"
+  "pasteboardHelp": "On the desk beside the page: drag it onto the page (any page) to put it there",
+  "selection": "Selection",
+  "selectionFill": "Fill",
+  "selectionOriginal": "Original",
+  "selectionErase": "Erase touch-ups",
+  "selectionDrop": "Drop (Esc)"
 }

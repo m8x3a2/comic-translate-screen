@@ -35,9 +35,14 @@ class PaintOp {
     this.width = 1,
     this.color = 0xFFFFFFFF,
     this.runs = const [],
+    this.clip = const [],
   });
 
   final PaintKind kind;
+
+  /// A stroke made inside a selection stays inside it: the selection's
+  /// pixels as `y, x1, x2` runs (empty: no selection).
+  final List<int> clip;
 
   /// The stroke's path (strokes only).
   final List<Point2> points;
@@ -60,6 +65,7 @@ class PaintOp {
     if (isStroke) 'width': width,
     if (kind == PaintKind.brush || kind == PaintKind.fill) 'color': color,
     if (!isStroke) 'runs': runs,
+    if (isStroke && clip.isNotEmpty) 'clip': clip,
   };
 
   factory PaintOp.fromJson(Map<String, Object?> j) => PaintOp(
@@ -68,7 +74,26 @@ class PaintOp {
     width: (j['width'] as num?)?.toDouble() ?? 1,
     color: (j['color'] as num?)?.toInt() ?? 0xFFFFFFFF,
     runs: [for (final v in (j['runs'] as List? ?? const [])) (v as num).toInt()],
+    clip: [for (final v in (j['clip'] as List? ?? const [])) (v as num).toInt()],
   );
+}
+
+/// The pixels in both [a] and [b] (`y, x1, x2` runs, see [PaintOp.runs]).
+List<int> intersectRuns(List<int> a, List<int> b) {
+  final rows = <int, List<(int, int)>>{};
+  for (var k = 0; k + 2 < b.length; k += 3) {
+    (rows[b[k]] ??= []).add((b[k + 1], b[k + 2]));
+  }
+  final out = <int>[];
+  for (var k = 0; k + 2 < a.length; k += 3) {
+    final row = rows[a[k]];
+    if (row == null) continue;
+    for (final (x1, x2) in row) {
+      final from = math.max(a[k + 1], x1), to = math.min(a[k + 2], x2);
+      if (to > from) out.addAll([a[k], from, to]);
+    }
+  }
+  return out;
 }
 
 /// Touch-ups from the JSON list [json] (unknown entries are skipped).
@@ -135,6 +160,21 @@ RgbImage bakePaints(
     final cover = _strokeCoverage(op.points, op.width / 2, w, h);
     if (cover == null) continue;
     final (box, alpha) = cover;
+    if (op.clip.isNotEmpty) {
+      // Inside the selection only.
+      final inside = Uint8List(alpha.length);
+      for (var k = 0; k + 2 < op.clip.length; k += 3) {
+        final y = op.clip[k];
+        if (y < box.y1 || y >= box.y2) continue;
+        final x1 = math.max(op.clip[k + 1], box.x1), x2 = math.min(op.clip[k + 2], box.x2);
+        for (var x = x1; x < x2; x++) {
+          inside[(y - box.y1) * box.width + (x - box.x1)] = 1;
+        }
+      }
+      for (var i = 0; i < alpha.length; i++) {
+        if (inside[i] == 0) alpha[i] = 0;
+      }
+    }
     final cr = (op.color >> 16) & 0xFF, cg = (op.color >> 8) & 0xFF, cb = op.color & 0xFF;
     for (var y = box.y1; y < box.y2; y++) {
       for (var x = box.x1; x < box.x2; x++) {

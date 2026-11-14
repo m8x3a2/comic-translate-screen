@@ -6,7 +6,7 @@ library;
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:ct_core/ct_core.dart' show maxPipetteTolerance, minPipetteTolerance;
+import 'package:ct_core/ct_core.dart' show PaintKind, PaintOp, maxPipetteTolerance, minPipetteTolerance;
 import 'package:ct_providers/ct_providers.dart' show readsThroughChat, translatesThroughChat;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -384,6 +384,19 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                                     const SizedBox(width: 8, height: 40),
                                 ],
                               ),
+                            ),
+                          ),
+                        ),
+                      // The selection of the drawing tool: what to do inside it.
+                      if (ref.watch(selectionProvider)?.pageId == page.id && !editor.preview && !readOnly)
+                        Positioned(
+                          top: 12,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: _SelectionBar(pageId: page.id),
                             ),
                           ),
                         ),
@@ -1103,4 +1116,67 @@ String stepResultLine(BuildContext context, StepResult r) {
     line = '$line (${each.join(' · ')})';
   }
   return line;
+}
+
+/// The selection of the drawing tool: fill it, bring the original back in
+/// it, erase the touch-ups in it, or drop it (Esc).
+class _SelectionBar extends ConsumerWidget {
+  const _SelectionBar({required this.pageId});
+
+  final String pageId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    void apply(PaintKind kind) {
+      final sel = ref.read(selectionProvider.notifier).of(pageId);
+      if (sel == null) return;
+      ref
+          .read(workspaceProvider.notifier)
+          .addPaint(
+            PaintOp(kind: kind, color: ref.read(editorProvider).paintColor, runs: sel.runs),
+            pageId: pageId,
+          );
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        // Wraps in a narrow window instead of running out of room.
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(padding: EdgeInsets.only(left: 6, right: 4), child: Icon(Icons.highlight_alt, size: 18)),
+                Text(l.selection),
+                const SizedBox(width: 8),
+              ],
+            ),
+            TextButton.icon(
+              onPressed: () => apply(PaintKind.fill),
+              icon: Icon(Icons.format_color_fill, size: 18, color: Color(ref.watch(editorProvider).paintColor)),
+              label: Text(l.selectionFill),
+            ),
+            TextButton.icon(
+              onPressed: () => apply(PaintKind.original),
+              icon: const Icon(Icons.restore, size: 18),
+              label: Text(l.selectionOriginal),
+            ),
+            TextButton.icon(
+              onPressed: () => apply(PaintKind.erase),
+              icon: const Icon(Icons.auto_fix_normal, size: 18),
+              label: Text(l.selectionErase),
+            ),
+            TextButton.icon(
+              onPressed: () => ref.read(selectionProvider.notifier).clear(),
+              icon: const Icon(Icons.close, size: 18),
+              label: Text(l.selectionDrop),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

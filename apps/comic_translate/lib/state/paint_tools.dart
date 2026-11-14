@@ -93,7 +93,7 @@ class PaintToolsNotifier extends Notifier<PaintToolsState> {
       final page = await workspace.ensurePainted(pageId);
       if (page == null || !ref.mounted) return;
       final editor = ref.read(editorProvider);
-      final runs = await floodFillInBackground(
+      var runs = await floodFillInBackground(
         page.finalBasePath,
         at.x.floor(),
         at.y.floor(),
@@ -101,6 +101,11 @@ class PaintToolsNotifier extends Notifier<PaintToolsState> {
         editor.fillSpots,
       );
       if (runs.isEmpty || !ref.mounted) return;
+      // Inside the selection only.
+      final sel = ref.read(selectionProvider.notifier).of(pageId);
+      final inside = sel == null ? runs : intersectRuns(runs, sel.runs);
+      if (inside.isEmpty) return;
+      runs = inside;
       workspace.addPaint(
         PaintOp(kind: PaintKind.fill, color: editor.paintColor, runs: runs),
         pageId: pageId,

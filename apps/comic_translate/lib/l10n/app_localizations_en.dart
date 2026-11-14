@@ -5021,7 +5021,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get drawArea =>
-      'Area: fills everything inside an outline with the chosen colour, letters and drawing too. Pick the outline on the right';
+      'Selection: outline an area (pick the shape on the right). While it is selected, the brush, eraser, original and fill work only inside it; the bar above the page fills it, brings back the original or erases the touch-ups in it. Esc drops it';
 
   @override
   String get areaLasso =>
@@ -5128,4 +5128,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pasteboardHelp =>
       'On the desk beside the page: drag it onto the page (any page) to put it there';
+
+  @override
+  String get selection => 'Selection';
+
+  @override
+  String get selectionFill => 'Fill';
+
+  @override
+  String get selectionOriginal => 'Original';
+
+  @override
+  String get selectionErase => 'Erase touch-ups';
+
+  @override
+  String get selectionDrop => 'Drop (Esc)';
 }

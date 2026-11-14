@@ -248,6 +248,33 @@ class StrokeActive extends Notifier<bool> {
   }
 }
 
+/// A selection of the drawing tool on a page: while it is there, the
+/// brush, eraser, "original" and fill work only inside it (a stencil, as in
+/// drawing programs).
+class PageSelection {
+  const PageSelection(this.pageId, this.outline, this.runs);
+
+  final String pageId;
+
+  /// Its outline (page pixels), and its pixels as `y, x1, x2` runs.
+  final List<Point2> outline;
+  final List<int> runs;
+}
+
+final selectionProvider = NotifierProvider<SelectionNotifier, PageSelection?>(SelectionNotifier.new);
+
+class SelectionNotifier extends Notifier<PageSelection?> {
+  @override
+  PageSelection? build() => null;
+
+  void set(PageSelection selection) => state = selection;
+
+  void clear() => state = null;
+
+  /// The selection of page [pageId], if any.
+  PageSelection? of(String? pageId) => state != null && state!.pageId == pageId ? state : null;
+}
+
 /// The picture of a page selected with the pictures tool: (page id, index).
 final pictureSelectionProvider = NotifierProvider<PictureSelection, (String, int)?>(PictureSelection.new);
 

@@ -5017,7 +5017,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get drawArea =>
-      'Область: закрашивает выбранным цветом всё внутри контура — и буквы, и рисунок. Форма контура — справа';
+      'Выделение: обведите область (форма — справа). Пока она выделена, кисть, ластик, «Оригинал» и заливка работают только внутри; панель над страницей заливает её, возвращает в ней оригинал или стирает мазки. Esc — снять выделение';
 
   @override
   String get areaLasso => 'Лассо: обвести от руки, держа кнопку';
@@ -5124,4 +5124,19 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get pasteboardHelp =>
       'На столе рядом со страницей: перетащите на страницу (любую), чтобы положить её туда';
+
+  @override
+  String get selection => 'Выделение';
+
+  @override
+  String get selectionFill => 'Залить';
+
+  @override
+  String get selectionOriginal => 'Оригинал';
+
+  @override
+  String get selectionErase => 'Стереть мазки';
+
+  @override
+  String get selectionDrop => 'Снять (Esc)';
 }

@@ -100,6 +100,28 @@ void main() {
       expect(PaintOp.fromJson(op.toJson()).runs, [1, 2, 3]);
     });
 
+    test('a stroke inside a selection does not leave it', () {
+      final base = RgbImage.filled(20, 10, 255, 255, 255);
+      const op = PaintOp(
+        kind: PaintKind.brush,
+        points: [Point2(2, 5), Point2(18, 5)],
+        width: 6,
+        color: 0xFF000000,
+        clip: [4, 5, 10, 5, 5, 10, 6, 5, 10],
+      );
+      final out = bakePaints(base, [op]);
+      expect(px(out, 7, 5), (0, 0, 0));
+      expect(px(out, 3, 5), (255, 255, 255), reason: 'left of the selection');
+      expect(px(out, 12, 5), (255, 255, 255), reason: 'right of it');
+      expect(px(out, 7, 3), (255, 255, 255), reason: 'above it');
+      expect(PaintOp.fromJson(op.toJson()).clip, op.clip);
+    });
+
+    test('runs in both', () {
+      expect(intersectRuns([0, 0, 10, 1, 0, 10], [0, 5, 20, 2, 0, 5]), [0, 5, 10]);
+      expect(intersectRuns([0, 0, 10], [0, 1, 3, 0, 6, 8]), [0, 1, 3, 0, 6, 8]);
+    });
+
     test('strokes off the page are ignored', () {
       final base = RgbImage.filled(10, 10, 1, 2, 3);
       final out = bakePaints(base, [

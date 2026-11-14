@@ -70,7 +70,7 @@ class DrawOptions extends ConsumerWidget {
             mode(DrawMode.eraser, Icons.auto_fix_normal, l.drawEraser),
             mode(DrawMode.original, Icons.restore, l.drawOriginal),
             mode(DrawMode.fill, Icons.format_color_fill, l.drawFill),
-            mode(DrawMode.area, Icons.gesture, l.drawArea),
+            mode(DrawMode.area, Icons.highlight_alt, l.drawArea),
           ],
         ),
         Row(
