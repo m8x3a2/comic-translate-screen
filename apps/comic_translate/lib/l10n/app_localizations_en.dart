@@ -4984,7 +4984,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Here the colour under the mouse shows while you pick one (pipette or Alt)';
 
   @override
-  String get paintColourCode => 'Colour code, e.g. #FFFFFF';
+  String get paintColourCode => 'Colour code';
 
   @override
   String get paintColourRecent => 'Used lately';

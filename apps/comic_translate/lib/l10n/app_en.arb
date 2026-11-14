@@ -3297,7 +3297,7 @@
   "paintColourHover": "Under the mouse: {colour}",
   "@paintColourHover": {"placeholders": {"colour": {"type": "String"}}},
   "paintColourHoverNone": "Here the colour under the mouse shows while you pick one (pipette or Alt)",
-  "paintColourCode": "Colour code, e.g. #FFFFFF",
+  "paintColourCode": "Colour code",
   "paintColourRecent": "Used lately",
   "fillTolerance": "Fill tolerance: how different shades the fill still takes in",
   "fillSpots": "Spots too",

@@ -4980,7 +4980,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Здесь виден цвет под мышью, пока вы берёте цвет (пипетка или Alt)';
 
   @override
-  String get paintColourCode => 'Код цвета, например #FFFFFF';
+  String get paintColourCode => 'Код цвета';
 
   @override
   String get paintColourRecent => 'Недавние';

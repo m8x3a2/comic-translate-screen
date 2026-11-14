@@ -1395,7 +1395,7 @@
   "paintColour": "Цвет кисти и заливки ({colour}) — щелчок, чтобы выбрать",
   "paintColourHover": "Под мышью: {colour}",
   "paintColourHoverNone": "Здесь виден цвет под мышью, пока вы берёте цвет (пипетка или Alt)",
-  "paintColourCode": "Код цвета, например #FFFFFF",
+  "paintColourCode": "Код цвета",
   "paintColourRecent": "Недавние",
   "fillTolerance": "Допуск заливки: насколько отличающиеся оттенки она ещё захватывает",
   "fillSpots": "И пятна",

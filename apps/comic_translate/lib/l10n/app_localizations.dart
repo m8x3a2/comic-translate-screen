@@ -8471,7 +8471,7 @@ abstract class AppLocalizations {
   /// No description provided for @paintColourCode.
   ///
   /// In en, this message translates to:
-  /// **'Colour code, e.g. #FFFFFF'**
+  /// **'Colour code'**
   String get paintColourCode;
 
   /// No description provided for @paintColourRecent.

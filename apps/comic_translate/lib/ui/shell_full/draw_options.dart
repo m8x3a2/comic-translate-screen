@@ -42,94 +42,119 @@ class DrawOptions extends ConsumerWidget {
     final tools = ref.watch(paintToolsProvider);
     final page = ref.watch(workspaceProvider.select((s) => s.currentPage));
     final scheme = Theme.of(context).colorScheme;
+    Widget mode(DrawMode m, IconData icon, String tip) => IconButton(
+      tooltip: tip,
+      visualDensity: VisualDensity.compact,
+      isSelected: editor.drawMode == m,
+      onPressed: () => notifier.setDrawMode(m),
+      icon: Icon(icon, size: 20),
+      style: IconButton.styleFrom(
+        backgroundColor: editor.drawMode == m ? scheme.secondaryContainer : null,
+        minimumSize: const Size(34, 34),
+        padding: const EdgeInsets.all(6),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
+    // Two groups as wide in every mode: they wrap the same way whatever the
+    // mode, so the page does not move when it changes (the pipette button
+    // goes back to the brush by itself).
     return Wrap(
-      spacing: 4,
+      spacing: 6,
       runSpacing: 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        SegmentedButton<DrawMode>(
-          style: const ButtonStyle(visualDensity: VisualDensity.compact),
-          showSelectedIcon: false,
-          segments: [
-            ButtonSegment(value: DrawMode.brush, icon: const Icon(Icons.brush), tooltip: l.drawBrush),
-            ButtonSegment(value: DrawMode.eraser, icon: const Icon(Icons.auto_fix_normal), tooltip: l.drawEraser),
-            ButtonSegment(value: DrawMode.original, icon: const Icon(Icons.restore), tooltip: l.drawOriginal),
-            ButtonSegment(value: DrawMode.fill, icon: const Icon(Icons.format_color_fill), tooltip: l.drawFill),
-            ButtonSegment(value: DrawMode.pipette, icon: const Icon(Icons.colorize), tooltip: l.drawPipette),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            mode(DrawMode.brush, Icons.brush, l.drawBrush),
+            mode(DrawMode.eraser, Icons.auto_fix_normal, l.drawEraser),
+            mode(DrawMode.original, Icons.restore, l.drawOriginal),
+            mode(DrawMode.fill, Icons.format_color_fill, l.drawFill),
+            mode(DrawMode.pipette, Icons.colorize, l.drawPipette),
           ],
-          selected: {editor.drawMode},
-          onSelectionChanged: (s) => notifier.setDrawMode(s.first),
         ),
-        const SizedBox(width: 4),
-        _ColourButton(colour: editor.paintColor),
-        // The colour under the mouse while picking; the place is kept, so
-        // nothing moves when picking starts.
-        Tooltip(
-          message: tools.hover == null ? l.paintColourHoverNone : l.paintColourHover(colourCode(tools.hover!)),
-          child: Container(
-            key: const ValueKey('paint-hover'),
-            width: 22,
-            height: 22,
-            decoration: BoxDecoration(
-              color: tools.hover == null ? null : Color(tools.hover!),
-              border: Border.all(color: scheme.outline),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: tools.hover == null ? Icon(Icons.colorize, size: 14, color: scheme.outline) : null,
-          ),
-        ),
-        const SizedBox(width: 4),
-        if (editor.drawMode == DrawMode.fill) ...[
-          Tooltip(
-            message: l.fillTolerance,
-            child: SizedBox(
-              width: 120,
-              child: Slider(
-                value: editor.fillTolerance.toDouble(),
-                max: maxFillTolerance.toDouble(),
-                onChanged: (v) => notifier.setFillTolerance(v.round()),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ColourButton(colour: editor.paintColor),
+            const SizedBox(width: 4),
+            // The colour under the mouse while picking.
+            Tooltip(
+              message: tools.hover == null ? l.paintColourHoverNone : l.paintColourHover(colourCode(tools.hover!)),
+              child: Container(
+                key: const ValueKey('paint-hover'),
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: tools.hover == null ? null : Color(tools.hover!),
+                  border: Border.all(color: scheme.outline),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: tools.hover == null ? Icon(Icons.colorize, size: 14, color: scheme.outline) : null,
               ),
             ),
-          ),
-          SizedBox(width: 32, child: Text('${editor.fillTolerance}')),
-          Tooltip(
-            message: l.fillSpotsHelp,
-            child: FilterChip(
-              label: Text(l.fillSpots),
-              selected: editor.fillSpots,
-              onSelected: (_) => notifier.toggleFillSpots(),
-            ),
-          ),
-          SizedBox(
-            width: 24,
-            child: tools.busy
-                ? const Padding(
-                    padding: EdgeInsets.only(left: 6),
-                    child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                  )
-                : null,
-          ),
-        ] else if (editor.drawMode != DrawMode.pipette) ...[
-          Tooltip(
-            message: l.brushSize,
-            child: SizedBox(
-              width: 150,
-              child: Slider(
-                value: editor.paintSize,
-                min: minPaintSize,
-                max: maxBrushSize,
-                onChanged: notifier.setPaintSize,
+            // As high in every mode (the pipette has no slider).
+            SizedBox(
+              width: 136,
+              height: 48,
+              child: Row(
+                children: [
+                  if (editor.drawMode == DrawMode.fill) ...[
+                    Expanded(
+                      child: Tooltip(
+                        message: '${l.fillTolerance}: ${editor.fillTolerance}',
+                        child: Slider(
+                          value: editor.fillTolerance.toDouble(),
+                          max: maxFillTolerance.toDouble(),
+                          onChanged: (v) => notifier.setFillTolerance(v.round()),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 34,
+                      child: tools.busy
+                          ? const Center(
+                              child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                            )
+                          : IconButton(
+                              tooltip: '${l.fillSpots}: ${l.fillSpotsHelp}',
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              isSelected: editor.fillSpots,
+                              onPressed: notifier.toggleFillSpots,
+                              icon: const Icon(Icons.blur_off, size: 20),
+                              selectedIcon: const Icon(Icons.blur_on, size: 20),
+                              style: IconButton.styleFrom(
+                                backgroundColor: editor.fillSpots ? scheme.secondaryContainer : null,
+                              ),
+                            ),
+                    ),
+                  ] else if (editor.drawMode != DrawMode.pipette) ...[
+                    Expanded(
+                      child: Tooltip(
+                        message: l.brushSize,
+                        child: Slider(
+                          value: editor.paintSize,
+                          min: minPaintSize,
+                          max: maxBrushSize,
+                          onChanged: notifier.setPaintSize,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 46, child: Text('${editor.paintSize.round()} px')),
+                  ],
+                ],
               ),
             ),
-          ),
-          SizedBox(width: 44, child: Text('${editor.paintSize.round()} px')),
-        ],
-        IconButton(
-          tooltip: l.clearPaints,
-          onPressed: page != null && page.paints.isNotEmpty
-              ? () => ref.read(workspaceProvider.notifier).clearPaints()
-              : null,
-          icon: const Icon(Icons.layers_clear_outlined),
+            IconButton(
+              tooltip: l.clearPaints,
+              visualDensity: VisualDensity.compact,
+              onPressed: page != null && page.paints.isNotEmpty
+                  ? () => ref.read(workspaceProvider.notifier).clearPaints()
+                  : null,
+              icon: const Icon(Icons.layers_clear_outlined, size: 20),
+            ),
+          ],
         ),
       ],
     );
@@ -207,6 +232,7 @@ class _ColourButtonState extends ConsumerState<_ColourButton> {
                   decoration: InputDecoration(
                     isDense: true,
                     labelText: l.paintColourCode,
+                    hintText: '#FFFFFF',
                     border: const OutlineInputBorder(),
                   ),
                   inputFormatters: [FilteringTextInputFormatter.allow(RegExp('[#0-9a-fA-F]'))],
