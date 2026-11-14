@@ -942,6 +942,14 @@
       }
     }
   },
+  "pipetteWhereBlocks": "boxes {list}",
+  "@pipetteWhereBlocks": {
+    "placeholders": {
+      "list": {
+        "type": "String"
+      }
+    }
+  },
   "pipetteWhereAll": "all boxes",
   "pipetteWherePage": "whole page",
   "pipetteWhereLetters": "letters: {where}",
@@ -1627,6 +1635,8 @@
   },
   "mousePickPages": "Ctrl / Shift + click on a page",
   "keyPickPages": "Select several pages for the steps",
+  "mousePickBubbles": "Ctrl / Shift + click on a bubble",
+  "keyPickBubbles": "Pick several bubbles (on the page and in the Text panel): the look, who speaks, the steps and delete go to all of them; the picked boxes are dragged together",
   "settingsReset": "Reset this section",
   "settingsResetAll": "Reset all settings",
   "settingsResetTitle": "Reset the settings?",
@@ -2303,6 +2313,84 @@
       }
     }
   },
+  "findInsidePicked": "Find blocks inside each picked one",
+  "pickAllBlocks": "Pick every bubble of the page",
+  "pickHint": "Several bubbles at once: Ctrl+click adds or removes a bubble, Shift+click takes all of them up to it (on the page and in this list).",
+  "pickedCount": "Bubbles picked: {count}",
+  "@pickedCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pickedHelp": "Everything below changes in all the picked bubbles at once. The look shown is the one of bubble {number}.",
+  "@pickedHelp": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "recognizePicked": "Recognize the picked ones again",
+  "translatePicked": "Translate the picked ones again",
+  "deletePicked": "Delete the picked boxes (Delete)",
+  "unpick": "Drop the picks (Esc)",
+  "lookApply": "Apply to others…",
+  "lookApplyTitle": "The look of bubble {number} for other bubbles",
+  "@lookApplyTitle": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "lookApplyWhat": "What goes",
+  "lookApplyWhere": "Where",
+  "lookApplyNote": "The text box, the turn by default and the styled words stay each bubble's own.",
+  "lookScopePicked": "The picked bubbles ({count})",
+  "@lookScopePicked": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "lookScopePage": "All bubbles of this page ({count})",
+  "@lookScopePage": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "lookScopePickedPages": "All bubbles of the picked pages ({count})",
+  "@lookScopePickedPages": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "lookScopeAll": "All bubbles of all pages ({count})",
+  "@lookScopeAll": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "lookApplyDone": "Look changed in {count} bubbles. Undo: Ctrl+Z (for each page).",
+  "@lookApplyDone": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "lookPartEmphasis": "Bold, italic, underline",
+  "lookPartFit": "Hyphens and the bubble's shape",
+  "lookPartSize": "Size (own or as in the original)",
   "textImportFileError": "Could not read the file: {error}",
   "@textImportFileError": {
     "placeholders": {

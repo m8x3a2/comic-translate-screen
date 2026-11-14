@@ -23,10 +23,14 @@ const _colors = [
 ];
 
 class BlockStyleEditor extends ConsumerWidget {
-  const BlockStyleEditor({super.key, required this.index});
+  const BlockStyleEditor({super.key, required this.index, this.group});
 
-  /// The block of the current page.
+  /// The block of the current page whose look is shown.
   final int index;
+
+  /// Bubbles picked together ([index] among them): every change goes to all
+  /// of them as one undo step.
+  final List<int>? group;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,11 +45,22 @@ class BlockStyleEditor extends ConsumerWidget {
     // block's own.
     final r = blockRenderSettings(block, settings.render, PageLettering.of(page.blocks));
     final ws = ref.read(workspaceProvider.notifier);
-    void set(BlockStyle Function(BlockStyle s) change, {String? merge}) =>
-        ws.styleBlock(index, change, mergeKey: merge);
+    final targets = [
+      for (final i in group ?? [index])
+        if (i < page.blocks.length) i,
+    ];
+    final many = targets.length > 1;
+    void setEach(BlockStyle Function(BlockStyle s, int i) change, {String? merge}) =>
+        ws.styleBlocks(targets, change, mergeKey: merge);
+    void set(BlockStyle Function(BlockStyle s) change, {String? merge}) => setEach((s, _) => change(s), merge: merge);
     final layout = ref.watch(pageLayoutProvider);
-    final k = layout?.blockIndex.indexOf(index) ?? -1;
-    final fitted = k >= 0 ? layout!.items[k].fontSizePt : null;
+    // The size the layout gave bubble [i] (each picked bubble has its own).
+    int? fittedOf(int i) {
+      final k = layout?.blockIndex.indexOf(i) ?? -1;
+      return k >= 0 ? layout!.items[k].fontSizePt : null;
+    }
+
+    final fitted = fittedOf(index);
     final angle = s.angle ?? 0;
     final font = s.fontFamily ?? r.fontFamily;
     final fonts = {...availableFonts(), ...ref.watch(addedFontsProvider), if (font.isNotEmpty) font};
@@ -157,12 +172,13 @@ class BlockStyleEditor extends ConsumerWidget {
                   if (file != null) set((s) => s.copyWith(fontFamily: file.path));
                 },
               ),
-              IconButton(
-                tooltip: l.fontSuggest,
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.auto_awesome_outlined, size: 20),
-                onPressed: () => showFontSuggestions(context, ref, block: index),
-              ),
+              if (!many)
+                IconButton(
+                  tooltip: l.fontSuggest,
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.auto_awesome_outlined, size: 20),
+                  onPressed: () => showFontSuggestions(context, ref, block: index),
+                ),
             ],
           ),
         ),
@@ -175,8 +191,9 @@ class BlockStyleEditor extends ConsumerWidget {
                 label: Text(l.sizeAuto),
                 selected: s.fontSizePt == null && s.sourceSizePx == null,
                 visualDensity: VisualDensity.compact,
-                onSelected: (auto) =>
-                    set((s) => s.copyWith(fontSizePt: auto ? null : (fitted ?? r.maxFontSize), sourceSizePx: null)),
+                onSelected: (auto) => setEach(
+                  (s, i) => s.copyWith(fontSizePt: auto ? null : (fittedOf(i) ?? r.maxFontSize), sourceSizePx: null),
+                ),
               ),
               FilterChip(
                 label: Text(l.fromSource),
@@ -184,7 +201,7 @@ class BlockStyleEditor extends ConsumerWidget {
                 selected: s.sourceSizePx != null,
                 visualDensity: VisualDensity.compact,
                 onSelected: (_) {
-                  if (toggleSourceSize(ref, block: index) == null) {
+                  if (toggleSourceSize(ref, blocks: targets) == null) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.sizeFromSourceUnknown)));
                   }
                 },
@@ -196,9 +213,10 @@ class BlockStyleEditor extends ConsumerWidget {
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.remove, size: 18),
-                    onPressed: () => set(
-                      (s) => s.copyWith(
-                        fontSizePt: ((s.fontSizePt ?? fitted ?? r.maxFontSize) - 1).clamp(4, 200),
+                    // Each picked bubble one point smaller than its own size.
+                    onPressed: () => setEach(
+                      (s, i) => s.copyWith(
+                        fontSizePt: ((s.fontSizePt ?? fittedOf(i) ?? r.maxFontSize) - 1).clamp(4, 200),
                         sourceSizePx: null,
                       ),
                       merge: 'size:$index',
@@ -214,9 +232,9 @@ class BlockStyleEditor extends ConsumerWidget {
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     icon: const Icon(Icons.add, size: 18),
-                    onPressed: () => set(
-                      (s) => s.copyWith(
-                        fontSizePt: ((s.fontSizePt ?? fitted ?? r.minFontSize) + 1).clamp(4, 200),
+                    onPressed: () => setEach(
+                      (s, i) => s.copyWith(
+                        fontSizePt: ((s.fontSizePt ?? fittedOf(i) ?? r.minFontSize) + 1).clamp(4, 200),
                         sourceSizePx: null,
                       ),
                       merge: 'size:$index',
@@ -375,25 +393,146 @@ class BlockStyleEditor extends ConsumerWidget {
           children: [
             TextButton.icon(
               icon: const Icon(Icons.copy_all_outlined, size: 18),
-              label: Text(l.styleToAll),
-              onPressed: () {
-                final look = s.copyWith(textBox: null, angle: null, fontSizePt: null, sourceSizePx: null);
-                ws.styleAll(
-                  (other) => look.copyWith(
-                    textBox: other.textBox,
-                    angle: other.angle,
-                    fontSizePt: other.fontSizePt,
-                    sourceSizePx: other.sourceSizePx,
-                  ),
-                );
-              },
+              label: Text(l.lookApply),
+              onPressed: () => showApplyLookDialog(context, ref, index, picked: many ? targets : const []),
             ),
             TextButton.icon(
               icon: const Icon(Icons.format_clear, size: 18),
               label: Text(l.styleReset),
-              onPressed: block.style == null ? null : () => set((_) => const BlockStyle()),
+              onPressed: targets.every((i) => page.blocks[i].style == null)
+                  ? null
+                  : () => set((_) => const BlockStyle()),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+/// "Apply to others": ticks for the parts of bubble [source]'s look and
+/// where they go ([picked]: the bubbles picked with it, offered first).
+Future<void> showApplyLookDialog(BuildContext context, WidgetRef ref, int source, {List<int> picked = const []}) async {
+  final ws = ref.read(workspaceProvider);
+  final page = ws.currentPage;
+  if (page == null || source >= page.blocks.length) return;
+  final messenger = ScaffoldMessenger.of(context);
+  final l = context.l10n;
+  int bubbles(Iterable<PageEntry> pages) => pages.fold(0, (n, p) => n + p.blocks.length);
+  final result = await showDialog<(Set<LookPart>, LookScope)>(
+    context: context,
+    builder: (_) => _ApplyLookDialog(
+      number: source + 1,
+      picked: picked.length,
+      onPage: page.blocks.length,
+      pickedPages: ws.selectedPages.length > 1 ? bubbles(ws.stepPages) : 0,
+      allPages: ws.pages.length > 1 ? bubbles(ws.pages) : 0,
+    ),
+  );
+  if (result == null) return;
+  _lastLookParts = result.$1;
+  final from = page.blocks[source].style ?? const BlockStyle();
+  final count = applyLook(ref, from, result.$1, result.$2, source: source, picked: picked);
+  messenger.showSnackBar(SnackBar(content: Text(l.lookApplyDone('$count')), showCloseIcon: true));
+}
+
+/// The parts ticked last time (while the program runs).
+Set<LookPart> _lastLookParts = LookPart.usual;
+
+class _ApplyLookDialog extends StatefulWidget {
+  const _ApplyLookDialog({
+    required this.number,
+    required this.picked,
+    required this.onPage,
+    required this.pickedPages,
+    required this.allPages,
+  });
+
+  /// The source bubble's number.
+  final int number;
+
+  /// Bubbles in each place (0: the place is not offered).
+  final int picked, onPage, pickedPages, allPages;
+
+  @override
+  State<_ApplyLookDialog> createState() => _ApplyLookDialogState();
+}
+
+class _ApplyLookDialogState extends State<_ApplyLookDialog> {
+  late final _parts = {..._lastLookParts};
+  late LookScope _scope = widget.picked > 1 ? LookScope.picked : LookScope.page;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    String label(LookPart p) => switch (p) {
+      LookPart.preset => l.lookPreset,
+      LookPart.font => l.font,
+      LookPart.size => l.lookPartSize,
+      LookPart.color => l.textColor,
+      LookPart.outline => l.outline,
+      LookPart.alignment => l.alignment,
+      LookPart.emphasis => l.lookPartEmphasis,
+      LookPart.letterCase => l.textCase,
+      LookPart.lineSpacing => l.lineSpacing,
+      LookPart.fit => l.lookPartFit,
+      LookPart.vertical => l.verticalText,
+      LookPart.angle => l.rotation,
+    };
+    final places = [
+      if (widget.picked > 1) (LookScope.picked, l.lookScopePicked('${widget.picked}')),
+      (LookScope.page, l.lookScopePage('${widget.onPage}')),
+      if (widget.pickedPages > 0) (LookScope.pickedPages, l.lookScopePickedPages('${widget.pickedPages}')),
+      if (widget.allPages > 0) (LookScope.allPages, l.lookScopeAll('${widget.allPages}')),
+    ];
+    return AlertDialog(
+      title: Text(l.lookApplyTitle('${widget.number}')),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l.lookApplyWhat, style: theme.textTheme.titleSmall),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final p in LookPart.values)
+                    FilterChip(
+                      label: Text(label(p)),
+                      selected: _parts.contains(p),
+                      onSelected: (v) => setState(() => v ? _parts.add(p) : _parts.remove(p)),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(l.lookApplyNote, style: theme.textTheme.bodySmall),
+              const SizedBox(height: 16),
+              Text(l.lookApplyWhere, style: theme.textTheme.titleSmall),
+              for (final (scope, text) in places)
+                RadioListTile<LookScope>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  value: scope,
+                  // ignore: deprecated_member_use
+                  groupValue: _scope,
+                  // ignore: deprecated_member_use
+                  onChanged: (v) => setState(() => _scope = v ?? _scope),
+                  title: Text(text),
+                ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
+        FilledButton(
+          onPressed: _parts.isEmpty ? null : () => Navigator.pop(context, (_parts, _scope)),
+          child: Text(l.textImportApply),
         ),
       ],
     );

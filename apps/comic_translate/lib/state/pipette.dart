@@ -83,14 +83,19 @@ final pipetteProvider = NotifierProvider<PipetteNotifier, PipetteState>(PipetteN
 /// else the whole page (null; always for [PipetteScope.page]).
 List<BBox>? pipetteRegions(
   PageEntry page,
-  int? selected,
+  List<int> selected,
   int width,
   int height, [
   PipetteScope scope = PipetteScope.letters,
 ]) {
   final blocks = page.blocks;
   if (blocks.isEmpty || scope == PipetteScope.page) return null;
-  return textRegions(selected != null && selected < blocks.length ? [blocks[selected]] : blocks, width, height);
+  // The selected bubble, or the ones picked together; none: all of them.
+  final chosen = [
+    for (final i in selected)
+      if (i >= 0 && i < blocks.length) blocks[i],
+  ];
+  return textRegions(chosen.isEmpty ? blocks : chosen, width, height);
 }
 
 class PipetteNotifier extends Notifier<PipetteState> {
@@ -194,7 +199,7 @@ class PipetteNotifier extends Notifier<PipetteState> {
     final session = _session;
     state = state.copyWith(busy: true);
     try {
-      final regions = pipetteRegions(page, ws.selectedBlock, image.width, image.height, state.scope);
+      final regions = pipetteRegions(page, ws.blockSelection, image.width, image.height, state.scope);
       final png = await colourMaskPngInBackground(
         image,
         base,

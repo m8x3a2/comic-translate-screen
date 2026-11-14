@@ -10,16 +10,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_state.dart';
 import 'workspace.dart';
 
-/// Pages and the blocks on them the buttons act on.
-List<(PageEntry, List<int>)> _targets(WidgetRef ref, int? block) {
+/// Pages and the blocks on them the buttons act on: [block] or [blocks] of
+/// the current page, else every block of the step pages.
+List<(PageEntry, List<int>)> _targets(WidgetRef ref, int? block, [List<int>? blocks]) {
   final ws = ref.read(workspaceProvider);
-  if (block != null) {
+  final only = blocks ?? (block == null ? null : [block]);
+  if (only != null) {
     final page = ws.currentPage;
-    return page == null || block < 0 || block >= page.blocks.length
-        ? const []
-        : [
-            (page, [block]),
-          ];
+    final which = [
+      for (final i in only)
+        if (page != null && i >= 0 && i < page.blocks.length) i,
+    ];
+    return page == null || which.isEmpty ? const [] : [(page, which)];
   }
   return [
     for (final page in ws.stepPages) (page, [for (var i = 0; i < page.blocks.length; i++) i]),
@@ -45,9 +47,9 @@ bool drawnInCapitals(TextBlock b, AppSettings settings) =>
 
 /// Capitals for all the blocks when any of them is drawn in ordinary
 /// letters, else ordinary letters for all.
-void toggleCapitals(WidgetRef ref, {int? block}) {
+void toggleCapitals(WidgetRef ref, {int? block, List<int>? blocks}) {
   final settings = ref.read(settingsProvider);
-  final targets = _targets(ref, block);
+  final targets = _targets(ref, block, blocks);
   final translated = [
     for (final (page, which) in targets)
       for (final i in which)
@@ -79,8 +81,8 @@ double? sourceSizeFor(TextBlock b, PageEntry page) {
 /// Turns "size as in the original" on for the blocks (off when it is on
 /// for all of them); returns how many blocks have it now, or null when
 /// none of them knows its source size.
-int? toggleSourceSize(WidgetRef ref, {int? block}) {
-  final targets = _targets(ref, block);
+int? toggleSourceSize(WidgetRef ref, {int? block, List<int>? blocks}) {
+  final targets = _targets(ref, block, blocks);
   final known = [
     for (final (page, which) in targets)
       for (final i in which)
@@ -103,8 +105,58 @@ int? toggleSourceSize(WidgetRef ref, {int? block}) {
 }
 
 /// The automatic look again for every block.
-void resetLooks(WidgetRef ref, {int? block}) {
-  for (final (page, which) in _targets(ref, block)) {
+void resetLooks(WidgetRef ref, {int? block, List<int>? blocks}) {
+  for (final (page, which) in _targets(ref, block, blocks)) {
     _restyle(ref, page, which, (_, _) => null);
   }
 }
+
+/// Where "Apply this look" puts a bubble's look.
+enum LookScope {
+  /// The bubbles picked with Ctrl / Shift on the open page.
+  picked,
+
+  /// Every bubble of the open page.
+  page,
+
+  /// Every bubble of the pages picked in the page list.
+  pickedPages,
+
+  /// Every bubble of every page.
+  allPages,
+}
+
+/// Puts [parts] of [from] (the look of bubble [source] of the open page)
+/// into the bubbles of [scope]; [picked]: the bubbles for [LookScope.picked].
+/// Each changed page is one undo step. Returns how many bubbles changed.
+int applyLook(
+  WidgetRef ref,
+  BlockStyle from,
+  Set<LookPart> parts,
+  LookScope scope, {
+  int? source,
+  List<int> picked = const [],
+}) {
+  if (parts.isEmpty) return 0;
+  final ws = ref.read(workspaceProvider);
+  final open = ws.currentPage;
+  final List<(PageEntry, List<int>)> targets = switch (scope) {
+    LookScope.picked => _targets(ref, null, picked),
+    LookScope.page => open == null ? const [] : [(open, _all(open))],
+    LookScope.pickedPages => [for (final page in ws.stepPages) (page, _all(page))],
+    LookScope.allPages => [for (final page in ws.pages) (page, _all(page))],
+  };
+  var count = 0;
+  for (final (page, which) in targets) {
+    _restyle(ref, page, which, (b, i) {
+      final own = b.style ?? const BlockStyle();
+      if (page.id == open?.id && i == source) return own;
+      final next = own.withPartsOf(from, parts);
+      if (next != own) count++;
+      return next;
+    });
+  }
+  return count;
+}
+
+List<int> _all(PageEntry page) => [for (var i = 0; i < page.blocks.length; i++) i];

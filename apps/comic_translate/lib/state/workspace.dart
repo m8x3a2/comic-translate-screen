@@ -250,6 +250,7 @@ class WorkspaceState {
     this.current = 0,
     this.importing = false,
     this.selectedBlock,
+    this.pickedBlocks = const {},
     this.history = const {},
     this.selectedPages = const {},
     this.webtoon = false,
@@ -276,6 +277,22 @@ class WorkspaceState {
   /// Block selected in the viewer and the text panel (index into the
   /// current page's blocks).
   final int? selectedBlock;
+
+  /// Bubbles of the current page picked with Ctrl or Shift for one change
+  /// (the look, who speaks, the steps): at least two, [selectedBlock] among
+  /// them; empty: only [selectedBlock].
+  final Set<int> pickedBlocks;
+
+  /// The bubbles a change of the text panel goes to, in page order: the
+  /// picked ones, else the selected one.
+  List<int> get blockSelection {
+    final n = currentPage?.blocks.length ?? 0;
+    final all = pickedBlocks.length > 1 ? pickedBlocks : {?selectedBlock};
+    return [
+      for (final i in all)
+        if (i >= 0 && i < n) i,
+    ]..sort();
+  }
 
   /// Page id → its undo history.
   final Map<String, PageHistory> history;
@@ -325,6 +342,7 @@ class WorkspaceState {
     bool? importing,
     int? selectedBlock,
     bool clearBlock = false,
+    Set<int>? pickedBlocks,
     Map<String, PageHistory>? history,
     Set<String>? selectedPages,
     bool? webtoon,
@@ -336,6 +354,8 @@ class WorkspaceState {
     current: current ?? this.current,
     importing: importing ?? this.importing,
     selectedBlock: clearBlock ? null : (selectedBlock ?? this.selectedBlock),
+    // Another block selected (or none): the picks go, unless given anew.
+    pickedBlocks: pickedBlocks ?? (clearBlock || selectedBlock != null ? const {} : this.pickedBlocks),
     history: history ?? this.history,
     selectedPages: selectedPages ?? this.selectedPages,
     webtoon: webtoon ?? this.webtoon,
@@ -754,6 +774,40 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   void selectBlock(int? index) =>
       state = index == null ? state.copyWith(clearBlock: true) : state.copyWith(selectedBlock: index);
 
+  /// Ctrl + click on bubble [index]: adds it to the picked ones or takes it
+  /// out; [range] (Shift + click): every bubble from the selected one to it,
+  /// by their numbers. The clicked bubble becomes the selected one (its look
+  /// is shown); one bubble left: a plain selection.
+  void pickBlock(int index, {bool range = false}) {
+    final n = state.currentPage?.blocks.length ?? 0;
+    if (index < 0 || index >= n) return;
+    final from = state.selectedBlock;
+    final now = {...state.blockSelection};
+    if (range && from != null && from < n) {
+      final (a, b) = from < index ? (from, index) : (index, from);
+      now.addAll([for (var i = a; i <= b; i++) i]);
+    } else if (!now.remove(index)) {
+      now.add(index);
+    }
+    _setPicks(now, primary: now.contains(index) ? index : null);
+  }
+
+  /// Picks every bubble of the current page.
+  void pickAllBlocks() {
+    final n = state.currentPage?.blocks.length ?? 0;
+    if (n == 0) return;
+    _setPicks({for (var i = 0; i < n; i++) i}, primary: state.selectedBlock);
+  }
+
+  void _setPicks(Set<int> picks, {int? primary}) {
+    if (picks.isEmpty) {
+      state = state.copyWith(clearBlock: true);
+      return;
+    }
+    final main = primary != null && picks.contains(primary) ? primary : (picks.toList()..sort()).first;
+    state = state.copyWith(selectedBlock: main, pickedBlocks: picks.length > 1 ? picks : const {});
+  }
+
   void remove(String id) => removePages({id});
 
   /// Takes pages [ids] out of the list (their files stay on disk). The open
@@ -947,6 +1001,50 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
         b.style = s.isEmpty ? null : s;
       }, mergeKey: mergeKey);
 
+  /// Changes blocks [indexes] of the current page (copies) as one undo step;
+  /// [change] gets each block and its index.
+  void changeBlocks(Iterable<int> indexes, void Function(TextBlock block, int index) change, {String? mergeKey}) {
+    final page = state.currentPage;
+    final which = indexes.toSet();
+    if (page == null || which.isEmpty) return;
+    edit(page.id, (p) {
+      final blocks = [...p.blocks];
+      for (final i in which) {
+        if (i < 0 || i >= blocks.length) continue;
+        change(blocks[i] = blocks[i].copy(), i);
+      }
+      return p.copyWith(blocks: blocks);
+    }, mergeKey: mergeKey);
+  }
+
+  /// Changes the style of blocks [indexes] of the current page as one undo
+  /// step; [change] gets each style and the block's index.
+  void styleBlocks(
+    Iterable<int> indexes,
+    BlockStyle Function(BlockStyle style, int index) change, {
+    String? mergeKey,
+  }) => changeBlocks(indexes, (b, i) {
+    final s = change(b.style ?? const BlockStyle(), i);
+    b.style = s.isEmpty ? null : s;
+  }, mergeKey: mergeKey);
+
+  /// Takes blocks [indexes] of the current page out as one undo step.
+  void deleteBlocks(Iterable<int> indexes) {
+    final page = state.currentPage;
+    final which = indexes.toSet();
+    if (page == null || which.isEmpty) return;
+    edit(
+      page.id,
+      (p) => p.copyWith(
+        blocks: [
+          for (final (i, b) in p.blocks.indexed)
+            if (!which.contains(i)) b,
+        ],
+      ),
+    );
+    state = state.copyWith(clearBlock: true);
+  }
+
   /// Applies [change] to the style of every block of the current page.
   void styleAll(BlockStyle Function(BlockStyle style) change) {
     final page = state.currentPage;
@@ -1058,6 +1156,8 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
       pages: [for (final p in state.pages) p.id == page.id ? restored : p],
       history: {...state.history, page.id: history},
       clearBlock: selected == null || selected >= restored.blocks.length,
+      // Picks of bubbles that are gone go too.
+      pickedBlocks: state.pickedBlocks.every((i) => i < restored.blocks.length) ? state.pickedBlocks : const {},
     );
   }
 }

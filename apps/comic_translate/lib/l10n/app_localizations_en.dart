@@ -1721,6 +1721,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String pipetteWhereBlocks(String list) {
+    return 'boxes $list';
+  }
+
+  @override
   String get pipetteWhereAll => 'all boxes';
 
   @override
@@ -2669,6 +2674,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyPickPages => 'Select several pages for the steps';
+
+  @override
+  String get mousePickBubbles => 'Ctrl / Shift + click on a bubble';
+
+  @override
+  String get keyPickBubbles =>
+      'Pick several bubbles (on the page and in the Text panel): the look, who speaks, the steps and delete go to all of them; the picked boxes are dragged together';
 
   @override
   String get settingsReset => 'Reset this section';
@@ -3656,6 +3668,90 @@ class AppLocalizationsEn extends AppLocalizations {
   String textImportApplied(String count) {
     return 'Bubbles changed: $count. Undo: Ctrl+Z.';
   }
+
+  @override
+  String get findInsidePicked => 'Find blocks inside each picked one';
+
+  @override
+  String get pickAllBlocks => 'Pick every bubble of the page';
+
+  @override
+  String get pickHint =>
+      'Several bubbles at once: Ctrl+click adds or removes a bubble, Shift+click takes all of them up to it (on the page and in this list).';
+
+  @override
+  String pickedCount(String count) {
+    return 'Bubbles picked: $count';
+  }
+
+  @override
+  String pickedHelp(String number) {
+    return 'Everything below changes in all the picked bubbles at once. The look shown is the one of bubble $number.';
+  }
+
+  @override
+  String get recognizePicked => 'Recognize the picked ones again';
+
+  @override
+  String get translatePicked => 'Translate the picked ones again';
+
+  @override
+  String get deletePicked => 'Delete the picked boxes (Delete)';
+
+  @override
+  String get unpick => 'Drop the picks (Esc)';
+
+  @override
+  String get lookApply => 'Apply to others…';
+
+  @override
+  String lookApplyTitle(String number) {
+    return 'The look of bubble $number for other bubbles';
+  }
+
+  @override
+  String get lookApplyWhat => 'What goes';
+
+  @override
+  String get lookApplyWhere => 'Where';
+
+  @override
+  String get lookApplyNote =>
+      'The text box, the turn by default and the styled words stay each bubble\'s own.';
+
+  @override
+  String lookScopePicked(String count) {
+    return 'The picked bubbles ($count)';
+  }
+
+  @override
+  String lookScopePage(String count) {
+    return 'All bubbles of this page ($count)';
+  }
+
+  @override
+  String lookScopePickedPages(String count) {
+    return 'All bubbles of the picked pages ($count)';
+  }
+
+  @override
+  String lookScopeAll(String count) {
+    return 'All bubbles of all pages ($count)';
+  }
+
+  @override
+  String lookApplyDone(String count) {
+    return 'Look changed in $count bubbles. Undo: Ctrl+Z (for each page).';
+  }
+
+  @override
+  String get lookPartEmphasis => 'Bold, italic, underline';
+
+  @override
+  String get lookPartFit => 'Hyphens and the bubble\'s shape';
+
+  @override
+  String get lookPartSize => 'Size (own or as in the original)';
 
   @override
   String textImportFileError(String error) {

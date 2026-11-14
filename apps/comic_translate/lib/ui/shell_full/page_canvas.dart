@@ -74,7 +74,7 @@ class PageCanvas extends ConsumerStatefulWidget {
   ConsumerState<PageCanvas> createState() => _PageCanvasState();
 }
 
-enum _Mode { tap, newBox, moveBox, resizeBox, moveText, resizeText, rotateText, paint, pan, fit, pick }
+enum _Mode { tap, picked, newBox, moveBox, resizeBox, moveText, resizeText, rotateText, paint, pan, fit, pick }
 
 /// A drag in progress.
 class _Drag {
@@ -96,6 +96,11 @@ class _Drag {
   double draftAngle = 0;
   final points = <Point2>[];
   var moved = false;
+
+  /// A pan started with Ctrl + the left button: left without moving, it is
+  /// a Ctrl + click that picks the bubble under it.
+  var ctrlClick = false;
+  var panned = 0.0;
 
   /// Shift + click: a straight line from the end of the last stroke; its end
   /// follows the mouse until the button is let go.
@@ -249,7 +254,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
 
   void _down(PointerDownEvent e) {
     if (e.buttons == kMiddleMouseButton || (_grab && e.buttons == kPrimaryButton)) {
-      setState(() => _drag = _Drag(_Mode.pan, e.localPosition));
+      final ctrl = e.buttons == kPrimaryButton && HardwareKeyboard.instance.isControlPressed;
+      setState(() => _drag = _Drag(_Mode.pan, e.localPosition)..ctrlClick = ctrl);
       return;
     }
     if (e.buttons != kPrimaryButton) return;
@@ -261,6 +267,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     final p = e.localPosition;
     final selected = ws.selectedBlock;
     final blocks = page.blocks;
+    // Ctrl / Shift + click on a bubble picks it with the others.
+    final keys = HardwareKeyboard.instance;
+    final picking = keys.isControlPressed || keys.isShiftPressed;
+    final picks = ws.pickedBlocks;
+    void pick(int hit) => ref.read(workspaceProvider.notifier).pickBlock(hit, range: keys.isShiftPressed);
     _Drag drag;
     if (widget.readOnly) {
       drag = _Drag(_Mode.tap, p);
@@ -277,17 +288,23 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           final sel = selected != null && selected < blocks.length ? _rectOf(blocks[selected].xyxy) : null;
           final handle = sel == null ? null : _hitHandle(sel, p);
           final hit = _hitBlock(blocks, p, (i) => _rectOf(blocks[i].xyxy));
-          if (handle != null) {
+          if (picking && hit != null) {
+            pick(hit);
+            drag = _Drag(_Mode.picked, p);
+          } else if (handle != null && picks.isEmpty) {
             drag = _Drag(_Mode.resizeBox, p, index: selected, handle: handle, rect: sel);
           } else if (hit != null) {
-            ref.read(workspaceProvider.notifier).selectBlock(hit);
+            // A picked box drags the other picked ones along.
+            if (!picks.contains(hit)) ref.read(workspaceProvider.notifier).selectBlock(hit);
             drag = _Drag(_Mode.moveBox, p, index: hit, rect: _rectOf(blocks[hit].xyxy));
           } else {
             drag = _Drag(_Mode.newBox, p);
           }
         case EditorTool.text:
           final drawn = _drawn(page);
-          final sel = selected != null && drawn.contains(selected) ? _textArea(blocks, selected) : null;
+          final sel = selected != null && drawn.contains(selected) && picks.isEmpty
+              ? _textArea(blocks, selected)
+              : null;
           final angle = selected != null && selected < blocks.length ? (blocks[selected].style?.angle ?? 0.0) : 0.0;
           final corner = sel == null ? null : _hitHandle(sel, p, cornersOnly: true);
           if (sel != null && (_rotateHandle(sel) - p).distance <= _handle / _zoom) {
@@ -296,8 +313,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
             drag = _Drag(_Mode.resizeText, p, index: selected, handle: corner, rect: sel);
           } else {
             final hit = _hitBlock(blocks, p, (i) => drawn.contains(i) ? _textArea(blocks, i) : Rect.zero);
-            if (hit != null) {
-              ref.read(workspaceProvider.notifier).selectBlock(hit);
+            if (picking && hit != null) {
+              pick(hit);
+              drag = _Drag(_Mode.picked, p);
+            } else if (hit != null) {
+              if (!picks.contains(hit)) ref.read(workspaceProvider.notifier).selectBlock(hit);
               drag = _Drag(_Mode.moveText, p, index: hit, rect: _textArea(blocks, hit));
             } else {
               drag = _Drag(_Mode.tap, p);
@@ -319,6 +339,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     if (d == null || !mounted) return;
     if (d.mode == _Mode.pan) {
       widget.transform.value = Matrix4.translationValues(e.delta.dx, e.delta.dy, 0)..multiply(widget.transform.value);
+      d.panned += e.delta.distance;
+      if (d.panned >= 3) d.moved = true;
       return;
     }
     final p = e.localPosition;
@@ -346,7 +368,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         if (a > 180) a -= 360;
         // Snaps to straight within 3 degrees.
         d.draftAngle = a.abs() < 3 ? 0 : double.parse(a.toStringAsFixed(1));
-      case _Mode.tap || _Mode.pan || _Mode.fit || _Mode.pick:
+      case _Mode.tap || _Mode.picked || _Mode.pan || _Mode.fit || _Mode.pick:
         break;
     }
     setState(() {});
@@ -361,6 +383,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     final ws = ref.read(workspaceProvider.notifier);
     switch (d.mode) {
       case _Mode.pan:
+        // Ctrl + click without moving: picks the bubble with the others.
+        if (d.ctrlClick && !d.moved && !widget.readOnly) _select(d.start, pick: true);
+      case _Mode.picked:
         break;
       case _Mode.tap:
         if (!d.moved) _select(d.start);
@@ -386,7 +411,17 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         }
       case _Mode.moveBox || _Mode.resizeBox:
         final box = d.draft == null ? null : _boxOf(d.draft!);
-        if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
+        final picks = ref.read(workspaceProvider).pickedBlocks;
+        if (d.moved && d.mode == _Mode.moveBox && picks.length > 1 && picks.contains(d.index) && d.draft != null) {
+          // The picked boxes move together, as one undo step.
+          final dx = (d.draft!.left - d.rect!.left).round(), dy = (d.draft!.top - d.rect!.top).round();
+          if (dx != 0 || dy != 0) {
+            ws.changeBlocks(picks, (b, _) {
+              final r = b.xyxy;
+              b.moveBoxTo(BBox(r.x1 + dx, r.y1 + dy, r.x2 + dx, r.y2 + dy));
+            });
+          }
+        } else if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
           ws.changeBlock(d.index!, (b) => b.moveBoxTo(box));
         }
       case _Mode.moveText || _Mode.resizeText:
@@ -409,8 +444,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     setState(() {});
   }
 
-  void _select(Offset p) {
+  /// Selects the bubble at [p]; with Ctrl / Shift held (or [pick]) adds it
+  /// to the picked ones instead.
+  void _select(Offset p, {bool pick = false}) {
     final page = widget.page;
+    final keys = HardwareKeyboard.instance;
     final drawn = _drawn(page);
     final view = ref.read(editorProvider).view;
     final hit = _hitBlock(
@@ -420,7 +458,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           ? _textArea(page.blocks, i).expandToInclude(_rectOf(page.blocks[i].xyxy))
           : _rectOf(page.blocks[i].xyxy),
     );
-    ref.read(workspaceProvider.notifier).selectBlock(hit);
+    if (hit != null && (pick || keys.isControlPressed || keys.isShiftPressed)) {
+      ref.read(workspaceProvider.notifier).pickBlock(hit, range: keys.isShiftPressed);
+    } else {
+      ref.read(workspaceProvider.notifier).selectBlock(hit);
+    }
   }
 
   MouseCursor _cursor(EditorState editor) {
@@ -441,6 +483,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     final page = widget.page;
     final editor = ref.watch(editorProvider);
     final selected = widget.active ? ref.watch(workspaceProvider.select((s) => s.selectedBlock)) : null;
+    final picked = widget.active ? ref.watch(workspaceProvider.select((s) => s.pickedBlocks)) : const <int>{};
     final colors = Theme.of(context).colorScheme;
     final result = editor.view == ViewMode.result;
     // The mask view: what cleaning works on with the mask over it, no translation.
@@ -532,6 +575,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
                   page: page,
                   editor: editor,
                   selected: selected,
+                  picked: picked,
                   layout: layout,
                   engines: engines,
                   areaOf: (i) => _textArea(page.blocks, i),
@@ -616,6 +660,7 @@ class _OverlayPainter extends CustomPainter {
     required this.page,
     required this.editor,
     required this.selected,
+    required this.picked,
     required this.layout,
     required this.engines,
     required this.areaOf,
@@ -631,6 +676,9 @@ class _OverlayPainter extends CustomPainter {
   final PageEntry page;
   final EditorState editor;
   final int? selected;
+
+  /// Bubbles picked together (two or more), marked like the selected one.
+  final Set<int> picked;
   final RenderLayout? layout;
   final TextEngines? engines;
   final Rect Function(int index) areaOf;
@@ -665,9 +713,16 @@ class _OverlayPainter extends CustomPainter {
     if (showBoxes) {
       for (final (i, b) in blocks.indexed) {
         var r = Rect.fromLTRB(b.xyxy.x1.toDouble(), b.xyxy.y1.toDouble(), b.xyxy.x2.toDouble(), b.xyxy.y2.toDouble());
-        final isSel = i == selected;
+        final isSel = i == selected || picked.contains(i);
         if (d != null && d.index == i && d.draft != null && (d.mode == _Mode.moveBox || d.mode == _Mode.resizeBox)) {
           r = d.draft!;
+        } else if (d != null &&
+            d.mode == _Mode.moveBox &&
+            d.draft != null &&
+            picked.contains(d.index) &&
+            picked.contains(i)) {
+          // The other picked boxes follow the dragged one.
+          r = r.shift(d.draft!.topLeft - d.rect!.topLeft);
         }
         canvas.drawRect(r, line(isSel ? colors.tertiary : colors.primary, isSel ? 2.5 : 1.5));
         final label = TextPainter(
@@ -682,7 +737,7 @@ class _OverlayPainter extends CustomPainter {
           textDirection: TextDirection.ltr,
         )..layout();
         label.paint(canvas, r.topLeft - Offset(0, label.height));
-        if (isSel && editor.tool == EditorTool.boxes) handles(r);
+        if (isSel && picked.isEmpty && editor.tool == EditorTool.boxes) handles(r);
       }
       if (d?.mode == _Mode.newBox && d!.draft != null) canvas.drawRect(d.draft!, line(colors.tertiary, 2));
     }
@@ -690,7 +745,7 @@ class _OverlayPainter extends CustomPainter {
     if (editor.tool == EditorTool.text && layout != null) {
       for (final i in layout!.blockIndex) {
         if (i >= blocks.length) continue;
-        final isSel = i == selected;
+        final isSel = i == selected || picked.contains(i);
         var r = areaOf(i);
         if (d != null && d.index == i && d.draft != null) r = d.draft!;
         _dashed(
@@ -699,7 +754,7 @@ class _OverlayPainter extends CustomPainter {
           line(isSel ? colors.tertiary : colors.primary.withValues(alpha: 0.7), isSel ? 2 : 1),
           6 * px,
         );
-        if (isSel) {
+        if (isSel && picked.isEmpty) {
           handles(r, cornersOnly: true);
           final rh = rotateHandle(r);
           canvas.drawLine(r.topCenter, rh, line(colors.tertiary, 1.5));

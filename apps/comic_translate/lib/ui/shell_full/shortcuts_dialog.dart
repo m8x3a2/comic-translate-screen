@@ -28,6 +28,7 @@ Future<void> showShortcuts(BuildContext context) {
         (l.mouseGrab, l.mouseMiddleHelp),
         (l.mouseDouble, l.mouseDoubleHelp),
         (l.mousePickPages, l.keyPickPages),
+        (l.mousePickBubbles, l.keyPickBubbles),
       ],
     ),
     (l.keysGroupWindow, rows(ShortcutGroup.window)),

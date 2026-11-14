@@ -868,9 +868,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case ShortcutAction.brushLarger:
         brushBy(1);
       case ShortcutAction.deleteBox:
-        final i = state.selectedBlock;
-        if (busy || i == null) return false;
-        ws.deleteBlock(i);
+        // The picked bubbles all go; else the selected one.
+        final which = state.blockSelection;
+        if (busy || which.isEmpty) return false;
+        ws.deleteBlocks(which);
       case ShortcutAction.navigator:
         if (state.pages.isEmpty) return false;
         ref.read(settingsProvider.notifier).change((s) => s.showNavigator = !s.showNavigator);

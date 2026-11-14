@@ -351,3 +351,68 @@ bool _sameRuns(List<StyledRun> a, List<StyledRun> b) {
 }
 
 String _hex(int argb) => '#${(argb & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
+
+/// Parts of a bubble's look that "Apply this look" carries to other bubbles
+/// (the owner's idea: you tick what goes). The text box and the styled words
+/// belong to one bubble's text and never go.
+enum LookPart {
+  /// The look preset.
+  preset,
+  font,
+
+  /// A fixed size or "size as in the original".
+  size,
+  color,
+
+  /// On or off, its colour and width.
+  outline,
+  alignment,
+
+  /// Bold, italic, underline.
+  emphasis,
+  letterCase,
+  lineSpacing,
+
+  /// Hyphens and fitting to the bubble's shape.
+  fit,
+  vertical,
+  angle;
+
+  /// Ticked when the window opens: everything but what belongs to one
+  /// bubble's place (size, turn, vertical text).
+  static const usual = {preset, font, color, outline, alignment, emphasis, letterCase, lineSpacing, fit};
+
+  static Set<LookPart> parseAll(Iterable<Object?>? names) => {
+    for (final n in names ?? const <Object?>[])
+      ?values.asNameMap()[n],
+  };
+}
+
+extension BlockStyleParts on BlockStyle {
+  /// This style with [parts] as in [from] (also unset where [from] has them
+  /// unset: the automatic look goes along too).
+  BlockStyle withPartsOf(BlockStyle from, Set<LookPart> parts) {
+    var s = this;
+    for (final part in parts) {
+      s = switch (part) {
+        LookPart.preset => s.copyWith(preset: from.preset),
+        LookPart.font => s.copyWith(fontFamily: from.fontFamily),
+        LookPart.size => s.copyWith(fontSizePt: from.fontSizePt, sourceSizePx: from.sourceSizePx),
+        LookPart.color => s.copyWith(color: from.color),
+        LookPart.outline => s.copyWith(
+          outline: from.outline,
+          outlineColor: from.outlineColor,
+          outlineWidth: from.outlineWidth,
+        ),
+        LookPart.alignment => s.copyWith(alignment: from.alignment),
+        LookPart.emphasis => s.copyWith(bold: from.bold, italic: from.italic, underline: from.underline),
+        LookPart.letterCase => s.copyWith(upperCase: from.upperCase),
+        LookPart.lineSpacing => s.copyWith(lineSpacing: from.lineSpacing),
+        LookPart.fit => s.copyWith(hyphenate: from.hyphenate, shapeFit: from.shapeFit),
+        LookPart.vertical => s.copyWith(vertical: from.vertical),
+        LookPart.angle => s.copyWith(angle: from.angle),
+      };
+    }
+    return s;
+  }
+}

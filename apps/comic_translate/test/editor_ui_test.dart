@@ -808,4 +808,178 @@ void main() {
     expect(crop, findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  /// The translated page with three bubbles: «Один», «Два», «Три».
+  Future<ProviderContainer> openThreeBubbles(WidgetTester tester) async {
+    final container = await openTranslatedPage(tester);
+    final page = container.read(workspaceProvider).currentPage!;
+    final first = page.blocks.single;
+    container
+        .read(workspaceProvider.notifier)
+        .edit(
+          page.id,
+          (p) => p.copyWith(
+            blocks: [
+              for (final (k, word) in ['Один', 'Два', 'Три'].indexed)
+                first.copy()
+                  ..xyxy = BBox(4 + 38 * k, 10, 36 + 38 * k, 40)
+                  ..translation = word,
+            ],
+          ),
+        );
+    await tester.pump();
+    return container;
+  }
+
+  /// Scrolls the text panel to the card with [word] (an open card may push
+  /// it out of sight) and clicks it, holding [key] when given.
+  Future<void> clickCard(WidgetTester tester, String word, [LogicalKeyboardKey? key]) async {
+    final list = find.descendant(of: find.byType(TextPanel), matching: find.byType(Scrollable)).first;
+    await tester.scrollUntilVisible(find.text(word), 120, scrollable: list);
+    await tester.pump();
+    if (key != null) await tester.sendKeyDownEvent(key);
+    await tester.tap(find.text(word));
+    if (key != null) await tester.sendKeyUpEvent(key);
+    await tester.pump();
+  }
+
+  testWidgets('Ctrl / Shift + click picks bubbles; their look and speaker change together', (tester) async {
+    final container = await openThreeBubbles(tester);
+    WorkspaceState ws() => container.read(workspaceProvider);
+    List<TextBlock> blocks() => ws().currentPage!.blocks;
+    container.read(workspaceProvider.notifier).selectBlock(0);
+    await tester.pump();
+
+    // Ctrl + click on the third card: the first and the third.
+    await clickCard(tester, 'Три', LogicalKeyboardKey.controlLeft);
+    expect(ws().blockSelection, [0, 2]);
+    expect(ws().selectedBlock, 2);
+    expect(find.text('Выбрано пузырей: 2: 1, 3'), findsOneWidget);
+    // Shift + click on the second: everything from the third to it.
+    await clickCard(tester, 'Два', LogicalKeyboardKey.shiftLeft);
+    expect(ws().blockSelection, [0, 1, 2]);
+    expect(find.text('Выбрано пузырей: 3: 1, 2, 3'), findsOneWidget);
+
+    // Bold for all three as one undo step.
+    final bold = find.byTooltip('Жирный');
+    await tester.ensureVisible(bold);
+    await tester.pump();
+    await tester.tap(bold);
+    await tester.pump();
+    expect([for (final b in blocks()) b.style?.bold], [true, true, true]);
+    container.read(workspaceProvider.notifier).undo();
+    expect([for (final b in blocks()) b.style?.bold], [null, null, null]);
+
+    // Who speaks: mixed shows no choice; a click sets it for all.
+    container.read(workspaceProvider.notifier).changeBlock(1, (b) => b.speaker = Speaker.male);
+    container.read(workspaceProvider.notifier).pickAllBlocks();
+    await tester.pump();
+    final female = find.descendant(of: find.byType(SegmentedButton<Speaker?>), matching: find.text('Ж'));
+    await tester.ensureVisible(female);
+    await tester.pump();
+    await tester.tap(female);
+    await tester.pump();
+    expect([for (final b in blocks()) b.speaker], [Speaker.female, Speaker.female, Speaker.female]);
+
+    // Ctrl + click on a picked card takes it out; one left is a plain selection.
+    await clickCard(tester, 'Два', LogicalKeyboardKey.controlLeft);
+    expect(ws().blockSelection, [0, 2]);
+    container.read(workspaceProvider.notifier).pickBlock(0);
+    expect(ws().pickedBlocks, isEmpty);
+    expect(ws().blockSelection, [2]);
+
+    // Delete takes all the picked boxes, Ctrl+Z brings them back.
+    container.read(workspaceProvider.notifier).pickAllBlocks();
+    await tester.pump();
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pump();
+    expect(blocks(), isEmpty);
+    await ctrl(tester, LogicalKeyboardKey.keyZ);
+    expect(blocks().length, 3);
+    expect(ws().pickedBlocks, isEmpty);
+  });
+
+  testWidgets('"Apply to others": the ticked parts of one bubble\'s look go to the page', (tester) async {
+    final container = await openThreeBubbles(tester);
+    final ws = container.read(workspaceProvider.notifier);
+    List<TextBlock> blocks() => container.read(workspaceProvider).currentPage!.blocks;
+    ws.styleBlock(1, (s) => s.copyWith(fontSizePt: 7, italic: true));
+    ws.styleBlock(0, (s) => s.copyWith(color: 0xFFD32F2F, bold: true, fontSizePt: 30, angle: 10.0));
+    ws.selectBlock(0);
+    await tester.pump();
+    final apply = find.text('Применить к другим…');
+    await tester.ensureVisible(apply);
+    await tester.pump();
+    await tester.tap(apply);
+    await tester.pumpAndSettle();
+    expect(find.text('Оформление пузыря 1 — другим пузырям'), findsOneWidget);
+    expect(find.text('Все пузыри этой страницы (3)'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Применить'));
+    await tester.pumpAndSettle();
+    final b = blocks();
+    // The look went, the size and the turn stayed each bubble's own.
+    expect(
+      [for (final x in b.skip(1)) (x.style?.color, x.style?.bold, x.style?.italic)],
+      [(0xFFD32F2F, true, null), (0xFFD32F2F, true, null)],
+    );
+    expect((b[1].style?.fontSizePt, b[1].style?.angle, b[2].style?.fontSizePt), (7, null, null));
+    expect(b[0].style?.fontSizePt, 30);
+    expect(find.textContaining('Оформление изменено у пузырей: 2'), findsOneWidget);
+  });
+
+  testWidgets('on the page: Ctrl + click picks boxes, a picked box drags the others along', (tester) async {
+    final container = await openThreeBubbles(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyR);
+    await tester.pump();
+    expect(container.read(editorProvider).tool, EditorTool.boxes);
+    await settle(tester);
+    final canvas = find.byType(PageCanvas);
+    for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    await settle(tester);
+    final rect = tester.getRect(canvas);
+    Offset at(double x, double y) => rect.topLeft + Offset(rect.width * x / 120, rect.height * y / 80);
+    WorkspaceState ws() => container.read(workspaceProvider);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
+    await mouse.addPointer(location: at(2, 70));
+    Future<void> click(Offset where, [LogicalKeyboardKey? key]) async {
+      if (key != null) await tester.sendKeyDownEvent(key);
+      await mouse.moveTo(where);
+      await tester.pump();
+      await mouse.down(where);
+      await tester.pump();
+      await mouse.up();
+      if (key != null) await tester.sendKeyUpEvent(key);
+      await tester.pump();
+    }
+
+    await click(at(20, 25));
+    expect(ws().selectedBlock, 0);
+    await click(at(96, 25), LogicalKeyboardKey.controlLeft);
+    expect(ws().blockSelection, [0, 2]);
+    // A plain click on a picked box keeps the picks; dragging it moves both.
+    final start = at(96, 25);
+    await mouse.moveTo(start);
+    await mouse.down(start);
+    await tester.pump();
+    for (var i = 0; i < 4; i++) {
+      await mouse.moveBy(Offset(0, rect.height * 2.5 / 80));
+      await tester.pump();
+    }
+    await mouse.up();
+    await tester.pump();
+    final boxes = [for (final b in ws().currentPage!.blocks) b.xyxy];
+    expect([boxes[0].y1, boxes[1].y1, boxes[2].y1], [20, 10, 20]);
+    expect(ws().blockSelection, [0, 2]);
+    // One undo step for the move.
+    container.read(workspaceProvider.notifier).undo();
+    expect([for (final b in ws().currentPage!.blocks) b.xyxy.y1], [10, 10, 10]);
+    // Esc drops the picks.
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(ws().blockSelection, isEmpty);
+  });
 }

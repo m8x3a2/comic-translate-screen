@@ -623,10 +623,12 @@ class _ColourMaskOptions extends ConsumerWidget {
       final ws = ref.watch(workspaceProvider);
       final page = ws.currentPage;
       final colours = pipette.coloursOf(page);
-      final selected = ws.selectedBlock;
-      final boxes = selected != null && page != null && selected < page.blocks.length
-          ? l.pipetteWhereBlock(selected + 1)
-          : l.pipetteWhereAll;
+      final selected = ws.blockSelection;
+      final boxes = selected.isEmpty
+          ? l.pipetteWhereAll
+          : selected.length == 1
+          ? l.pipetteWhereBlock(selected.single + 1)
+          : l.pipetteWhereBlocks(selected.map((i) => i + 1).join(', '));
       final where = page == null || page.blocks.isEmpty || pipette.scope == PipetteScope.page
           ? l.pipetteWherePage
           : pipette.scope == PipetteScope.letters

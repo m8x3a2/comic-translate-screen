@@ -5,6 +5,7 @@ library;
 
 import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -60,6 +61,8 @@ class _TextPanelState extends ConsumerState<TextPanel> {
     final page = ws.currentPage;
     final blocks = page?.blocks ?? const <TextBlock>[];
     final findOpen = ref.watch(findOpenProvider);
+    final picked = ws.blockSelection;
+    final group = picked.length > 1;
     final busy =
         ref.watch(batchProvider) is BatchRunning ||
         (ref.watch(stepsProvider).running && ref.watch(stepsProvider).pageId == page?.id) ||
@@ -80,29 +83,42 @@ class _TextPanelState extends ConsumerState<TextPanel> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-          child: Row(
-            children: [
-              PanelToggle(Panels.text, label: l.textPanel),
-              Expanded(child: Text(l.textPanel, style: theme.textTheme.titleSmall)),
-              IconButton(
-                tooltip: l.splitWords,
-                onPressed: busy || blocks.isEmpty ? null : () => _splitWords(context, ref),
-                icon: const Icon(Icons.space_bar),
-              ),
-              _LookMenu(enabled: !busy && blocks.isNotEmpty),
-              IconButton(
-                tooltip: l.findReplace,
-                isSelected: findOpen,
-                onPressed: () => ref.read(findOpenProvider.notifier).set(!findOpen),
-                icon: const Icon(Icons.find_replace),
-              ),
-              // What the translator over the network answered for this page.
-              IconButton(
-                tooltip: l.historyPage,
-                onPressed: page == null ? null : () => showTranslatorHistory(context, page: page.name),
-                icon: const Icon(Icons.history),
-              ),
-            ],
+          // A narrow panel: "pick every bubble" goes into the look menu.
+          child: LayoutBuilder(
+            builder: (context, c) {
+              final roomy = c.maxWidth >= _roomyHeader;
+              void pickAll() => ref.read(workspaceProvider.notifier).pickAllBlocks();
+              return Row(
+                children: [
+                  PanelToggle(Panels.text, label: l.textPanel),
+                  Expanded(child: Text(l.textPanel, style: theme.textTheme.titleSmall)),
+                  IconButton(
+                    tooltip: l.splitWords,
+                    onPressed: busy || blocks.isEmpty ? null : () => _splitWords(context, ref),
+                    icon: const Icon(Icons.space_bar),
+                  ),
+                  _LookMenu(enabled: !busy && blocks.isNotEmpty, pickAll: roomy || blocks.length < 2 ? null : pickAll),
+                  if (roomy)
+                    IconButton(
+                      tooltip: '${l.pickAllBlocks}\n${l.pickHint}',
+                      onPressed: blocks.length < 2 ? null : pickAll,
+                      icon: const Icon(Icons.select_all),
+                    ),
+                  IconButton(
+                    tooltip: l.findReplace,
+                    isSelected: findOpen,
+                    onPressed: () => ref.read(findOpenProvider.notifier).set(!findOpen),
+                    icon: const Icon(Icons.find_replace),
+                  ),
+                  // What the translator over the network answered for this page.
+                  IconButton(
+                    tooltip: l.historyPage,
+                    onPressed: page == null ? null : () => showTranslatorHistory(context, page: page.name),
+                    icon: const Icon(Icons.history),
+                  ),
+                ],
+              );
+            },
           ),
         ),
         if (findOpen) const FindReplacePanel(),
@@ -131,12 +147,23 @@ class _TextPanelState extends ConsumerState<TextPanel> {
               : ListView.separated(
                   controller: _scroll,
                   padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-                  itemCount: blocks.length,
+                  // Several bubbles picked: their shared editor first.
+                  itemCount: blocks.length + (group ? 1 : 0),
                   separatorBuilder: (_, _) => const SizedBox(height: 4),
-                  itemBuilder: (context, i) => KeyedSubtree(
-                    key: _keys.putIfAbsent(i, GlobalKey.new),
-                    child: _BlockCard(index: i, block: blocks[i], selected: ws.selectedBlock == i, readOnly: busy),
-                  ),
+                  itemBuilder: (context, k) {
+                    if (group && k == 0) return _GroupEditor(picked: picked, readOnly: busy);
+                    final i = group ? k - 1 : k;
+                    return KeyedSubtree(
+                      key: _keys.putIfAbsent(i, GlobalKey.new),
+                      child: _BlockCard(
+                        index: i,
+                        block: blocks[i],
+                        selected: !group && ws.selectedBlock == i,
+                        picked: group && picked.contains(i),
+                        readOnly: busy,
+                      ),
+                    );
+                  },
                 ),
         ),
       ],
@@ -175,7 +202,9 @@ Future<void> _splitWords(BuildContext context, WidgetRef ref, {int? block}) asyn
 /// columns and paragraphs (the way chosen under the arrow) as one undo step;
 /// the new blocks are recognized at once when the block was. Says what
 /// happened.
-Future<void> _findInside(BuildContext context, WidgetRef ref, int index) async {
+/// Returns into how many blocks it was cut (0: nothing found or an error);
+/// [report] false: says nothing (a caller doing several reports once).
+Future<int> _findInside(BuildContext context, WidgetRef ref, int index, {bool report = true}) async {
   final l = context.l10n;
   final messenger = ScaffoldMessenger.of(context);
   final ui = DialogBatchUi(context);
@@ -183,7 +212,7 @@ Future<void> _findInside(BuildContext context, WidgetRef ref, int index) async {
   final workspace = ref.read(workspaceProvider.notifier);
   final steps = ref.read(stepsProvider.notifier);
   final page = ref.read(workspaceProvider).currentPage;
-  if (page == null || index < 0 || index >= page.blocks.length) return;
+  if (page == null || index < 0 || index >= page.blocks.length) return 0;
   final original = page.blocks[index];
   final settings = ref.read(settingsProvider);
   final mode = InsideSplit.values.firstWhere((m) => m.name == settings.splitInside, orElse: () => InsideSplit.auto);
@@ -192,11 +221,11 @@ Future<void> _findInside(BuildContext context, WidgetRef ref, int index) async {
     parts = await splitBlockInsideInBackground(page.path, original.copy(), mode, page.sourceOf(settings));
   } on Object catch (e) {
     messenger.showSnackBar(SnackBar(content: Text('$e')));
-    return;
+    return 0;
   }
   if (parts.isEmpty) {
-    messenger.showSnackBar(SnackBar(content: Text(l.findInsideNone)));
-    return;
+    if (report) messenger.showSnackBar(SnackBar(content: Text(l.findInsideNone)));
+    return 0;
   }
   for (final b in parts) {
     b
@@ -204,11 +233,25 @@ Future<void> _findInside(BuildContext context, WidgetRef ref, int index) async {
       ..sourceLang = original.sourceLang
       ..targetLang = original.targetLang;
   }
-  if (!workspace.replaceBlock(page.id, index, original, parts)) return;
-  messenger.showSnackBar(SnackBar(content: Text(l.findInsideDone('${parts.length}'))));
+  if (!workspace.replaceBlock(page.id, index, original, parts)) return 0;
+  if (report) messenger.showSnackBar(SnackBar(content: Text(l.findInsideDone('${parts.length}'))));
   if (original.text.trim().isNotEmpty) {
     await steps.run(ManualStep.recognize, ui, blocks: [for (var k = 0; k < parts.length; k++) index + k]);
   }
+  return parts.length;
+}
+
+/// "Find blocks inside" for each of the picked bubbles, from the last one
+/// (the numbers of the ones before stay); says once how many blocks came out.
+Future<void> _findInsideMany(BuildContext context, WidgetRef ref, List<int> picked) async {
+  final l = context.l10n;
+  final messenger = ScaffoldMessenger.of(context);
+  var made = 0;
+  for (final i in [...picked]..sort((a, b) => b - a)) {
+    if (!context.mounted) break;
+    made += await _findInside(context, ref, i, report: false);
+  }
+  messenger.showSnackBar(SnackBar(content: Text(made == 0 ? l.findInsideNone : l.findInsideDone('$made'))));
 }
 
 /// "Find blocks inside | ▾" of the selected block: the arrow chooses how
@@ -274,23 +317,45 @@ class _FindInsideButton extends ConsumerWidget {
 }
 
 class _BlockCard extends ConsumerWidget {
-  const _BlockCard({required this.index, required this.block, required this.selected, required this.readOnly});
+  const _BlockCard({
+    required this.index,
+    required this.block,
+    required this.selected,
+    required this.readOnly,
+    this.picked = false,
+  });
 
   final int index;
   final TextBlock block;
   final bool selected;
   final bool readOnly;
 
+  /// Picked with others (Ctrl / Shift): marked, edited together above.
+  final bool picked;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final ws = ref.read(workspaceProvider.notifier);
     return Material(
-      color: selected ? theme.colorScheme.secondaryContainer : theme.colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(8),
+      color: selected || picked ? theme.colorScheme.secondaryContainer : theme.colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: picked ? BorderSide(color: theme.colorScheme.tertiary, width: 2) : BorderSide.none,
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onTap: selected ? null : () => ws.selectBlock(index),
+        // Ctrl / Shift + click picks bubbles for one change.
+        onTap: selected
+            ? null
+            : () {
+                final keys = HardwareKeyboard.instance;
+                if (keys.isControlPressed || keys.isShiftPressed) {
+                  ws.pickBlock(index, range: keys.isShiftPressed);
+                } else {
+                  ws.selectBlock(index);
+                }
+              },
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: selected
@@ -304,6 +369,7 @@ class _BlockCard extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('${index + 1}', style: theme.textTheme.labelMedium),
+                          if (picked) Icon(Icons.check_circle, size: 16, color: theme.colorScheme.tertiary),
                           // Who speaks, when told.
                           if (block.speaker case final s?)
                             Text(
@@ -536,13 +602,113 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
   }
 }
 
+/// Several bubbles picked with Ctrl / Shift: what they share, changed for
+/// all of them at once (who speaks, the look, the steps, delete).
+class _GroupEditor extends ConsumerWidget {
+  const _GroupEditor({required this.picked, required this.readOnly});
+
+  /// The picked bubbles, in page order.
+  final List<int> picked;
+  final bool readOnly;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final ws = ref.read(workspaceProvider.notifier);
+    final state = ref.watch(workspaceProvider);
+    final page = state.currentPage;
+    if (page == null) return const SizedBox.shrink();
+    final shown = state.selectedBlock ?? picked.first;
+    final busy = readOnly || ref.watch(stepsProvider).running || ref.watch(batchProvider) is BatchRunning;
+    final speakers = {for (final i in picked) page.blocks[i].speaker};
+    Widget action(String tip, IconData icon, VoidCallback? onPressed) => IconButton(
+      tooltip: tip,
+      visualDensity: VisualDensity.compact,
+      onPressed: busy ? null : onPressed,
+      icon: Icon(icon, size: 20),
+    );
+    return Material(
+      color: theme.colorScheme.secondaryContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: theme.colorScheme.tertiary, width: 2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      '${l.pickedCount('${picked.length}')}: ${picked.map((i) => i + 1).join(', ')}',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                  ),
+                ),
+                Wrap(
+                  children: [
+                    action(
+                      l.recognizePicked,
+                      Icons.abc,
+                      () => ref
+                          .read(stepsProvider.notifier)
+                          .run(ManualStep.recognize, DialogBatchUi(context), blocks: picked),
+                    ),
+                    action(
+                      l.translatePicked,
+                      Icons.translate,
+                      () => ref
+                          .read(stepsProvider.notifier)
+                          .run(ManualStep.translate, DialogBatchUi(context), blocks: picked),
+                    ),
+                    action(l.findInsidePicked, Icons.view_column_outlined, () => _findInsideMany(context, ref, picked)),
+                    action(l.deletePicked, Icons.delete_outline, () => ws.deleteBlocks(picked)),
+                    IconButton(
+                      tooltip: l.unpick,
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => ws.selectBlock(null),
+                      icon: const Icon(Icons.close, size: 20),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Text(l.pickedHelp('${shown + 1}'), style: theme.textTheme.bodySmall),
+            const SizedBox(height: 6),
+            _SpeakerRow(
+              // Different speakers: none of the buttons is on.
+              speaker: speakers.length == 1 ? speakers.single : null,
+              mixed: speakers.length > 1,
+              onChanged: busy ? null : (v) => ws.changeBlocks(picked, (b, _) => b.speaker = v),
+            ),
+            const SizedBox(height: 8),
+            IgnorePointer(
+              ignoring: busy,
+              child: BlockStyleEditor(index: shown, group: picked),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// "Who speaks: — / M / F / N" of the selected block: the translation takes
 /// the matching grammatical gender.
 class _SpeakerRow extends StatelessWidget {
-  const _SpeakerRow({required this.speaker, required this.onChanged});
+  const _SpeakerRow({required this.speaker, required this.onChanged, this.mixed = false});
 
   final Speaker? speaker;
   final ValueChanged<Speaker?>? onChanged;
+
+  /// Picked bubbles with different speakers: no button is on.
+  final bool mixed;
 
   @override
   Widget build(BuildContext context) {
@@ -580,8 +746,13 @@ class _SpeakerRow extends StatelessWidget {
             ButtonSegment(value: Speaker.female, label: Text(l.speakerFemale), tooltip: l.speakerFemaleTip),
             ButtonSegment(value: Speaker.neuter, label: Text(l.speakerNeuter), tooltip: l.speakerNeuterTip),
           ],
-          selected: {speaker},
-          onSelectionChanged: onChanged == null ? null : (s) => onChanged!(s.first),
+          selected: mixed ? const {} : {speaker},
+          emptySelectionAllowed: mixed,
+          onSelectionChanged: onChanged == null
+              ? null
+              : (s) {
+                  if (s.isNotEmpty) onChanged!(s.first);
+                },
         ),
       ],
     );
@@ -602,11 +773,17 @@ String tinyTextAdvice(AppLocalizations l, AppSettings settings, double px) =>
     ? l.tinyTextTryHigh('${px.round()}')
     : l.tinyTextLarger('${px.round()}');
 
+/// Width of the text panel's header with room for every button.
+const _roomyHeader = 340.0;
+
 /// The look buttons for the step pages, in one menu to save room.
 class _LookMenu extends ConsumerWidget {
-  const _LookMenu({required this.enabled});
+  const _LookMenu({required this.enabled, this.pickAll});
 
   final bool enabled;
+
+  /// "Pick every bubble" when the header has no room for its button.
+  final VoidCallback? pickAll;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -621,6 +798,7 @@ class _LookMenu extends ConsumerWidget {
       icon: const Icon(Icons.format_paint_outlined),
       onSelected: (action) => action(),
       itemBuilder: (context) => [
+        if (pickAll case final pick?) ...[item(Icons.select_all, l.pickAllBlocks, pick), const PopupMenuDivider()],
         item(Icons.text_fields, l.caseToggle, () => toggleCapitals(ref)),
         item(Icons.format_size, l.sizeFromSourcePages, () => _sourceSize(context, ref)),
         item(Icons.format_clear, l.styleResetPages, () => resetLooks(ref)),

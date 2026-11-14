@@ -1720,6 +1720,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String pipetteWhereBlocks(String list) {
+    return 'рамки $list';
+  }
+
+  @override
   String get pipetteWhereAll => 'все рамки';
 
   @override
@@ -2667,6 +2672,13 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keyPickPages => 'Выбрать несколько страниц для шагов';
+
+  @override
+  String get mousePickBubbles => 'Ctrl / Shift + щелчок по пузырю';
+
+  @override
+  String get keyPickBubbles =>
+      'Выбрать несколько пузырей (на странице и в панели «Текст»): оформление, «кто говорит», шаги и удаление — сразу для всех; выбранные рамки перетаскиваются вместе';
 
   @override
   String get settingsReset => 'Сбросить раздел';
@@ -3655,6 +3667,90 @@ class AppLocalizationsRu extends AppLocalizations {
   String textImportApplied(String count) {
     return 'Изменено пузырей: $count. Отменить: Ctrl+Z.';
   }
+
+  @override
+  String get findInsidePicked => 'Найти блоки внутри каждого выбранного';
+
+  @override
+  String get pickAllBlocks => 'Выбрать все пузыри страницы';
+
+  @override
+  String get pickHint =>
+      'Несколько пузырей сразу: Ctrl+щелчок — добавить или убрать пузырь, Shift+щелчок — все подряд до него (на странице и в этом списке).';
+
+  @override
+  String pickedCount(String count) {
+    return 'Выбрано пузырей: $count';
+  }
+
+  @override
+  String pickedHelp(String number) {
+    return 'Всё ниже меняется сразу у всех выбранных пузырей. Показано оформление пузыря $number.';
+  }
+
+  @override
+  String get recognizePicked => 'Распознать выбранные заново';
+
+  @override
+  String get translatePicked => 'Перевести выбранные заново';
+
+  @override
+  String get deletePicked => 'Удалить выбранные рамки (Delete)';
+
+  @override
+  String get unpick => 'Снять выбор (Esc)';
+
+  @override
+  String get lookApply => 'Применить к другим…';
+
+  @override
+  String lookApplyTitle(String number) {
+    return 'Оформление пузыря $number — другим пузырям';
+  }
+
+  @override
+  String get lookApplyWhat => 'Что перенести';
+
+  @override
+  String get lookApplyWhere => 'Куда';
+
+  @override
+  String get lookApplyNote =>
+      'Рамка текста, поворот по умолчанию и выделенные слова остаются у каждого пузыря свои.';
+
+  @override
+  String lookScopePicked(String count) {
+    return 'Выбранные пузыри ($count)';
+  }
+
+  @override
+  String lookScopePage(String count) {
+    return 'Все пузыри этой страницы ($count)';
+  }
+
+  @override
+  String lookScopePickedPages(String count) {
+    return 'Все пузыри выбранных страниц ($count)';
+  }
+
+  @override
+  String lookScopeAll(String count) {
+    return 'Все пузыри всех страниц ($count)';
+  }
+
+  @override
+  String lookApplyDone(String count) {
+    return 'Оформление изменено у пузырей: $count. Отменить: Ctrl+Z (на каждой странице отдельно).';
+  }
+
+  @override
+  String get lookPartEmphasis => 'Жирный, курсив, подчёркнутый';
+
+  @override
+  String get lookPartFit => 'Перенос и форма пузыря';
+
+  @override
+  String get lookPartSize => 'Размер (свой или как в оригинале)';
 
   @override
   String textImportFileError(String error) {

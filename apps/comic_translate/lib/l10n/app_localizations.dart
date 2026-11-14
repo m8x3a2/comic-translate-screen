@@ -3068,6 +3068,12 @@ abstract class AppLocalizations {
   /// **'box {n}'**
   String pipetteWhereBlock(int n);
 
+  /// No description provided for @pipetteWhereBlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'boxes {list}'**
+  String pipetteWhereBlocks(String list);
+
   /// No description provided for @pipetteWhereAll.
   ///
   /// In en, this message translates to:
@@ -4675,6 +4681,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select several pages for the steps'**
   String get keyPickPages;
+
+  /// No description provided for @mousePickBubbles.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl / Shift + click on a bubble'**
+  String get mousePickBubbles;
+
+  /// No description provided for @keyPickBubbles.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick several bubbles (on the page and in the Text panel): the look, who speaks, the steps and delete go to all of them; the picked boxes are dragged together'**
+  String get keyPickBubbles;
 
   /// No description provided for @settingsReset.
   ///
@@ -6289,6 +6307,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bubbles changed: {count}. Undo: Ctrl+Z.'**
   String textImportApplied(String count);
+
+  /// No description provided for @findInsidePicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Find blocks inside each picked one'**
+  String get findInsidePicked;
+
+  /// No description provided for @pickAllBlocks.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick every bubble of the page'**
+  String get pickAllBlocks;
+
+  /// No description provided for @pickHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Several bubbles at once: Ctrl+click adds or removes a bubble, Shift+click takes all of them up to it (on the page and in this list).'**
+  String get pickHint;
+
+  /// No description provided for @pickedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubbles picked: {count}'**
+  String pickedCount(String count);
+
+  /// No description provided for @pickedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything below changes in all the picked bubbles at once. The look shown is the one of bubble {number}.'**
+  String pickedHelp(String number);
+
+  /// No description provided for @recognizePicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Recognize the picked ones again'**
+  String get recognizePicked;
+
+  /// No description provided for @translatePicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate the picked ones again'**
+  String get translatePicked;
+
+  /// No description provided for @deletePicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the picked boxes (Delete)'**
+  String get deletePicked;
+
+  /// No description provided for @unpick.
+  ///
+  /// In en, this message translates to:
+  /// **'Drop the picks (Esc)'**
+  String get unpick;
+
+  /// No description provided for @lookApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply to others…'**
+  String get lookApply;
+
+  /// No description provided for @lookApplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The look of bubble {number} for other bubbles'**
+  String lookApplyTitle(String number);
+
+  /// No description provided for @lookApplyWhat.
+  ///
+  /// In en, this message translates to:
+  /// **'What goes'**
+  String get lookApplyWhat;
+
+  /// No description provided for @lookApplyWhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Where'**
+  String get lookApplyWhere;
+
+  /// No description provided for @lookApplyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The text box, the turn by default and the styled words stay each bubble\'s own.'**
+  String get lookApplyNote;
+
+  /// No description provided for @lookScopePicked.
+  ///
+  /// In en, this message translates to:
+  /// **'The picked bubbles ({count})'**
+  String lookScopePicked(String count);
+
+  /// No description provided for @lookScopePage.
+  ///
+  /// In en, this message translates to:
+  /// **'All bubbles of this page ({count})'**
+  String lookScopePage(String count);
+
+  /// No description provided for @lookScopePickedPages.
+  ///
+  /// In en, this message translates to:
+  /// **'All bubbles of the picked pages ({count})'**
+  String lookScopePickedPages(String count);
+
+  /// No description provided for @lookScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All bubbles of all pages ({count})'**
+  String lookScopeAll(String count);
+
+  /// No description provided for @lookApplyDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Look changed in {count} bubbles. Undo: Ctrl+Z (for each page).'**
+  String lookApplyDone(String count);
+
+  /// No description provided for @lookPartEmphasis.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold, italic, underline'**
+  String get lookPartEmphasis;
+
+  /// No description provided for @lookPartFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Hyphens and the bubble\'s shape'**
+  String get lookPartFit;
+
+  /// No description provided for @lookPartSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Size (own or as in the original)'**
+  String get lookPartSize;
 
   /// No description provided for @textImportFileError.
   ///
