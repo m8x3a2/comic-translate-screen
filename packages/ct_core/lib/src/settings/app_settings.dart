@@ -89,6 +89,7 @@ class AppSettings {
     this.settingsLastView = 'full',
     this.appIcon = 'green',
     this.lookParts,
+    this.textPanelWidth,
     this.testMode = false,
     this.autoBugReport = true,
     this.projectAutosave = true,
@@ -274,6 +275,10 @@ class AppSettings {
   /// the usual ones.
   List<String>? lookParts;
 
+  /// Width of the "Text" panel dragged by hand, in logical pixels; null:
+  /// it follows the window.
+  double? textPanelWidth;
+
   /// Save per-stage artifacts for every run (see docs/DIAGNOSTICS.md).
   bool testMode;
 
@@ -449,6 +454,7 @@ class AppSettings {
       if (settingsLastView != 'full') 'settings_last_view': settingsLastView,
       if (appIcon != 'green') 'app_icon': appIcon,
       if (lookParts != null) 'look_parts': lookParts,
+      if (textPanelWidth != null) 'text_panel_width': textPanelWidth,
     },
     'test_mode': testMode,
     'auto_bug_report': autoBugReport,
@@ -575,6 +581,7 @@ class AppSettings {
       settingsLastView: ui['settings_last_view'] == 'panel' ? 'panel' : 'full',
       appIcon: appIcons.contains(ui['app_icon']) ? ui['app_icon'] as String : 'green',
       lookParts: ui['look_parts'] is List ? [...(ui['look_parts'] as List).whereType<String>()] : null,
+      textPanelWidth: (ui['text_panel_width'] as num?)?.toDouble().clamp(200.0, 1200.0),
       testMode: pick(json, 'test_mode', defaults.testMode),
       autoBugReport: pick(json, 'auto_bug_report', defaults.autoBugReport),
       projectAutosave: pick(projects, 'autosave', defaults.projectAutosave),
@@ -593,20 +600,17 @@ class AppSettings {
       modelPromptPresets: {
         if (json['model_prompt_presets'] case final Map all)
           for (final kind in ModelPromptKind.values)
-            if (all[kind.name] case final List list)
-              kind: [for (final item in list) ?PromptPreset.fromJson(item)],
+            if (all[kind.name] case final List list) kind: [for (final item in list) ?PromptPreset.fromJson(item)],
       },
       requestTemplates: {
         if (json['request_templates'] case final Map templates)
           for (final entry in templates.entries)
-            if (entry.key case final String id when id.isNotEmpty)
-              id: ?RequestTemplate.fromJson(entry.value),
+            if (entry.key case final String id when id.isNotEmpty) id: ?RequestTemplate.fromJson(entry.value),
       },
       ownServerKeys: {
         if (json['own_server_keys'] case final Map keys)
           for (final entry in keys.entries)
-            if (entry.key case final String id)
-              id: ?OwnServerKeys.fromJson(entry.value),
+            if (entry.key case final String id) id: ?OwnServerKeys.fromJson(entry.value),
       },
       approvedNetworkPlugins: {...?(json['approved_network_plugins'] as List?)?.whereType<String>()},
       extra: {

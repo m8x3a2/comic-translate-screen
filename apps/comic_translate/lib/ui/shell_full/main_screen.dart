@@ -742,10 +742,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                   const Expanded(child: PageViewer()),
                                   // The settings panel takes the place of the text.
                                   if (ref.watch(settingsPanelProvider) == null) ...[
-                                    const VerticalDivider(width: 1),
                                     if (ref.watch(translationReviewProvider))
-                                      SizedBox(
-                                        width: (c.maxWidth * 0.22).clamp(240.0, 340.0),
+                                      _ResizableTextPanel(
+                                        room: c.maxWidth,
                                         child: const Column(
                                           children: [
                                             Expanded(child: TranslationReviewPanel()),
@@ -753,13 +752,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                                           ],
                                         ),
                                       )
-                                    else if (panelHidden(ref, Panels.text))
-                                      FoldedSidePanel(Panels.text, label: l.textPanel)
-                                    else
-                                      SizedBox(
-                                        width: (c.maxWidth * 0.22).clamp(240.0, 340.0),
-                                        child: const TextPanel(),
-                                      ),
+                                    else if (panelHidden(ref, Panels.text)) ...[
+                                      const VerticalDivider(width: 1),
+                                      FoldedSidePanel(Panels.text, label: l.textPanel),
+                                    ] else
+                                      _ResizableTextPanel(room: c.maxWidth, child: const TextPanel()),
                                   ],
                                 ],
                               ),
@@ -821,8 +818,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
 
     void brushBy(double sign) {
       if (state.pages.isEmpty) return;
-      final size = ref.read(editorProvider).brushSize;
-      editor.setBrushSize(size + sign * math.max(1.0, size * 0.15));
+      final size = ref.read(editorProvider).currentBrushSize;
+      editor.setCurrentBrushSize(size + sign * math.max(1.0, size * 0.15));
     }
 
     switch (action) {
@@ -847,7 +844,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case ShortcutAction.nextPage:
         ws.select(state.current + 1);
       case ShortcutAction.deselect:
-        // Esc drops the pieces picked for "Fit to letters" first.
+        // Esc leaves "As it will be" first.
+        if (ref.read(editorProvider).preview) {
+          editor.togglePreview();
+          return true;
+        }
+        // Then it drops the pieces picked for "Fit to letters".
         if (ref.read(editorProvider).fitPicks.isNotEmpty) {
           editor.clearFitPicks();
           return true;
@@ -868,6 +870,11 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         tool(EditorTool.fit);
       case ShortcutAction.pipette:
         tool(EditorTool.pick);
+      case ShortcutAction.draw:
+        tool(EditorTool.draw);
+      case ShortcutAction.preview:
+        if (state.pages.isEmpty) return false;
+        editor.togglePreview();
       case ShortcutAction.brushSmaller:
         brushBy(-1);
       case ShortcutAction.brushLarger:
@@ -1486,3 +1493,63 @@ class _StatusBar extends ConsumerWidget {
 /// [pictureToPng] off the UI thread (a top-level function: the closure must
 /// not hold the screen).
 Future<Uint8List> _pngInBackground(ClipboardPicture picture) => Isolate.run(() => pictureToPng(picture));
+
+/// The "Text" panel at the right; its left edge is dragged to make it wider
+/// or narrower (remembered in the settings), a double click there gives it
+/// back the width that follows the window.
+class _ResizableTextPanel extends ConsumerStatefulWidget {
+  const _ResizableTextPanel({required this.room, required this.child});
+
+  /// Width of the window part the panel is in.
+  final double room;
+  final Widget child;
+
+  @override
+  ConsumerState<_ResizableTextPanel> createState() => _ResizableTextPanelState();
+}
+
+class _ResizableTextPanelState extends ConsumerState<_ResizableTextPanel> {
+  /// The width while the edge is dragged.
+  double? _dragged;
+
+  /// The width that follows the window.
+  double get _auto => (widget.room * 0.22).clamp(240.0, 340.0);
+
+  /// The page keeps at least half the room.
+  double _clamp(double w) => w.clamp(220.0, math.max(220.0, math.min(900.0, widget.room * 0.5)));
+
+  @override
+  Widget build(BuildContext context) {
+    final saved = ref.watch(settingsProvider.select((s) => s.textPanelWidth));
+    final width = _clamp(_dragged ?? saved ?? _auto);
+    final colors = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        MouseRegion(
+          cursor: SystemMouseCursors.resizeColumn,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragUpdate: (d) => setState(() => _dragged = _clamp((_dragged ?? width) - d.delta.dx)),
+            onHorizontalDragEnd: (_) {
+              final w = _dragged;
+              setState(() => _dragged = null);
+              if (w != null) ref.read(settingsProvider.notifier).change((s) => s.textPanelWidth = w.roundToDouble());
+            },
+            onDoubleTap: () => ref.read(settingsProvider.notifier).change((s) => s.textPanelWidth = null),
+            child: SizedBox(
+              width: 7,
+              child: Center(
+                child: Container(
+                  width: _dragged == null ? 1 : 3,
+                  color: _dragged == null ? colors.outlineVariant : colors.primary,
+                ),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: width, child: widget.child),
+      ],
+    );
+  }
+}

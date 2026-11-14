@@ -332,7 +332,7 @@ class _PageTile extends ConsumerWidget {
             child: Icon(Icons.check_circle, size: 18, color: theme.colorScheme.primary),
           )
         : const SizedBox(width: 18);
-    final thumb = page.translatedPath ?? page.cleanPath ?? page.path;
+    final thumb = page.translatedPath ?? page.finalBasePath;
     return GestureDetector(
       onSecondaryTapDown: canRemove
           ? (d) => showPageMenu(

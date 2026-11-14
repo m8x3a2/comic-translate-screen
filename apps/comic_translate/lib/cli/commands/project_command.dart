@@ -132,7 +132,13 @@ class ExportCommand extends CtsCommand {
         if (page.cleanImage == null && !page.blocks.any((b) => hasTranslatableContent(b.translation))) continue;
         String? translated;
         if (options.translated) {
-          final base = await ImageCodec.readFile(page.cleanImage ?? page.image);
+          final paints = paintOpsFromJson(page.state['paints']);
+          var base = await ImageCodec.readFile(page.cleanImage ?? page.image);
+          // The touch-ups painted by hand over the cleaned page.
+          if (paints.isNotEmpty) {
+            final original = paintsUseOriginal(paints) ? await ImageCodec.readFile(page.image) : null;
+            base = bakePaints(base, paints, original: original);
+          }
           final above = data.state['webtoon'] == true && i > 0 ? await _above(data.pages[i - 1], targetOf) : null;
           if (options.imageFormat == 'psd') {
             final doc = await buildPagePsd(

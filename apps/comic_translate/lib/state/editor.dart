@@ -28,6 +28,28 @@ enum EditorTool {
 
   /// The mask pipette: a click on a letter adds its colour to the mask.
   pick,
+
+  /// Touch-ups over the cleaned page: see [DrawMode] (new in this project).
+  draw,
+}
+
+/// What the drawing tool does.
+enum DrawMode {
+  /// Paints the chosen colour.
+  brush,
+
+  /// Takes the touch-ups back off (the cleaned page shows again).
+  eraser,
+
+  /// Brings back the original picture where it is painted.
+  original,
+
+  /// One click fills a bubble or a patch of one colour.
+  fill,
+
+  /// One click takes the colour under the mouse (Alt + click in the other
+  /// modes).
+  pipette,
 }
 
 /// What the viewer shows.
@@ -54,7 +76,36 @@ class EditorState {
     this.fitPicks = const [],
     this.fitPage,
     this.maskOnly = false,
+    this.drawMode = DrawMode.brush,
+    this.paintSize = 12,
+    this.paintColor = 0xFFFFFFFF,
+    this.recentColors = const [],
+    this.fillTolerance = 40,
+    this.fillSpots = true,
+    this.preview = false,
   });
+
+  /// What the drawing tool does.
+  final DrawMode drawMode;
+
+  /// The drawing brush diameter in page pixels.
+  final double paintSize;
+
+  /// ARGB colour of the drawing brush and the fill.
+  final int paintColor;
+
+  /// Colours used last, newest first.
+  final List<int> recentColors;
+
+  /// The fill takes in colours that differ by this much (0–255 per channel).
+  final int fillTolerance;
+
+  /// The fill covers spots inside what it fills (leftover letters).
+  final bool fillSpots;
+
+  /// "As it will be": the page as export draws it, without boxes, mask and
+  /// handles; clicks do nothing.
+  final bool preview;
 
   /// The mask view shows the mask alone: white on black, without the page.
   final bool maskOnly;
@@ -78,6 +129,17 @@ class EditorState {
 
   bool get paints => tool == EditorTool.brush || tool == EditorTool.eraser;
 
+  /// The drawing tool paints strokes (brush, eraser, original).
+  bool get drawsStrokes =>
+      tool == EditorTool.draw &&
+      (drawMode == DrawMode.brush || drawMode == DrawMode.eraser || drawMode == DrawMode.original);
+
+  /// A brush outline follows the mouse.
+  bool get showsBrush => paints || drawsStrokes;
+
+  /// The size of the brush in use (the mask brush or the drawing brush).
+  double get currentBrushSize => tool == EditorTool.draw ? paintSize : brushSize;
+
   /// The picks of the page [pageId] (none on another page).
   List<Point2> picksOf(String? pageId) => pageId != null && pageId == fitPage ? fitPicks : const [];
 
@@ -90,8 +152,22 @@ class EditorState {
     List<Point2>? fitPicks,
     String? fitPage,
     bool? maskOnly,
+    DrawMode? drawMode,
+    double? paintSize,
+    int? paintColor,
+    List<int>? recentColors,
+    int? fillTolerance,
+    bool? fillSpots,
+    bool? preview,
   }) => EditorState(
     maskOnly: maskOnly ?? this.maskOnly,
+    drawMode: drawMode ?? this.drawMode,
+    paintSize: paintSize ?? this.paintSize,
+    paintColor: paintColor ?? this.paintColor,
+    recentColors: recentColors ?? this.recentColors,
+    fillTolerance: fillTolerance ?? this.fillTolerance,
+    fillSpots: fillSpots ?? this.fillSpots,
+    preview: preview ?? this.preview,
     tool: tool ?? this.tool,
     view: view ?? this.view,
     brushSize: brushSize ?? this.brushSize,
@@ -117,6 +193,15 @@ class FocusRequest extends Notifier<int> {
 }
 
 const minBrushSize = 2.0;
+
+/// The drawing brush may be one pixel thin (fine touch-ups).
+const minPaintSize = 1.0;
+
+/// How many recent drawing colours are kept.
+const maxRecentColors = 8;
+
+/// Most tolerance of the fill.
+const maxFillTolerance = 120;
 const maxBrushSize = 200.0;
 
 final editorProvider = NotifierProvider<EditorNotifier, EditorState>(EditorNotifier.new);
@@ -129,15 +214,55 @@ class EditorNotifier extends Notifier<EditorState> {
     // The mask tools open the mask view, the text tool the translation.
     final view = switch (tool) {
       EditorTool.pan || EditorTool.boxes => state.view,
-      EditorTool.text => ViewMode.result,
+      EditorTool.text || EditorTool.draw => ViewMode.result,
       EditorTool.brush || EditorTool.eraser || EditorTool.fit || EditorTool.pick => ViewMode.mask,
     };
-    state = state.copyWith(tool: tool, view: view);
+    state = state.copyWith(tool: tool, view: view, preview: false);
     if (tool != EditorTool.fit) clearFitPicks();
   }
 
+  /// The drawing mode to go back to after the pipette.
+  var _beforePipette = DrawMode.brush;
+
+  /// Picks the drawing tool in [mode].
+  void setDrawMode(DrawMode mode) {
+    if (mode == DrawMode.pipette && state.drawMode != DrawMode.pipette) _beforePipette = state.drawMode;
+    setTool(EditorTool.draw);
+    state = state.copyWith(drawMode: mode);
+  }
+
+  /// A colour was taken with the pipette button: back to what was drawn.
+  void endPipette() {
+    if (state.tool == EditorTool.draw && state.drawMode == DrawMode.pipette) {
+      state = state.copyWith(drawMode: _beforePipette);
+    }
+  }
+
+  /// Makes [argb] the drawing colour (it joins the recent ones).
+  void setPaintColor(int argb) {
+    final c = argb | 0xFF000000;
+    state = state.copyWith(
+      paintColor: c,
+      recentColors: [c, ...state.recentColors.where((r) => r != c)].take(maxRecentColors).toList(),
+    );
+  }
+
+  /// The size of the brush in use.
+  void setCurrentBrushSize(double size) => state.tool == EditorTool.draw ? setPaintSize(size) : setBrushSize(size);
+
+  void setPaintSize(double size) => state = state.copyWith(paintSize: size.clamp(minPaintSize, maxBrushSize));
+
+  void setFillTolerance(int value) => state = state.copyWith(fillTolerance: value.clamp(0, maxFillTolerance));
+
+  void toggleFillSpots() => state = state.copyWith(fillSpots: !state.fillSpots);
+
+  /// Turns "As it will be" on or off.
+  void togglePreview() => state = state.copyWith(preview: !state.preview);
+
   void setView(ViewMode view) {
     final tool = switch (view) {
+      // Touch-ups are drawn over the translated page.
+      ViewMode.original || ViewMode.mask when state.tool == EditorTool.draw => EditorTool.pan,
       ViewMode.original when state.tool != EditorTool.boxes => EditorTool.pan,
       // No translation is shown to edit.
       ViewMode.mask when state.tool == EditorTool.text => EditorTool.pan,

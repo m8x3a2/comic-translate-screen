@@ -165,6 +165,58 @@ void main() {
     expect(saved.pages.first.blocks.single.translation, 'Привет!');
   });
 
+  test('touch-ups: one undo step each, drawn into a file, kept by the project', () async {
+    final c = start();
+    await openPages(c);
+    final ws = c.read(workspaceProvider.notifier);
+    final id = c.read(workspaceProvider).pages.first.id;
+    ws.addPaint(
+      const PaintOp(kind: PaintKind.brush, points: [Point2(20, 20)], width: 10, color: 0xFFFF0000),
+      pageId: id,
+    );
+    ws.addPaint(
+      const PaintOp(kind: PaintKind.fill, color: 0xFF0000FF, runs: [0, 0, 5]),
+      pageId: id,
+    );
+    var page = c.read(workspaceProvider).byId(id)!;
+    expect(page.paints, hasLength(2));
+    expect(page.paintsReady, isFalse);
+    expect(page.finalBasePath, page.path, reason: 'until drawn in, the cleaned page');
+
+    page = (await ws.ensurePainted(id))!;
+    expect(page.paintedPath, isNotNull);
+    final image = await ImageCodec.readFile(page.finalBasePath);
+    (int, int, int) at(int x, int y) {
+      final i = image.offset(x, y);
+      return (image.data[i], image.data[i + 1], image.data[i + 2]);
+    }
+
+    expect(at(20, 20), (255, 0, 0));
+    expect(at(2, 0), (0, 0, 255));
+    expect(at(60, 50), (255, 255, 255));
+    expect(File(page.path).existsSync(), isTrue);
+
+    // Undo takes the fill back; the drawn file was made after it, so it goes too.
+    ws.undo();
+    page = c.read(workspaceProvider).byId(id)!;
+    expect(page.paints.single.kind, PaintKind.brush);
+    expect(page.paintedPath, isNull);
+
+    final path = p.join(dir.path, 'out', 'paints.ctsproj');
+    expect(await c.read(projectProvider.notifier).save(to: path), isTrue);
+    ws.clear();
+    await c.read(projectProvider.notifier).open(path);
+    final back = c.read(workspaceProvider).pages.first;
+    expect(back.paints.single.toJson(), page.paints.single.toJson());
+
+    // Removing them all is one step too.
+    ws.select(0);
+    ws.clearPaints();
+    expect(c.read(workspaceProvider).pages.first.paints, isEmpty);
+    ws.undo();
+    expect(c.read(workspaceProvider).pages.first.paints, hasLength(1));
+  });
+
   test('autosave can be turned off; Ctrl+S still saves', () async {
     final c = start();
     await c.read(settingsProvider.notifier).change((s) => s.projectAutosave = false);

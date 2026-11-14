@@ -6,6 +6,7 @@
 /// is just the previous value.
 library;
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -72,6 +73,8 @@ class PageEntry {
     this.maskPath,
     this.overflowPath,
     this.strokes = const [],
+    this.paints = const [],
+    this.paintedPath,
     this.blocks = const [],
     this.renderScale = 1.0,
     this.exported = false,
@@ -116,6 +119,15 @@ class PageEntry {
   /// Brush and eraser strokes over [maskPath], in page pixels.
   final List<MaskStroke> strokes;
 
+  /// Touch-ups painted by hand over the cleaned page ([basePath]), under
+  /// the translation.
+  final List<PaintOp> paints;
+
+  /// [basePath] with [paints] drawn in (a cache for export and drawing,
+  /// made by [WorkspaceNotifier.ensurePainted]; cleared when either
+  /// changes).
+  final String? paintedPath;
+
   /// Detected blocks with text and translation, in original page
   /// coordinates.
   final List<TextBlock> blocks;
@@ -141,8 +153,17 @@ class PageEntry {
   /// Something was translated or cleaned: the page can be exported.
   bool get isDone => cleanPath != null || blocks.any((b) => hasTranslatableContent(b.translation));
 
-  /// The image the translation is drawn on.
+  /// The cleaned page (the original until cleaned), under the touch-ups:
+  /// what cleaning and the mask tools work on.
   String get basePath => cleanPath ?? path;
+
+  /// The image the translation is drawn on: [basePath] with the touch-ups.
+  /// While they are not drawn in yet ([WorkspaceNotifier.ensurePainted]),
+  /// [basePath].
+  String get finalBasePath => paints.isEmpty ? basePath : (paintedPath ?? basePath);
+
+  /// The touch-ups are drawn into [paintedPath].
+  bool get paintsReady => paints.isEmpty || paintedPath != null;
 
   /// There is a mask to clean with.
   bool get hasMask => maskPath != null || strokes.any((s) => !s.erase);
@@ -158,6 +179,8 @@ class PageEntry {
     Object? maskPath = _keep,
     Object? overflowPath = _keep,
     List<MaskStroke>? strokes,
+    List<PaintOp>? paints,
+    Object? paintedPath = _keep,
     List<TextBlock>? blocks,
     double? renderScale,
     bool? exported,
@@ -167,6 +190,14 @@ class PageEntry {
   }) {
     T? pick<T>(Object? v, T? old) => identical(v, _keep) ? old : v as T?;
     final rendered = pick<String>(translatedPath, this.translatedPath);
+    final clean = pick<String>(cleanPath, this.cleanPath);
+    final newPaints = paints ?? this.paints;
+    // The drawn-in touch-ups go with a new cleaned page or new touch-ups.
+    final painted = !identical(paintedPath, _keep)
+        ? paintedPath as String?
+        : clean == this.cleanPath && identical(newPaints, this.paints)
+        ? this.paintedPath
+        : null;
     return PageEntry(
       id: id,
       name: name,
@@ -176,10 +207,12 @@ class PageEntry {
       stage: pick(stage, this.stage),
       reason: pick(reason, this.reason),
       translatedPath: rendered,
-      cleanPath: pick(cleanPath, this.cleanPath),
+      cleanPath: clean,
       maskPath: pick(maskPath, this.maskPath),
       overflowPath: pick(overflowPath, this.overflowPath),
       strokes: strokes ?? this.strokes,
+      paints: newPaints,
+      paintedPath: painted,
       blocks: blocks ?? this.blocks,
       renderScale: renderScale ?? this.renderScale,
       exported: exported ?? (rendered != null && rendered != this.translatedPath ? false : this.exported),
@@ -198,6 +231,8 @@ class PageSnapshot {
       maskPath = p.maskPath,
       overflowPath = p.overflowPath,
       strokes = p.strokes,
+      paints = p.paints,
+      paintedPath = p.paintedPath,
       translatedPath = p.translatedPath,
       renderScale = p.renderScale,
       handEdited = p.handEdited;
@@ -207,6 +242,8 @@ class PageSnapshot {
   final String? maskPath;
   final String? overflowPath;
   final List<MaskStroke> strokes;
+  final List<PaintOp> paints;
+  final String? paintedPath;
   final String? translatedPath;
   final double renderScale;
   final bool handEdited;
@@ -217,6 +254,8 @@ class PageSnapshot {
     maskPath: maskPath,
     overflowPath: overflowPath,
     strokes: strokes,
+    paints: paints,
+    paintedPath: paintedPath,
     translatedPath: translatedPath,
     renderScale: renderScale,
     exported: false,
@@ -432,8 +471,21 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
   Directory? _session;
   var _nextId = 0;
 
+  /// Touch-ups being drawn into a file, by page.
+  final _painting = <String, Future<void>>{};
+
+  /// Touch-ups drawn in shortly after the last change, by page.
+  final _paintTimers = <String, Timer>{};
+
   @override
-  WorkspaceState build() => const WorkspaceState();
+  WorkspaceState build() {
+    ref.onDispose(() {
+      for (final t in _paintTimers.values) {
+        t.cancel();
+      }
+    });
+    return const WorkspaceState();
+  }
 
   /// Cache folder of this session: unpacked archives and results.
   Directory get sessionDir {
@@ -1102,6 +1154,65 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     if (page != null) edit(page.id, (p) => p.copyWith(strokes: [...p.strokes, stroke]));
   }
 
+  /// Adds a touch-up to page [pageId] (the current one by default) as one
+  /// undo step.
+  void addPaint(PaintOp op, {String? pageId}) {
+    final page = pageId == null ? state.currentPage : state.byId(pageId);
+    if (page == null) return;
+    edit(page.id, (p) => p.copyWith(paints: [...p.paints, op]));
+    _paintSoon(page.id);
+  }
+
+  /// Removes every touch-up of the current page (one undo step).
+  void clearPaints() {
+    final page = state.currentPage;
+    if (page == null || page.paints.isEmpty) return;
+    edit(page.id, (p) => p.copyWith(paints: const []));
+  }
+
+  /// How long after the last touch-up it is drawn into a file.
+  static const paintDelay = Duration(milliseconds: 700);
+
+  void _paintSoon(String id) {
+    _paintTimers.remove(id)?.cancel();
+    _paintTimers[id] = Timer(paintDelay, () {
+      _paintTimers.remove(id);
+      unawaited(ensurePainted(id).catchError((Object _) => state.byId(id)));
+    });
+  }
+
+  /// Draws the touch-ups of page [id] into a file ([PageEntry.paintedPath])
+  /// unless that is done; returns the page as it is then.
+  Future<PageEntry?> ensurePainted(String id) async {
+    for (var tries = 0; tries < 5; tries++) {
+      final page = state.byId(id);
+      if (page == null || page.paintsReady) return page;
+      final running = _painting[id];
+      if (running != null) {
+        await running;
+        continue;
+      }
+      final job = _paint(page);
+      _painting[id] = job;
+      try {
+        await job;
+      } finally {
+        if (identical(_painting[id], job)) _painting.remove(id);
+      }
+    }
+    return state.byId(id);
+  }
+
+  Future<void> _paint(PageEntry page) async {
+    final file = p.join(pageDir(page.id).path, 'painted_${DateTime.now().microsecondsSinceEpoch}.png');
+    await _bakePaintsInBackground(page.basePath, paintsUseOriginal(page.paints) ? page.path : null, page.paints, file);
+    // Only if nothing changed meanwhile.
+    updatePage(
+      page.id,
+      (p) => p.basePath == page.basePath && identical(p.paints, page.paints) ? p.copyWith(paintedPath: file) : p,
+    );
+  }
+
   /// Removes the mask and the strokes of the current page.
   /// Sets the languages of the current page, or of every page with [all]
   /// (original "Set for all"). Not an undo step, as in the original.
@@ -1192,8 +1303,18 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
       // Picks of bubbles that are gone go too.
       pickedBlocks: state.pickedBlocks.every((i) => i < restored.blocks.length) ? state.pickedBlocks : const {},
     );
+    if (!restored.paintsReady) _paintSoon(page.id);
   }
 }
+
+/// [bakePaints] of the image in [base] (with the page before cleaning in
+/// [original]) written to [out] as PNG, in the background.
+Future<void> _bakePaintsInBackground(String base, String? original, List<PaintOp> ops, String out) =>
+    Isolate.run(() async {
+      final image = await ImageCodec.readFile(base);
+      final before = original == null ? null : await ImageCodec.readFile(original);
+      await File(out).writeAsBytes(ImageCodec.encodePng(bakePaints(image, ops, original: before)), flush: true);
+    });
 
 /// [findRepeatedFiles] off the UI thread (a top-level function: the closure
 /// must not hold the notifier).

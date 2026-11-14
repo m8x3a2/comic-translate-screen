@@ -27,6 +27,15 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
 
 ### Deliberate differences from the original
 
+- Touch-ups over the cleaned page (new, `paint_op.dart`, tool "Drawing"): a
+  brush with a colour, an eraser of the touch-ups, a brush that brings back the
+  original picture, a fill of one click (it also covers spots inside it smaller
+  than half of it, so a click on the gutter does not fill panels) and a colour
+  pipette. They are kept as operations (`PageEntry.paints`, the project's page
+  state `paints`), lie between the cleaned page and the translation, survive a
+  new cleaning (which still works on the page under them) and are drawn into a
+  file (`paintedPath`) for export, PSD and `cts project export`. "As it will be"
+  shows the page as export draws it, without boxes and mask.
 - Lettering as in the source (new, `source_style.dart`): when a block is read,
   its letters are measured on the page (`TextBlock.sourceStyle`): letter
   height (cap height of capitals, x-height band otherwise), stroke weight

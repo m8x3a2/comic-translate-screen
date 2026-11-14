@@ -4940,4 +4940,78 @@ class AppLocalizationsRu extends AppLocalizations {
   String shortcutsFailed(String error) {
     return 'Не удалось изменить ярлыки: $error';
   }
+
+  @override
+  String get toolDraw =>
+      'Рисование (D): поправить картинку после очистки — кисть, ластик, «Оригинал», заливка, пипетка';
+
+  @override
+  String get drawBrush =>
+      'Кисть: закрашивает выбранным цветом. Shift + щелчок — прямая линия от прошлой точки';
+
+  @override
+  String get drawEraser =>
+      'Ластик: стирает ваши мазки — снова видна очищенная страница';
+
+  @override
+  String get drawOriginal =>
+      'Оригинал: возвращает исходный рисунок там, где проведёте (если очистка задела картинку)';
+
+  @override
+  String get drawFill =>
+      'Заливка: щелчок закрашивает пузырь или пятно одного цвета выбранным цветом';
+
+  @override
+  String get drawPipette =>
+      'Пипетка: щелчок берёт цвет со страницы. В остальных режимах — Alt + щелчок';
+
+  @override
+  String paintColour(String colour) {
+    return 'Цвет кисти и заливки ($colour) — щелчок, чтобы выбрать';
+  }
+
+  @override
+  String paintColourHover(String colour) {
+    return 'Под мышью: $colour';
+  }
+
+  @override
+  String get paintColourHoverNone =>
+      'Здесь виден цвет под мышью, пока вы берёте цвет (пипетка или Alt)';
+
+  @override
+  String get paintColourCode => 'Код цвета, например #FFFFFF';
+
+  @override
+  String get paintColourRecent => 'Недавние';
+
+  @override
+  String get fillTolerance =>
+      'Допуск заливки: насколько отличающиеся оттенки она ещё захватывает';
+
+  @override
+  String get fillSpots => 'И пятна';
+
+  @override
+  String get fillSpotsHelp =>
+      'Заливка закрывает и пятна внутри: остатки букв, грязь. Выключено — только цвет, по которому щёлкнули';
+
+  @override
+  String get clearPaints => 'Убрать все правки рисунка на этой странице';
+
+  @override
+  String previewToggle(String key) {
+    return 'Как будет в итоге ($key): страница как при экспорте, без рамок и маски. Ещё раз — обратно';
+  }
+
+  @override
+  String previewOn(String key) {
+    return 'Как будет в итоге. Обратно — $key или щелчок здесь';
+  }
+
+  @override
+  String get keyDraw => 'Рисование';
+
+  @override
+  String get keyPreview => 'Как будет в итоге';
 }

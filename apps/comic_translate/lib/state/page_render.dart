@@ -32,9 +32,11 @@ Future<List<PageEntry>> drawMissingPages(
     for (final id in ids)
       if (read(workspaceProvider).byId(id) case final page? when page.isDone && page.translatedPath == null) page,
   ];
-  for (final (i, page) in todo.indexed) {
+  for (final (i, found) in todo.indexed) {
     onProgress?.call(i, todo.length);
-    final image = await readImageInBackground(page.basePath);
+    // The touch-ups drawn in first.
+    final page = await workspace.ensurePainted(found.id) ?? found;
+    final image = await readImageInBackground(page.finalBasePath);
     final render = await renderPage(
       image,
       page.blocks,
@@ -48,7 +50,7 @@ Future<List<PageEntry>> drawMissingPages(
     // not take the drawn page away, see [WorkspaceNotifier.edit]).
     workspace.updatePage(
       page.id,
-      (p) => identical(p.blocks, page.blocks) && p.cleanPath == page.cleanPath
+      (p) => identical(p.blocks, page.blocks) && p.cleanPath == page.cleanPath && identical(p.paints, page.paints)
           ? p.copyWith(translatedPath: file, renderScale: render.scale)
           : p,
     );

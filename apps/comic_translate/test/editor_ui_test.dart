@@ -292,6 +292,91 @@ void main() {
     expect(strokes(), hasLength(2));
   });
 
+  testWidgets('drawing: a stroke, the colour pipette, a fill; "As it will be" changes nothing', (tester) async {
+    final container = await openTranslatedPage(tester);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyD);
+    await settle(tester);
+    expect(container.read(editorProvider).tool, EditorTool.draw);
+    expect(container.read(editorProvider).view, ViewMode.result);
+    final canvas = find.byType(PageCanvas);
+    for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    await settle(tester);
+    List<PaintOp> paints() => container.read(workspaceProvider).currentPage!.paints;
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
+    final rect = tester.getRect(canvas);
+    Offset at(double x, double y) => rect.topLeft + Offset(rect.width * x, rect.height * y);
+    await mouse.addPointer(location: at(0.1, 0.9));
+    Future<void> click(Offset where) async {
+      await mouse.moveTo(where);
+      await tester.pump();
+      await mouse.down(where);
+      await tester.pump();
+      await mouse.up();
+      await tester.pump();
+    }
+
+    // A black stroke.
+    container.read(editorProvider.notifier).setPaintColor(0xFF000000);
+    await mouse.moveTo(at(0.1, 0.9));
+    await mouse.down(at(0.1, 0.9));
+    for (var i = 0; i < 4; i++) {
+      await mouse.moveBy(Offset(rect.width * 0.1, 0));
+      await tester.pump();
+    }
+    await mouse.up();
+    await tester.pump();
+    expect(paints().single.kind, PaintKind.brush);
+    expect(paints().single.color, 0xFF000000);
+    expect(paints().single.points.length, greaterThan(1));
+
+    // The pipette button takes the white of the page, then brush mode is back.
+    container.read(editorProvider.notifier).setDrawMode(DrawMode.pipette);
+    await tester.pump();
+    await click(at(0.5, 0.2));
+    for (var i = 0; i < 100 && container.read(editorProvider).paintColor != 0xFFFFFFFF; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+    }
+    expect(container.read(editorProvider).paintColor, 0xFFFFFFFF);
+    expect(container.read(editorProvider).drawMode, DrawMode.brush);
+    expect(paints(), hasLength(1), reason: 'picking paints nothing');
+
+    // A red fill of the white page: one more step.
+    container.read(editorProvider.notifier)
+      ..setPaintColor(0xFFFF0000)
+      ..setDrawMode(DrawMode.fill);
+    await tester.pump();
+    await click(at(0.5, 0.2));
+    for (var i = 0; i < 200 && paints().length < 2; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    expect(paints().last.kind, PaintKind.fill);
+    expect(paints().last.color, 0xFFFF0000);
+    expect(paints().last.runs, isNotEmpty);
+
+    // "As it will be": clicks change nothing; Esc leaves it.
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyP);
+    await tester.pump();
+    expect(container.read(editorProvider).preview, isTrue);
+    expect(find.textContaining('Как будет в итоге'), findsWidgets);
+    await click(at(0.3, 0.3));
+    expect(paints(), hasLength(2));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    expect(container.read(editorProvider).preview, isFalse);
+
+    // Ctrl+Z takes back the fill.
+    await ctrl(tester, LogicalKeyboardKey.keyZ);
+    expect(paints(), hasLength(1));
+    await mouse.removePointer();
+    // The touch-ups are drawn into a file a moment after the last change.
+    await tester.runAsync(() => Future<void>.delayed(WorkspaceNotifier.paintDelay * 2));
+    await tester.pump();
+  });
+
   testWidgets('"Fit to letters": a click fits one piece; Shift + click picks pieces for the button', (tester) async {
     final container = await openTranslatedPage(tester);
     final page = container.read(workspaceProvider).currentPage!;

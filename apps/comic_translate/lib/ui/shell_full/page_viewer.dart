@@ -28,6 +28,7 @@ import '../common/plugin_strings.dart';
 import '../common/translator_history_dialog.dart';
 import '../settings/settings_place.dart';
 import 'batch_dialogs.dart';
+import 'draw_options.dart';
 import 'fit_mask_action.dart';
 import 'page_canvas.dart';
 import 'page_navigator.dart';
@@ -115,7 +116,7 @@ class _PageViewerState extends ConsumerState<PageViewer> {
   /// The mini view of the page, or of the webtoon strip (null until the
   /// page or the strip is measured).
   Widget? _navigator(WorkspaceState ws, Size viewport) {
-    String picture(PageEntry p) => p.translatedPath ?? p.cleanPath ?? p.path;
+    String picture(PageEntry p) => p.translatedPath ?? p.finalBasePath;
     if (ws.webtoon) {
       final strip = _strip.currentState, layout = strip?.layout;
       if (strip == null || layout == null || layout.rects.length != ws.pages.length) return null;
@@ -212,7 +213,7 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                           constrained: false,
                           minScale: 0.02,
                           maxScale: 32,
-                          panEnabled: editor.tool == EditorTool.pan || readOnly,
+                          panEnabled: editor.tool == EditorTool.pan || editor.preview || readOnly,
                           boundaryMargin: const EdgeInsets.all(double.infinity),
                           onInteractionUpdate: (_) => setState(() {}),
                           child: size == null
@@ -326,6 +327,21 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                             ),
                           ),
                         ),
+                      if (editor.preview)
+                        Positioned(
+                          top: 12,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: ActionChip(
+                              avatar: const Icon(Icons.visibility, size: 18),
+                              label: Text(
+                                l.previewOn(KeyBindings.of(ref.read(settingsProvider)).labelOf(ShortcutAction.preview)),
+                              ),
+                              onPressed: () => ref.read(editorProvider.notifier).togglePreview(),
+                            ),
+                          ),
+                        ),
                       if (page.status == PageStatus.skipped && !stepHere)
                         Positioned(
                           left: 12,
@@ -434,6 +450,16 @@ class _ToolBar extends ConsumerWidget {
                     backgroundColor: editor.maskOnly ? Theme.of(context).colorScheme.secondaryContainer : null,
                   ),
                 ),
+              IconButton(
+                tooltip: l.previewToggle(KeyBindings.of(ref.read(settingsProvider)).labelOf(ShortcutAction.preview)),
+                isSelected: editor.preview,
+                onPressed: page == null ? null : notifier.togglePreview,
+                icon: const Icon(Icons.visibility_outlined),
+                selectedIcon: const Icon(Icons.visibility),
+                style: IconButton.styleFrom(
+                  backgroundColor: editor.preview ? Theme.of(context).colorScheme.secondaryContainer : null,
+                ),
+              ),
               const SizedBox(width: 8),
               tool(EditorTool.pan, Icons.pan_tool_outlined, l.toolPan),
               tool(EditorTool.boxes, Icons.crop_free, l.toolBoxes),
@@ -442,6 +468,7 @@ class _ToolBar extends ConsumerWidget {
               tool(EditorTool.eraser, Icons.auto_fix_off_outlined, l.toolEraser),
               tool(EditorTool.fit, Icons.compress, l.toolFitMask),
               tool(EditorTool.pick, Icons.colorize_outlined, l.toolPipette),
+              tool(EditorTool.draw, Icons.palette_outlined, l.toolDraw),
             ],
           ),
           const SizedBox(height: 4),
@@ -512,6 +539,7 @@ class _ToolBar extends ConsumerWidget {
                       ),
                     ],
                     if (editor.tool == EditorTool.pick) const _ColourMaskOptions(),
+                    if (editor.tool == EditorTool.draw) const DrawOptions(),
                     if (editor.tool == EditorTool.boxes)
                       MenuAnchor(
                         menuChildren: [

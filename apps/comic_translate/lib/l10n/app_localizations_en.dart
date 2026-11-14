@@ -4944,4 +4944,78 @@ class AppLocalizationsEn extends AppLocalizations {
   String shortcutsFailed(String error) {
     return 'Could not change the shortcuts: $error';
   }
+
+  @override
+  String get toolDraw =>
+      'Drawing (D): touch up the picture after cleaning: brush, eraser, original, fill, pipette';
+
+  @override
+  String get drawBrush =>
+      'Brush: paints the chosen colour. Shift + click: a straight line from the last point';
+
+  @override
+  String get drawEraser =>
+      'Eraser: takes your strokes back off (the cleaned page shows again)';
+
+  @override
+  String get drawOriginal =>
+      'Original: brings back the picture as it was before cleaning where you paint (when cleaning took too much)';
+
+  @override
+  String get drawFill =>
+      'Fill: a click fills a bubble or a patch of one colour with the chosen colour';
+
+  @override
+  String get drawPipette =>
+      'Pipette: a click takes the colour from the page. In the other modes: Alt + click';
+
+  @override
+  String paintColour(String colour) {
+    return 'Colour of the brush and the fill ($colour): click to choose';
+  }
+
+  @override
+  String paintColourHover(String colour) {
+    return 'Under the mouse: $colour';
+  }
+
+  @override
+  String get paintColourHoverNone =>
+      'Here the colour under the mouse shows while you pick one (pipette or Alt)';
+
+  @override
+  String get paintColourCode => 'Colour code, e.g. #FFFFFF';
+
+  @override
+  String get paintColourRecent => 'Used lately';
+
+  @override
+  String get fillTolerance =>
+      'Fill tolerance: how different shades the fill still takes in';
+
+  @override
+  String get fillSpots => 'Spots too';
+
+  @override
+  String get fillSpotsHelp =>
+      'The fill also covers spots inside what it fills: leftover letters, smudges. Off: only the colour clicked';
+
+  @override
+  String get clearPaints => 'Remove every touch-up of this page';
+
+  @override
+  String previewToggle(String key) {
+    return 'As it will be ($key): the page as export makes it, without boxes and mask. Again: back';
+  }
+
+  @override
+  String previewOn(String key) {
+    return 'As it will be. Back: $key or click here';
+  }
+
+  @override
+  String get keyDraw => 'Drawing';
+
+  @override
+  String get keyPreview => 'As it will be';
 }

@@ -3285,5 +3285,28 @@
         "type": "String"
       }
     }
-  }
+  },
+  "toolDraw": "Drawing (D): touch up the picture after cleaning: brush, eraser, original, fill, pipette",
+  "drawBrush": "Brush: paints the chosen colour. Shift + click: a straight line from the last point",
+  "drawEraser": "Eraser: takes your strokes back off (the cleaned page shows again)",
+  "drawOriginal": "Original: brings back the picture as it was before cleaning where you paint (when cleaning took too much)",
+  "drawFill": "Fill: a click fills a bubble or a patch of one colour with the chosen colour",
+  "drawPipette": "Pipette: a click takes the colour from the page. In the other modes: Alt + click",
+  "paintColour": "Colour of the brush and the fill ({colour}): click to choose",
+  "@paintColour": {"placeholders": {"colour": {"type": "String"}}},
+  "paintColourHover": "Under the mouse: {colour}",
+  "@paintColourHover": {"placeholders": {"colour": {"type": "String"}}},
+  "paintColourHoverNone": "Here the colour under the mouse shows while you pick one (pipette or Alt)",
+  "paintColourCode": "Colour code, e.g. #FFFFFF",
+  "paintColourRecent": "Used lately",
+  "fillTolerance": "Fill tolerance: how different shades the fill still takes in",
+  "fillSpots": "Spots too",
+  "fillSpotsHelp": "The fill also covers spots inside what it fills: leftover letters, smudges. Off: only the colour clicked",
+  "clearPaints": "Remove every touch-up of this page",
+  "previewToggle": "As it will be ({key}): the page as export makes it, without boxes and mask. Again: back",
+  "@previewToggle": {"placeholders": {"key": {"type": "String"}}},
+  "previewOn": "As it will be. Back: {key} or click here",
+  "@previewOn": {"placeholders": {"key": {"type": "String"}}},
+  "keyDraw": "Drawing",
+  "keyPreview": "As it will be"
 }

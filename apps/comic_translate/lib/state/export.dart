@@ -37,7 +37,8 @@ ExportPage exportPageOf(PageEntry page, {String? translatedImage}) {
     chapter: chapterOf(page),
     sourceExtension: ext.isEmpty ? p.extension(page.path) : ext,
     translatedImage: translatedImage ?? page.translatedPath,
-    cleanImage: page.cleanPath,
+    // The touch-ups belong to the cleaned page.
+    cleanImage: page.paints.isEmpty ? page.cleanPath : page.finalBasePath,
     recognized: page.blocks.isEmpty ? null : {for (final (i, b) in page.blocks.indexed) 'block_$i': b.text},
     translations: page.blocks.isEmpty ? null : {for (final (i, b) in page.blocks.indexed) 'block_$i': b.translation},
   );
@@ -57,6 +58,10 @@ Future<ExportResult> exportOpenPages(
   void Function(int done, int total)? onProgress,
 }) async {
   if (options.imageFormat == 'psd') return _exportPsd(read, ids, options, output, bookName, onProgress);
+  // The touch-ups drawn into the cleaned pages first.
+  for (final id in ids) {
+    await read(workspaceProvider.notifier).ensurePainted(id);
+  }
   final pages = options.translated
       ? await drawMissingPages(read, ids, onProgress: onProgress)
       : [for (final id in ids) ?read(workspaceProvider).byId(id)];
@@ -68,9 +73,9 @@ Future<ExportResult> exportOpenPages(
 /// [buildPagePsd]); with the bundled fonts it uses (see [bundledFontsUsed]).
 Future<(String, Set<String>)> writePagePsd(Reader read, PageEntry page, String dir) async {
   final settings = read(settingsProvider);
-  final cleanPath = page.cleanPath;
+  page = await read(workspaceProvider.notifier).ensurePainted(page.id) ?? page;
   final original = await readImageInBackground(page.path);
-  final clean = cleanPath == null ? original : await readImageInBackground(cleanPath);
+  final clean = page.finalBasePath == page.path ? original : await readImageInBackground(page.finalBasePath);
   final doc = await buildPagePsd(
     original,
     clean,

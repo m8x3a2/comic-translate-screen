@@ -85,6 +85,7 @@ export 'src/plugins/plugin.dart';
 export 'src/plugins/registry.dart';
 export 'src/plugins/settings_schema.dart';
 export 'src/inpainting/mask_stroke.dart';
+export 'src/inpainting/paint_op.dart';
 export 'src/render/block_style.dart';
 export 'src/render/font_files.dart';
 export 'src/render/layout.dart';

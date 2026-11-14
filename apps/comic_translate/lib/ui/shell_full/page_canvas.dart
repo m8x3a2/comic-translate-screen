@@ -23,6 +23,7 @@ import '../../render/mask_raster.dart';
 import '../../render/text_renderer.dart';
 import '../../state/editor.dart';
 import '../../state/page_layout.dart';
+import '../../state/paint_tools.dart';
 import '../../state/pipette.dart';
 import '../../state/workspace.dart';
 import 'fit_mask_action.dart';
@@ -75,7 +76,30 @@ class PageCanvas extends ConsumerStatefulWidget {
   ConsumerState<PageCanvas> createState() => _PageCanvasState();
 }
 
-enum _Mode { tap, picked, area, newBox, moveBox, resizeBox, moveText, resizeText, rotateText, paint, pan, fit, pick }
+enum _Mode {
+  tap,
+  picked,
+  area,
+  newBox,
+  moveBox,
+  resizeBox,
+  moveText,
+  resizeText,
+  rotateText,
+  paint,
+  pan,
+  fit,
+  pick,
+
+  /// A touch-up stroke of the drawing tool.
+  draw,
+
+  /// The fill of the drawing tool.
+  fill,
+
+  /// The colour pipette of the drawing tool.
+  colour,
+}
 
 /// A drag in progress.
 class _Drag {
@@ -112,6 +136,10 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   ImageTiles? _mask;
   String? _maskPath;
 
+  /// The page before cleaning, for touch-ups that bring it back.
+  ImageTiles? _original;
+  String? _originalPath;
+
   _Drag? _drag;
   Offset? _hover;
 
@@ -126,6 +154,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   /// Shift is held: a click of the brush or eraser draws a straight line.
   var _shift = false;
 
+  /// Alt is held: a click of the drawing tool takes a colour.
+  var _alt = false;
+
   @override
   void initState() {
     super.initState();
@@ -136,6 +167,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
     _mask?.dispose();
+    _original?.dispose();
     super.dispose();
   }
 
@@ -147,6 +179,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     if (grab != _grab && mounted) setState(() => _grab = grab);
     final shift = keys.isShiftPressed;
     if (shift != _shift && mounted) setState(() => _shift = shift);
+    final alt = keys.isAltPressed;
+    if (alt != _alt && mounted) {
+      setState(() => _alt = alt);
+      _hoverColour();
+    }
     // Space over the page is ours (it would press the focused button).
     return e.logicalKey == LogicalKeyboardKey.space && !typing && (_inside || _drag?.mode == _Mode.pan);
   }
@@ -173,6 +210,39 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         // An unreadable mask file shows nothing; cleaning reports the error.
       }
     }());
+  }
+
+  void _ensureOriginal(String? path) {
+    if (path == _originalPath) return;
+    _originalPath = path;
+    final old = _original;
+    _original = null;
+    old?.dispose();
+    if (path == null) return;
+    unawaited(() async {
+      try {
+        final tiles = await loadImageTiles(path);
+        if (mounted && _originalPath == path) {
+          setState(() => _original = tiles);
+        } else {
+          tiles.dispose();
+        }
+      } on Object {
+        // An unreadable original shows nothing where it is brought back.
+      }
+    }());
+  }
+
+  /// The drawing tool takes a colour with a click: its pipette, or Alt.
+  bool _picksColour(EditorState editor) =>
+      !widget.readOnly && editor.tool == EditorTool.draw && (editor.drawMode == DrawMode.pipette || _alt);
+
+  /// Shows the colour under the mouse while picking one.
+  void _hoverColour() {
+    if (!mounted) return;
+    final tools = ref.read(paintToolsProvider.notifier);
+    final h = _hover;
+    tools.hover(widget.page, h != null && _picksColour(ref.read(editorProvider)) ? Point2(h.dx, h.dy) : null);
   }
 
   // Geometry.
@@ -245,9 +315,12 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   }
 
   /// Where a Shift + click line starts: the end of the last brush or eraser
-  /// stroke of the page (so undo moves it back too).
+  /// stroke of the page (so undo moves it back too); for the drawing tool,
+  /// of its last stroke.
   Offset? get _lineStart {
-    final last = widget.page.strokes.lastOrNull?.points.lastOrNull;
+    final last = ref.read(editorProvider).tool == EditorTool.draw
+        ? widget.page.paints.where((o) => o.isStroke).lastOrNull?.points.lastOrNull
+        : widget.page.strokes.lastOrNull?.points.lastOrNull;
     return last == null ? null : Offset(last.x, last.y);
   }
 
@@ -260,6 +333,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       return;
     }
     if (e.buttons != kPrimaryButton) return;
+    // "As it will be": the left button moves the page, nothing changes.
+    if (ref.read(editorProvider).preview) return;
     // A click on another page of the strip makes it the page being edited.
     if (!widget.active) widget.onActivate?.call();
     final ws = ref.read(workspaceProvider);
@@ -332,6 +407,17 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           drag = _Drag(_Mode.fit, p);
         case EditorTool.pick:
           drag = _Drag(_Mode.pick, p);
+        case EditorTool.draw when _picksColour(editor):
+          drag = _Drag(_Mode.colour, p);
+        case EditorTool.draw when editor.drawMode == DrawMode.fill:
+          drag = _Drag(_Mode.fill, p);
+        case EditorTool.draw:
+          final from = HardwareKeyboard.instance.isShiftPressed ? _lineStart : null;
+          drag = from == null
+              ? (_Drag(_Mode.draw, p)..points.add(Point2(p.dx, p.dy)))
+              : (_Drag(_Mode.draw, p)
+                  ..line = true
+                  ..points.addAll([Point2(from.dx, from.dy), Point2(p.dx, p.dy)]));
       }
     }
     setState(() => _drag = drag..current = p);
@@ -352,7 +438,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     if (!d.moved && delta.distance * _zoom < 3) return;
     d.moved = true;
     switch (d.mode) {
-      case _Mode.paint:
+      case _Mode.paint || _Mode.draw:
         final last = d.points.last;
         if (d.line) {
           d.points.last = Point2(p.dx, p.dy);
@@ -371,7 +457,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         if (a > 180) a -= 360;
         // Snaps to straight within 3 degrees.
         d.draftAngle = a.abs() < 3 ? 0 : double.parse(a.toStringAsFixed(1));
-      case _Mode.tap || _Mode.picked || _Mode.pan || _Mode.fit || _Mode.pick:
+      case _Mode.tap || _Mode.picked || _Mode.pan || _Mode.fit || _Mode.pick || _Mode.fill || _Mode.colour:
         break;
     }
     setState(() {});
@@ -417,6 +503,16 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       case _Mode.paint:
         final erase = ref.read(editorProvider).tool == EditorTool.eraser;
         ws.addStroke(MaskStroke(points: List.of(d.points), width: ref.read(editorProvider).brushSize, erase: erase));
+      case _Mode.draw:
+        ws.addPaint(_paintOf(ref.read(editorProvider), List.of(d.points)), pageId: widget.page.id);
+      case _Mode.fill:
+        if (d.moved) break;
+        unawaited(ref.read(paintToolsProvider.notifier).fill(widget.page.id, Point2(d.start.dx, d.start.dy)));
+      case _Mode.colour:
+        if (d.moved) break;
+        unawaited(ref.read(paintToolsProvider.notifier).pick(widget.page, Point2(d.start.dx, d.start.dy)));
+        // The pipette button picks one colour; Alt + click stays in the mode.
+        ref.read(editorProvider.notifier).endPipette();
       case _Mode.newBox:
         final box = d.draft == null ? null : _boxOf(d.draft!);
         if (box != null && box.width >= _minBox && box.height >= _minBox) {
@@ -491,16 +587,31 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     }
   }
 
+  /// The touch-up a stroke along [points] makes with the drawing tool.
+  static PaintOp _paintOf(EditorState editor, List<Point2> points) => PaintOp(
+    kind: switch (editor.drawMode) {
+      DrawMode.eraser => PaintKind.erase,
+      DrawMode.original => PaintKind.original,
+      _ => PaintKind.brush,
+    },
+    points: points,
+    width: editor.paintSize,
+    color: editor.paintColor,
+  );
+
   MouseCursor _cursor(EditorState editor) {
     if (_drag?.mode == _Mode.pan) return SystemMouseCursors.grabbing;
     if (_grab) return SystemMouseCursors.grab;
+    if (editor.preview) return SystemMouseCursors.grab;
     if (widget.readOnly) return SystemMouseCursors.basic;
+    if (_picksColour(editor)) return SystemMouseCursors.precise;
     return switch (editor.tool) {
       EditorTool.brush || EditorTool.eraser => SystemMouseCursors.none,
       EditorTool.boxes => SystemMouseCursors.precise,
       EditorTool.text => SystemMouseCursors.move,
       EditorTool.pan => SystemMouseCursors.grab,
       EditorTool.fit || EditorTool.pick => SystemMouseCursors.precise,
+      EditorTool.draw => editor.drawsStrokes ? SystemMouseCursors.none : SystemMouseCursors.precise,
     };
   }
 
@@ -511,19 +622,30 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     final selected = widget.active ? ref.watch(workspaceProvider.select((s) => s.selectedBlock)) : null;
     final picked = widget.active ? ref.watch(workspaceProvider.select((s) => s.pickedBlocks)) : const <int>{};
     final colors = Theme.of(context).colorScheme;
-    final result = editor.view == ViewMode.result;
+    // "As it will be": the translated page as export draws it, nothing over it.
+    final preview = editor.preview;
+    final result = editor.view == ViewMode.result || preview;
     // The mask view: what cleaning works on with the mask over it, no translation.
-    final maskView = editor.view == ViewMode.mask;
+    final maskView = editor.view == ViewMode.mask && !preview;
     final maskOnly = maskView && editor.maskOnly;
     _ensureMask(page.maskPath);
     final layout = result ? ref.watch(pageLayoutOfProvider(page.id)) : null;
     final engines = ref.watch(pageEnginesProvider(page.id)).value;
     final overflow = (result || (maskView && !maskOnly)) && widget.strip ? page.overflowPath : null;
     final d = _drag;
-    final showMask = maskView || (result && (editor.paints || page.hasMask));
+    final showMask = !preview && (maskView || (result && (editor.paints || page.hasMask)));
     final draftStroke = d?.mode == _Mode.paint
         ? MaskStroke(points: d!.points, width: editor.brushSize, erase: editor.tool == EditorTool.eraser)
         : null;
+    // The touch-ups lie over the cleaned page, under the translation.
+    final draftPaint = d?.mode == _Mode.draw ? _paintOf(editor, d!.points) : null;
+    final showPaints = result && (page.paints.isNotEmpty || draftPaint != null);
+    _ensureOriginal(
+      showPaints && (paintsUseOriginal(page.paints) || draftPaint?.kind == PaintKind.original) ? page.path : null,
+    );
+    final picking = _picksColour(editor);
+    final hoverColour = picking ? ref.watch(paintToolsProvider.select((s) => s.hover)) : null;
+    final hovers = editor.showsBrush || picking;
     // While text is moved or rotated, it is drawn by the overlay.
     final dragged = d != null && d.moved && (d.mode == _Mode.moveText || d.mode == _Mode.rotateText)
         ? (d.mode == _Mode.moveText && picked.length > 1 && picked.contains(d.index) ? picked : {d.index!})
@@ -538,19 +660,26 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     return MouseRegion(
       cursor: _cursor(editor),
       onEnter: (_) => _inside = true,
-      onHover: (e) => editor.paints ? setState(() => _hover = e.localPosition) : null,
+      onHover: (e) {
+        if (!hovers) return;
+        setState(() => _hover = e.localPosition);
+        if (picking) _hoverColour();
+      },
       // Exit and cancel also come when the page is taken away under the mouse (another page opened or the
       // pages changed mid-drag): by then this state may be gone.
       onExit: (_) {
         _hover = null;
         _inside = false;
-        if (mounted) setState(() {});
+        if (mounted) {
+          setState(() {});
+          _hoverColour();
+        }
       },
       child: Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: _down,
         onPointerMove: (e) {
-          if (editor.paints) _hover = e.localPosition;
+          if (hovers) _hover = e.localPosition;
           _move(e);
         },
         onPointerUp: _up,
@@ -574,6 +703,10 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
                       errorBuilder: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined, size: 64)),
                     ),
             ),
+            if (showPaints)
+              Positioned.fill(
+                child: RepaintBoundary(child: CustomPaint(painter: _PaintsPainter(page.paints, draftPaint, _original))),
+              ),
             if (overflow != null)
               Positioned(
                 left: 0,
@@ -600,26 +733,29 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
               Positioned.fill(
                 child: RepaintBoundary(child: CustomPaint(painter: _TextPainter(layout, engines, hiddenItems))),
               ),
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _OverlayPainter(
-                  transform: widget.transform,
-                  colors: colors,
-                  page: page,
-                  editor: editor,
-                  selected: selected,
-                  picked: picked,
-                  layout: layout,
-                  engines: engines,
-                  areaOf: (i) => _textArea(page.blocks, i),
-                  drag: d,
-                  hover: editor.paints && !widget.readOnly && !_grab ? _hover : null,
-                  lineFrom: _shift && d == null ? _lineStart : null,
-                  showBoxes: editor.tool == EditorTool.boxes || (editor.showBoxes && editor.tool == EditorTool.pan),
-                  rotateHandle: _rotateHandle,
+            if (!preview)
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _OverlayPainter(
+                    transform: widget.transform,
+                    colors: colors,
+                    page: page,
+                    editor: editor,
+                    selected: selected,
+                    picked: picked,
+                    layout: layout,
+                    engines: engines,
+                    areaOf: (i) => _textArea(page.blocks, i),
+                    drag: d,
+                    hover: hovers && !widget.readOnly && !_grab ? _hover : null,
+                    picking: picking,
+                    hoverColour: hoverColour,
+                    lineFrom: _shift && d == null ? _lineStart : null,
+                    showBoxes: editor.tool == EditorTool.boxes || (editor.showBoxes && editor.tool == EditorTool.pan),
+                    rotateHandle: _rotateHandle,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -658,6 +794,89 @@ class _MaskPainter extends CustomPainter {
       old.draft != draft ||
       old.solid != solid ||
       (draft?.points.length ?? 0) > 0;
+}
+
+/// The touch-ups over the cleaned page, as [bakePaints] draws them for
+/// export: the brush paints, the eraser takes touch-ups back off, "original"
+/// brings back [original] (the page before cleaning).
+class _PaintsPainter extends CustomPainter {
+  _PaintsPainter(this.ops, this.draft, this.original);
+
+  final List<PaintOp> ops;
+  final PaintOp? draft;
+  final ImageTiles? original;
+
+  /// The shape of each fill (made once).
+  static final _fills = Expando<Path>();
+
+  static Path _fillPath(PaintOp op) => _fills[op] ??= () {
+    final path = Path();
+    final r = op.runs;
+    for (var k = 0; k + 2 < r.length; k += 3) {
+      path.addRect(Rect.fromLTRB(r[k + 1].toDouble(), r[k].toDouble(), r[k + 2].toDouble(), r[k] + 1.0));
+    }
+    return path;
+  }();
+
+  static void _stroke(Canvas canvas, PaintOp op, Paint paint) {
+    paint
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = op.width;
+    if (op.points.length == 1) {
+      final p = op.points.single;
+      canvas.drawCircle(Offset(p.x, p.y), op.width / 2, paint..style = PaintingStyle.fill);
+      return;
+    }
+    final path = Path();
+    for (final (i, p) in op.points.indexed) {
+      i == 0 ? path.moveTo(p.x, p.y) : path.lineTo(p.x, p.y);
+    }
+    canvas.drawPath(path, paint);
+  }
+
+  static Rect _bounds(PaintOp op) {
+    var r = Rect.fromLTWH(op.points.first.x, op.points.first.y, 0, 0);
+    for (final p in op.points) {
+      r = r.expandToInclude(Rect.fromLTWH(p.x, p.y, 0, 0));
+    }
+    return r.inflate(op.width / 2 + 2);
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.saveLayer(Offset.zero & size, Paint());
+    for (final op in [...ops, ?draft]) {
+      switch (op.kind) {
+        case PaintKind.fill:
+          canvas.drawPath(
+            _fillPath(op),
+            Paint()
+              ..color = Color(op.color)
+              ..isAntiAlias = false,
+          );
+        case PaintKind.brush:
+          _stroke(canvas, op, Paint()..color = Color(op.color));
+        case PaintKind.erase:
+          _stroke(canvas, op, Paint()..blendMode = BlendMode.clear);
+        case PaintKind.original:
+          final o = original;
+          if (o == null || op.points.isEmpty) continue;
+          final bounds = _bounds(op);
+          canvas.saveLayer(bounds, Paint());
+          canvas.clipRect(bounds);
+          _stroke(canvas, op, Paint()..color = Colors.white);
+          o.paint(canvas, Paint()..blendMode = BlendMode.srcIn);
+          canvas.restore();
+      }
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_PaintsPainter old) =>
+      old.ops != ops || old.draft != draft || old.original != original || (draft?.points.length ?? 0) > 0;
 }
 
 /// The translation, as export draws it.
@@ -700,6 +919,8 @@ class _OverlayPainter extends CustomPainter {
     required this.areaOf,
     required this.drag,
     required this.hover,
+    this.picking = false,
+    this.hoverColour,
     required this.lineFrom,
     required this.showBoxes,
     required this.rotateHandle,
@@ -718,6 +939,11 @@ class _OverlayPainter extends CustomPainter {
   final Rect Function(int index) areaOf;
   final _Drag? drag;
   final Offset? hover;
+
+  /// The drawing tool takes a colour: a square by the mouse shows the one
+  /// under it ([hoverColour]) and the chosen one.
+  final bool picking;
+  final int? hoverColour;
 
   /// Shift is held: where a click would start its straight line.
   final Offset? lineFrom;
@@ -855,14 +1081,34 @@ class _OverlayPainter extends CustomPainter {
     }
 
     final h = hover;
-    if (h != null) {
-      final r = editor.brushSize / 2;
+    if (h != null && picking) {
+      // The colour under the mouse, and the chosen one in its corner.
+      final size = 26 * px;
+      final square = Rect.fromLTWH(h.dx + 14 * px, h.dy + 14 * px, size, size);
+      final chosen = Rect.fromLTWH(square.right - size * 0.4, square.bottom - size * 0.4, size * 0.55, size * 0.55);
+      canvas.drawRect(square.inflate(1.5 * px), Paint()..color = Colors.white);
+      canvas.drawRect(square, Paint()..color = hoverColour == null ? Colors.transparent : Color(hoverColour!));
+      canvas.drawRect(square, line(Colors.black, 1));
+      canvas.drawRect(chosen.inflate(1.5 * px), Paint()..color = Colors.white);
+      canvas.drawRect(chosen, Paint()..color = Color(editor.paintColor));
+      canvas.drawRect(chosen, line(Colors.black, 1));
+    } else if (h != null) {
+      final r = editor.currentBrushSize / 2;
+      final ink = switch (editor.tool) {
+        EditorTool.eraser => Colors.black,
+        EditorTool.draw => switch (editor.drawMode) {
+          DrawMode.eraser => Colors.black,
+          DrawMode.original => Colors.blue,
+          _ => Color(editor.paintColor).computeLuminance() > 0.8 ? Colors.black54 : Color(editor.paintColor),
+        },
+        _ => Colors.red,
+      };
       if (lineFrom case final from?) {
         canvas.drawLine(from, h, line(Colors.white, 2.5));
-        canvas.drawLine(from, h, line(editor.tool == EditorTool.eraser ? Colors.black : Colors.red, 1.2));
+        canvas.drawLine(from, h, line(ink, 1.2));
       }
       canvas.drawCircle(h, r, line(Colors.white, 2.5));
-      canvas.drawCircle(h, r, line(editor.tool == EditorTool.eraser ? Colors.black : Colors.red, 1.2));
+      canvas.drawCircle(h, r, line(ink, 1.2));
     }
   }
 

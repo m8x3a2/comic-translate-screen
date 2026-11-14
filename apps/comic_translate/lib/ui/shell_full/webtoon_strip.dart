@@ -214,7 +214,7 @@ class WebtoonStripState extends ConsumerState<WebtoonStrip> {
             transformationController: widget.transform,
             constrained: false,
             scaleEnabled: false,
-            panEnabled: editor.tool == EditorTool.pan || widget.pan,
+            panEnabled: editor.tool == EditorTool.pan || editor.preview || widget.pan,
             boundaryMargin: const EdgeInsets.all(double.infinity),
             child: SizedBox(
               width: layout.width,

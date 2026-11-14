@@ -72,3 +72,9 @@ Future<void> writePngInBackground(String path, RgbImage image) =>
 
 /// Writes the Photoshop file [doc] to [path].
 Future<void> writePsdInBackground(String path, PsdDocument doc) => Isolate.run(() => writePsdFile(path, doc));
+
+/// The fill of one click at ([x], [y]) on the image in [path] (see
+/// [floodFillRuns]).
+Future<List<int>> floodFillInBackground(String path, int x, int y, int tolerance, bool closeSpots) => Isolate.run(
+  () async => floodFillRuns(await ImageCodec.readFile(path), x, y, tolerance: tolerance, closeSpots: closeSpots),
+);

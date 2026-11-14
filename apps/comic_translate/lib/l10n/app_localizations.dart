@@ -8413,6 +8413,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not change the shortcuts: {error}'**
   String shortcutsFailed(String error);
+
+  /// No description provided for @toolDraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawing (D): touch up the picture after cleaning: brush, eraser, original, fill, pipette'**
+  String get toolDraw;
+
+  /// No description provided for @drawBrush.
+  ///
+  /// In en, this message translates to:
+  /// **'Brush: paints the chosen colour. Shift + click: a straight line from the last point'**
+  String get drawBrush;
+
+  /// No description provided for @drawEraser.
+  ///
+  /// In en, this message translates to:
+  /// **'Eraser: takes your strokes back off (the cleaned page shows again)'**
+  String get drawEraser;
+
+  /// No description provided for @drawOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original: brings back the picture as it was before cleaning where you paint (when cleaning took too much)'**
+  String get drawOriginal;
+
+  /// No description provided for @drawFill.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill: a click fills a bubble or a patch of one colour with the chosen colour'**
+  String get drawFill;
+
+  /// No description provided for @drawPipette.
+  ///
+  /// In en, this message translates to:
+  /// **'Pipette: a click takes the colour from the page. In the other modes: Alt + click'**
+  String get drawPipette;
+
+  /// No description provided for @paintColour.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour of the brush and the fill ({colour}): click to choose'**
+  String paintColour(String colour);
+
+  /// No description provided for @paintColourHover.
+  ///
+  /// In en, this message translates to:
+  /// **'Under the mouse: {colour}'**
+  String paintColourHover(String colour);
+
+  /// No description provided for @paintColourHoverNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Here the colour under the mouse shows while you pick one (pipette or Alt)'**
+  String get paintColourHoverNone;
+
+  /// No description provided for @paintColourCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour code, e.g. #FFFFFF'**
+  String get paintColourCode;
+
+  /// No description provided for @paintColourRecent.
+  ///
+  /// In en, this message translates to:
+  /// **'Used lately'**
+  String get paintColourRecent;
+
+  /// No description provided for @fillTolerance.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill tolerance: how different shades the fill still takes in'**
+  String get fillTolerance;
+
+  /// No description provided for @fillSpots.
+  ///
+  /// In en, this message translates to:
+  /// **'Spots too'**
+  String get fillSpots;
+
+  /// No description provided for @fillSpotsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The fill also covers spots inside what it fills: leftover letters, smudges. Off: only the colour clicked'**
+  String get fillSpotsHelp;
+
+  /// No description provided for @clearPaints.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove every touch-up of this page'**
+  String get clearPaints;
+
+  /// No description provided for @previewToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'As it will be ({key}): the page as export makes it, without boxes and mask. Again: back'**
+  String previewToggle(String key);
+
+  /// No description provided for @previewOn.
+  ///
+  /// In en, this message translates to:
+  /// **'As it will be. Back: {key} or click here'**
+  String previewOn(String key);
+
+  /// No description provided for @keyDraw.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawing'**
+  String get keyDraw;
+
+  /// No description provided for @keyPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'As it will be'**
+  String get keyPreview;
 }
 
 class _AppLocalizationsDelegate

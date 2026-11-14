@@ -223,7 +223,7 @@ class _GridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final thumb = page.translatedPath ?? page.cleanPath ?? page.path;
+    final thumb = page.translatedPath ?? page.finalBasePath;
     return Material(
       color: picked ? theme.colorScheme.secondaryContainer : theme.colorScheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(
