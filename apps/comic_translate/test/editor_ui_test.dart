@@ -10,7 +10,7 @@ import 'package:comic_translate/state/batch.dart';
 import 'package:comic_translate/state/exchange.dart';
 import 'package:comic_translate/state/editor.dart';
 import 'package:comic_translate/state/shelf.dart';
-import 'package:comic_translate/ui/shell_full/shelf_card.dart';
+import 'package:comic_translate/ui/shell_full/desk_layer.dart';
 import 'package:comic_translate/state/pipette.dart';
 import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
@@ -515,6 +515,22 @@ void main() {
     List<PagePicture> pictures() => container.read(workspaceProvider).currentPage!.pictures;
     expect(pictures().single.box.x1, closeTo(40, 1));
     expect(container.read(pictureSelectionProvider), (page.id, 0));
+    // Dragged past the right edge: onto the desk beside the page.
+    await mouse.down(at(45, 25));
+    for (var i = 1; i <= 6; i++) {
+      await mouse.moveTo(at(45 + 20.0 * i, 25));
+      await tester.pump();
+    }
+    await mouse.up();
+    await tester.pump();
+    expect(pictures(), isEmpty);
+    expect(container.read(shelfProvider).single.picture!.box.x1, greaterThan(120));
+    // Taken back where it is dropped.
+    await tester.runAsync(() => container.read(shelfProvider.notifier).take(0, at: const BBox(50, 10, 80, 40)));
+    await tester.pump();
+    expect(pictures().single.box, const BBox(50, 10, 80, 40));
+    expect(container.read(shelfProvider), isEmpty);
+    container.read(pictureSelectionProvider.notifier).select(page.id, 0);
     await tester.sendKeyEvent(LogicalKeyboardKey.delete);
     await tester.pump();
     expect(pictures(), isEmpty);
@@ -529,7 +545,7 @@ void main() {
     expect(container.read(workspaceProvider).currentPage!.blocks, hasLength(blocks.length - 1));
     expect(container.read(shelfProvider).single.block!.translation, translation);
     await tester.pump();
-    expect(find.byType(ShelfCard), findsOneWidget, reason: 'the shelf opens when something is put on it');
+    expect(find.byType(DeskLayer), findsOneWidget, reason: 'the desk beside the page shows it');
     await tester.runAsync(() => container.read(shelfProvider.notifier).take(0));
     await tester.pump();
     expect(container.read(shelfProvider), isEmpty);

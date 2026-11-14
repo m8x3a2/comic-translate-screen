@@ -233,7 +233,7 @@ void main() {
         const [
           PaintOp(kind: PaintKind.fill, color: 0xFF0000FF, runs: [5, 0, 20]),
         ],
-        pictures: [(red, null, const BBox(4, 4, 8, 8)), (red, null, const BBox(-5, 15, 3, 25))],
+        pictures: [(red, null, const BBox(4, 4, 8, 8), 1.0), (red, null, const BBox(-5, 15, 3, 25), 1.0)],
       );
       expect(px(out, 5, 5), (255, 0, 0), reason: 'over the blue fill');
       expect(px(out, 8, 5), (0, 0, 255));
@@ -241,7 +241,7 @@ void main() {
       expect(px(out, 0, 19), (255, 0, 0));
       expect(px(out, 3, 19), (255, 255, 255));
       // Without touch-ups the picture is laid too.
-      expect(px(bakePaints(base, const [], pictures: [(red, null, const BBox(0, 0, 4, 4))]), 1, 1), (255, 0, 0));
+      expect(px(bakePaints(base, const [], pictures: [(red, null, const BBox(0, 0, 4, 4), 1.0)]), 1, 1), (255, 0, 0));
     });
 
     test('transparent parts of a picture leave the page seen', () {
@@ -252,13 +252,30 @@ void main() {
         alpha.data[y * 4] = 255;
         alpha.data[y * 4 + 1] = 255;
       }
-      final out = bakePaints(base, const [], pictures: [(white, alpha, const BBox(0, 0, 4, 4))]);
+      final out = bakePaints(base, const [], pictures: [(white, alpha, const BBox(0, 0, 4, 4), 1.0)]);
       expect(px(out, 0, 1), (255, 255, 255));
       expect(px(out, 3, 1), (0, 0, 0));
     });
 
+    test('a half-seen picture lets the page show through', () {
+      final out = bakePaints(
+        RgbImage.filled(4, 4, 0, 0, 0),
+        const [],
+        pictures: [(RgbImage.filled(4, 4, 200, 200, 200), null, const BBox(0, 0, 4, 4), 0.5)],
+      );
+      expect(px(out, 1, 1), (100, 100, 100));
+    });
+
+    test('a picture keeps a piece on the page', () {
+      // Dragged right past the edge of a 100×100 page: 16 pixels stay (a quarter of a larger one).
+      expect(keepOnPage(const BBox(150, 10, 190, 50), 100, 100), const BBox(84, 10, 124, 50));
+      expect(keepOnPage(const BBox(-80, -90, -40, -50), 100, 100), const BBox(-24, -24, 16, 16));
+      expect(keepOnPage(const BBox(10, 10, 50, 50), 100, 100), const BBox(10, 10, 50, 50));
+    });
+
     test('JSON', () {
-      const pic = PagePicture(path: 'a.png', box: BBox(-3, 4, 50, 60));
+      const pic = PagePicture(path: 'a.png', box: BBox(-3, 4, 50, 60), opacity: 0.4);
+      expect(PagePicture.fromJson(pic.toJson()).opacity, 0.4);
       final back = PagePicture.fromJson(pic.toJson());
       expect(back.path, 'a.png');
       expect(back.box, pic.box);

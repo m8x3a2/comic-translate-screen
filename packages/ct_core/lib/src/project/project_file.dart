@@ -233,7 +233,11 @@ class ProjectFile {
               'pictures': [
                 for (final (i, pic) in page.pictures.indexed)
                   if (File(pic.path).existsSync())
-                    {'image': blobOf(pic.path, 'picture_$i${p.extension(pic.path)}'), 'box': pic.box.toJson()},
+                    {
+                      'image': blobOf(pic.path, 'picture_$i${p.extension(pic.path)}'),
+                      'box': pic.box.toJson(),
+                      if (pic.opacity != 1) 'opacity': pic.opacity,
+                    },
               ],
             'fonts': fonts,
             'state': page.state,
@@ -254,7 +258,11 @@ class ProjectFile {
             if (item.block case final b?)
               {'block': b.toJson()}
             else if (item.picture case final pic? when File(pic.path).existsSync())
-              {'image': blobOf(pic.path, 'shelf_$i${p.extension(pic.path)}'), 'box': pic.box.toJson()},
+              {
+                'image': blobOf(pic.path, 'shelf_$i${p.extension(pic.path)}'),
+                'box': pic.box.toJson(),
+                if (pic.opacity != 1) 'opacity': pic.opacity,
+              },
         ];
         db.execute('INSERT OR REPLACE INTO project(id, json) VALUES(1, ?)', [
           jsonEncode({...data.state, if (shelf.isNotEmpty) _shelfKey: shelf}),
@@ -362,7 +370,12 @@ class ProjectFile {
             ],
             pictures: [
               for (final pic in (j['pictures'] as List? ?? const []))
-                if (pic is Map) PagePicture(path: materialize(pic['image'], work), box: BBox.fromJson(pic['box'])),
+                if (pic is Map)
+                  PagePicture(
+                    path: materialize(pic['image'], work),
+                    box: BBox.fromJson(pic['box']),
+                    opacity: ((pic['opacity'] as num?)?.toDouble() ?? 1).clamp(0.05, 1.0),
+                  ),
             ],
             state: ((j['state'] as Map?) ?? const {}).cast<String, Object?>(),
           ),
@@ -393,7 +406,11 @@ class ProjectFile {
             ShelfEntry.bubble(TextBlock.fromJson((item['block'] as Map).cast<String, Object?>()))
           else if (item is Map && item['image'] != null)
             ShelfEntry.picture(
-              PagePicture(path: materialize(item['image'], shelfDir), box: BBox.fromJson(item['box'])),
+              PagePicture(
+                path: materialize(item['image'], shelfDir),
+                box: BBox.fromJson(item['box']),
+                opacity: ((item['opacity'] as num?)?.toDouble() ?? 1).clamp(0.05, 1.0),
+              ),
             ),
       ];
       return ProjectData(pages: pages, state: state, shelf: shelf);

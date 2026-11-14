@@ -29,6 +29,7 @@ import '../common/plugin_strings.dart';
 import '../common/translator_history_dialog.dart';
 import '../settings/settings_place.dart';
 import 'batch_dialogs.dart';
+import 'desk_layer.dart';
 import 'draw_options.dart';
 import 'picture_options.dart';
 import 'shelf_card.dart';
@@ -271,6 +272,11 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                                     readOnly: readOnly,
                                   ),
                                 ),
+                        ),
+                      // The desk beside the page: what was dragged past its edges.
+                      if (!ws.webtoon && size != null)
+                        Positioned.fill(
+                          child: DeskLayer(transform: _transform, pageSize: size, readOnly: readOnly),
                         ),
                       if (showNavigator)
                         Positioned(

@@ -1193,6 +1193,32 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     _paintSoon(pageId);
   }
 
+  /// Sets how much picture [index] of page [pageId] covers what is below
+  /// (dragging the slider is one undo step).
+  void setPictureOpacity(String pageId, int index, double opacity) {
+    edit(pageId, mergeKey: 'picture_opacity_$index', (p) {
+      if (index < 0 || index >= p.pictures.length) return p;
+      return p.copyWith(pictures: [...p.pictures]..[index] = p.pictures[index].withOpacity(opacity));
+    });
+    _paintSoon(pageId);
+  }
+
+  /// Brings the pictures of page [pageId] that lie (almost) past its edges
+  /// back onto a [width]×[height] page (one undo step); how many moved.
+  int bringPicturesBack(String pageId, int width, int height) {
+    final page = state.byId(pageId);
+    if (page == null) return 0;
+    final moved = [for (final pic in page.pictures) pic.withBox(keepOnPage(pic.box, width, height))];
+    final count = [
+      for (final (i, pic) in moved.indexed)
+        if (pic.box != page.pictures[i].box) i,
+    ].length;
+    if (count == 0) return 0;
+    edit(pageId, (p) => p.copyWith(pictures: moved));
+    _paintSoon(pageId);
+    return count;
+  }
+
   /// Removes picture [index] of page [pageId] (one undo step).
   void removePicture(String pageId, int index) {
     edit(pageId, (p) {

@@ -27,6 +27,7 @@ import '../../state/editor.dart';
 import '../../state/page_layout.dart';
 import '../../state/paint_tools.dart';
 import '../../state/pipette.dart';
+import '../../state/shelf.dart';
 import '../../state/workspace.dart';
 import '../common/key_bindings.dart';
 import 'fit_mask_action.dart';
@@ -708,8 +709,17 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         unawaited(ref.read(paintToolsProvider.notifier).fill(widget.page.id, Point2(d.start.dx, d.start.dy)));
       case _Mode.movePicture || _Mode.resizePicture:
         final box = d.draft == null ? null : _wholeBox(d.draft!);
-        if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
-          ws.setPictureBox(widget.page.id, d.index!, box);
+        final page = Offset.zero & widget.size;
+        if (d.moved && d.mode == _Mode.movePicture && d.draft != null && !page.overlaps(d.draft!) && !widget.strip) {
+          // Dropped past the edges: onto the desk beside the page.
+          ref.read(shelfProvider.notifier).putPicture(widget.page.id, d.index!, at: box);
+          ref.read(pictureSelectionProvider.notifier).clear();
+        } else if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
+          ws.setPictureBox(
+            widget.page.id,
+            d.index!,
+            keepOnPage(box, widget.size.width.round(), widget.size.height.round()),
+          );
         }
       case _Mode.shape:
         final editor = ref.read(editorProvider);
@@ -741,6 +751,16 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       case _Mode.moveBox || _Mode.resizeBox:
         final box = d.draft == null ? null : _boxOf(d.draft!);
         final picks = ref.read(workspaceProvider).pickedBlocks;
+        if (d.moved &&
+            d.mode == _Mode.moveBox &&
+            d.draft != null &&
+            picks.length <= 1 &&
+            !widget.strip &&
+            !(Offset.zero & widget.size).overlaps(d.draft!)) {
+          // A bubble dropped past the edges: onto the desk beside the page.
+          ref.read(shelfProvider.notifier).putBubbles([d.index!], at: _wholeBox(d.draft!));
+          break;
+        }
         if (d.moved && d.mode == _Mode.moveBox && picks.length > 1 && picks.contains(d.index) && d.draft != null) {
           // The picked boxes move together, as one undo step.
           final dx = (d.draft!.left - d.rect!.left).round(), dy = (d.draft!.top - d.rect!.top).round();
@@ -919,58 +939,79 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           if (mounted) ref.read(strokeActiveProvider.notifier).set(false);
           if (mounted) setState(() {});
         },
+        // The page is cut at its edges (but in the webtoon strip); pictures
+        // and the handles over it are not, so a picture reaching past the
+        // edge is seen whole ("As it will be" cuts it, as export does).
         child: Stack(
-          clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
+          clipBehavior: Clip.none,
           children: [
             Positioned.fill(
-              child: maskOnly
-                  ? const ColoredBox(color: Colors.black)
-                  : needsTiles(widget.size)
-                  ? TiledImage(path: image)
-                  : Image.file(
-                      File(image),
-                      key: ValueKey(image),
-                      gaplessPlayback: true,
-                      filterQuality: FilterQuality.medium,
-                      errorBuilder: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined, size: 64)),
+              child: Stack(
+                clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
+                children: [
+                  Positioned.fill(
+                    child: maskOnly
+                        ? const ColoredBox(color: Colors.black)
+                        : needsTiles(widget.size)
+                        ? TiledImage(path: image)
+                        : Image.file(
+                            File(image),
+                            key: ValueKey(image),
+                            gaplessPlayback: true,
+                            filterQuality: FilterQuality.medium,
+                            errorBuilder: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined, size: 64)),
+                          ),
+                  ),
+                  if (showPaints)
+                    Positioned.fill(
+                      child: RepaintBoundary(
+                        child: CustomPaint(painter: _PaintsPainter(page.paints, draftPaint, _original)),
+                      ),
                     ),
-            ),
-            if (showPaints)
-              Positioned.fill(
-                child: RepaintBoundary(child: CustomPaint(painter: _PaintsPainter(page.paints, draftPaint, _original))),
+                ],
               ),
+            ),
             if (showPictures)
               Positioned.fill(
                 child: RepaintBoundary(
-                  child: CustomPaint(painter: _PicturesPainter(page.pictures, Map.of(_pictures), pictureDraft)),
-                ),
-              ),
-            if (overflow != null)
-              Positioned(
-                left: 0,
-                top: widget.size.height,
-                width: widget.size.width,
-                child: IgnorePointer(
-                  child: Image.file(
-                    File(overflow),
-                    key: ValueKey(overflow),
-                    gaplessPlayback: true,
-                    fit: BoxFit.fitWidth,
-                    filterQuality: FilterQuality.medium,
-                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  child: CustomPaint(
+                    painter: _PicturesPainter(page.pictures, Map.of(_pictures), pictureDraft, cut: preview),
                   ),
                 ),
               ),
-            if (showMask)
-              Positioned.fill(
-                child: RepaintBoundary(
-                  child: CustomPaint(painter: _MaskPainter(_mask, page.strokes, draftStroke, solid: maskOnly)),
-                ),
+            Positioned.fill(
+              child: Stack(
+                clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
+                children: [
+                  if (overflow != null)
+                    Positioned(
+                      left: 0,
+                      top: widget.size.height,
+                      width: widget.size.width,
+                      child: IgnorePointer(
+                        child: Image.file(
+                          File(overflow),
+                          key: ValueKey(overflow),
+                          gaplessPlayback: true,
+                          fit: BoxFit.fitWidth,
+                          filterQuality: FilterQuality.medium,
+                          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                        ),
+                      ),
+                    ),
+                  if (showMask)
+                    Positioned.fill(
+                      child: RepaintBoundary(
+                        child: CustomPaint(painter: _MaskPainter(_mask, page.strokes, draftStroke, solid: maskOnly)),
+                      ),
+                    ),
+                  if (layout != null && engines != null && !peek)
+                    Positioned.fill(
+                      child: RepaintBoundary(child: CustomPaint(painter: _TextPainter(layout, engines, hiddenItems))),
+                    ),
+                ],
               ),
-            if (layout != null && engines != null && !peek)
-              Positioned.fill(
-                child: RepaintBoundary(child: CustomPaint(painter: _TextPainter(layout, engines, hiddenItems))),
-              ),
+            ),
             if (!preview && !peek)
               Positioned.fill(
                 child: CustomPaint(
@@ -1156,16 +1197,19 @@ class _PaintsPainter extends CustomPainter {
 /// The pictures laid on the page (memes), cut at its edges; [draft]: the
 /// one being dragged and where it goes.
 class _PicturesPainter extends CustomPainter {
-  _PicturesPainter(this.pictures, this.images, this.draft);
+  _PicturesPainter(this.pictures, this.images, this.draft, {this.cut = false});
 
   final List<PagePicture> pictures;
   final Map<String, ui.Image> images;
   final (int, Rect?)? draft;
 
+  /// Cut at the page's edges, as export does ("As it will be").
+  final bool cut;
+
   @override
   void paint(Canvas canvas, Size size) {
     canvas.save();
-    canvas.clipRect(Offset.zero & size);
+    if (cut) canvas.clipRect(Offset.zero & size);
     for (final (i, pic) in pictures.indexed) {
       final image = images[pic.path];
       if (image == null) continue;
@@ -1176,7 +1220,9 @@ class _PicturesPainter extends CustomPainter {
         image,
         Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
         dst,
-        Paint()..filterQuality = FilterQuality.medium,
+        Paint()
+          ..filterQuality = FilterQuality.medium
+          ..color = Color.fromRGBO(0, 0, 0, pic.opacity),
       );
     }
     canvas.restore();
@@ -1184,7 +1230,7 @@ class _PicturesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PicturesPainter old) =>
-      old.pictures != pictures || old.draft != draft || old.images.length != images.length;
+      old.pictures != pictures || old.draft != draft || old.images.length != images.length || old.cut != cut;
 }
 
 /// The translation, as export draws it.

@@ -5116,4 +5116,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyPeekOriginal => 'Peek at the original (hold)';
+
+  @override
+  String pictureOpacity(String percent) {
+    return 'Opacity of the selected picture: $percent %. Less lets the page show through';
+  }
+
+  @override
+  String get picturesBack => 'Bring back pictures lost past the page\'s edges';
+
+  @override
+  String get pasteboardHelp =>
+      'On the desk beside the page: drag it onto the page (any page) to put it there';
 }

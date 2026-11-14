@@ -105,6 +105,40 @@ class PictureOptions extends ConsumerWidget {
             label: Text(l.pictureAdd),
           ),
         ),
+        // How much the selected picture covers what is below.
+        Tooltip(
+          message: l.pictureOpacity(index == null ? '—' : '${(page!.pictures[index].opacity * 100).round()}'),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.opacity, size: 18),
+              SizedBox(
+                width: 110,
+                child: Slider(
+                  value: index == null ? 1 : page!.pictures[index].opacity,
+                  min: 0.05,
+                  onChanged: index == null
+                      ? null
+                      : (v) => ref.read(workspaceProvider.notifier).setPictureOpacity(page!.id, index, v),
+                ),
+              ),
+              SizedBox(
+                width: 40,
+                child: Text(index == null ? '' : '${(page!.pictures[index].opacity * 100).round()}%'),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: l.picturesBack,
+          onPressed: page == null || page.pictures.isEmpty
+              ? null
+              : () async {
+                  final (w, h) = await imageFileSize(page.path);
+                  ref.read(workspaceProvider.notifier).bringPicturesBack(page.id, w, h);
+                },
+          icon: const Icon(Icons.center_focus_strong_outlined),
+        ),
         IconButton(
           tooltip: l.pictureToShelf,
           onPressed: index == null

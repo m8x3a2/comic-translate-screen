@@ -3339,5 +3339,9 @@
   "eraseShapeHelp": "Brush or outline: with an outline, everything inside it is erased or brought back at once",
   "eraseShapeBrush": "Brush",
   "pasteNoPicture": "No picture in the clipboard. Copy one (in a browser: right click on it, Copy image) and press Ctrl+V again",
-  "keyPeekOriginal": "Peek at the original (hold)"
+  "keyPeekOriginal": "Peek at the original (hold)",
+  "pictureOpacity": "Opacity of the selected picture: {percent} %. Less lets the page show through",
+  "@pictureOpacity": {"placeholders": {"percent": {"type": "String"}}},
+  "picturesBack": "Bring back pictures lost past the page's edges",
+  "pasteboardHelp": "On the desk beside the page: drag it onto the page (any page) to put it there"
 }

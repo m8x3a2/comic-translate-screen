@@ -5112,4 +5112,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keyPeekOriginal => 'Подглядеть оригинал (держать)';
+
+  @override
+  String pictureOpacity(String percent) {
+    return 'Непрозрачность выбранной картинки: $percent %. Меньше — сквозь неё видно страницу';
+  }
+
+  @override
+  String get picturesBack => 'Вернуть картинки, ушедшие за край страницы';
+
+  @override
+  String get pasteboardHelp =>
+      'На столе рядом со страницей: перетащите на страницу (любую), чтобы положить её туда';
 }

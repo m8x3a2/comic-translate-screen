@@ -92,12 +92,12 @@ RgbImage bakePaints(
   RgbImage base,
   List<PaintOp> ops, {
   RgbImage? original,
-  List<(RgbImage, GrayImage?, BBox)> pictures = const [],
+  List<(RgbImage, GrayImage?, BBox, double)> pictures = const [],
 }) {
   final out = base.clone();
-  for (final (image, alpha, box) in pictures) {
+  for (final (image, alpha, box, opacity) in pictures) {
     // Drawn below, after the touch-ups.
-    if (ops.isEmpty) drawPicture(out, image, alpha, box);
+    if (ops.isEmpty) drawPicture(out, image, alpha, box, opacity: opacity);
   }
   if (ops.isEmpty) return out;
   final w = out.width, h = out.height;
@@ -164,8 +164,8 @@ RgbImage bakePaints(
       }
     }
   }
-  for (final (image, alpha, box) in pictures) {
-    drawPicture(out, image, alpha, box);
+  for (final (image, alpha, box, opacity) in pictures) {
+    drawPicture(out, image, alpha, box, opacity: opacity);
   }
   return out;
 }
@@ -393,7 +393,7 @@ List<Point2> rectanglePoints(Point2 a, Point2 b) => [a, Point2(b.x, a.y), b, Poi
 /// A picture laid on the page (a meme in a bubble): over the touch-ups and
 /// under the translation; what reaches past the page's edges is cut.
 class PagePicture {
-  const PagePicture({required this.path, required this.box});
+  const PagePicture({required this.path, required this.box, this.opacity = 1});
 
   /// The picture file.
   final String path;
@@ -401,17 +401,40 @@ class PagePicture {
   /// Where it lies, in page pixels (may reach past the edges).
   final BBox box;
 
-  PagePicture withBox(BBox box) => PagePicture(path: path, box: box);
+  /// 1: the picture covers what is below; less lets it show through.
+  final double opacity;
 
-  Map<String, Object?> toJson() => {'path': path, 'box': box.toJson()};
+  PagePicture withBox(BBox box) => PagePicture(path: path, box: box, opacity: opacity);
 
-  factory PagePicture.fromJson(Map<String, Object?> j) =>
-      PagePicture(path: j['path'] as String? ?? '', box: BBox.fromJson(j['box']));
+  PagePicture withOpacity(double opacity) => PagePicture(path: path, box: box, opacity: opacity.clamp(0.05, 1.0));
+
+  Map<String, Object?> toJson() => {'path': path, 'box': box.toJson(), if (opacity != 1) 'opacity': opacity};
+
+  factory PagePicture.fromJson(Map<String, Object?> j) => PagePicture(
+    path: j['path'] as String? ?? '',
+    box: BBox.fromJson(j['box']),
+    opacity: ((j['opacity'] as num?)?.toDouble() ?? 1).clamp(0.05, 1.0),
+  );
+}
+
+/// [box] moved so that a piece of it stays on the [width]×[height] page (a
+/// quarter of its size, at least 16 pixels): a picture is never lost past
+/// the edges, where it cannot be grabbed.
+BBox keepOnPage(BBox box, int width, int height) {
+  int shift(int lo, int hi, int size) {
+    final keep = math.min(hi - lo, math.max(16, (hi - lo) ~/ 4));
+    if (hi < keep) return keep - hi;
+    if (lo > size - keep) return size - keep - lo;
+    return 0;
+  }
+
+  final dx = shift(box.x1, box.x2, width), dy = shift(box.y1, box.y2, height);
+  return BBox(box.x1 + dx, box.y1 + dy, box.x2 + dx, box.y2 + dy);
 }
 
 /// [image] (with its transparency [alpha]) scaled into [box] over [out],
 /// smoothly; the parts past the edges of [out] are cut.
-void drawPicture(RgbImage out, RgbImage image, GrayImage? alpha, BBox box) {
+void drawPicture(RgbImage out, RgbImage image, GrayImage? alpha, BBox box, {double opacity = 1}) {
   final bw = box.width, bh = box.height;
   if (bw <= 0 || bh <= 0) return;
   final clip = box.clampTo(out.width, out.height);
@@ -429,7 +452,7 @@ void drawPicture(RgbImage out, RgbImage image, GrayImage? alpha, BBox box) {
       final fx = sx - x0;
       final w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
       final i00 = y0 * iw + x0, i10 = y0 * iw + x1, i01 = y1 * iw + x0, i11 = y1 * iw + x1;
-      final op = a == null ? 1.0 : (a[i00] * w00 + a[i10] * w10 + a[i01] * w01 + a[i11] * w11) / 255;
+      final op = (a == null ? 1.0 : (a[i00] * w00 + a[i10] * w10 + a[i01] * w01 + a[i11] * w11) / 255) * opacity;
       if (op <= 0) continue;
       final o = (y * out.width + x) * 3;
       for (var c = 0; c < 3; c++) {
@@ -442,9 +465,9 @@ void drawPicture(RgbImage out, RgbImage image, GrayImage? alpha, BBox box) {
 
 /// The images of [pictures] with their transparency and place (unreadable
 /// ones are left out).
-Future<List<(RgbImage, GrayImage?, BBox)>> readPictures(List<PagePicture> pictures) async => [
+Future<List<(RgbImage, GrayImage?, BBox, double)>> readPictures(List<PagePicture> pictures) async => [
   for (final pic in pictures)
-    if (await _readPicture(pic.path) case (final rgb, final alpha)) (rgb, alpha, pic.box),
+    if (await _readPicture(pic.path) case (final rgb, final alpha)) (rgb, alpha, pic.box, pic.opacity),
 ];
 
 Future<(RgbImage, GrayImage)?> _readPicture(String path) async {

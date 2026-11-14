@@ -8689,6 +8689,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Peek at the original (hold)'**
   String get keyPeekOriginal;
+
+  /// No description provided for @pictureOpacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Opacity of the selected picture: {percent} %. Less lets the page show through'**
+  String pictureOpacity(String percent);
+
+  /// No description provided for @picturesBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring back pictures lost past the page\'s edges'**
+  String get picturesBack;
+
+  /// No description provided for @pasteboardHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'On the desk beside the page: drag it onto the page (any page) to put it there'**
+  String get pasteboardHelp;
 }
 
 class _AppLocalizationsDelegate
