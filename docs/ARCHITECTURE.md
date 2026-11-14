@@ -35,7 +35,14 @@ A future upscaling stage (stage 2) is inserted before `inpaint`.
   state `paints`), lie between the cleaned page and the translation, survive a
   new cleaning (which still works on the page under them) and are drawn into a
   file (`paintedPath`) for export, PSD and `cts project export`. "As it will be"
-  shows the page as export draws it, without boxes and mask.
+  shows the page as export draws it, without boxes and mask. The "Area" mode
+  fills everything inside a lasso, a polygon, a rectangle or an ellipse.
+- Pictures on the page (new, tool "Pictures"): a picture (a meme) laid into a
+  bubble or on the page, over the touch-ups and under the translation, cut at
+  the page's edges, drawn into the same file for export and kept in the project
+  (`ProjectPage.pictures`, the file stored like the page images). The "shelf"
+  keeps bubbles and pictures taken off one page to put on another, until the
+  program is closed.
 - Lettering as in the source (new, `source_style.dart`): when a block is read,
   its letters are measured on the page (`TextBlock.sourceStyle`): letter
   height (cap height of capitals, x-height band otherwise), stroke weight

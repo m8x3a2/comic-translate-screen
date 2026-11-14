@@ -204,4 +204,45 @@ void main() {
       expect(p, isNot(contains((10, 3))));
     });
   });
+
+  group('pictures', () {
+    test('a picture is scaled into its box, over the touch-ups; past the edges it is cut', () {
+      final base = RgbImage.filled(20, 20, 255, 255, 255);
+      final red = RgbImage.filled(2, 2, 255, 0, 0);
+      final out = bakePaints(
+        base,
+        const [
+          PaintOp(kind: PaintKind.fill, color: 0xFF0000FF, runs: [5, 0, 20]),
+        ],
+        pictures: [(red, null, const BBox(4, 4, 8, 8)), (red, null, const BBox(-5, 15, 3, 25))],
+      );
+      expect(px(out, 5, 5), (255, 0, 0), reason: 'over the blue fill');
+      expect(px(out, 8, 5), (0, 0, 255));
+      expect(px(out, 2, 2), (255, 255, 255));
+      expect(px(out, 0, 19), (255, 0, 0));
+      expect(px(out, 3, 19), (255, 255, 255));
+      // Without touch-ups the picture is laid too.
+      expect(px(bakePaints(base, const [], pictures: [(red, null, const BBox(0, 0, 4, 4))]), 1, 1), (255, 0, 0));
+    });
+
+    test('transparent parts of a picture leave the page seen', () {
+      final base = RgbImage.filled(4, 4, 0, 0, 0);
+      final white = RgbImage.filled(4, 4, 255, 255, 255);
+      final alpha = GrayImage.zeros(4, 4);
+      for (var y = 0; y < 4; y++) {
+        alpha.data[y * 4] = 255;
+        alpha.data[y * 4 + 1] = 255;
+      }
+      final out = bakePaints(base, const [], pictures: [(white, alpha, const BBox(0, 0, 4, 4))]);
+      expect(px(out, 0, 1), (255, 255, 255));
+      expect(px(out, 3, 1), (0, 0, 0));
+    });
+
+    test('JSON', () {
+      const pic = PagePicture(path: 'a.png', box: BBox(-3, 4, 50, 60));
+      final back = PagePicture.fromJson(pic.toJson());
+      expect(back.path, 'a.png');
+      expect(back.box, pic.box);
+    });
+  });
 }

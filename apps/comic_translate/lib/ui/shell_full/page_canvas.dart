@@ -9,6 +9,7 @@ library;
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:ct_core/ct_core.dart' hide TextDirection;
 import 'package:flutter/foundation.dart' show setEquals;
@@ -103,6 +104,10 @@ enum _Mode {
   /// An outline of the area mode: a lasso, a rectangle, an ellipse, or a
   /// click of the polygon.
   shape,
+
+  /// A picture dragged, or one of its corners.
+  movePicture,
+  resizePicture,
 }
 
 /// A drag in progress.
@@ -144,6 +149,10 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   ImageTiles? _original;
   String? _originalPath;
 
+  /// The pictures laid on the page, by file.
+  final _pictures = <String, ui.Image>{};
+  final _picturesLoading = <String>{};
+
   _Drag? _drag;
   Offset? _hover;
 
@@ -177,6 +186,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     HardwareKeyboard.instance.removeHandler(_onKey);
     _mask?.dispose();
     _original?.dispose();
+    for (final image in _pictures.values) {
+      image.dispose();
+    }
     super.dispose();
   }
 
@@ -257,6 +269,70 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       }
     }());
   }
+
+  /// Reads the pictures of the page not read yet, and lets go of those it
+  /// has no more.
+  void _ensurePictures(List<PagePicture> pictures) {
+    final wanted = {for (final pic in pictures) pic.path};
+    for (final gone in _pictures.keys.where((k) => !wanted.contains(k)).toList()) {
+      _pictures.remove(gone)?.dispose();
+    }
+    for (final path in wanted) {
+      if (_pictures.containsKey(path) || !_picturesLoading.add(path)) continue;
+      unawaited(() async {
+        try {
+          final codec = await ui.instantiateImageCodec(await File(path).readAsBytes());
+          final frame = await codec.getNextFrame();
+          codec.dispose();
+          if (mounted) {
+            setState(() => _pictures[path] = frame.image);
+          } else {
+            frame.image.dispose();
+          }
+        } on Object {
+          // An unreadable picture shows nothing.
+        } finally {
+          _picturesLoading.remove(path);
+        }
+      }());
+    }
+  }
+
+  /// The topmost picture of the page at [p].
+  int? _hitPicture(Offset p) {
+    final pictures = widget.page.pictures;
+    for (var i = pictures.length - 1; i >= 0; i--) {
+      if (_rectOf(pictures[i].box).inflate(2 / _zoom).contains(p)) return i;
+    }
+    return null;
+  }
+
+  /// [r] with corner [handle] dragged by [d]; the picture keeps its shape
+  /// unless [free] (Shift).
+  Rect _resizePicture(Rect r, int handle, Offset d, {required bool free}) {
+    final draft = _resize(r, handle, d);
+    if (free || r.height == 0) return draft;
+    final aspect = r.width / r.height;
+    // The corner across stays put.
+    final anchor = switch (handle) {
+      0 => r.bottomRight,
+      2 => r.bottomLeft,
+      4 => r.topLeft,
+      _ => r.topRight,
+    };
+    final w = math.max(draft.width.abs(), draft.height.abs() * aspect);
+    final h = w / aspect;
+    final sx = handle == 0 || handle == 6 ? -1.0 : 1.0, sy = handle == 0 || handle == 2 ? -1.0 : 1.0;
+    return Rect.fromPoints(anchor, anchor + Offset(sx * w, sy * h));
+  }
+
+  /// [r] in whole pixels, as it is (a picture may reach past the edges).
+  static BBox _wholeBox(Rect r) => BBox(
+    math.min(r.left, r.right).round(),
+    math.min(r.top, r.bottom).round(),
+    math.max(r.left, r.right).round(),
+    math.max(r.top, r.bottom).round(),
+  );
 
   /// The drawing tool takes a colour with a click: its pipette, or Alt.
   bool _picksColour(EditorState editor) =>
@@ -486,6 +562,21 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           drag = _Drag(_Mode.fit, p);
         case EditorTool.pick:
           drag = _Drag(_Mode.pick, p);
+        case EditorTool.pictures:
+          final selection = ref.read(pictureSelectionProvider.notifier);
+          final sel = selection.of(page.id);
+          final selRect = sel != null && sel < page.pictures.length ? _rectOf(page.pictures[sel].box) : null;
+          final corner = selRect == null ? null : _hitHandle(selRect, p, cornersOnly: true);
+          final hit = _hitPicture(p);
+          if (corner != null) {
+            drag = _Drag(_Mode.resizePicture, p, index: sel, handle: corner, rect: selRect);
+          } else if (hit != null) {
+            selection.select(page.id, hit);
+            drag = _Drag(_Mode.movePicture, p, index: hit, rect: _rectOf(page.pictures[hit].box));
+          } else {
+            selection.clear();
+            drag = _Drag(_Mode.picked, p);
+          }
         case EditorTool.draw when _picksColour(editor):
           drag = _Drag(_Mode.colour, p);
         case EditorTool.draw when editor.drawMode == DrawMode.fill:
@@ -532,8 +623,10 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         }
       case _Mode.newBox || _Mode.area:
         d.draft = Rect.fromPoints(d.start, p);
-      case _Mode.moveBox || _Mode.moveText:
+      case _Mode.moveBox || _Mode.moveText || _Mode.movePicture:
         d.draft = d.rect!.shift(delta);
+      case _Mode.resizePicture:
+        d.draft = _resizePicture(d.rect!, d.handle!, delta, free: HardwareKeyboard.instance.isShiftPressed);
       case _Mode.resizeBox || _Mode.resizeText:
         d.draft = _resize(d.rect!, d.handle!, delta);
       case _Mode.rotateText:
@@ -594,6 +687,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       case _Mode.fill:
         if (d.moved) break;
         unawaited(ref.read(paintToolsProvider.notifier).fill(widget.page.id, Point2(d.start.dx, d.start.dy)));
+      case _Mode.movePicture || _Mode.resizePicture:
+        final box = d.draft == null ? null : _wholeBox(d.draft!);
+        if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
+          ws.setPictureBox(widget.page.id, d.index!, box);
+        }
       case _Mode.shape:
         final editor = ref.read(editorProvider);
         final a = Point2(d.start.dx, d.start.dy), b = Point2(d.current.dx, d.current.dy);
@@ -711,6 +809,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       EditorTool.pan => SystemMouseCursors.grab,
       EditorTool.fit || EditorTool.pick => SystemMouseCursors.precise,
       EditorTool.draw => editor.drawsStrokes ? SystemMouseCursors.none : SystemMouseCursors.precise,
+      EditorTool.pictures => SystemMouseCursors.basic,
     };
   }
 
@@ -739,6 +838,14 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     // The touch-ups lie over the cleaned page, under the translation.
     final draftPaint = d?.mode == _Mode.draw ? _paintOf(editor, d!.points) : null;
     final showPaints = result && (page.paints.isNotEmpty || draftPaint != null);
+    final showPictures = result && page.pictures.isNotEmpty;
+    if (showPictures) _ensurePictures(page.pictures);
+    final pictureSelected = widget.active ? ref.watch(pictureSelectionProvider.notifier).of(page.id) : null;
+    ref.watch(pictureSelectionProvider);
+    // A picture dragged shows where it goes.
+    final pictureDraft = d != null && d.moved && (d.mode == _Mode.movePicture || d.mode == _Mode.resizePicture)
+        ? (d.index!, d.draft)
+        : null;
     _ensureOriginal(
       showPaints && (paintsUseOriginal(page.paints) || draftPaint?.kind == PaintKind.original) ? page.path : null,
     );
@@ -814,6 +921,12 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
               Positioned.fill(
                 child: RepaintBoundary(child: CustomPaint(painter: _PaintsPainter(page.paints, draftPaint, _original))),
               ),
+            if (showPictures)
+              Positioned.fill(
+                child: RepaintBoundary(
+                  child: CustomPaint(painter: _PicturesPainter(page.pictures, Map.of(_pictures), pictureDraft)),
+                ),
+              ),
             if (overflow != null)
               Positioned(
                 left: 0,
@@ -856,6 +969,15 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
                     drag: d,
                     hover: hovers && !polygon && !widget.readOnly && !_grab ? _hover : null,
                     outline: _outlineDraft(editor),
+                    pictureBoxes: editor.tool == EditorTool.pictures && !widget.readOnly
+                        ? [
+                            for (final (i, pic) in page.pictures.indexed)
+                              pictureDraft != null && pictureDraft.$1 == i && pictureDraft.$2 != null
+                                  ? pictureDraft.$2!
+                                  : _rectOf(pic.box),
+                          ]
+                        : const [],
+                    pictureSelected: pictureSelected,
                     closedOutline: !polygon,
                     picking: picking,
                     hoverColour: hoverColour,
@@ -988,6 +1110,40 @@ class _PaintsPainter extends CustomPainter {
       old.ops != ops || old.draft != draft || old.original != original || (draft?.points.length ?? 0) > 0;
 }
 
+/// The pictures laid on the page (memes), cut at its edges; [draft]: the
+/// one being dragged and where it goes.
+class _PicturesPainter extends CustomPainter {
+  _PicturesPainter(this.pictures, this.images, this.draft);
+
+  final List<PagePicture> pictures;
+  final Map<String, ui.Image> images;
+  final (int, Rect?)? draft;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    for (final (i, pic) in pictures.indexed) {
+      final image = images[pic.path];
+      if (image == null) continue;
+      final b = pic.box;
+      var dst = Rect.fromLTRB(b.x1.toDouble(), b.y1.toDouble(), b.x2.toDouble(), b.y2.toDouble());
+      if (draft case (final k, final r?) when k == i) dst = Rect.fromPoints(r.topLeft, r.bottomRight);
+      canvas.drawImageRect(
+        image,
+        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        dst,
+        Paint()..filterQuality = FilterQuality.medium,
+      );
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_PicturesPainter old) =>
+      old.pictures != pictures || old.draft != draft || old.images.length != images.length;
+}
+
 /// The translation, as export draws it.
 class _TextPainter extends CustomPainter {
   _TextPainter(this.layout, this.engines, this.hidden);
@@ -1030,6 +1186,8 @@ class _OverlayPainter extends CustomPainter {
     required this.hover,
     this.outline,
     this.closedOutline = true,
+    this.pictureBoxes = const [],
+    this.pictureSelected,
     this.picking = false,
     this.hoverColour,
     required this.lineFrom,
@@ -1055,6 +1213,10 @@ class _OverlayPainter extends CustomPainter {
   /// lightly with the drawing colour; the polygon's corners are marked.
   final List<Offset>? outline;
   final bool closedOutline;
+
+  /// The pictures tool: where each picture lies, and the selected one.
+  final List<Rect> pictureBoxes;
+  final int? pictureSelected;
 
   /// The drawing tool takes a colour: a square by the mouse shows the one
   /// under it ([hoverColour]) and the chosen one.
@@ -1194,6 +1356,16 @@ class _OverlayPainter extends CustomPainter {
       canvas.drawCircle(c, 7 * px, Paint()..color = colors.tertiary);
       canvas.drawCircle(c, 7 * px, line(Colors.white, 2));
       canvas.drawCircle(c, 2.5 * px, Paint()..color = Colors.white);
+    }
+
+    for (final (i, r) in pictureBoxes.indexed) {
+      final sel = i == pictureSelected;
+      if (sel) {
+        canvas.drawRect(r, line(colors.tertiary, 2));
+        handles(r, cornersOnly: true);
+      } else {
+        _dashed(canvas, r, line(colors.primary.withValues(alpha: 0.8), 1.2), 6 * px);
+      }
     }
 
     if (outline case final o? when o.isNotEmpty) {

@@ -5,9 +5,11 @@
 /// the translation; [bakePaints] draws them into the picture for export.
 library;
 
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import '../image/cv_bridge.dart';
 import '../image/raster.dart';
 import '../model/geometry.dart';
 
@@ -82,8 +84,20 @@ bool paintsUseOriginal(List<PaintOp> ops) => ops.any((o) => o.kind == PaintKind.
 /// (the page before cleaning, of the same size) is needed when the ops
 /// bring it back; without it those strokes do nothing. Strokes have soft
 /// (anti-aliased) edges like the ones drawn on screen.
-RgbImage bakePaints(RgbImage base, List<PaintOp> ops, {RgbImage? original}) {
+///
+/// [pictures] (images with their transparency and place) are laid over the
+/// touch-ups, in order.
+RgbImage bakePaints(
+  RgbImage base,
+  List<PaintOp> ops, {
+  RgbImage? original,
+  List<(RgbImage, GrayImage?, BBox)> pictures = const [],
+}) {
   final out = base.clone();
+  for (final (image, alpha, box) in pictures) {
+    // Drawn below, after the touch-ups.
+    if (ops.isEmpty) drawPicture(out, image, alpha, box);
+  }
   if (ops.isEmpty) return out;
   final w = out.width, h = out.height;
   final data = out.data;
@@ -135,6 +149,9 @@ RgbImage bakePaints(RgbImage base, List<PaintOp> ops, {RgbImage? original}) {
         }
       }
     }
+  }
+  for (final (image, alpha, box) in pictures) {
+    drawPicture(out, image, alpha, box);
   }
   return out;
 }
@@ -358,3 +375,68 @@ List<Point2> ellipsePoints(Point2 a, Point2 b, {int count = 72}) {
 
 /// The outline of the rectangle with opposite corners [a] and [b].
 List<Point2> rectanglePoints(Point2 a, Point2 b) => [a, Point2(b.x, a.y), b, Point2(a.x, b.y)];
+
+/// A picture laid on the page (a meme in a bubble): over the touch-ups and
+/// under the translation; what reaches past the page's edges is cut.
+class PagePicture {
+  const PagePicture({required this.path, required this.box});
+
+  /// The picture file.
+  final String path;
+
+  /// Where it lies, in page pixels (may reach past the edges).
+  final BBox box;
+
+  PagePicture withBox(BBox box) => PagePicture(path: path, box: box);
+
+  Map<String, Object?> toJson() => {'path': path, 'box': box.toJson()};
+
+  factory PagePicture.fromJson(Map<String, Object?> j) =>
+      PagePicture(path: j['path'] as String? ?? '', box: BBox.fromJson(j['box']));
+}
+
+/// [image] (with its transparency [alpha]) scaled into [box] over [out],
+/// smoothly; the parts past the edges of [out] are cut.
+void drawPicture(RgbImage out, RgbImage image, GrayImage? alpha, BBox box) {
+  final bw = box.width, bh = box.height;
+  if (bw <= 0 || bh <= 0) return;
+  final clip = box.clampTo(out.width, out.height);
+  if (clip.isEmpty) return;
+  final iw = image.width, ih = image.height;
+  final src = image.data, dst = out.data;
+  final a = alpha != null && alpha.width == iw && alpha.height == ih ? alpha.data : null;
+  for (var y = clip.y1; y < clip.y2; y++) {
+    final sy = ((y + 0.5 - box.y1) * ih / bh - 0.5).clamp(0.0, ih - 1.0);
+    final y0 = sy.floor(), y1 = math.min(y0 + 1, ih - 1);
+    final fy = sy - y0;
+    for (var x = clip.x1; x < clip.x2; x++) {
+      final sx = ((x + 0.5 - box.x1) * iw / bw - 0.5).clamp(0.0, iw - 1.0);
+      final x0 = sx.floor(), x1 = math.min(x0 + 1, iw - 1);
+      final fx = sx - x0;
+      final w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
+      final i00 = y0 * iw + x0, i10 = y0 * iw + x1, i01 = y1 * iw + x0, i11 = y1 * iw + x1;
+      final op = a == null ? 1.0 : (a[i00] * w00 + a[i10] * w10 + a[i01] * w01 + a[i11] * w11) / 255;
+      if (op <= 0) continue;
+      final o = (y * out.width + x) * 3;
+      for (var c = 0; c < 3; c++) {
+        final v = src[i00 * 3 + c] * w00 + src[i10 * 3 + c] * w10 + src[i01 * 3 + c] * w01 + src[i11 * 3 + c] * w11;
+        dst[o + c] = (dst[o + c] * (1 - op) + v * op).round().clamp(0, 255);
+      }
+    }
+  }
+}
+
+/// The images of [pictures] with their transparency and place (unreadable
+/// ones are left out).
+Future<List<(RgbImage, GrayImage?, BBox)>> readPictures(List<PagePicture> pictures) async => [
+  for (final pic in pictures)
+    if (await _readPicture(pic.path) case (final rgb, final alpha)) (rgb, alpha, pic.box),
+];
+
+Future<(RgbImage, GrayImage)?> _readPicture(String path) async {
+  try {
+    return ImageCodec.decodeRgba(await File(path).readAsBytes());
+  } on Object {
+    return null;
+  }
+}

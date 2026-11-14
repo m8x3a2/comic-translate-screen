@@ -38,7 +38,7 @@ ExportPage exportPageOf(PageEntry page, {String? translatedImage}) {
     sourceExtension: ext.isEmpty ? p.extension(page.path) : ext,
     translatedImage: translatedImage ?? page.translatedPath,
     // The touch-ups belong to the cleaned page.
-    cleanImage: page.paints.isEmpty ? page.cleanPath : page.finalBasePath,
+    cleanImage: page.hasTouchUps ? page.finalBasePath : page.cleanPath,
     recognized: page.blocks.isEmpty ? null : {for (final (i, b) in page.blocks.indexed) 'block_$i': b.text},
     translations: page.blocks.isEmpty ? null : {for (final (i, b) in page.blocks.indexed) 'block_$i': b.translation},
   );

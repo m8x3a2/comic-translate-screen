@@ -90,6 +90,32 @@ void main() {
     expect(File(font).lengthSync(), 300);
   });
 
+  test('pictures laid on a page come back from the project, two of the same name too', () {
+    final meme = file('meme.png', [9, 9, 9]);
+    final other = file(p.join('x', 'meme.png'), [7, 7]);
+    final path = p.join(dir.path, 'pics.ctsproj');
+    ProjectFile.save(
+      path,
+      ProjectData(
+        pages: [
+          ProjectPage(
+            id: 'a',
+            name: '001.png',
+            image: file('001.png', [1]),
+            pictures: [
+              PagePicture(path: meme, box: const BBox(-5, 10, 40, 60)),
+              PagePicture(path: other, box: const BBox(0, 0, 4, 4)),
+            ],
+          ),
+        ],
+      ),
+    );
+    final back = ProjectFile.load(path, Directory(p.join(dir.path, 'open'))).pages.single.pictures;
+    expect(back.map((x) => x.box), [const BBox(-5, 10, 40, 60), const BBox(0, 0, 4, 4)]);
+    expect(File(back.first.path).readAsBytesSync(), [9, 9, 9]);
+    expect(File(back.last.path).readAsBytesSync(), [7, 7]);
+  });
+
   // A font given to one word only was neither stored nor found again.
   test('the font of a single word goes with the project too', () {
     final path = p.join(dir.path, 'words.ctsproj');

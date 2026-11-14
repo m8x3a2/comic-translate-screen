@@ -5036,4 +5036,70 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get areaEllipse => 'Ellipse: drag across it (good for round bubbles)';
+
+  @override
+  String get toolPictures =>
+      'Pictures (M): lay a picture (a meme) on the page or into a bubble; drag it, pull a corner (Shift: any shape), Delete removes it';
+
+  @override
+  String get keyPictures => 'Pictures';
+
+  @override
+  String get pictureFiles => 'Pictures';
+
+  @override
+  String pictureUnreadable(String error) {
+    return 'Could not read the picture: $error';
+  }
+
+  @override
+  String get pictureAdd => 'Add a picture…';
+
+  @override
+  String get pictureAddHelp =>
+      'The picture goes into the middle of the page. Select a bubble first to put it into the bubble';
+
+  @override
+  String pictureAddIntoBubble(String number) {
+    return 'The picture goes into bubble $number';
+  }
+
+  @override
+  String get pictureToShelf => 'Put the selected picture on the shelf';
+
+  @override
+  String get pictureRemove => 'Remove the selected picture (Delete)';
+
+  @override
+  String get shelf => 'Shelf';
+
+  @override
+  String shelfToggle(String count) {
+    return 'Shelf: bubbles and pictures put away from one page, to take out on another ($count)';
+  }
+
+  @override
+  String shelfPutBubbles(String count) {
+    return 'Put the selected bubbles here ($count)';
+  }
+
+  @override
+  String get shelfPutHelp =>
+      'The selected bubbles leave the page with their text, translation and look. Ctrl+Z on the page brings them back there';
+
+  @override
+  String get shelfEmpty =>
+      'Empty. Put a bubble here with the button above, or a picture with the Pictures tool';
+
+  @override
+  String get shelfPicture => 'Picture';
+
+  @override
+  String get shelfBubbleEmpty => 'Bubble without text';
+
+  @override
+  String get shelfTakeHelp => 'Click: onto this page';
+
+  @override
+  String get shelfThrow => 'Throw away';
 }

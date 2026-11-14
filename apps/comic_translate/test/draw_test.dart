@@ -2,6 +2,8 @@
 
 import 'package:comic_translate/state/editor.dart';
 import 'package:comic_translate/ui/shell_full/draw_options.dart';
+import 'package:comic_translate/ui/shell_full/picture_options.dart';
+import 'package:ct_core/ct_core.dart' show BBox;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -54,5 +56,14 @@ void main() {
     expect(c.read(editorProvider).preview, isTrue);
     editor.setTool(EditorTool.boxes);
     expect(c.read(editorProvider).preview, isFalse);
+  });
+
+  test('a picture goes into the selected bubble, as large as fits, or a third of the page wide', () {
+    // A wide picture into a square bubble: as wide as the bubble, in its middle.
+    expect(
+      placePicture(200, 100, area: const BBox(10, 10, 110, 110), pageWidth: 500, pageHeight: 500),
+      const BBox(10, 35, 110, 85),
+    );
+    expect(placePicture(100, 100, pageWidth: 600, pageHeight: 900), const BBox(200, 350, 400, 550));
   });
 }

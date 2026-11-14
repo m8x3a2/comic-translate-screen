@@ -215,6 +215,7 @@ String shortcutLabel(AppLocalizations l, ShortcutAction a) => switch (a) {
   ShortcutAction.fitMask => l.keyFitMask,
   ShortcutAction.pipette => l.keyPipette,
   ShortcutAction.draw => l.keyDraw,
+  ShortcutAction.pictures => l.keyPictures,
   ShortcutAction.preview => l.keyPreview,
   ShortcutAction.brushSmaller => l.keyBrushSmaller,
   ShortcutAction.brushLarger => l.keyBrushLarger,

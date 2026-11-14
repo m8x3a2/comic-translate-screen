@@ -50,7 +50,11 @@ Future<List<PageEntry>> drawMissingPages(
     // not take the drawn page away, see [WorkspaceNotifier.edit]).
     workspace.updatePage(
       page.id,
-      (p) => identical(p.blocks, page.blocks) && p.cleanPath == page.cleanPath && identical(p.paints, page.paints)
+      (p) =>
+          identical(p.blocks, page.blocks) &&
+              p.cleanPath == page.cleanPath &&
+              identical(p.paints, page.paints) &&
+              identical(p.pictures, page.pictures)
           ? p.copyWith(translatedPath: file, renderScale: render.scale)
           : p,
     );

@@ -54,8 +54,10 @@ class _ProjectInfo extends CtsCommand {
         'app_version': info.appVersion,
       });
     } else {
-      ctx.say('${p.basename(rest.single)}: ${info.pages} page(s), ${(info.bytes / 1024 / 1024).toStringAsFixed(1)} MB'
-          '${info.saved == null ? '' : ', saved ${info.saved}'}${info.appVersion == null ? '' : ' by ${info.appVersion}'}');
+      ctx.say(
+        '${p.basename(rest.single)}: ${info.pages} page(s), ${(info.bytes / 1024 / 1024).toStringAsFixed(1)} MB'
+        '${info.saved == null ? '' : ', saved ${info.saved}'}${info.appVersion == null ? '' : ' by ${info.appVersion}'}',
+      );
     }
     return ExitCodes.ok;
   }
@@ -66,20 +68,40 @@ class ExportCommand extends CtsCommand {
   ExportCommand(super.holder) {
     argParser
       ..addOption('output', abbr: 'o', help: 'The file (zip, cbz, cb7, pdf) or folder to write (required).')
-      ..addOption('as', allowed: [for (final c in ExportContainer.values) c.name], help: 'Default: from the output\'s extension, else folder.')
-      ..addMultiOption('what',
-          allowed: ['translated', 'cleaned', 'raw', 'translations'],
-          defaultsTo: ['translated'],
-          help: 'Pages with the translation, cleaned pages, recognized text, translations (JSON).')
+      ..addOption(
+        'as',
+        allowed: [for (final c in ExportContainer.values) c.name],
+        help: 'Default: from the output\'s extension, else folder.',
+      )
+      ..addMultiOption(
+        'what',
+        allowed: ['translated', 'cleaned', 'raw', 'translations'],
+        defaultsTo: ['translated'],
+        help: 'Pages with the translation, cleaned pages, recognized text, translations (JSON).',
+      )
       ..addOption('image-format', allowed: ExportSettings.formats, defaultsTo: 'source')
-      ..addFlag('by-chapter', negatable: false, help: 'One file per chapter (source archive or PDF); --output is then a folder.')
-      ..addOption('to', help: 'Language of the translation, for drawing it (default: that of each page, else settings).')
-      ..addOption('strip',
-          allowed: [for (final v in StripExport.values) v.name],
-          defaultsTo: 'pages',
-          help: 'Webtoons: save the pages as they are, as one picture per chapter, or cut again into parts.')
-      ..addOption('slice-height', defaultsTo: '1280', help: 'With --strip slices: height of a part in pixels (about; '
-          'each cut goes along an even row near it).');
+      ..addFlag(
+        'by-chapter',
+        negatable: false,
+        help: 'One file per chapter (source archive or PDF); --output is then a folder.',
+      )
+      ..addOption(
+        'to',
+        help: 'Language of the translation, for drawing it (default: that of each page, else settings).',
+      )
+      ..addOption(
+        'strip',
+        allowed: [for (final v in StripExport.values) v.name],
+        defaultsTo: 'pages',
+        help: 'Webtoons: save the pages as they are, as one picture per chapter, or cut again into parts.',
+      )
+      ..addOption(
+        'slice-height',
+        defaultsTo: '1280',
+        help:
+            'With --strip slices: height of a part in pixels (about; '
+            'each cut goes along an even row near it).',
+      );
   }
 
   @override
@@ -99,8 +121,10 @@ class ExportCommand extends CtsCommand {
     final ext = p.extension(output).toLowerCase();
     final container = args.option('as') != null
         ? ExportContainer.parse(args.option('as'))
-        : ExportContainer.values.firstWhere((c) => c != ExportContainer.folder && c.extension == ext,
-            orElse: () => ExportContainer.folder);
+        : ExportContainer.values.firstWhere(
+            (c) => c != ExportContainer.folder && c.extension == ext,
+            orElse: () => ExportContainer.folder,
+          );
     final what = args.multiOption('what');
     final options = ExportOptions(
       container: container,
@@ -135,9 +159,9 @@ class ExportCommand extends CtsCommand {
           final paints = paintOpsFromJson(page.state['paints']);
           var base = await ImageCodec.readFile(page.cleanImage ?? page.image);
           // The touch-ups painted by hand over the cleaned page.
-          if (paints.isNotEmpty) {
+          if (paints.isNotEmpty || page.pictures.isNotEmpty) {
             final original = paintsUseOriginal(paints) ? await ImageCodec.readFile(page.image) : null;
-            base = bakePaints(base, paints, original: original);
+            base = bakePaints(base, paints, original: original, pictures: await readPictures(page.pictures));
           }
           final above = data.state['webtoon'] == true && i > 0 ? await _above(data.pages[i - 1], targetOf) : null;
           if (options.imageFormat == 'psd') {
@@ -162,15 +186,17 @@ class ExportCommand extends CtsCommand {
           }
         }
         final ext = p.extension(page.name);
-        pages.add(ExportPage(
-          name: p.basenameWithoutExtension(page.name),
-          chapter: page.source == null ? '' : p.basenameWithoutExtension(page.source!),
-          sourceExtension: ext.isEmpty ? p.extension(page.image) : ext,
-          translatedImage: translated,
-          cleanImage: page.cleanImage,
-          recognized: {for (final (j, b) in page.blocks.indexed) 'block_$j': b.text},
-          translations: {for (final (j, b) in page.blocks.indexed) 'block_$j': b.translation},
-        ));
+        pages.add(
+          ExportPage(
+            name: p.basenameWithoutExtension(page.name),
+            chapter: page.source == null ? '' : p.basenameWithoutExtension(page.source!),
+            sourceExtension: ext.isEmpty ? p.extension(page.image) : ext,
+            translatedImage: translated,
+            cleanImage: page.cleanImage,
+            recognized: {for (final (j, b) in page.blocks.indexed) 'block_$j': b.text},
+            translations: {for (final (j, b) in page.blocks.indexed) 'block_$j': b.translation},
+          ),
+        );
       }
       if (pages.isEmpty) {
         ctx.err.writeln('No translated or cleaned pages in the project.');
@@ -192,7 +218,11 @@ class ExportCommand extends CtsCommand {
         ctx.err.writeln(e.message);
         return ExitCodes.failure;
       }
-      ctx.services.appLog.info('exported', {'container': container.name, 'pages': result.pages, 'files': result.outputs.length});
+      ctx.services.appLog.info('exported', {
+        'container': container.name,
+        'pages': result.pages,
+        'files': result.outputs.length,
+      });
       if (ctx.json) {
         ctx.printJson({'pages': result.pages, 'outputs': result.outputs});
       } else {

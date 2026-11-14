@@ -74,6 +74,7 @@ class PageEntry {
     this.overflowPath,
     this.strokes = const [],
     this.paints = const [],
+    this.pictures = const [],
     this.paintedPath,
     this.blocks = const [],
     this.renderScale = 1.0,
@@ -123,7 +124,11 @@ class PageEntry {
   /// the translation.
   final List<PaintOp> paints;
 
-  /// [basePath] with [paints] drawn in (a cache for export and drawing,
+  /// Pictures laid on the page (memes), over [paints], under the
+  /// translation.
+  final List<PagePicture> pictures;
+
+  /// [basePath] with [paints] and [pictures] drawn in (a cache for export and drawing,
   /// made by [WorkspaceNotifier.ensurePainted]; cleared when either
   /// changes).
   final String? paintedPath;
@@ -160,10 +165,13 @@ class PageEntry {
   /// The image the translation is drawn on: [basePath] with the touch-ups.
   /// While they are not drawn in yet ([WorkspaceNotifier.ensurePainted]),
   /// [basePath].
-  String get finalBasePath => paints.isEmpty ? basePath : (paintedPath ?? basePath);
+  String get finalBasePath => !hasTouchUps ? basePath : (paintedPath ?? basePath);
+
+  /// Touch-ups or pictures lie over the cleaned page.
+  bool get hasTouchUps => paints.isNotEmpty || pictures.isNotEmpty;
 
   /// The touch-ups are drawn into [paintedPath].
-  bool get paintsReady => paints.isEmpty || paintedPath != null;
+  bool get paintsReady => !hasTouchUps || paintedPath != null;
 
   /// There is a mask to clean with.
   bool get hasMask => maskPath != null || strokes.any((s) => !s.erase);
@@ -180,6 +188,7 @@ class PageEntry {
     Object? overflowPath = _keep,
     List<MaskStroke>? strokes,
     List<PaintOp>? paints,
+    List<PagePicture>? pictures,
     Object? paintedPath = _keep,
     List<TextBlock>? blocks,
     double? renderScale,
@@ -192,10 +201,11 @@ class PageEntry {
     final rendered = pick<String>(translatedPath, this.translatedPath);
     final clean = pick<String>(cleanPath, this.cleanPath);
     final newPaints = paints ?? this.paints;
+    final newPictures = pictures ?? this.pictures;
     // The drawn-in touch-ups go with a new cleaned page or new touch-ups.
     final painted = !identical(paintedPath, _keep)
         ? paintedPath as String?
-        : clean == this.cleanPath && identical(newPaints, this.paints)
+        : clean == this.cleanPath && identical(newPaints, this.paints) && identical(newPictures, this.pictures)
         ? this.paintedPath
         : null;
     return PageEntry(
@@ -212,6 +222,7 @@ class PageEntry {
       overflowPath: pick(overflowPath, this.overflowPath),
       strokes: strokes ?? this.strokes,
       paints: newPaints,
+      pictures: newPictures,
       paintedPath: painted,
       blocks: blocks ?? this.blocks,
       renderScale: renderScale ?? this.renderScale,
@@ -232,6 +243,7 @@ class PageSnapshot {
       overflowPath = p.overflowPath,
       strokes = p.strokes,
       paints = p.paints,
+      pictures = p.pictures,
       paintedPath = p.paintedPath,
       translatedPath = p.translatedPath,
       renderScale = p.renderScale,
@@ -243,6 +255,7 @@ class PageSnapshot {
   final String? overflowPath;
   final List<MaskStroke> strokes;
   final List<PaintOp> paints;
+  final List<PagePicture> pictures;
   final String? paintedPath;
   final String? translatedPath;
   final double renderScale;
@@ -255,6 +268,7 @@ class PageSnapshot {
     overflowPath: overflowPath,
     strokes: strokes,
     paints: paints,
+    pictures: pictures,
     paintedPath: paintedPath,
     translatedPath: translatedPath,
     renderScale: renderScale,
@@ -1163,6 +1177,31 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     _paintSoon(page.id);
   }
 
+  /// Lays [picture] on page [pageId] (one undo step); its index.
+  int addPicture(String pageId, PagePicture picture) {
+    edit(pageId, (p) => p.copyWith(pictures: [...p.pictures, picture]));
+    _paintSoon(pageId);
+    return (state.byId(pageId)?.pictures.length ?? 1) - 1;
+  }
+
+  /// Moves or resizes picture [index] of page [pageId] (one undo step).
+  void setPictureBox(String pageId, int index, BBox box) {
+    edit(pageId, (p) {
+      if (index < 0 || index >= p.pictures.length) return p;
+      return p.copyWith(pictures: [...p.pictures]..[index] = p.pictures[index].withBox(box));
+    });
+    _paintSoon(pageId);
+  }
+
+  /// Removes picture [index] of page [pageId] (one undo step).
+  void removePicture(String pageId, int index) {
+    edit(pageId, (p) {
+      if (index < 0 || index >= p.pictures.length) return p;
+      return p.copyWith(pictures: [...p.pictures]..removeAt(index));
+    });
+    _paintSoon(pageId);
+  }
+
   /// Removes every touch-up of the current page (one undo step).
   void clearPaints() {
     final page = state.currentPage;
@@ -1205,11 +1244,19 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
 
   Future<void> _paint(PageEntry page) async {
     final file = p.join(pageDir(page.id).path, 'painted_${DateTime.now().microsecondsSinceEpoch}.png');
-    await _bakePaintsInBackground(page.basePath, paintsUseOriginal(page.paints) ? page.path : null, page.paints, file);
+    await _bakePaintsInBackground(
+      page.basePath,
+      paintsUseOriginal(page.paints) ? page.path : null,
+      page.paints,
+      page.pictures,
+      file,
+    );
     // Only if nothing changed meanwhile.
     updatePage(
       page.id,
-      (p) => p.basePath == page.basePath && identical(p.paints, page.paints) ? p.copyWith(paintedPath: file) : p,
+      (p) => p.basePath == page.basePath && identical(p.paints, page.paints) && identical(p.pictures, page.pictures)
+          ? p.copyWith(paintedPath: file)
+          : p,
     );
   }
 
@@ -1309,12 +1356,20 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
 
 /// [bakePaints] of the image in [base] (with the page before cleaning in
 /// [original]) written to [out] as PNG, in the background.
-Future<void> _bakePaintsInBackground(String base, String? original, List<PaintOp> ops, String out) =>
-    Isolate.run(() async {
-      final image = await ImageCodec.readFile(base);
-      final before = original == null ? null : await ImageCodec.readFile(original);
-      await File(out).writeAsBytes(ImageCodec.encodePng(bakePaints(image, ops, original: before)), flush: true);
-    });
+Future<void> _bakePaintsInBackground(
+  String base,
+  String? original,
+  List<PaintOp> ops,
+  List<PagePicture> pictures,
+  String out,
+) => Isolate.run(() async {
+  final image = await ImageCodec.readFile(base);
+  final before = original == null ? null : await ImageCodec.readFile(original);
+  await File(out).writeAsBytes(
+    ImageCodec.encodePng(bakePaints(image, ops, original: before, pictures: await readPictures(pictures))),
+    flush: true,
+  );
+});
 
 /// [findRepeatedFiles] off the UI thread (a top-level function: the closure
 /// must not hold the notifier).

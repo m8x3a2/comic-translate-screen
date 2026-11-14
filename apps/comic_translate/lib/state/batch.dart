@@ -403,6 +403,7 @@ class BatchNotifier extends Notifier<BatchState> {
               overflowPath: patch,
               strokes: const [],
               paints: const [],
+              pictures: const [],
               blocks: cleaned.blocks,
               renderScale: render.scale,
               stage: null,

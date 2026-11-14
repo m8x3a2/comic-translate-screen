@@ -8557,6 +8557,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ellipse: drag across it (good for round bubbles)'**
   String get areaEllipse;
+
+  /// No description provided for @toolPictures.
+  ///
+  /// In en, this message translates to:
+  /// **'Pictures (M): lay a picture (a meme) on the page or into a bubble; drag it, pull a corner (Shift: any shape), Delete removes it'**
+  String get toolPictures;
+
+  /// No description provided for @keyPictures.
+  ///
+  /// In en, this message translates to:
+  /// **'Pictures'**
+  String get keyPictures;
+
+  /// No description provided for @pictureFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Pictures'**
+  String get pictureFiles;
+
+  /// No description provided for @pictureUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the picture: {error}'**
+  String pictureUnreadable(String error);
+
+  /// No description provided for @pictureAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a picture…'**
+  String get pictureAdd;
+
+  /// No description provided for @pictureAddHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The picture goes into the middle of the page. Select a bubble first to put it into the bubble'**
+  String get pictureAddHelp;
+
+  /// No description provided for @pictureAddIntoBubble.
+  ///
+  /// In en, this message translates to:
+  /// **'The picture goes into bubble {number}'**
+  String pictureAddIntoBubble(String number);
+
+  /// No description provided for @pictureToShelf.
+  ///
+  /// In en, this message translates to:
+  /// **'Put the selected picture on the shelf'**
+  String get pictureToShelf;
+
+  /// No description provided for @pictureRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the selected picture (Delete)'**
+  String get pictureRemove;
+
+  /// No description provided for @shelf.
+  ///
+  /// In en, this message translates to:
+  /// **'Shelf'**
+  String get shelf;
+
+  /// No description provided for @shelfToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shelf: bubbles and pictures put away from one page, to take out on another ({count})'**
+  String shelfToggle(String count);
+
+  /// No description provided for @shelfPutBubbles.
+  ///
+  /// In en, this message translates to:
+  /// **'Put the selected bubbles here ({count})'**
+  String shelfPutBubbles(String count);
+
+  /// No description provided for @shelfPutHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected bubbles leave the page with their text, translation and look. Ctrl+Z on the page brings them back there'**
+  String get shelfPutHelp;
+
+  /// No description provided for @shelfEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty. Put a bubble here with the button above, or a picture with the Pictures tool'**
+  String get shelfEmpty;
+
+  /// No description provided for @shelfPicture.
+  ///
+  /// In en, this message translates to:
+  /// **'Picture'**
+  String get shelfPicture;
+
+  /// No description provided for @shelfBubbleEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Bubble without text'**
+  String get shelfBubbleEmpty;
+
+  /// No description provided for @shelfTakeHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Click: onto this page'**
+  String get shelfTakeHelp;
+
+  /// No description provided for @shelfThrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Throw away'**
+  String get shelfThrow;
 }
 
 class _AppLocalizationsDelegate

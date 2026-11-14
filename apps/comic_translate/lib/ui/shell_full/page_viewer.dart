@@ -18,6 +18,7 @@ import '../../state/editor.dart';
 import '../../state/steps.dart';
 import '../../state/page_layout.dart';
 import '../../state/pipette.dart';
+import '../../state/shelf.dart';
 import '../../state/worker_pool.dart';
 import '../../state/workspace.dart';
 import '../common/content_kind_switch.dart';
@@ -29,6 +30,8 @@ import '../common/translator_history_dialog.dart';
 import '../settings/settings_place.dart';
 import 'batch_dialogs.dart';
 import 'draw_options.dart';
+import 'picture_options.dart';
+import 'shelf_card.dart';
 import 'fit_mask_action.dart';
 import 'page_canvas.dart';
 import 'page_navigator.dart';
@@ -287,6 +290,16 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                             children: [
                               const _EnlargedBadge(),
                               IconButton(
+                                tooltip: l.shelfToggle('${ref.watch(shelfProvider).length}'),
+                                isSelected: ref.watch(shelfOpenProvider),
+                                onPressed: () => ref.read(shelfOpenProvider.notifier).toggle(),
+                                icon: Badge(
+                                  isLabelVisible: ref.watch(shelfProvider).isNotEmpty,
+                                  label: Text('${ref.watch(shelfProvider).length}'),
+                                  child: const Icon(Icons.inventory_2_outlined),
+                                ),
+                              ),
+                              IconButton(
                                 tooltip: l.navigatorToggle(
                                   KeyBindings.of(ref.read(settingsProvider)).labelOf(ShortcutAction.navigator),
                                 ),
@@ -332,6 +345,8 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                           ),
                         ),
                       ),
+                      if (ref.watch(shelfOpenProvider))
+                        Positioned(right: 12, bottom: 76, child: ShelfCard(readOnly: readOnly)),
                       if (page.status == PageStatus.running || stepHere)
                         Positioned(
                           left: 12,
@@ -508,6 +523,7 @@ class _ToolBar extends ConsumerWidget {
               tool(EditorTool.fit, Icons.compress, l.toolFitMask),
               tool(EditorTool.pick, Icons.colorize_outlined, l.toolPipette),
               tool(EditorTool.draw, Icons.palette_outlined, l.toolDraw),
+              tool(EditorTool.pictures, Icons.image_outlined, l.toolPictures),
             ],
           ),
           const SizedBox(height: 4),
@@ -579,6 +595,7 @@ class _ToolBar extends ConsumerWidget {
                     ],
                     if (editor.tool == EditorTool.pick) const _ColourMaskOptions(),
                     if (editor.tool == EditorTool.draw) const DrawOptions(),
+                    if (editor.tool == EditorTool.pictures) const PictureOptions(),
                     if (editor.tool == EditorTool.boxes)
                       MenuAnchor(
                         menuChildren: [

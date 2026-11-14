@@ -872,6 +872,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         tool(EditorTool.pick);
       case ShortcutAction.draw:
         tool(EditorTool.draw);
+      case ShortcutAction.pictures:
+        tool(EditorTool.pictures);
       case ShortcutAction.preview:
         if (state.pages.isEmpty) return false;
         editor.togglePreview();
@@ -898,6 +900,13 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         ws.styleBlocks(which, (s, _) => s.withPartsOf(look, parts));
         _snack(context.l10n.lookPasted('${which.length}'), replace: true);
       case ShortcutAction.deleteBox:
+        // The pictures tool: the selected picture.
+        final picture = ref.read(pictureSelectionProvider.notifier).of(state.currentPage?.id);
+        if (ref.read(editorProvider).tool == EditorTool.pictures && picture != null && !busy) {
+          ws.removePicture(state.currentPage!.id, picture);
+          ref.read(pictureSelectionProvider.notifier).clear();
+          return true;
+        }
         // The picked bubbles all go; else the selected one.
         final which = state.blockSelection;
         if (busy || which.isEmpty) return false;

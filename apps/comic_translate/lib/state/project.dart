@@ -62,6 +62,7 @@ ProjectPage projectPageOf(PageEntry page) => ProjectPage(
   overflow: page.overflowPath,
   blocks: page.blocks,
   strokes: page.strokes,
+  pictures: page.pictures,
   state: {
     'status': switch (page.status) {
       PageStatus.done => 'done',
@@ -94,6 +95,7 @@ PageEntry pageEntryOf(ProjectPage page) => PageEntry(
   overflowPath: page.overflow,
   strokes: page.strokes,
   paints: paintOpsFromJson(page.state['paints']),
+  pictures: page.pictures,
   blocks: page.blocks,
   renderScale: (page.state['render_scale'] as num?)?.toDouble() ?? 1,
   exported: page.state['exported'] == true,

@@ -5032,4 +5032,70 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get areaEllipse =>
       'Эллипс: протянуть наискосок (удобно для круглых пузырей)';
+
+  @override
+  String get toolPictures =>
+      'Картинки (M): положить картинку (мем) на страницу или в пузырь; перетаскивать, тянуть за угол (с Shift — без сохранения пропорций), Delete — убрать';
+
+  @override
+  String get keyPictures => 'Картинки';
+
+  @override
+  String get pictureFiles => 'Картинки';
+
+  @override
+  String pictureUnreadable(String error) {
+    return 'Не удалось прочитать картинку: $error';
+  }
+
+  @override
+  String get pictureAdd => 'Добавить картинку…';
+
+  @override
+  String get pictureAddHelp =>
+      'Картинка встанет в середину страницы. Выберите сначала пузырь — она встанет в него';
+
+  @override
+  String pictureAddIntoBubble(String number) {
+    return 'Картинка встанет в пузырь $number';
+  }
+
+  @override
+  String get pictureToShelf => 'Убрать выбранную картинку на полку';
+
+  @override
+  String get pictureRemove => 'Убрать выбранную картинку (Delete)';
+
+  @override
+  String get shelf => 'Полка';
+
+  @override
+  String shelfToggle(String count) {
+    return 'Полка: пузыри и картинки, убранные с одной страницы, чтобы достать на другой ($count)';
+  }
+
+  @override
+  String shelfPutBubbles(String count) {
+    return 'Положить выбранные пузыри ($count)';
+  }
+
+  @override
+  String get shelfPutHelp =>
+      'Выбранные пузыри уходят со страницы вместе с текстом, переводом и оформлением. Ctrl+Z на странице вернёт их туда';
+
+  @override
+  String get shelfEmpty =>
+      'Пусто. Пузырь кладётся кнопкой выше, картинка — в инструменте «Картинки»';
+
+  @override
+  String get shelfPicture => 'Картинка';
+
+  @override
+  String get shelfBubbleEmpty => 'Пузырь без текста';
+
+  @override
+  String get shelfTakeHelp => 'Щелчок — на эту страницу';
+
+  @override
+  String get shelfThrow => 'Выбросить';
 }

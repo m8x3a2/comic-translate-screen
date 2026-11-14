@@ -9,6 +9,8 @@ import 'package:comic_translate/state/background.dart';
 import 'package:comic_translate/state/batch.dart';
 import 'package:comic_translate/state/exchange.dart';
 import 'package:comic_translate/state/editor.dart';
+import 'package:comic_translate/state/shelf.dart';
+import 'package:comic_translate/ui/shell_full/shelf_card.dart';
 import 'package:comic_translate/state/pipette.dart';
 import 'package:comic_translate/state/steps.dart';
 import 'package:comic_translate/state/workspace.dart';
@@ -441,6 +443,61 @@ void main() {
     await tester.pump();
     expect(paints(), hasLength(2));
     await mouse.removePointer();
+    await tester.runAsync(() => Future<void>.delayed(WorkspaceNotifier.paintDelay * 2));
+    await tester.pump();
+  });
+
+  testWidgets('pictures: dragged, removed with Delete; the shelf takes a bubble and gives it back', (tester) async {
+    final container = await openTranslatedPage(tester);
+    final ws = container.read(workspaceProvider.notifier);
+    final page = container.read(workspaceProvider).currentPage!;
+    final meme = p.join(dir.path, 'meme.png');
+    await tester.runAsync(() => ImageCodec.writeFile(meme, RgbImage.filled(10, 10, 255, 0, 0)));
+    ws.addPicture(page.id, PagePicture(path: meme, box: const BBox(10, 10, 40, 40)));
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyM);
+    await settle(tester);
+    expect(container.read(editorProvider).tool, EditorTool.pictures);
+    final canvas = find.byType(PageCanvas);
+    for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    await settle(tester);
+    final rect = tester.getRect(canvas);
+    final scale = rect.width / 120;
+    Offset at(double x, double y) => rect.topLeft + Offset(x, y) * scale;
+    // Drag the picture 30 page pixels to the right.
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
+    await mouse.addPointer(location: at(25, 25));
+    await mouse.down(at(25, 25));
+    for (var i = 1; i <= 3; i++) {
+      await mouse.moveTo(at(25 + 10.0 * i, 25));
+      await tester.pump();
+    }
+    await mouse.up();
+    await tester.pump();
+    List<PagePicture> pictures() => container.read(workspaceProvider).currentPage!.pictures;
+    expect(pictures().single.box.x1, closeTo(40, 1));
+    expect(container.read(pictureSelectionProvider), (page.id, 0));
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    await tester.pump();
+    expect(pictures(), isEmpty);
+    await mouse.removePointer();
+
+    // The shelf: a bubble goes away from the page and comes back with its translation.
+    final blocks = container.read(workspaceProvider).currentPage!.blocks;
+    expect(blocks, isNotEmpty);
+    final translation = blocks.first.translation;
+    ws.selectBlock(0);
+    container.read(shelfProvider.notifier).putBubbles([0]);
+    expect(container.read(workspaceProvider).currentPage!.blocks, hasLength(blocks.length - 1));
+    expect(container.read(shelfProvider).single.block!.translation, translation);
+    await tester.pump();
+    expect(find.byType(ShelfCard), findsOneWidget, reason: 'the shelf opens when something is put on it');
+    await tester.runAsync(() => container.read(shelfProvider.notifier).take(0));
+    await tester.pump();
+    expect(container.read(shelfProvider), isEmpty);
+    expect(container.read(workspaceProvider).currentPage!.blocks.last.translation, translation);
     await tester.runAsync(() => Future<void>.delayed(WorkspaceNotifier.paintDelay * 2));
     await tester.pump();
   });

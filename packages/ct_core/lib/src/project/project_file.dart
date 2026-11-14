@@ -18,6 +18,8 @@ import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
 import '../inpainting/mask_stroke.dart';
+import '../inpainting/paint_op.dart' show PagePicture;
+import '../model/geometry.dart' show BBox;
 import '../model/text_block.dart';
 
 /// One page as stored.
@@ -32,6 +34,7 @@ class ProjectPage {
     this.overflow,
     this.blocks = const [],
     this.strokes = const [],
+    this.pictures = const [],
     this.state = const {},
   });
 
@@ -56,6 +59,9 @@ class ProjectPage {
   final String? overflow;
   final List<TextBlock> blocks;
   final List<MaskStroke> strokes;
+
+  /// Pictures laid on the page (memes), their files kept in the project.
+  final List<PagePicture> pictures;
 
   /// The app's other per-page values (status, enlargement, languages, ...);
   /// JSON values only.
@@ -208,6 +214,12 @@ class ProjectFile {
             if (page.overflow != null) 'overflow': blobOf(page.overflow!, 'overflow.png'),
             'blocks': [for (final b in page.blocks) b.toJson()],
             'strokes': [for (final s in page.strokes) s.toJson()],
+            if (page.pictures.isNotEmpty)
+              'pictures': [
+                for (final (i, pic) in page.pictures.indexed)
+                  if (File(pic.path).existsSync())
+                    {'image': blobOf(pic.path, 'picture_$i${p.extension(pic.path)}'), 'box': pic.box.toJson()},
+              ],
             'fonts': fonts,
             'state': page.state,
           });
@@ -323,6 +335,10 @@ class ProjectFile {
             strokes: [
               for (final s in (j['strokes'] as List? ?? const []))
                 MaskStroke.fromJson((s as Map).cast<String, Object?>()),
+            ],
+            pictures: [
+              for (final pic in (j['pictures'] as List? ?? const []))
+                if (pic is Map) PagePicture(path: materialize(pic['image'], work), box: BBox.fromJson(pic['box'])),
             ],
             state: ((j['state'] as Map?) ?? const {}).cast<String, Object?>(),
           ),

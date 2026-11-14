@@ -31,6 +31,9 @@ enum EditorTool {
 
   /// Touch-ups over the cleaned page: see [DrawMode] (new in this project).
   draw,
+
+  /// Pictures laid on the page (memes): add, move, resize, remove.
+  pictures,
 }
 
 /// The outline of [DrawMode.area].
@@ -217,6 +220,21 @@ class StrokeActive extends Notifier<bool> {
   }
 }
 
+/// The picture of a page selected with the pictures tool: (page id, index).
+final pictureSelectionProvider = NotifierProvider<PictureSelection, (String, int)?>(PictureSelection.new);
+
+class PictureSelection extends Notifier<(String, int)?> {
+  @override
+  (String, int)? build() => null;
+
+  void select(String pageId, int index) => state = (pageId, index);
+
+  void clear() => state = null;
+
+  /// The selected picture of page [pageId], if any.
+  int? of(String? pageId) => state != null && state!.$1 == pageId ? state!.$2 : null;
+}
+
 /// Most margin of "Fit to letters", in pixels.
 const maxFitMargin = 12;
 
@@ -253,7 +271,7 @@ class EditorNotifier extends Notifier<EditorState> {
     // The mask tools open the mask view, the text tool the translation.
     final view = switch (tool) {
       EditorTool.pan || EditorTool.boxes => state.view,
-      EditorTool.text || EditorTool.draw => ViewMode.result,
+      EditorTool.text || EditorTool.draw || EditorTool.pictures => ViewMode.result,
       EditorTool.brush || EditorTool.eraser || EditorTool.fit || EditorTool.pick => ViewMode.mask,
     };
     state = state.copyWith(tool: tool, view: view, preview: false);
@@ -303,7 +321,8 @@ class EditorNotifier extends Notifier<EditorState> {
   void setView(ViewMode view) {
     final tool = switch (view) {
       // Touch-ups are drawn over the translated page.
-      ViewMode.original || ViewMode.mask when state.tool == EditorTool.draw => EditorTool.pan,
+      ViewMode.original ||
+      ViewMode.mask when state.tool == EditorTool.draw || state.tool == EditorTool.pictures => EditorTool.pan,
       ViewMode.original when state.tool != EditorTool.boxes => EditorTool.pan,
       // No translation is shown to edit.
       ViewMode.mask when state.tool == EditorTool.text => EditorTool.pan,
