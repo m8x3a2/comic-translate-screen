@@ -5014,4 +5014,22 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get keyPreview => 'Как будет в итоге';
+
+  @override
+  String get drawArea =>
+      'Область: закрашивает выбранным цветом всё внутри контура — и буквы, и рисунок. Форма контура — справа';
+
+  @override
+  String get areaLasso => 'Лассо: обвести от руки, держа кнопку';
+
+  @override
+  String get areaPolygon =>
+      'По точкам: щёлкайте углы; щелчок по первой точке, двойной щелчок или Enter — залить. Backspace убирает последнюю точку, Esc — всё';
+
+  @override
+  String get areaRectangle => 'Прямоугольник: протянуть от угла до угла';
+
+  @override
+  String get areaEllipse =>
+      'Эллипс: протянуть наискосок (удобно для круглых пузырей)';
 }

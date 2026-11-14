@@ -70,7 +70,7 @@ class DrawOptions extends ConsumerWidget {
             mode(DrawMode.eraser, Icons.auto_fix_normal, l.drawEraser),
             mode(DrawMode.original, Icons.restore, l.drawOriginal),
             mode(DrawMode.fill, Icons.format_color_fill, l.drawFill),
-            mode(DrawMode.pipette, Icons.colorize, l.drawPipette),
+            mode(DrawMode.area, Icons.gesture, l.drawArea),
           ],
         ),
         Row(
@@ -78,19 +78,33 @@ class DrawOptions extends ConsumerWidget {
           children: [
             _ColourButton(colour: editor.paintColor),
             const SizedBox(width: 4),
-            // The colour under the mouse while picking.
+            // The pipette button; while picking it shows the colour under
+            // the mouse.
             Tooltip(
-              message: tools.hover == null ? l.paintColourHoverNone : l.paintColourHover(colourCode(tools.hover!)),
-              child: Container(
+              message: tools.hover == null
+                  ? [l.drawPipette, l.paintColourHoverNone].join('\n')
+                  : l.paintColourHover(colourCode(tools.hover!)),
+              child: InkWell(
                 key: const ValueKey('paint-hover'),
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: tools.hover == null ? null : Color(tools.hover!),
-                  border: Border.all(color: scheme.outline),
-                  borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
+                onTap: () => notifier.setDrawMode(DrawMode.pipette),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: tools.hover != null
+                        ? Color(tools.hover!)
+                        : editor.drawMode == DrawMode.pipette
+                        ? scheme.secondaryContainer
+                        : null,
+                    border: Border.all(
+                      color: editor.drawMode == DrawMode.pipette ? scheme.primary : scheme.outline,
+                      width: editor.drawMode == DrawMode.pipette ? 2 : 1,
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: tools.hover == null ? Icon(Icons.colorize, size: 18, color: scheme.onSurfaceVariant) : null,
                 ),
-                child: tools.hover == null ? Icon(Icons.colorize, size: 14, color: scheme.outline) : null,
               ),
             ),
             // As high in every mode (the pipette has no slider).
@@ -99,7 +113,26 @@ class DrawOptions extends ConsumerWidget {
               height: 48,
               child: Row(
                 children: [
-                  if (editor.drawMode == DrawMode.fill) ...[
+                  if (editor.drawMode == DrawMode.area) ...[
+                    for (final (shape, icon, tip) in [
+                      (AreaShape.lasso, Icons.gesture, l.areaLasso),
+                      (AreaShape.polygon, Icons.polyline_outlined, l.areaPolygon),
+                      (AreaShape.rectangle, Icons.crop_square, l.areaRectangle),
+                      (AreaShape.ellipse, Icons.circle_outlined, l.areaEllipse),
+                    ])
+                      IconButton(
+                        tooltip: tip,
+                        isSelected: editor.areaShape == shape,
+                        onPressed: () => notifier.setAreaShape(shape),
+                        icon: Icon(icon, size: 20),
+                        style: IconButton.styleFrom(
+                          backgroundColor: editor.areaShape == shape ? scheme.tertiaryContainer : null,
+                          minimumSize: const Size(34, 34),
+                          padding: const EdgeInsets.all(6),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                  ] else if (editor.drawMode == DrawMode.fill) ...[
                     Expanded(
                       child: Tooltip(
                         message: '${l.fillTolerance}: ${editor.fillTolerance}',

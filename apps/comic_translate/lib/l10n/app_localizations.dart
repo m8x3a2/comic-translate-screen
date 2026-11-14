@@ -8527,6 +8527,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'As it will be'**
   String get keyPreview;
+
+  /// No description provided for @drawArea.
+  ///
+  /// In en, this message translates to:
+  /// **'Area: fills everything inside an outline with the chosen colour, letters and drawing too. Pick the outline on the right'**
+  String get drawArea;
+
+  /// No description provided for @areaLasso.
+  ///
+  /// In en, this message translates to:
+  /// **'Lasso: draw the outline by hand with the button held'**
+  String get areaLasso;
+
+  /// No description provided for @areaPolygon.
+  ///
+  /// In en, this message translates to:
+  /// **'By points: click the corners; a click on the first one, a double click or Enter fills. Backspace takes the last corner back, Esc drops it all'**
+  String get areaPolygon;
+
+  /// No description provided for @areaRectangle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rectangle: drag from corner to corner'**
+  String get areaRectangle;
+
+  /// No description provided for @areaEllipse.
+  ///
+  /// In en, this message translates to:
+  /// **'Ellipse: drag across it (good for round bubbles)'**
+  String get areaEllipse;
 }
 
 class _AppLocalizationsDelegate

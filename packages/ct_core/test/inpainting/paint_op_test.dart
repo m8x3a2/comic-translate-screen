@@ -161,4 +161,47 @@ void main() {
       expect(floodFillRuns(page, 20, 0), isEmpty);
     });
   });
+
+  group('polygonRuns', () {
+    Set<(int, int)> pixels(List<int> runs) => {
+      for (var k = 0; k < runs.length; k += 3)
+        for (var x = runs[k + 1]; x < runs[k + 2]; x++) (x, runs[k]),
+    };
+
+    test('a rectangle covers the pixels whose centres are inside', () {
+      final runs = polygonRuns(rectanglePoints(const Point2(2, 3), const Point2(6, 5)), 20, 20);
+      expect(pixels(runs), {
+        for (var y = 3; y < 5; y++)
+          for (var x = 2; x < 6; x++) (x, y),
+      });
+    });
+
+    test('a triangle; points off the page are cut at its edges', () {
+      final tri = pixels(polygonRuns(const [Point2(0, 0), Point2(10, 0), Point2(0, 10)], 20, 20));
+      expect(tri, contains((1, 1)));
+      expect(tri, isNot(contains((8, 8))));
+      final off = pixels(polygonRuns(rectanglePoints(const Point2(-5, -5), const Point2(3, 3)), 10, 10));
+      expect(off, {
+        for (var y = 0; y < 3; y++)
+          for (var x = 0; x < 3; x++) (x, y),
+      });
+      expect(polygonRuns(const [Point2(1, 1), Point2(5, 5)], 10, 10), isEmpty);
+    });
+
+    test('an ellipse is round: the middle in, the corners of its box out', () {
+      final e = pixels(polygonRuns(ellipsePoints(const Point2(0, 0), const Point2(40, 20)), 50, 50));
+      expect(e, contains((20, 10)));
+      expect(e, isNot(contains((1, 1))));
+      expect(e, isNot(contains((39, 19))));
+    });
+
+    test('a figure eight (a lasso crossing itself) fills both loops', () {
+      final runs = polygonRuns(const [Point2(0, 0), Point2(20, 20), Point2(20, 0), Point2(0, 20)], 30, 30);
+      final p = pixels(runs);
+      // The loops are left and right of the crossing at (10, 10).
+      expect(p, contains((3, 10)));
+      expect(p, contains((17, 10)));
+      expect(p, isNot(contains((10, 3))));
+    });
+  });
 }

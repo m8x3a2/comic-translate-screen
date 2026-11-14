@@ -377,6 +377,74 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('area fill: a rectangle; a polygon closed by Enter; Esc drops one', (tester) async {
+    final container = await openTranslatedPage(tester);
+    container.read(editorProvider.notifier)
+      ..setDrawMode(DrawMode.area)
+      ..setAreaShape(AreaShape.rectangle)
+      ..setPaintColor(0xFF00FF00);
+    await settle(tester);
+    final canvas = find.byType(PageCanvas);
+    for (var i = 0; i < 50 && canvas.evaluate().isEmpty; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 20)));
+      await tester.pump();
+    }
+    await settle(tester);
+    List<PaintOp> paints() => container.read(workspaceProvider).currentPage!.paints;
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: kPrimaryButton);
+    final rect = tester.getRect(canvas);
+    Offset at(double x, double y) => rect.topLeft + Offset(rect.width * x, rect.height * y);
+    await mouse.addPointer(location: at(0.1, 0.1));
+    Future<void> click(Offset where) async {
+      await mouse.moveTo(where);
+      await tester.pump();
+      await mouse.down(where);
+      await tester.pump();
+      await mouse.up();
+      await tester.pump(const Duration(milliseconds: 600));
+    }
+
+    // A rectangle over the left half: everything inside is filled.
+    await mouse.moveTo(at(0.1, 0.1));
+    await mouse.down(at(0.1, 0.1));
+    for (var i = 1; i <= 4; i++) {
+      await mouse.moveTo(at(0.1 + 0.1 * i, 0.1 + 0.2 * i));
+      await tester.pump();
+    }
+    expect(container.read(strokeActiveProvider), isTrue, reason: 'no zoom while the outline is dragged');
+    await mouse.up();
+    await tester.pump();
+    expect(container.read(strokeActiveProvider), isFalse);
+    expect(paints().single.kind, PaintKind.fill);
+    expect(paints().single.color, 0xFF00FF00);
+    final rows = {for (var k = 0; k < paints().single.runs.length; k += 3) paints().single.runs[k]};
+    expect(rows.length, greaterThan(40), reason: 'about 72 of the 80 rows');
+
+    // A polygon: three corners and Enter.
+    container.read(editorProvider.notifier).setAreaShape(AreaShape.polygon);
+    await tester.pump();
+    await click(at(0.6, 0.2));
+    await click(at(0.9, 0.2));
+    await click(at(0.75, 0.8));
+    expect(paints(), hasLength(1), reason: 'not closed yet');
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(paints(), hasLength(2));
+    expect(paints().last.kind, PaintKind.fill);
+
+    // Two corners and Esc: nothing.
+    await click(at(0.6, 0.9));
+    await click(at(0.9, 0.9));
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    expect(paints(), hasLength(2));
+    await mouse.removePointer();
+    await tester.runAsync(() => Future<void>.delayed(WorkspaceNotifier.paintDelay * 2));
+    await tester.pump();
+  });
+
   testWidgets('"Fit to letters": a click fits one piece; Shift + click picks pieces for the button', (tester) async {
     final container = await openTranslatedPage(tester);
     final page = container.read(workspaceProvider).currentPage!;

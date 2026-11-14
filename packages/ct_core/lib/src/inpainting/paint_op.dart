@@ -314,3 +314,47 @@ List<int> floodFillRuns(
   }
   return runs;
 }
+
+/// The pixels inside the closed outline [points] (a lasso, a polygon, a
+/// rectangle or an ellipse made into points) on a [width]×[height] page, as
+/// `y, x1, x2` runs (see [PaintOp.runs]): those whose centre is inside
+/// (even–odd rule). Empty for fewer than three points.
+List<int> polygonRuns(List<Point2> points, int width, int height) {
+  if (points.length < 3) return const [];
+  var minY = double.infinity, maxY = -double.infinity;
+  for (final p in points) {
+    minY = math.min(minY, p.y);
+    maxY = math.max(maxY, p.y);
+  }
+  final y1 = math.max(0, (minY - 0.5).ceil()), y2 = math.min(height - 1, (maxY - 0.5).floor());
+  final runs = <int>[];
+  final xs = <double>[];
+  for (var y = y1; y <= y2; y++) {
+    final cy = y + 0.5;
+    xs.clear();
+    for (var i = 0; i < points.length; i++) {
+      final a = points[i], b = points[(i + 1) % points.length];
+      if ((a.y <= cy && b.y > cy) || (b.y <= cy && a.y > cy)) {
+        xs.add(a.x + (cy - a.y) / (b.y - a.y) * (b.x - a.x));
+      }
+    }
+    xs.sort();
+    for (var k = 0; k + 1 < xs.length; k += 2) {
+      final from = math.max(0, (xs[k] - 0.5).ceil()), to = math.min(width, (xs[k + 1] - 0.5).ceil());
+      if (to > from) runs.addAll([y, from, to]);
+    }
+  }
+  return runs;
+}
+
+/// The outline of the ellipse inside [a]–[b] (opposite corners) as points.
+List<Point2> ellipsePoints(Point2 a, Point2 b, {int count = 72}) {
+  final cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2, rx = (a.x - b.x).abs() / 2, ry = (a.y - b.y).abs() / 2;
+  return [
+    for (var i = 0; i < count; i++)
+      Point2(cx + rx * math.cos(2 * math.pi * i / count), cy + ry * math.sin(2 * math.pi * i / count)),
+  ];
+}
+
+/// The outline of the rectangle with opposite corners [a] and [b].
+List<Point2> rectanglePoints(Point2 a, Point2 b) => [a, Point2(b.x, a.y), b, Point2(a.x, b.y)];

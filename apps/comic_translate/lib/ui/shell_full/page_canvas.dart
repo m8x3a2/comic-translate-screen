@@ -99,6 +99,10 @@ enum _Mode {
 
   /// The colour pipette of the drawing tool.
   colour,
+
+  /// An outline of the area mode: a lasso, a rectangle, an ellipse, or a
+  /// click of the polygon.
+  shape,
 }
 
 /// A drag in progress.
@@ -157,6 +161,11 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
   /// Alt is held: a click of the drawing tool takes a colour.
   var _alt = false;
 
+  /// The corners of the polygon being clicked (area mode), and the last
+  /// click, to notice a double click.
+  var _poly = <Point2>[];
+  (Offset, DateTime)? _lastPolyClick;
+
   @override
   void initState() {
     super.initState();
@@ -183,6 +192,22 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     if (alt != _alt && mounted) {
       setState(() => _alt = alt);
       _hoverColour();
+    }
+    // The polygon being clicked: Enter closes it, Backspace takes the last
+    // corner back, Esc drops it.
+    if (_poly.isNotEmpty && !typing && e is KeyDownEvent && mounted) {
+      if (e.logicalKey == LogicalKeyboardKey.escape) {
+        setState(() => _poly = []);
+        return true;
+      }
+      if (e.logicalKey == LogicalKeyboardKey.backspace) {
+        setState(() => _poly = _poly.sublist(0, _poly.length - 1));
+        return true;
+      }
+      if (e.logicalKey == LogicalKeyboardKey.enter || e.logicalKey == LogicalKeyboardKey.numpadEnter) {
+        _closePolygon();
+        return true;
+      }
     }
     // Space over the page is ours (it would press the focused button).
     return e.logicalKey == LogicalKeyboardKey.space && !typing && (_inside || _drag?.mode == _Mode.pan);
@@ -243,6 +268,60 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     final tools = ref.read(paintToolsProvider.notifier);
     final h = _hover;
     tools.hover(widget.page, h != null && _picksColour(ref.read(editorProvider)) ? Point2(h.dx, h.dy) : null);
+  }
+
+  /// Fills everything inside [outline] with the drawing colour (one undo
+  /// step); nothing when it covers no pixel.
+  void _fillOutline(List<Point2> outline) {
+    final runs = polygonRuns(outline, widget.size.width.round(), widget.size.height.round());
+    if (runs.isEmpty) return;
+    ref
+        .read(workspaceProvider.notifier)
+        .addPaint(
+          PaintOp(kind: PaintKind.fill, color: ref.read(editorProvider).paintColor, runs: runs),
+          pageId: widget.page.id,
+        );
+  }
+
+  void _closePolygon() {
+    final corners = _poly;
+    setState(() => _poly = []);
+    if (corners.length >= 3) _fillOutline(corners);
+  }
+
+  /// A click of the polygon at [p]: a new corner, or the end of it (on the
+  /// first corner, or a double click).
+  void _polygonClick(Offset p) {
+    final now = DateTime.now(), last = _lastPolyClick;
+    _lastPolyClick = (p, now);
+    final double =
+        last != null && (last.$1 - p).distance * _zoom < 6 && now.difference(last.$2) < kDoubleTapTimeout * 1.5;
+    final first = _poly.isEmpty ? null : Offset(_poly.first.x, _poly.first.y);
+    if (_poly.length >= 3 && (double || (first! - p).distance * _zoom <= 10)) {
+      _closePolygon();
+    } else if (!double) {
+      setState(() => _poly = [..._poly, Point2(p.dx, p.dy)]);
+    }
+  }
+
+  /// The outline being drawn in the area mode, in page pixels; null when
+  /// none. The polygon's last side follows the mouse.
+  List<Offset>? _outlineDraft(EditorState editor) {
+    final d = _drag;
+    if (editor.tool != EditorTool.draw || editor.drawMode != DrawMode.area) return null;
+    if (editor.areaShape == AreaShape.polygon) {
+      if (_poly.isEmpty) return null;
+      return [for (final p in _poly) Offset(p.x, p.y), ?_hover];
+    }
+    if (d == null || d.mode != _Mode.shape || !d.moved) return null;
+    final a = Point2(d.start.dx, d.start.dy), b = Point2(d.current.dx, d.current.dy);
+    final points = switch (editor.areaShape) {
+      AreaShape.lasso => d.points,
+      AreaShape.rectangle => rectanglePoints(a, b),
+      AreaShape.ellipse => ellipsePoints(a, b),
+      AreaShape.polygon => const <Point2>[],
+    };
+    return [for (final p in points) Offset(p.x, p.y)];
   }
 
   // Geometry.
@@ -411,6 +490,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           drag = _Drag(_Mode.colour, p);
         case EditorTool.draw when editor.drawMode == DrawMode.fill:
           drag = _Drag(_Mode.fill, p);
+        case EditorTool.draw when editor.drawMode == DrawMode.area:
+          drag = _Drag(_Mode.shape, p)..points.add(Point2(p.dx, p.dy));
         case EditorTool.draw:
           final from = HardwareKeyboard.instance.isShiftPressed ? _lineStart : null;
           drag = from == null
@@ -421,6 +502,10 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       }
     }
     setState(() => _drag = drag..current = p);
+    final outlined = drag.mode == _Mode.shape && editor.areaShape != AreaShape.polygon;
+    if (drag.mode == _Mode.paint || drag.mode == _Mode.draw || outlined) {
+      ref.read(strokeActiveProvider.notifier).set(true);
+    }
   }
 
   void _move(PointerMoveEvent e) {
@@ -438,7 +523,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     if (!d.moved && delta.distance * _zoom < 3) return;
     d.moved = true;
     switch (d.mode) {
-      case _Mode.paint || _Mode.draw:
+      case _Mode.paint || _Mode.draw || _Mode.shape:
         final last = d.points.last;
         if (d.line) {
           d.points.last = Point2(p.dx, p.dy);
@@ -469,6 +554,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     // The button is let go on the listener it was pressed on, even when this
     // page has left the window since.
     if (d == null || !mounted) return;
+    ref.read(strokeActiveProvider.notifier).set(false);
     final ws = ref.read(workspaceProvider.notifier);
     switch (d.mode) {
       case _Mode.pan:
@@ -508,6 +594,19 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       case _Mode.fill:
         if (d.moved) break;
         unawaited(ref.read(paintToolsProvider.notifier).fill(widget.page.id, Point2(d.start.dx, d.start.dy)));
+      case _Mode.shape:
+        final editor = ref.read(editorProvider);
+        final a = Point2(d.start.dx, d.start.dy), b = Point2(d.current.dx, d.current.dy);
+        switch (editor.areaShape) {
+          case AreaShape.polygon:
+            if (!d.moved) _polygonClick(d.start);
+          case AreaShape.lasso:
+            if (d.moved) _fillOutline(List.of(d.points));
+          case AreaShape.rectangle:
+            if (d.moved) _fillOutline(rectanglePoints(a, b));
+          case AreaShape.ellipse:
+            if (d.moved) _fillOutline(ellipsePoints(a, b));
+        }
       case _Mode.colour:
         if (d.moved) break;
         unawaited(ref.read(paintToolsProvider.notifier).pick(widget.page, Point2(d.start.dx, d.start.dy)));
@@ -644,8 +743,15 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
       showPaints && (paintsUseOriginal(page.paints) || draftPaint?.kind == PaintKind.original) ? page.path : null,
     );
     final picking = _picksColour(editor);
+    final polygon =
+        !widget.readOnly &&
+        editor.tool == EditorTool.draw &&
+        editor.drawMode == DrawMode.area &&
+        editor.areaShape == AreaShape.polygon;
+    // Another tool or shape drops the polygon being clicked.
+    if (!polygon && _poly.isNotEmpty) _poly = [];
     final hoverColour = picking ? ref.watch(paintToolsProvider.select((s) => s.hover)) : null;
-    final hovers = editor.showsBrush || picking;
+    final hovers = editor.showsBrush || picking || polygon;
     // While text is moved or rotated, it is drawn by the overlay.
     final dragged = d != null && d.moved && (d.mode == _Mode.moveText || d.mode == _Mode.rotateText)
         ? (d.mode == _Mode.moveText && picked.length > 1 && picked.contains(d.index) ? picked : {d.index!})
@@ -685,6 +791,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
         onPointerUp: _up,
         onPointerCancel: (_) {
           _drag = null;
+          if (mounted) ref.read(strokeActiveProvider.notifier).set(false);
           if (mounted) setState(() {});
         },
         child: Stack(
@@ -747,7 +854,9 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
                     engines: engines,
                     areaOf: (i) => _textArea(page.blocks, i),
                     drag: d,
-                    hover: hovers && !widget.readOnly && !_grab ? _hover : null,
+                    hover: hovers && !polygon && !widget.readOnly && !_grab ? _hover : null,
+                    outline: _outlineDraft(editor),
+                    closedOutline: !polygon,
                     picking: picking,
                     hoverColour: hoverColour,
                     lineFrom: _shift && d == null ? _lineStart : null,
@@ -919,6 +1028,8 @@ class _OverlayPainter extends CustomPainter {
     required this.areaOf,
     required this.drag,
     required this.hover,
+    this.outline,
+    this.closedOutline = true,
     this.picking = false,
     this.hoverColour,
     required this.lineFrom,
@@ -939,6 +1050,11 @@ class _OverlayPainter extends CustomPainter {
   final Rect Function(int index) areaOf;
   final _Drag? drag;
   final Offset? hover;
+
+  /// The outline of the area mode being drawn (page pixels), filled
+  /// lightly with the drawing colour; the polygon's corners are marked.
+  final List<Offset>? outline;
+  final bool closedOutline;
 
   /// The drawing tool takes a colour: a square by the mouse shows the one
   /// under it ([hoverColour]) and the chosen one.
@@ -1078,6 +1194,29 @@ class _OverlayPainter extends CustomPainter {
       canvas.drawCircle(c, 7 * px, Paint()..color = colors.tertiary);
       canvas.drawCircle(c, 7 * px, line(Colors.white, 2));
       canvas.drawCircle(c, 2.5 * px, Paint()..color = Colors.white);
+    }
+
+    if (outline case final o? when o.isNotEmpty) {
+      final path = Path()..addPolygon(o, closedOutline);
+      if (o.length >= 3) {
+        canvas.drawPath(Path()..addPolygon(o, true), Paint()..color = Color(editor.paintColor).withValues(alpha: 0.4));
+      }
+      canvas.drawPath(path, line(Colors.white, 3));
+      canvas.drawPath(path, line(Colors.black, 1.2));
+      if (!closedOutline) {
+        for (final (i, c) in o.indexed) {
+          if (i == o.length - 1) break;
+          // The first corner is round: a click on it closes the polygon.
+          if (i == 0) {
+            canvas.drawCircle(c, 6 * px, Paint()..color = colors.tertiary);
+            canvas.drawCircle(c, 6 * px, line(Colors.white, 1.5));
+          } else {
+            final r = Rect.fromCenter(center: c, width: 7 * px, height: 7 * px);
+            canvas.drawRect(r, Paint()..color = Colors.white);
+            canvas.drawRect(r, line(Colors.black, 1));
+          }
+        }
+      }
     }
 
     final h = hover;

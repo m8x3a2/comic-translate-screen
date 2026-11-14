@@ -51,6 +51,23 @@ class _PageViewerState extends ConsumerState<PageViewer> {
   ImageStream? _stream;
   ImageStreamListener? _listener;
 
+  /// The zoom when a gesture or a wheel turn began, and what began it: a
+  /// change of the zoom is written to the log with its cause.
+  double? _gestureZoom;
+  String? _gestureKind;
+  int _gesturePointers = 0;
+
+  void _logZoom(String cause, double from, double to, [Map<String, Object?> more = const {}]) {
+    if ((to - from).abs() < 1e-6) return;
+    ref.read(servicesProvider).appLog.info('view_zoom', {
+      'cause': cause,
+      'from': double.parse(from.toStringAsFixed(4)),
+      'to': double.parse(to.toStringAsFixed(4)),
+      'tool': ref.read(editorProvider).tool.name,
+      ...more,
+    });
+  }
+
   @override
   void dispose() {
     _detach();
@@ -73,13 +90,14 @@ class _PageViewerState extends ConsumerState<PageViewer> {
     _listener = ImageStreamListener((info, _) {
       if (!mounted) return;
       setState(() => _imageSize = Size(info.image.width.toDouble(), info.image.height.toDouble()));
-      WidgetsBinding.instance.addPostFrameCallback((_) => _fit());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _fit('page'));
     }, onError: (_, _) {});
     _stream = stream..addListener(_listener!);
   }
 
-  void _fit() {
+  void _fit([String cause = 'button']) {
     if (!mounted) return;
+    final before = _transform.value.entry(0, 0);
     if (ref.read(workspaceProvider).webtoon) return _strip.currentState?.fit();
     final size = _imageSize;
     if (size == null || _viewport.isEmpty || !mounted) return;
@@ -88,10 +106,12 @@ class _PageViewerState extends ConsumerState<PageViewer> {
     _transform.value = Matrix4.identity()
       ..translateByDouble(dx, dy, 0, 1)
       ..scaleByDouble(s, s, 1, 1);
+    _logZoom('fit_$cause', before, s);
     setState(() {});
   }
 
   void _zoom(double factor) {
+    _logZoom('button', 1, factor);
     final c = _viewport.center(Offset.zero);
     _transform.value = Matrix4.identity()
       ..translateByDouble(c.dx, c.dy, 0, 1)
@@ -166,7 +186,9 @@ class _PageViewerState extends ConsumerState<PageViewer> {
     // fitted into the new room (after the next layout, which measures it).
     void refit(Object? _, Object? _) {
       if (ref.read(workspaceProvider).webtoon) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) => WidgetsBinding.instance.addPostFrameCallback((_) => _fit()));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => WidgetsBinding.instance.addPostFrameCallback((_) => _fit('panels')),
+      );
     }
 
     ref.listen(settingsProvider.select((s) => (List.of(s.hiddenPanels)..sort()).join(',')), refit);
@@ -200,7 +222,7 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                   if (viewport != _viewport) {
                     final first = _viewport.isEmpty;
                     _viewport = viewport;
-                    if (first) WidgetsBinding.instance.addPostFrameCallback((_) => _fit());
+                    if (first) WidgetsBinding.instance.addPostFrameCallback((_) => _fit('window'));
                   }
                   final size = _imageSize;
                   return Stack(
@@ -214,6 +236,23 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                           minScale: 0.02,
                           maxScale: 32,
                           panEnabled: editor.tool == EditorTool.pan || editor.preview || readOnly,
+                          // No zoom in the middle of a stroke.
+                          scaleEnabled: !ref.watch(strokeActiveProvider),
+                          onInteractionStart: (d) {
+                            _gestureZoom = _transform.value.entry(0, 0);
+                            _gestureKind = d.kind?.name ?? 'wheel';
+                            _gesturePointers = d.pointerCount;
+                          },
+                          onInteractionEnd: (_) {
+                            final from = _gestureZoom;
+                            _gestureZoom = null;
+                            if (from != null) {
+                              _logZoom('gesture', from, _transform.value.entry(0, 0), {
+                                'device': _gestureKind,
+                                'pointers': _gesturePointers,
+                              });
+                            }
+                          },
                           boundaryMargin: const EdgeInsets.all(double.infinity),
                           onInteractionUpdate: (_) => setState(() {}),
                           child: size == null

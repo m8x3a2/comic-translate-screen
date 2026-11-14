@@ -33,6 +33,22 @@ enum EditorTool {
   draw,
 }
 
+/// The outline of [DrawMode.area].
+enum AreaShape {
+  /// Drawn by hand while the button is held.
+  lasso,
+
+  /// Clicked point by point; closed by a click on the first point, a double
+  /// click or Enter.
+  polygon,
+
+  /// Dragged from corner to corner.
+  rectangle,
+
+  /// Dragged from corner to corner of its box.
+  ellipse,
+}
+
 /// What the drawing tool does.
 enum DrawMode {
   /// Paints the chosen colour.
@@ -46,6 +62,9 @@ enum DrawMode {
 
   /// One click fills a bubble or a patch of one colour.
   fill,
+
+  /// Fills everything inside a drawn outline (see [AreaShape]).
+  area,
 
   /// One click takes the colour under the mouse (Alt + click in the other
   /// modes).
@@ -83,7 +102,11 @@ class EditorState {
     this.fillTolerance = 40,
     this.fillSpots = true,
     this.preview = false,
+    this.areaShape = AreaShape.lasso,
   });
+
+  /// The outline the area mode draws.
+  final AreaShape areaShape;
 
   /// What the drawing tool does.
   final DrawMode drawMode;
@@ -159,7 +182,9 @@ class EditorState {
     int? fillTolerance,
     bool? fillSpots,
     bool? preview,
+    AreaShape? areaShape,
   }) => EditorState(
+    areaShape: areaShape ?? this.areaShape,
     maskOnly: maskOnly ?? this.maskOnly,
     drawMode: drawMode ?? this.drawMode,
     paintSize: paintSize ?? this.paintSize,
@@ -176,6 +201,20 @@ class EditorState {
     fitPicks: fitPicks ?? this.fitPicks,
     fitPage: fitPicks == null ? this.fitPage : fitPage,
   );
+}
+
+/// A stroke is being painted on the page (a brush of the mask or of the
+/// drawing tool): the view does not zoom meanwhile, so a second finger on a
+/// touchpad cannot turn the stroke into a pinch.
+final strokeActiveProvider = NotifierProvider<StrokeActive, bool>(StrokeActive.new);
+
+class StrokeActive extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool active) {
+    if (state != active) state = active;
+  }
 }
 
 /// Most margin of "Fit to letters", in pixels.
@@ -255,6 +294,8 @@ class EditorNotifier extends Notifier<EditorState> {
   void setFillTolerance(int value) => state = state.copyWith(fillTolerance: value.clamp(0, maxFillTolerance));
 
   void toggleFillSpots() => state = state.copyWith(fillSpots: !state.fillSpots);
+
+  void setAreaShape(AreaShape shape) => state = state.copyWith(areaShape: shape);
 
   /// Turns "As it will be" on or off.
   void togglePreview() => state = state.copyWith(preview: !state.preview);

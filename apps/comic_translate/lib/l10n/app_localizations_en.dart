@@ -5018,4 +5018,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keyPreview => 'As it will be';
+
+  @override
+  String get drawArea =>
+      'Area: fills everything inside an outline with the chosen colour, letters and drawing too. Pick the outline on the right';
+
+  @override
+  String get areaLasso =>
+      'Lasso: draw the outline by hand with the button held';
+
+  @override
+  String get areaPolygon =>
+      'By points: click the corners; a click on the first one, a double click or Enter fills. Backspace takes the last corner back, Esc drops it all';
+
+  @override
+  String get areaRectangle => 'Rectangle: drag from corner to corner';
+
+  @override
+  String get areaEllipse => 'Ellipse: drag across it (good for round bubbles)';
 }
