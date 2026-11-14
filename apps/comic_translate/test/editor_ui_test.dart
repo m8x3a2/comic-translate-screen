@@ -854,11 +854,11 @@ void main() {
     await clickCard(tester, 'Три', LogicalKeyboardKey.controlLeft);
     expect(ws().blockSelection, [0, 2]);
     expect(ws().selectedBlock, 2);
-    expect(find.text('Выбрано пузырей: 2: 1, 3'), findsOneWidget);
+    expect(find.text('Выбрано пузырей: 2 (1, 3)'), findsOneWidget);
     // Shift + click on the second: everything from the third to it.
     await clickCard(tester, 'Два', LogicalKeyboardKey.shiftLeft);
     expect(ws().blockSelection, [0, 1, 2]);
-    expect(find.text('Выбрано пузырей: 3: 1, 2, 3'), findsOneWidget);
+    expect(find.text('Выбрано пузырей: 3 (1, 2, 3)'), findsOneWidget);
 
     // Bold for all three as one undo step.
     final bold = find.byTooltip('Жирный');

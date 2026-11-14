@@ -639,43 +639,48 @@ class _GroupEditor extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // The count on a line of its own (the numbers while they are few),
+            // the buttons under it: a narrow panel keeps both readable.
+            Text(
+              picked.length <= 20
+                  ? '${l.pickedCount('${picked.length}')} (${picked.map((i) => i + 1).join(', ')})'
+                  : l.pickedCount('${picked.length}'),
+              style: theme.textTheme.titleSmall,
+            ),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      '${l.pickedCount('${picked.length}')}: ${picked.map((i) => i + 1).join(', ')}',
-                      style: theme.textTheme.titleSmall,
-                    ),
+                  child: Wrap(
+                    children: [
+                      action(
+                        l.recognizePicked,
+                        Icons.abc,
+                        () => ref
+                            .read(stepsProvider.notifier)
+                            .run(ManualStep.recognize, DialogBatchUi(context), blocks: picked),
+                      ),
+                      action(
+                        l.translatePicked,
+                        Icons.translate,
+                        () => ref
+                            .read(stepsProvider.notifier)
+                            .run(ManualStep.translate, DialogBatchUi(context), blocks: picked),
+                      ),
+                      action(
+                        l.findInsidePicked,
+                        Icons.view_column_outlined,
+                        () => _findInsideMany(context, ref, picked),
+                      ),
+                      action(l.deletePicked, Icons.delete_outline, () => ws.deleteBlocks(picked)),
+                    ],
                   ),
                 ),
-                Wrap(
-                  children: [
-                    action(
-                      l.recognizePicked,
-                      Icons.abc,
-                      () => ref
-                          .read(stepsProvider.notifier)
-                          .run(ManualStep.recognize, DialogBatchUi(context), blocks: picked),
-                    ),
-                    action(
-                      l.translatePicked,
-                      Icons.translate,
-                      () => ref
-                          .read(stepsProvider.notifier)
-                          .run(ManualStep.translate, DialogBatchUi(context), blocks: picked),
-                    ),
-                    action(l.findInsidePicked, Icons.view_column_outlined, () => _findInsideMany(context, ref, picked)),
-                    action(l.deletePicked, Icons.delete_outline, () => ws.deleteBlocks(picked)),
-                    IconButton(
-                      tooltip: l.unpick,
-                      visualDensity: VisualDensity.compact,
-                      onPressed: () => ws.selectBlock(null),
-                      icon: const Icon(Icons.close, size: 20),
-                    ),
-                  ],
+                IconButton(
+                  tooltip: l.unpick,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => ws.selectBlock(null),
+                  icon: const Icon(Icons.close, size: 20),
                 ),
               ],
             ),
