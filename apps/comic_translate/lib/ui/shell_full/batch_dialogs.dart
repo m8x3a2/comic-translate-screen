@@ -6,11 +6,13 @@ import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../state/app_state.dart';
 import '../../state/batch.dart';
 import '../../state/exchange.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
 import '../common/plugin_strings.dart';
+import '../settings/own_server_key_field.dart' show keySlotLabel;
 import '../settings/settings_screen.dart';
 import 'exchange_dialog.dart';
 import 'main_screen.dart' show showInExplorer;
@@ -260,6 +262,22 @@ class _ReportDialog extends ConsumerWidget {
 
   final BatchReport report;
 
+  /// The other OpenRouter keys to go on with, when the run stopped on money
+  /// or on the key and OpenRouter translates or reads.
+  static List<String> _otherKeys(WidgetRef ref, SkipReason reason) {
+    if (reason is! TranslationFailedReason ||
+        !const {TranslationErrorKind.credits, TranslationErrorKind.auth}.contains(reason.kind)) {
+      return const [];
+    }
+    final s = ref.read(settingsProvider);
+    if (s.translator != 'openrouter' && s.ocr != 'openrouter_ocr') return const [];
+    final keys = s.keysForOwnServer(AppSettings.openRouterKeysId);
+    return [
+      for (final slot in keys.slots)
+        if (slot != keys.activeId) slot,
+    ];
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
@@ -286,6 +304,34 @@ class _ReportDialog extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(l.reportStopped(reasonLabel(l, reason)), style: TextStyle(color: theme.colorScheme.error)),
+                    // Money or the key of OpenRouter ran out: another of its keys, and on.
+                    for (final slot in _otherKeys(ref, reason))
+                      TextButton.icon(
+                        key: ValueKey('switch-key/$slot'),
+                        onPressed: () async {
+                          final settings = ref.read(settingsProvider.notifier);
+                          final batch = ref.read(batchProvider.notifier);
+                          final navigator = Navigator.of(context);
+                          navigator.pop();
+                          await settings.change(
+                            (s) => s.setOwnServerKeys(
+                              AppSettings.openRouterKeysId,
+                              s.keysForOwnServer(AppSettings.openRouterKeysId).select(slot),
+                            ),
+                          );
+                          if (navigator.mounted) await batch.run(DialogBatchUi(navigator.context));
+                        },
+                        icon: const Icon(Icons.key_outlined),
+                        label: Text(
+                          l.switchKeyContinue(
+                            keySlotLabel(
+                              context,
+                              ref.read(settingsProvider).keysForOwnServer(AppSettings.openRouterKeysId),
+                              slot,
+                            ),
+                          ),
+                        ),
+                      ),
                     if (fixedInSettings(reason))
                       TextButton.icon(
                         onPressed: () {

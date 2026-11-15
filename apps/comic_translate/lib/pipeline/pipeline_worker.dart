@@ -768,7 +768,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
           cancel: token,
           recorder: recorder,
           page: m.page,
-          onUsage: usage?.record,
+          onUsage: settings.countUsageTo(usage?.record),
           onHistory: history?.record,
         ),
         sourceLanguage: m.source,
@@ -798,7 +798,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
           cancel: token,
           recorder: recorder,
           page: m.page,
-          onUsage: usage?.record,
+          onUsage: settings.countUsageTo(usage?.record),
           onHistory: history?.record,
         ),
       );
@@ -823,7 +823,7 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
       cancel: token,
       recorder: recorder,
       page: m.page,
-      onUsage: usage?.record,
+      onUsage: settings.countUsageTo(usage?.record),
       onHistory: history?.record,
     );
     final blocks = m.blocks ?? const <TextBlock>[];

@@ -5294,4 +5294,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sectionLocked => 'Locked';
+
+  @override
+  String get usageKeyRemoved => 'a deleted key';
+
+  @override
+  String switchKeyContinue(String key) {
+    return 'Go on with \"$key\"';
+  }
 }

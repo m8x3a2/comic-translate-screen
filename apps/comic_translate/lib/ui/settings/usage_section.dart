@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 
 import '../../state/app_state.dart';
 import '../common/labels.dart';
+import 'own_server_key_field.dart' show keySlotLabel;
 
 /// The usage counter, read again each time the settings open.
 final usageReportProvider = FutureProvider.autoDispose<UsageReport>((ref) => ref.read(servicesProvider).usage.read());
@@ -259,6 +260,7 @@ class UsagePanel extends ConsumerWidget {
     final l = context.l10n;
     final theme = Theme.of(context);
     final report = ref.watch(usageReportProvider).value;
+    final keys = ref.watch(settingsProvider.select((s) => s.keysForOwnServer(AppSettings.openRouterKeysId)));
     String totals(UsageTotals t) => [
       l.usageRequests(_number(context, t.requests)),
       l.usageTokens('${t.estimated ? '≈' : ''}${_number(context, t.tokens)}'),
@@ -276,7 +278,16 @@ class UsagePanel extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${e.model} · ${e.host}', style: theme.textTheme.titleSmall),
+                Text(
+                  [
+                    e.model,
+                    e.host,
+                    // Which API key it was spent from, when there are several.
+                    if (e.key case final key? when keys.slots.length > 1 || key.isNotEmpty)
+                      keySlotLabel(context, keys, key),
+                  ].join(' · '),
+                  style: theme.textTheme.titleSmall,
+                ),
                 Text('${l.usageToday}: ${e.today.isEmpty ? '—' : totals(e.today)}'),
                 Text('${l.usageTotal}: ${totals(e.total)}'),
               ],

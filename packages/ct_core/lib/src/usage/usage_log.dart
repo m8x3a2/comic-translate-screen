@@ -19,9 +19,27 @@ class ServiceUsage {
     this.outputTokens = 0,
     this.cost,
     this.estimated = false,
+    this.key,
   });
 
   final String plugin;
+
+  /// Which of the service's API keys was used (its place in the list of
+  /// keys: '' the first one), when it has several; never the key itself.
+  final String? key;
+
+  /// This request, counted for API key [key].
+  ServiceUsage withKey(String? key) => ServiceUsage(
+        plugin: plugin,
+        host: host,
+        model: model,
+        requests: requests,
+        inputTokens: inputTokens,
+        outputTokens: outputTokens,
+        cost: cost,
+        estimated: estimated,
+        key: key,
+      );
 
   /// Server the request went to, e.g. `openrouter.ai`.
   final String host;
@@ -47,6 +65,7 @@ class ServiceUsage {
         'output_tokens': outputTokens,
         if (cost != null) 'cost': cost,
         if (estimated) 'estimated': true,
+        if (key != null) 'key': key,
       };
 }
 
@@ -108,9 +127,13 @@ class UsageEntry {
     required this.today,
     required this.total,
     this.lastUsed,
+    this.key,
   });
 
   final String plugin;
+
+  /// The API key it was used with ([ServiceUsage.key]).
+  final String? key;
   final String host;
   final String model;
   final UsageTotals today;
@@ -147,9 +170,9 @@ class UsageLog {
           final now = _clock();
           final today = dayKey(now);
           final entries = data['entries'] as Map<String, Object?>;
-          final key = '${usage.plugin}|${usage.host}|${usage.model}';
+          final key = [usage.plugin, usage.host, usage.model, if (usage.key != null) 'key:${usage.key}'].join('|');
           final entry = (entries[key] as Map?)?.cast<String, Object?>() ??
-              {'plugin': usage.plugin, 'host': usage.host, 'model': usage.model};
+              {'plugin': usage.plugin, 'host': usage.host, 'model': usage.model, if (usage.key != null) 'key': usage.key};
           entry['total'] = UsageTotals.fromJson(entry['total']).add(usage).toJson();
           final days = (entry['days'] as Map?)?.cast<String, Object?>() ?? {};
           days[today] = UsageTotals.fromJson(days[today]).add(usage).toJson();
@@ -180,6 +203,7 @@ class UsageLog {
             today: UsageTotals.fromJson((e['days'] as Map?)?[today]),
             total: UsageTotals.fromJson(e['total']),
             lastUsed: DateTime.tryParse('${e['last_used']}'),
+            key: e['key'] is String ? e['key'] as String : null,
           ),
     ]..sort((a, b) => (b.lastUsed ?? DateTime(0)).compareTo(a.lastUsed ?? DateTime(0)));
     return UsageReport(since: DateTime.tryParse('${data['since']}'), entries: entries);

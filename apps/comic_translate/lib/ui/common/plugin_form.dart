@@ -73,6 +73,9 @@ class PluginSettingsForm extends ConsumerWidget {
       field,
       storageId,
     ),
+    // Several OpenRouter keys, shared by its translator and OCR.
+    SecretSetting() when (info.id == 'openrouter' || info.id == 'openrouter_ocr') && field.key == 'api_key' =>
+      OwnServerKeyField(info, field, AppSettings.openRouterKeysId),
     SecretSetting() => PluginSecretField(info, field, field.storeKey(storageId)),
     BoolSetting() => SwitchListTile(
       contentPadding: EdgeInsets.zero,

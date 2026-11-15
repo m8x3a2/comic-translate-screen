@@ -232,7 +232,7 @@ class ProcessCommand extends CtsCommand {
         log: pageLog,
         recorder: recorder,
         page: page,
-        onUsage: ctx.services.usage.record,
+        onUsage: settings.countUsageTo(ctx.services.usage.record),
         onHistory: ctx.services.history.record,
       );
       try {

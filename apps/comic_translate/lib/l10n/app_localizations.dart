@@ -8977,6 +8977,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Locked'**
   String get sectionLocked;
+
+  /// No description provided for @usageKeyRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'a deleted key'**
+  String get usageKeyRemoved;
+
+  /// No description provided for @switchKeyContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Go on with \"{key}\"'**
+  String switchKeyContinue(String key);
 }
 
 class _AppLocalizationsDelegate

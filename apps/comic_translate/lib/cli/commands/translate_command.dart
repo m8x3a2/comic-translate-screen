@@ -108,7 +108,7 @@ class TranslateCommand extends CtsCommand {
             log: pageLog,
             recorder: recorder,
             page: page,
-            onUsage: services.usage.record,
+            onUsage: settings.countUsageTo(services.usage.record),
             onHistory: services.history.record,
           ),
         );

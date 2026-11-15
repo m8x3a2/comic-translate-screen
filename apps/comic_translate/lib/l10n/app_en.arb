@@ -3406,5 +3406,8 @@
   "templatesPrivacy": "API keys, own servers, recent projects and the models folder are not put into a template.",
   "sectionLock": "Lock: ready-made sets and templates will not change this section",
   "sectionUnlock": "The section is locked: sets and templates do not change it. Click to unlock",
-  "sectionLocked": "Locked"
+  "sectionLocked": "Locked",
+  "usageKeyRemoved": "a deleted key",
+  "switchKeyContinue": "Go on with \"{key}\"",
+  "@switchKeyContinue": {"placeholders": {"key": {"type": "String"}}}
 }

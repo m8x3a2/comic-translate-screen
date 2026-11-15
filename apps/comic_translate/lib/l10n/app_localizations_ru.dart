@@ -5290,4 +5290,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sectionLocked => 'Под замком';
+
+  @override
+  String get usageKeyRemoved => 'удалённый ключ';
+
+  @override
+  String switchKeyContinue(String key) {
+    return 'Перейти на «$key» и продолжить';
+  }
 }

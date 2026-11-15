@@ -9,6 +9,7 @@ import '../inpainting/clean_level.dart';
 import '../plugins/engines.dart';
 import '../plugins/settings_schema.dart' show SecretSetting;
 import '../render/layout.dart';
+import '../usage/usage_log.dart' show UsageSink;
 import '../render/text_case.dart';
 import '../render/upscale.dart';
 import 'own_server_keys.dart';
@@ -393,11 +394,26 @@ class AppSettings {
     );
   }
 
+  /// Where the API keys of OpenRouter are listed ([keysForOwnServer]): its
+  /// translator and its OCR share them; the first one is the key kept
+  /// before there could be several.
+  static const openRouterKeysId = 'openrouter';
+
+  /// [sink] counting each request of OpenRouter for the API key chosen now
+  /// (the usage counter shows the spending of each key).
+  UsageSink? countUsageTo(UsageSink? sink) {
+    if (sink == null) return null;
+    final key = keysForOwnServer(openRouterKeysId).activeId;
+    return (usage) =>
+        sink(usage.plugin == 'openrouter' || usage.plugin == 'openrouter_ocr' ? usage.withKey(key) : usage);
+  }
+
   String? pluginSettingSecretKey(String id, SecretSetting field) {
     final profile = ownServerOcrProfile;
     final connection = switch (id) {
       'openai_compatible' => pluginStorageId(id),
       'openai_compatible_ocr' when profile != null => ownServerStorageId(profile),
+      'openrouter' || 'openrouter_ocr' => openRouterKeysId,
       _ => null,
     };
     if (connection != null && field.key == 'api_key') {

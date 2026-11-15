@@ -100,13 +100,7 @@ class _OwnServerKeyFieldState extends ConsumerState<OwnServerKeyField> {
     final notifier = ref.read(settingsProvider.notifier);
     final active = keys.activeId;
     final slots = keys.slots.toList();
-    String label(int index, String id) {
-      final note = keys.notes[id] ?? '';
-      return [
-        if (index == 0) l.ownServerKeyFirst else l.ownServerKeyNumber(index + 1),
-        if (note.isNotEmpty) note,
-      ].join(' · ');
-    }
+    String label(int index, String id) => keySlotLabel(context, keys, id);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -173,6 +167,22 @@ class _OwnServerKeyFieldState extends ConsumerState<OwnServerKeyField> {
     );
   }
 }
+
+/// "First key · note", "Key 2 · note" for key [id] of [keys]; null when it
+/// is not in the list any more.
+String? keySlotLabelOrNull(BuildContext context, OwnServerKeys keys, String id) {
+  final l = context.l10n;
+  final index = keys.slots.toList().indexOf(id);
+  if (index < 0) return null;
+  final note = keys.notes[id] ?? '';
+  return [
+    if (index == 0) l.ownServerKeyFirst else l.ownServerKeyNumber(index + 1),
+    if (note.isNotEmpty) note,
+  ].join(' · ');
+}
+
+String keySlotLabel(BuildContext context, OwnServerKeys keys, String id) =>
+    keySlotLabelOrNull(context, keys, id) ?? context.l10n.usageKeyRemoved;
 
 bool _containsKey(String note, String key) => key.isNotEmpty && (key.length < 6 ? note == key : note.contains(key));
 
