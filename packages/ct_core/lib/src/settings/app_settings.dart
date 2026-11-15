@@ -79,6 +79,7 @@ class AppSettings {
     this.uiLanguage = 'ru',
     Map<String, String>? shortcuts,
     Set<String>? hiddenPanels,
+    Set<String>? lockedParts,
     Map<String, String>? gpuCpuModels,
     this.showLookInPanel = true,
     this.gridTileSize = 190,
@@ -106,6 +107,7 @@ class AppSettings {
     Map<String, Object?>? extra,
   }) : shortcuts = shortcuts ?? {},
        hiddenPanels = hiddenPanels ?? {},
+       lockedParts = lockedParts ?? {},
        gpuCpuModels = gpuCpuModels ?? {},
        recentProjects = recentProjects ?? [],
        plugins = plugins ?? {},
@@ -240,6 +242,10 @@ class AppSettings {
 
   /// Editor panels folded away by the user (`pages`, `tools`, `text`).
   Set<String> hiddenPanels;
+
+  /// Sections of the settings window under a lock: ready-made sets and
+  /// templates leave them as they are (names of the app's `SettingsPart`).
+  Set<String> lockedParts;
 
   /// The text panel shows the look of styled words (bold, colour, size...);
   /// off: plain text. Not in the original.
@@ -445,6 +451,7 @@ class AppSettings {
       'language': uiLanguage,
       if (shortcuts.isNotEmpty) 'shortcuts': shortcuts,
       if (hiddenPanels.isNotEmpty) 'hidden_panels': [...hiddenPanels],
+      if (lockedParts.isNotEmpty) 'locked_parts': [...lockedParts],
       if (!showLookInPanel) 'show_look_in_panel': false,
       if (gridTileSize != 190) 'grid_tile_size': gridTileSize,
       if (translateSelected) 'translate_selected': true,
@@ -572,6 +579,7 @@ class AppSettings {
           if (e.key is String && e.value is String) e.key as String: e.value as String,
       },
       hiddenPanels: {...?(ui['hidden_panels'] as List?)?.whereType<String>()},
+      lockedParts: {...?(ui['locked_parts'] as List?)?.whereType<String>()},
       showLookInPanel: ui['show_look_in_panel'] != false,
       gridTileSize: ((ui['grid_tile_size'] as num?)?.toInt() ?? 190).clamp(100, 400),
       translateSelected: ui['translate_selected'] == true,

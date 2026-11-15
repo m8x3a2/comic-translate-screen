@@ -8773,6 +8773,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Found: {count}'**
   String settingsSearchCount(int count);
+
+  /// No description provided for @settingsSets.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready-made sets and templates'**
+  String get settingsSets;
+
+  /// No description provided for @presetWeak.
+  ///
+  /// In en, this message translates to:
+  /// **'Weak computer'**
+  String get presetWeak;
+
+  /// No description provided for @presetRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get presetRecommended;
+
+  /// No description provided for @presetHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High quality'**
+  String get presetHigh;
+
+  /// No description provided for @presetsHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A ready-made set changes only what loads the computer: how text is read and cleaned. The languages, the translator, the keys and the shortcuts stay.'**
+  String get presetsHelp;
+
+  /// No description provided for @presetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The set \"{name}\"'**
+  String presetTitle(String name);
+
+  /// No description provided for @presetNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything is already so: nothing to change.'**
+  String get presetNothing;
+
+  /// No description provided for @presetLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not changed, the section is locked: {sections}'**
+  String presetLocked(String sections);
+
+  /// No description provided for @presetApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get presetApply;
+
+  /// No description provided for @presetApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'The set \"{name}\" is applied'**
+  String presetApplied(String name);
+
+  /// No description provided for @presetSeconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s'**
+  String presetSeconds(int seconds);
+
+  /// No description provided for @templatesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My templates'**
+  String get templatesTitle;
+
+  /// No description provided for @templatesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No templates yet. Save your settings to come back to them with one button or to take them to another computer.'**
+  String get templatesNone;
+
+  /// No description provided for @templateSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save my settings as a template…'**
+  String get templateSave;
+
+  /// No description provided for @templateLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Load a template from a file…'**
+  String get templateLoad;
+
+  /// No description provided for @templateName.
+  ///
+  /// In en, this message translates to:
+  /// **'Template name'**
+  String get templateName;
+
+  /// No description provided for @templateReplaceAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'There is a template \"{name}\" already. Replace it?'**
+  String templateReplaceAsk(String name);
+
+  /// No description provided for @templateReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get templateReplace;
+
+  /// No description provided for @templateSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'The template \"{name}\" is saved'**
+  String templateSaved(String name);
+
+  /// No description provided for @templateApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get templateApply;
+
+  /// No description provided for @templateExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to a file…'**
+  String get templateExport;
+
+  /// No description provided for @templateDeleteAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the template \"{name}\"?'**
+  String templateDeleteAsk(String name);
+
+  /// No description provided for @templateApplyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply the template \"{name}\"?'**
+  String templateApplyTitle(String name);
+
+  /// No description provided for @templateApplyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Every section becomes as in the template. API keys, own servers, the models folder and the graphics card stay.'**
+  String get templateApplyText;
+
+  /// No description provided for @templateApplyLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked: {sections}. How to apply the template?'**
+  String templateApplyLocked(String sections);
+
+  /// No description provided for @templateApplyUnlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the unlocked sections'**
+  String get templateApplyUnlocked;
+
+  /// No description provided for @templateApplyAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Entirely (the locks as in the template too)'**
+  String get templateApplyAll;
+
+  /// No description provided for @templateApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'The template \"{name}\" is applied'**
+  String templateApplied(String name);
+
+  /// No description provided for @templateBadFile.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not a settings template file.'**
+  String get templateBadFile;
+
+  /// No description provided for @templateExported.
+  ///
+  /// In en, this message translates to:
+  /// **'The template is saved: {path}'**
+  String templateExported(String path);
+
+  /// No description provided for @templatesPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'API keys, own servers, recent projects and the models folder are not put into a template.'**
+  String get templatesPrivacy;
+
+  /// No description provided for @sectionLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock: ready-made sets and templates will not change this section'**
+  String get sectionLock;
+
+  /// No description provided for @sectionUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'The section is locked: sets and templates do not change it. Click to unlock'**
+  String get sectionUnlock;
+
+  /// No description provided for @sectionLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get sectionLocked;
 }
 
 class _AppLocalizationsDelegate

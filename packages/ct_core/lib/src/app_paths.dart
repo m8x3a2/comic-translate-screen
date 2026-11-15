@@ -19,6 +19,9 @@ class AppPaths {
 
   /// Font files the user added (Settings → Text).
   Directory get fonts => _dir('fonts');
+
+  /// Settings templates saved by the user (`*.ctssettings`).
+  Directory get settingsTemplates => _dir('settings_templates');
   File get settingsFile => File(p.join(root.path, 'settings.json'));
 
   /// The user's own program icon (Settings → General): the .ico Windows

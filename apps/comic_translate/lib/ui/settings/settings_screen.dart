@@ -37,6 +37,7 @@ import 'model_prompt.dart';
 import 'request_templates.dart';
 import 'settings_place.dart';
 import 'settings_search.dart';
+import 'settings_sets.dart';
 import 'translator_test_chat.dart';
 import 'usage_section.dart';
 
@@ -347,6 +348,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       SettingsSection.models: (Icons.memory, l.settingsModels),
       SettingsSection.about: (Icons.info_outline, l.settingsAbout),
     };
+    final locked = ref.watch(settingsProvider.select((s) => s.lockedParts));
     final Widget page = SingleChildScrollView(
       key: ValueKey(_section),
       padding: widget.panel ? const EdgeInsets.fromLTRB(16, 16, 16, 24) : const EdgeInsets.fromLTRB(32, 24, 32, 32),
@@ -357,9 +359,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                titles[_section]!.$2,
-                style: widget.panel ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      titles[_section]!.$2,
+                      style: widget.panel ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall,
+                    ),
+                  ),
+                  // Sets and templates leave a locked section alone.
+                  if (_partOf(_section) case final part? when part != SettingsPart.models) SectionLockButton(part),
+                ],
               ),
               const SizedBox(height: 16),
               KeyedSubtree(
@@ -510,6 +520,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ListTile(
                           leading: Icon(e.value.$1),
                           title: Text(e.value.$2),
+                          trailing: locked.contains(_partOf(e.key)?.name)
+                              ? Tooltip(message: l.sectionLocked, child: const Icon(Icons.lock, size: 16))
+                              : null,
                           selected: e.key == _section && !_searching,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           onTap: () => setState(() {
@@ -811,6 +824,7 @@ class _GeneralSection extends ConsumerWidget {
             const GpuSwitch(),
           ],
         ),
+        const SettingsSetsGroup(),
         if (Platform.isWindows) SettingsGroup(title: l.appIcon, children: const [AppIconChoice()]),
         SettingsGroup(
           title: l.settingsProjects,

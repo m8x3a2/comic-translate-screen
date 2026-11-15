@@ -5160,4 +5160,134 @@ class AppLocalizationsRu extends AppLocalizations {
   String settingsSearchCount(int count) {
     return 'Найдено: $count';
   }
+
+  @override
+  String get settingsSets => 'Наборы и шаблоны настроек';
+
+  @override
+  String get presetWeak => 'Слабый компьютер';
+
+  @override
+  String get presetRecommended => 'Рекомендуемые';
+
+  @override
+  String get presetHigh => 'Высокое качество';
+
+  @override
+  String get presetsHelp =>
+      'Готовые наборы меняют только то, что нагружает компьютер: как программа читает и очищает текст. Язык, переводчик, ключи и клавиши не трогают.';
+
+  @override
+  String presetTitle(String name) {
+    return 'Набор «$name»';
+  }
+
+  @override
+  String get presetNothing => 'Всё уже так — менять нечего.';
+
+  @override
+  String presetLocked(String sections) {
+    return 'Не меняется — раздел под замком: $sections';
+  }
+
+  @override
+  String get presetApply => 'Применить';
+
+  @override
+  String presetApplied(String name) {
+    return 'Набор «$name» применён';
+  }
+
+  @override
+  String presetSeconds(int seconds) {
+    return '$seconds с';
+  }
+
+  @override
+  String get templatesTitle => 'Мои шаблоны';
+
+  @override
+  String get templatesNone =>
+      'Шаблонов пока нет. Сохраните свои настройки — и сможете вернуться к ним одной кнопкой или перенести на другой компьютер.';
+
+  @override
+  String get templateSave => 'Сохранить мои настройки как шаблон…';
+
+  @override
+  String get templateLoad => 'Загрузить шаблон из файла…';
+
+  @override
+  String get templateName => 'Название шаблона';
+
+  @override
+  String templateReplaceAsk(String name) {
+    return 'Шаблон «$name» уже есть. Заменить его?';
+  }
+
+  @override
+  String get templateReplace => 'Заменить';
+
+  @override
+  String templateSaved(String name) {
+    return 'Шаблон «$name» сохранён';
+  }
+
+  @override
+  String get templateApply => 'Применить';
+
+  @override
+  String get templateExport => 'Сохранить в файл…';
+
+  @override
+  String templateDeleteAsk(String name) {
+    return 'Удалить шаблон «$name»?';
+  }
+
+  @override
+  String templateApplyTitle(String name) {
+    return 'Применить шаблон «$name»?';
+  }
+
+  @override
+  String get templateApplyText =>
+      'Настройки всех разделов станут как в шаблоне. Ключи API, свои серверы, папка моделей и видеокарта не меняются.';
+
+  @override
+  String templateApplyLocked(String sections) {
+    return 'Под замком: $sections. Как применить шаблон?';
+  }
+
+  @override
+  String get templateApplyUnlocked => 'Только незаблокированные';
+
+  @override
+  String get templateApplyAll => 'Полностью (и замки как в шаблоне)';
+
+  @override
+  String templateApplied(String name) {
+    return 'Шаблон «$name» применён';
+  }
+
+  @override
+  String get templateBadFile => 'Это не файл шаблона настроек.';
+
+  @override
+  String templateExported(String path) {
+    return 'Шаблон сохранён: $path';
+  }
+
+  @override
+  String get templatesPrivacy =>
+      'Ключи API, свои серверы, недавние проекты и папка моделей в шаблон не попадают.';
+
+  @override
+  String get sectionLock =>
+      'Поставить замок: наборы и шаблоны не будут менять этот раздел';
+
+  @override
+  String get sectionUnlock =>
+      'Раздел под замком: наборы и шаблоны его не меняют. Нажмите, чтобы снять замок';
+
+  @override
+  String get sectionLocked => 'Под замком';
 }

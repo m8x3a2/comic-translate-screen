@@ -5164,4 +5164,134 @@ class AppLocalizationsEn extends AppLocalizations {
   String settingsSearchCount(int count) {
     return 'Found: $count';
   }
+
+  @override
+  String get settingsSets => 'Ready-made sets and templates';
+
+  @override
+  String get presetWeak => 'Weak computer';
+
+  @override
+  String get presetRecommended => 'Recommended';
+
+  @override
+  String get presetHigh => 'High quality';
+
+  @override
+  String get presetsHelp =>
+      'A ready-made set changes only what loads the computer: how text is read and cleaned. The languages, the translator, the keys and the shortcuts stay.';
+
+  @override
+  String presetTitle(String name) {
+    return 'The set \"$name\"';
+  }
+
+  @override
+  String get presetNothing => 'Everything is already so: nothing to change.';
+
+  @override
+  String presetLocked(String sections) {
+    return 'Not changed, the section is locked: $sections';
+  }
+
+  @override
+  String get presetApply => 'Apply';
+
+  @override
+  String presetApplied(String name) {
+    return 'The set \"$name\" is applied';
+  }
+
+  @override
+  String presetSeconds(int seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String get templatesTitle => 'My templates';
+
+  @override
+  String get templatesNone =>
+      'No templates yet. Save your settings to come back to them with one button or to take them to another computer.';
+
+  @override
+  String get templateSave => 'Save my settings as a template…';
+
+  @override
+  String get templateLoad => 'Load a template from a file…';
+
+  @override
+  String get templateName => 'Template name';
+
+  @override
+  String templateReplaceAsk(String name) {
+    return 'There is a template \"$name\" already. Replace it?';
+  }
+
+  @override
+  String get templateReplace => 'Replace';
+
+  @override
+  String templateSaved(String name) {
+    return 'The template \"$name\" is saved';
+  }
+
+  @override
+  String get templateApply => 'Apply';
+
+  @override
+  String get templateExport => 'Save to a file…';
+
+  @override
+  String templateDeleteAsk(String name) {
+    return 'Delete the template \"$name\"?';
+  }
+
+  @override
+  String templateApplyTitle(String name) {
+    return 'Apply the template \"$name\"?';
+  }
+
+  @override
+  String get templateApplyText =>
+      'Every section becomes as in the template. API keys, own servers, the models folder and the graphics card stay.';
+
+  @override
+  String templateApplyLocked(String sections) {
+    return 'Locked: $sections. How to apply the template?';
+  }
+
+  @override
+  String get templateApplyUnlocked => 'Only the unlocked sections';
+
+  @override
+  String get templateApplyAll => 'Entirely (the locks as in the template too)';
+
+  @override
+  String templateApplied(String name) {
+    return 'The template \"$name\" is applied';
+  }
+
+  @override
+  String get templateBadFile => 'This is not a settings template file.';
+
+  @override
+  String templateExported(String path) {
+    return 'The template is saved: $path';
+  }
+
+  @override
+  String get templatesPrivacy =>
+      'API keys, own servers, recent projects and the models folder are not put into a template.';
+
+  @override
+  String get sectionLock =>
+      'Lock: ready-made sets and templates will not change this section';
+
+  @override
+  String get sectionUnlock =>
+      'The section is locked: sets and templates do not change it. Click to unlock';
+
+  @override
+  String get sectionLocked => 'Locked';
 }
