@@ -68,10 +68,7 @@ void main() {
   }
 
   Finder hits(String section) => find.byWidgetPredicate(
-    (w) =>
-        w is ListTile &&
-        w.key is ValueKey<String> &&
-        (w.key as ValueKey<String>).value.startsWith('hit/$section/'),
+    (w) => w is ListTile && w.key is ValueKey<String> && (w.key as ValueKey<String>).value.startsWith('hit/$section/'),
   );
 
   testWidgets('words find settings in every section; a click opens the setting, Esc clears', (tester) async {
@@ -103,9 +100,30 @@ void main() {
     // The keys: found by what they do.
     await search(tester, 'вставить страницы');
     expect(hits('keys'), findsWidgets);
-    // Nothing.
+    // Icon buttons are named by their tooltips, not by the letter of the icon.
+    await search(tester, 'шрифт');
+    final icons = RegExp('[-]');
+    final names = [
+      for (final w in tester.widgetList<ListTile>(hits('text'))) ((w.title! as Text).textSpan!.toPlainText()),
+    ];
+    expect(names, isNotEmpty);
+    expect(names.where(icons.hasMatch), isEmpty);
+    // Nothing; Enter keeps the words to be changed.
     await search(tester, 'щщщзз');
     expect(find.textContaining('Ничего не нашлось'), findsOneWidget);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    final field = find.byKey(const ValueKey('settings-search'));
+    expect(tester.widget<TextField>(field).focusNode!.hasFocus, isTrue);
+    // Ctrl+F finds the field wherever the focus is.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump();
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pump();
+    await tester.pump();
+    expect(tester.widget<TextField>(field).focusNode!.hasFocus, isTrue);
 
     // A click goes to the setting.
     await search(tester, 'автосохранение');

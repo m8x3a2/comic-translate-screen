@@ -65,6 +65,8 @@ List<SettingUnit> collectSettings(Element root) {
       if (units.isNotEmpty) units.last.infos.add(w.text);
       return;
     }
+    // An icon is drawn as a letter of its font: not a word.
+    if (w is Icon) return;
     if (_isUnit(w)) {
       final unit = _gather(e, group);
       if (unit != null) units.add(unit);
@@ -107,6 +109,7 @@ SettingUnit? _gather(Element root, String? group) {
       infos.add(w.text);
       return;
     }
+    if (w is Icon) return;
     if (w is InputDecorator) {
       for (final t in [w.decoration.labelText, w.decoration.helperText, w.decoration.hintText]) {
         if (t != null && t.trim().isNotEmpty) texts.add(t.trim());

@@ -84,7 +84,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Timer? _flashTimer;
 
   @override
+  void initState() {
+    super.initState();
+    // Ctrl+F over the whole window: wherever the focus is (the panel's comes
+    // from the window's keys).
+    if (!widget.panel) HardwareKeyboard.instance.addHandler(_onKey);
+  }
+
+  bool _onKey(KeyEvent e) {
+    if (e is! KeyDownEvent || e.logicalKey != LogicalKeyboardKey.keyF) return false;
+    final keys = HardwareKeyboard.instance;
+    if (!keys.isControlPressed || keys.isShiftPressed || keys.isAltPressed) return false;
+    if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return false;
+    _openSearch();
+    return true;
+  }
+
+  @override
   void dispose() {
+    if (!widget.panel) HardwareKeyboard.instance.removeHandler(_onKey);
     _search.dispose();
     _searchFocus.dispose();
     _flashTimer?.cancel();
@@ -211,6 +229,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         onTap: () {
           if (_search.text.trim().isNotEmpty) _showResults();
         },
+        // Enter goes to the first setting found; with none, the words stay to be changed.
+        onEditingComplete: () {},
         onSubmitted: (_) {
           if (_searching && _hits.isNotEmpty) _go(_hits.first);
         },
@@ -463,55 +483,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
     }
-    return CallbackShortcuts(
-      bindings: {const SingleActivator(LogicalKeyboardKey.keyF, control: true): _openSearch},
-      child: Focus(
-        autofocus: true,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(l.settings),
-            actions: [
-              IconButton(
-                tooltip: l.settingsAsPanel,
-                onPressed: () => switchSettingsView(context, ref, toPanel: true, section: _section),
-                icon: const Icon(Icons.vertical_split_outlined),
-              ),
-              const SizedBox(width: 8),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l.settings),
+        actions: [
+          IconButton(
+            tooltip: l.settingsAsPanel,
+            onPressed: () => switchSettingsView(context, ref, toPanel: true, section: _section),
+            icon: const Icon(Icons.vertical_split_outlined),
           ),
-          body: Row(
-            children: [
-              SizedBox(
-                width: 250,
-                child: Column(
-                  children: [
-                    Padding(padding: const EdgeInsets.fromLTRB(8, 8, 8, 0), child: _searchField(context)),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.all(8),
-                        children: [
-                          for (final e in titles.entries)
-                            ListTile(
-                              leading: Icon(e.value.$1),
-                              title: Text(e.value.$2),
-                              selected: e.key == _section && !_searching,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              onTap: () => setState(() {
-                                _section = e.key;
-                                _results = false;
-                              }),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Row(
+        children: [
+          SizedBox(
+            width: 250,
+            child: Column(
+              children: [
+                Padding(padding: const EdgeInsets.fromLTRB(8, 8, 8, 0), child: _searchField(context)),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.all(8),
+                    children: [
+                      for (final e in titles.entries)
+                        ListTile(
+                          leading: Icon(e.value.$1),
+                          title: Text(e.value.$2),
+                          selected: e.key == _section && !_searching,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          onTap: () => setState(() {
+                            _section = e.key;
+                            _results = false;
+                          }),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const VerticalDivider(width: 1),
-              Expanded(child: content),
-            ],
+              ],
+            ),
           ),
-        ),
+          const VerticalDivider(width: 1),
+          Expanded(child: content),
+        ],
       ),
     );
   }
