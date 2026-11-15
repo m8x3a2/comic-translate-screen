@@ -1439,5 +1439,11 @@
   "selectionFill": "Залить",
   "selectionOriginal": "Оригинал",
   "selectionErase": "Стереть мазки",
-  "selectionDrop": "Снять (Esc)"
+  "selectionDrop": "Снять (Esc)",
+  "settingsSearchHint": "Найти настройку (Ctrl+F)",
+  "settingsSearchOpen": "Найти настройку (Ctrl+F)",
+  "settingsSearchClear": "Очистить (Esc)",
+  "settingsSearchNone": "Ничего не нашлось. Попробуйте другое слово или только его начало.",
+  "settingsSearchSection": "Раздел",
+  "settingsSearchCount": "Найдено: {count}"
 }

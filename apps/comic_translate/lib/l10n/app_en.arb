@@ -3348,5 +3348,18 @@
   "selectionFill": "Fill",
   "selectionOriginal": "Original",
   "selectionErase": "Erase touch-ups",
-  "selectionDrop": "Drop (Esc)"
+  "selectionDrop": "Drop (Esc)",
+  "settingsSearchHint": "Find a setting (Ctrl+F)",
+  "settingsSearchOpen": "Find a setting (Ctrl+F)",
+  "settingsSearchClear": "Clear (Esc)",
+  "settingsSearchNone": "Nothing found. Try another word or just its beginning.",
+  "settingsSearchSection": "Section",
+  "settingsSearchCount": "Found: {count}",
+  "@settingsSearchCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

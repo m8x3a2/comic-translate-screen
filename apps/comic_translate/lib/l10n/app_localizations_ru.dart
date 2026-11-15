@@ -5139,4 +5139,25 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get selectionDrop => 'Снять (Esc)';
+
+  @override
+  String get settingsSearchHint => 'Найти настройку (Ctrl+F)';
+
+  @override
+  String get settingsSearchOpen => 'Найти настройку (Ctrl+F)';
+
+  @override
+  String get settingsSearchClear => 'Очистить (Esc)';
+
+  @override
+  String get settingsSearchNone =>
+      'Ничего не нашлось. Попробуйте другое слово или только его начало.';
+
+  @override
+  String get settingsSearchSection => 'Раздел';
+
+  @override
+  String settingsSearchCount(int count) {
+    return 'Найдено: $count';
+  }
 }

@@ -36,6 +36,7 @@ import '../common/panels.dart';
 import '../common/plugin_strings.dart';
 import '../settings/settings_place.dart';
 import '../settings/settings_screen.dart';
+import '../settings/settings_search.dart';
 import 'batch_dialogs.dart';
 import 'exchange_dialog.dart';
 import 'glossary_dialog.dart';
@@ -865,7 +866,12 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       case ShortcutAction.translateAll:
         if (!busy && state.pages.isNotEmpty) _translate();
       case ShortcutAction.find:
-        if (state.pages.isNotEmpty) ref.read(findOpenProvider.notifier).set(true);
+        // With the settings panel open: a setting is looked for.
+        if (ref.read(settingsPanelProvider) != null) {
+          ref.read(settingsSearchRequestProvider.notifier).request();
+        } else if (state.pages.isNotEmpty) {
+          ref.read(findOpenProvider.notifier).set(true);
+        }
       case ShortcutAction.undo || ShortcutAction.redo:
         if (busy) return false;
         action == ShortcutAction.undo ? ws.undo() : ws.redo();

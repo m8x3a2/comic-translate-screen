@@ -2,6 +2,7 @@
 /// credits pages). Every change is saved at once.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
@@ -35,6 +36,7 @@ import 'own_server_profiles.dart';
 import 'model_prompt.dart';
 import 'request_templates.dart';
 import 'settings_place.dart';
+import 'settings_search.dart';
 import 'translator_test_chat.dart';
 import 'usage_section.dart';
 
@@ -58,6 +60,241 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   /// Changes after a reset, so every field shows the default again.
   var _resets = 0;
+
+  // The search through the settings.
+  final _search = TextEditingController();
+  final _searchFocus = FocusNode();
+
+  /// The settings found are shown instead of the section.
+  var _results = false;
+
+  /// The panel's search row is open.
+  var _panelSearch = false;
+
+  /// What can be found, per section (gathered from the sections built out
+  /// of sight); null until gathered for this search.
+  Map<SettingsSection, List<SettingUnit>>? _index;
+  List<SettingHit> _hits = const [];
+  final _hidden = {for (final s in SettingsSection.values) s: GlobalKey()};
+  final _shown = GlobalKey();
+  final _area = GlobalKey();
+
+  /// The setting just gone to, lit for a moment (in [_area]).
+  Rect? _flash;
+  Timer? _flashTimer;
+
+  @override
+  void dispose() {
+    _search.dispose();
+    _searchFocus.dispose();
+    _flashTimer?.cancel();
+    super.dispose();
+  }
+
+  bool get _searching => _results && _search.text.trim().isNotEmpty;
+
+  Widget _sectionBody(SettingsSection s) => switch (s) {
+    SettingsSection.general => const _GeneralSection(),
+    SettingsSection.translator => const _TranslatorSection(),
+    SettingsSection.exchange => const _ExchangeSection(),
+    SettingsSection.ocr => const _OcrSection(),
+    SettingsSection.cleaning => const _CleaningSection(),
+    SettingsSection.text => const _TextSection(),
+    SettingsSection.upscale => const _UpscaleSection(),
+    SettingsSection.export => const _ExportSection(),
+    SettingsSection.keys => const KeysSection(),
+    SettingsSection.models => const ModelsSection(),
+    SettingsSection.about => const _AboutSection(),
+  };
+
+  void _openSearch() {
+    setState(() => _panelSearch = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _searchFocus.requestFocus();
+      _search.selection = TextSelection(baseOffset: 0, extentOffset: _search.text.length);
+      if (_search.text.trim().isNotEmpty) _showResults();
+    });
+  }
+
+  void _showResults() {
+    if (_results) return;
+    setState(() {
+      _results = true;
+      _index = null;
+    });
+  }
+
+  /// Esc: clears the words; with none, closes the panel's search row.
+  void _clearSearch() {
+    if (_search.text.isEmpty) {
+      setState(() => _panelSearch = false);
+      _searchFocus.unfocus();
+      return;
+    }
+    _search.clear();
+    setState(() => _results = false);
+  }
+
+  /// Gathers what can be found from the sections built out of sight.
+  void _gather() {
+    if (!mounted || !_searching || _index != null) return;
+    final index = <SettingsSection, List<SettingUnit>>{};
+    for (final e in _hidden.entries) {
+      final context = e.value.currentContext;
+      if (context is Element) index[e.key] = collectSettings(context);
+    }
+    setState(() => _index = index);
+  }
+
+  /// Opens the section of [hit] and scrolls to the setting, lit for a moment.
+  void _go(SettingHit hit) {
+    _searchFocus.unfocus();
+    setState(() {
+      _section = hit.section;
+      _results = false;
+      _flash = null;
+    });
+    if (hit.index >= 0) WidgetsBinding.instance.addPostFrameCallback((_) => _reveal(hit));
+  }
+
+  Future<void> _reveal(SettingHit hit) async {
+    final context = _shown.currentContext;
+    if (!mounted || context is! Element) return;
+    final units = collectSettings(context);
+    final unit = hit.index < units.length && units[hit.index].label == hit.label
+        ? units[hit.index]
+        : units.where((u) => u.label == hit.label).firstOrNull;
+    if (unit == null) return;
+    await Scrollable.ensureVisible(
+      unit.element,
+      alignment: 0.2,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+    if (!mounted || !unit.element.mounted) return;
+    final box = unit.element.renderObject, area = _area.currentContext?.findRenderObject();
+    if (box is! RenderBox || area is! RenderBox || !box.attached || !box.hasSize) return;
+    setState(() => _flash = box.localToGlobal(Offset.zero, ancestor: area) & box.size);
+    _flashTimer?.cancel();
+    _flashTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => _flash = null);
+    });
+  }
+
+  Widget _searchField(BuildContext context) {
+    final l = context.l10n;
+    return CallbackShortcuts(
+      bindings: {const SingleActivator(LogicalKeyboardKey.escape): _clearSearch},
+      child: TextField(
+        key: const ValueKey('settings-search'),
+        controller: _search,
+        focusNode: _searchFocus,
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: l.settingsSearchHint,
+          prefixIcon: const Icon(Icons.search),
+          border: const OutlineInputBorder(),
+          suffixIcon: _search.text.isEmpty
+              ? null
+              : IconButton(tooltip: l.settingsSearchClear, icon: const Icon(Icons.close), onPressed: _clearSearch),
+        ),
+        onChanged: (text) {
+          if (text.trim().isEmpty) {
+            setState(() => _results = false);
+          } else if (!_results) {
+            _showResults();
+          } else {
+            setState(() {});
+          }
+        },
+        onTap: () {
+          if (_search.text.trim().isNotEmpty) _showResults();
+        },
+        onSubmitted: (_) {
+          if (_searching && _hits.isNotEmpty) _go(_hits.first);
+        },
+      ),
+    );
+  }
+
+  /// The settings found (and, out of sight, every section built to gather
+  /// them).
+  Widget _resultsView(BuildContext context, Map<SettingsSection, (IconData, String)> titles) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final index = _index;
+    if (index == null) WidgetsBinding.instance.addPostFrameCallback((_) => _gather());
+    final stems = queryStems(_search.text);
+    _hits = index == null
+        ? const []
+        : searchSettings(index, {for (final e in titles.entries) e.key: e.value.$2}, _search.text);
+    final bold = TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary);
+    final shown = _hits.take(100).toList();
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: index == null
+              ? const SizedBox.shrink()
+              : ListView(
+                  padding: widget.panel
+                      ? const EdgeInsets.fromLTRB(8, 8, 8, 24)
+                      : const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                      child: Text(
+                        _hits.isEmpty ? l.settingsSearchNone : l.settingsSearchCount(_hits.length),
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    for (final hit in shown)
+                      ListTile(
+                        key: ValueKey('hit/${hit.section.name}/${hit.index}'),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        leading: Icon(titles[hit.section]!.$1),
+                        title: Text.rich(TextSpan(children: highlightSpans(hit.label, stems, bold))),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              hit.wholeSection
+                                  ? l.settingsSearchSection
+                                  : [titles[hit.section]!.$2, ?hit.group].join(' › '),
+                              style: theme.textTheme.bodySmall,
+                            ),
+                            if (hit.snippet case final snippet?)
+                              Text.rich(
+                                TextSpan(children: highlightSpans(snippetOf(snippet, stems), stems, bold)),
+                                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              ),
+                          ],
+                        ),
+                        onTap: () => _go(hit),
+                      ),
+                  ],
+                ),
+        ),
+        // Every section, built out of sight to gather what can be found.
+        Offstage(
+          child: TickerMode(
+            enabled: false,
+            child: SingleChildScrollView(
+              child: SizedBox(
+                width: 720,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final s in SettingsSection.values) KeyedSubtree(key: _hidden[s], child: _sectionBody(s)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   static SettingsPart? _partOf(SettingsSection s) => switch (s) {
     SettingsSection.general => SettingsPart.general,
@@ -90,7 +327,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       SettingsSection.models: (Icons.memory, l.settingsModels),
       SettingsSection.about: (Icons.info_outline, l.settingsAbout),
     };
-    final content = SingleChildScrollView(
+    final Widget page = SingleChildScrollView(
       key: ValueKey(_section),
       padding: widget.panel ? const EdgeInsets.fromLTRB(16, 16, 16, 24) : const EdgeInsets.fromLTRB(32, 24, 32, 32),
       child: Align(
@@ -106,20 +343,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 16),
               KeyedSubtree(
-                key: ValueKey('$_section/$_resets'),
-                child: switch (_section) {
-                  SettingsSection.general => const _GeneralSection(),
-                  SettingsSection.translator => const _TranslatorSection(),
-                  SettingsSection.exchange => const _ExchangeSection(),
-                  SettingsSection.ocr => const _OcrSection(),
-                  SettingsSection.cleaning => const _CleaningSection(),
-                  SettingsSection.text => const _TextSection(),
-                  SettingsSection.upscale => const _UpscaleSection(),
-                  SettingsSection.export => const _ExportSection(),
-                  SettingsSection.keys => const KeysSection(),
-                  SettingsSection.models => const ModelsSection(),
-                  SettingsSection.about => const _AboutSection(),
-                },
+                key: _shown,
+                child: KeyedSubtree(key: ValueKey('$_section/$_resets'), child: _sectionBody(_section)),
               ),
               if (_partOf(_section) case final part?)
                 _ResetButtons(
@@ -133,6 +358,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     );
+    // The settings found instead of the section while searching; the setting
+    // gone to lit for a moment.
+    final content = Stack(
+      key: _area,
+      children: [
+        Positioned.fill(child: _searching ? _resultsView(context, titles) : page),
+        if (_flash case final flash?)
+          Positioned.fromRect(
+            rect: flash.inflate(6),
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                  border: Border.all(color: theme.colorScheme.primary, width: 2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+    // Ctrl+F: the search (the panel's comes from the window's keys).
+    ref.listen(settingsSearchRequestProvider, (_, _) {
+      if (widget.panel) _openSearch();
+    });
     if (widget.panel) {
       // Narrow: the sections as icons, the names in tooltips.
       return Material(
@@ -147,6 +397,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   const SizedBox(width: 8),
                   Expanded(child: Text(l.settings, style: theme.textTheme.titleMedium)),
                   IconButton(
+                    tooltip: l.settingsSearchOpen,
+                    isSelected: _panelSearch,
+                    onPressed: () {
+                      if (_panelSearch) {
+                        _search.clear();
+                        setState(() {
+                          _panelSearch = false;
+                          _results = false;
+                        });
+                      } else {
+                        _openSearch();
+                      }
+                    },
+                    icon: const Icon(Icons.search),
+                  ),
+                  IconButton(
                     tooltip: l.settingsFullWindow,
                     onPressed: () => switchSettingsView(context, ref, toPanel: false, section: _section),
                     icon: const Icon(Icons.open_in_full),
@@ -159,6 +425,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
             ),
+            if (_panelSearch) Padding(padding: const EdgeInsets.fromLTRB(8, 0, 8, 8), child: _searchField(context)),
             const Divider(height: 1),
             Expanded(
               child: Row(
@@ -172,11 +439,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         for (final e in titles.entries)
                           IconButton(
                             tooltip: e.value.$2,
-                            isSelected: e.key == _section,
+                            isSelected: e.key == _section && !_searching,
                             style: IconButton.styleFrom(
-                              backgroundColor: e.key == _section ? theme.colorScheme.secondaryContainer : null,
+                              backgroundColor: e.key == _section && !_searching
+                                  ? theme.colorScheme.secondaryContainer
+                                  : null,
                             ),
-                            onPressed: () => setState(() => _section = e.key),
+                            onPressed: () => setState(() {
+                              _section = e.key;
+                              _results = false;
+                            }),
                             icon: Icon(e.value.$1),
                           ),
                       ],
@@ -191,39 +463,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       );
     }
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l.settings),
-        actions: [
-          IconButton(
-            tooltip: l.settingsAsPanel,
-            onPressed: () => switchSettingsView(context, ref, toPanel: true, section: _section),
-            icon: const Icon(Icons.vertical_split_outlined),
+    return CallbackShortcuts(
+      bindings: {const SingleActivator(LogicalKeyboardKey.keyF, control: true): _openSearch},
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(l.settings),
+            actions: [
+              IconButton(
+                tooltip: l.settingsAsPanel,
+                onPressed: () => switchSettingsView(context, ref, toPanel: true, section: _section),
+                icon: const Icon(Icons.vertical_split_outlined),
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Row(
-        children: [
-          SizedBox(
-            width: 250,
-            child: ListView(
-              padding: const EdgeInsets.all(8),
-              children: [
-                for (final e in titles.entries)
-                  ListTile(
-                    leading: Icon(e.value.$1),
-                    title: Text(e.value.$2),
-                    selected: e.key == _section,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    onTap: () => setState(() => _section = e.key),
-                  ),
-              ],
-            ),
+          body: Row(
+            children: [
+              SizedBox(
+                width: 250,
+                child: Column(
+                  children: [
+                    Padding(padding: const EdgeInsets.fromLTRB(8, 8, 8, 0), child: _searchField(context)),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.all(8),
+                        children: [
+                          for (final e in titles.entries)
+                            ListTile(
+                              leading: Icon(e.value.$1),
+                              title: Text(e.value.$2),
+                              selected: e.key == _section && !_searching,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              onTap: () => setState(() {
+                                _section = e.key;
+                                _results = false;
+                              }),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(child: content),
+            ],
           ),
-          const VerticalDivider(width: 1),
-          Expanded(child: content),
-        ],
+        ),
       ),
     );
   }

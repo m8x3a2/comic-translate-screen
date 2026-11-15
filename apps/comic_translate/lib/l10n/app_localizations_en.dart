@@ -5143,4 +5143,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectionDrop => 'Drop (Esc)';
+
+  @override
+  String get settingsSearchHint => 'Find a setting (Ctrl+F)';
+
+  @override
+  String get settingsSearchOpen => 'Find a setting (Ctrl+F)';
+
+  @override
+  String get settingsSearchClear => 'Clear (Esc)';
+
+  @override
+  String get settingsSearchNone =>
+      'Nothing found. Try another word or just its beginning.';
+
+  @override
+  String get settingsSearchSection => 'Section';
+
+  @override
+  String settingsSearchCount(int count) {
+    return 'Found: $count';
+  }
 }

@@ -8737,6 +8737,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drop (Esc)'**
   String get selectionDrop;
+
+  /// No description provided for @settingsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a setting (Ctrl+F)'**
+  String get settingsSearchHint;
+
+  /// No description provided for @settingsSearchOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Find a setting (Ctrl+F)'**
+  String get settingsSearchOpen;
+
+  /// No description provided for @settingsSearchClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear (Esc)'**
+  String get settingsSearchClear;
+
+  /// No description provided for @settingsSearchNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found. Try another word or just its beginning.'**
+  String get settingsSearchNone;
+
+  /// No description provided for @settingsSearchSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Section'**
+  String get settingsSearchSection;
+
+  /// No description provided for @settingsSearchCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Found: {count}'**
+  String settingsSearchCount(int count);
 }
 
 class _AppLocalizationsDelegate
