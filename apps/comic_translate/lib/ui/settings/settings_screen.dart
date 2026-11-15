@@ -212,6 +212,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         decoration: InputDecoration(
           isDense: true,
           hintText: l.settingsSearchHint,
+          hintStyle: Theme.of(context).textTheme.bodyMedium
+              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
           prefixIcon: const Icon(Icons.search),
           border: const OutlineInputBorder(),
           suffixIcon: _search.text.isEmpty
@@ -508,7 +510,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: Row(
         children: [
           SizedBox(
-            width: 250,
+            width: 270,
             child: Column(
               children: [
                 Padding(padding: const EdgeInsets.fromLTRB(8, 8, 8, 0), child: _searchField(context)),
