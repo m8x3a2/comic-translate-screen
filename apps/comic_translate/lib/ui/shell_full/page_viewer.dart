@@ -261,16 +261,14 @@ class _PageViewerState extends ConsumerState<PageViewer> {
                           onInteractionUpdate: (_) => setState(() {}),
                           child: size == null
                               ? const SizedBox(width: 1, height: 1)
-                              : SizedBox(
-                                  width: size.width,
-                                  height: size.height,
-                                  child: PageCanvas(
-                                    key: ValueKey(page.id),
-                                    page: page,
-                                    size: size,
-                                    transform: _transform,
-                                    readOnly: readOnly,
-                                  ),
+                              // The canvas sizes itself (no box around it: that would stop
+                              // the presses past the page's edges).
+                              : PageCanvas(
+                                  key: ValueKey(page.id),
+                                  page: page,
+                                  size: size,
+                                  transform: _transform,
+                                  readOnly: readOnly,
                                 ),
                         ),
                       // The desk beside the page: what was dragged past its edges.

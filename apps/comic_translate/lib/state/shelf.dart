@@ -98,7 +98,9 @@ class ShelfNotifier extends Notifier<List<ShelfItem>> {
       _ws.edit(page.id, (p) => p.copyWith(blocks: [...p.blocks, b]));
       _ws.selectBlock(ref.read(workspaceProvider).currentPage!.blocks.length - 1);
     } else if (item.picture case final picture?) {
-      _ws.addPicture(page.id, picture.withBox(keepOnPage(at ?? picture.box, w, h)));
+      // Dropped onto the page: there, even by a sliver; else a piece of it on the page.
+      final onPage = at != null && at.x2 > 0 && at.x1 < w && at.y2 > 0 && at.y1 < h;
+      _ws.addPicture(page.id, picture.withBox(onPage ? at : keepOnPage(at ?? picture.box, w, h)));
     }
     state = [...state]..removeAt(index);
   }

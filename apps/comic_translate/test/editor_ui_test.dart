@@ -552,11 +552,22 @@ void main() {
     await tester.pump();
     expect(pictures(), isEmpty);
     expect(container.read(shelfProvider).single.picture!.box.x1, greaterThan(120));
-    // Taken back where it is dropped.
-    await tester.runAsync(() => container.read(shelfProvider.notifier).take(0, at: const BBox(50, 10, 80, 40)));
+    // Taken back where it is dropped, even when only a sliver is on the page.
+    await tester.runAsync(() => container.read(shelfProvider.notifier).take(0, at: const BBox(110, 10, 140, 40)));
     await tester.pump();
-    expect(pictures().single.box, const BBox(50, 10, 80, 40));
+    expect(pictures().single.box, const BBox(110, 10, 140, 40));
     expect(container.read(shelfProvider), isEmpty);
+    // Grabbed by the part past the edge and brought in.
+    await mouse.moveTo(at(130, 25));
+    await tester.pump();
+    await mouse.down(at(130, 25));
+    for (var i = 1; i <= 6; i++) {
+      await mouse.moveTo(at(130 - 10.0 * i, 25));
+      await tester.pump();
+    }
+    await mouse.up();
+    await tester.pump();
+    expect(pictures().single.box.x1, closeTo(50, 1));
     container.read(pictureSelectionProvider.notifier).select(page.id, 0);
     await tester.sendKeyEvent(LogicalKeyboardKey.delete);
     await tester.pump();
@@ -1272,6 +1283,20 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump();
     expect(ws().blockSelection, isEmpty);
+    // A box dragged onto the edge keeps its size.
+    final before = ws().currentPage!.blocks[2].xyxy;
+    await mouse.moveTo(start);
+    await mouse.down(start);
+    await tester.pump();
+    for (var i = 0; i < 5; i++) {
+      await mouse.moveBy(Offset(rect.width * 6 / 120, 0));
+      await tester.pump();
+    }
+    await mouse.up();
+    await tester.pump();
+    final after = ws().currentPage!.blocks[2].xyxy;
+    expect(after.x2, 120);
+    expect((after.width, after.height), (before.width, before.height));
   });
 
   testWidgets('the picked bubbles merge into one; what differs between them is told', (tester) async {

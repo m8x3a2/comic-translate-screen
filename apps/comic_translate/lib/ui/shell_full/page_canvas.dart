@@ -15,6 +15,7 @@ import 'package:ct_core/ct_core.dart' hide TextDirection;
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show BoxHitTestEntry, BoxHitTestResult, RenderProxyBox;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -445,6 +446,24 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
     return BBox(n.left.round(), n.top.round(), n.right.round(), n.bottom.round());
   }
 
+  /// [r] moved (not cut) onto the page: a box dragged to the edge keeps its
+  /// size; only one bigger than the page is cut.
+  BBox _movedOnto(Rect r) {
+    final w = widget.size.width, h = widget.size.height + widget.reachBelow;
+    final n = Rect.fromLTRB(
+      math.min(r.left, r.right),
+      math.min(r.top, r.bottom),
+      math.max(r.left, r.right),
+      math.max(r.top, r.bottom),
+    );
+    if (n.width > w || n.height > h) return _boxOf(n);
+    final dx = n.left < 0 ? -n.left : (n.right > w ? w - n.right : 0.0);
+    final dy = n.top < 0 ? -n.top : (n.bottom > h ? h - n.bottom : 0.0);
+    final m = n.shift(Offset(dx, dy));
+    final x = m.left.round().clamp(0, (w - n.width).floor()), y = m.top.round().clamp(0, (h - n.height).floor());
+    return BBox(x, y, x + n.width.round(), y + n.height.round());
+  }
+
   Rect _textArea(List<TextBlock> blocks, int i) =>
       _rectOf(textAreaOf(blocks, i, widget.size.width.round(), widget.size.height.round()));
 
@@ -725,10 +744,12 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           ref.read(shelfProvider.notifier).putPicture(widget.page.id, d.index!, at: box);
           ref.read(pictureSelectionProvider.notifier).clear();
         } else if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
+          // A picture may lie on the page by a sliver (it is grabbed past the
+          // edges too); one stretched off the page entirely comes back a piece.
           ws.setPictureBox(
             widget.page.id,
             d.index!,
-            keepOnPage(box, widget.size.width.round(), widget.size.height.round()),
+            page.overlaps(d.draft!) ? box : keepOnPage(box, widget.size.width.round(), widget.size.height.round()),
           );
         }
       case _Mode.shape:
@@ -759,7 +780,8 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           ws.selectBlock(null);
         }
       case _Mode.moveBox || _Mode.resizeBox:
-        final box = d.draft == null ? null : _boxOf(d.draft!);
+        // Moved: the box keeps its size at the edge; resized: cut by the page.
+        final box = d.draft == null ? null : (d.mode == _Mode.moveBox ? _movedOnto(d.draft!) : _boxOf(d.draft!));
         final picks = ref.read(workspaceProvider).pickedBlocks;
         if (d.moved &&
             d.mode == _Mode.moveBox &&
@@ -784,7 +806,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           ws.changeBlock(d.index!, (b) => b.moveBoxTo(box));
         }
       case _Mode.moveText || _Mode.resizeText:
-        final box = d.draft == null ? null : _boxOf(d.draft!);
+        final box = d.draft == null ? null : (d.mode == _Mode.moveText ? _movedOnto(d.draft!) : _boxOf(d.draft!));
         final picks = ref.read(workspaceProvider).pickedBlocks;
         if (d.moved && d.mode == _Mode.moveText && picks.length > 1 && picks.contains(d.index) && d.draft != null) {
           // The texts of the picked bubbles move together, as one undo step.
@@ -793,7 +815,7 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
           final drawn = _drawn(widget.page);
           final areas = {
             for (final i in picks)
-              if (drawn.contains(i) && i < blocks.length) i: _boxOf(_textArea(blocks, i).shift(shift)),
+              if (drawn.contains(i) && i < blocks.length) i: _movedOnto(_textArea(blocks, i).shift(shift)),
           };
           ws.styleBlocks(areas.keys, (s, i) => s.copyWith(textBox: areas[i]));
         } else if (d.moved && box != null && box.width >= _minBox && box.height >= _minBox) {
@@ -922,149 +944,265 @@ class _PageCanvasState extends ConsumerState<PageCanvas> {
               if (layout.blockIndex.indexOf(i) case final k when k >= 0) k,
           };
     final image = (result || maskView) && !peek ? page.basePath : page.path;
-    return MouseRegion(
-      cursor: _cursor(editor),
-      onEnter: (_) => _inside = true,
-      onHover: (e) {
-        if (!hovers) return;
-        setState(() => _hover = e.localPosition);
-        if (picking) _hoverColour();
-      },
-      // Exit and cancel also come when the page is taken away under the mouse (another page opened or the
-      // pages changed mid-drag): by then this state may be gone.
-      onExit: (_) {
-        _hover = null;
-        _inside = false;
-        if (mounted) {
-          setState(() {});
-          _hoverColour();
-        }
-      },
-      child: Listener(
-        behavior: HitTestBehavior.opaque,
-        onPointerDown: _down,
-        onPointerMove: (e) {
-          if (hovers) _hover = e.localPosition;
-          _move(e);
+    // A picture reaching past the edges is grabbed there too.
+    return _ReachPast(
+      size: widget.size,
+      grabs: _grabsPast,
+      onEvent: _pastEvent,
+      child: MouseRegion(
+        cursor: _cursor(editor),
+        onEnter: (_) => _inside = true,
+        onHover: (e) {
+          if (!hovers) return;
+          setState(() => _hover = e.localPosition);
+          if (picking) _hoverColour();
         },
-        onPointerUp: _up,
-        onPointerCancel: (_) {
-          _drag = null;
-          if (mounted) ref.read(strokeActiveProvider.notifier).set(false);
-          if (mounted) setState(() {});
+        // Exit and cancel also come when the page is taken away under the mouse (another page opened or the
+        // pages changed mid-drag): by then this state may be gone.
+        onExit: (_) {
+          _hover = null;
+          _inside = false;
+          if (mounted) {
+            setState(() {});
+            _hoverColour();
+          }
         },
-        // The page is cut at its edges (but in the webtoon strip); pictures
-        // and the handles over it are not, so a picture reaching past the
-        // edge is seen whole ("As it will be" cuts it, as export does).
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fill(
-              child: Stack(
-                clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
-                children: [
-                  Positioned.fill(
-                    child: maskOnly
-                        ? const ColoredBox(color: Colors.black)
-                        : needsTiles(widget.size)
-                        ? TiledImage(path: image)
-                        : Image.file(
-                            File(image),
-                            key: ValueKey(image),
-                            gaplessPlayback: true,
-                            filterQuality: FilterQuality.medium,
-                            errorBuilder: (_, _, _) => const Center(child: Icon(Icons.broken_image_outlined, size: 64)),
-                          ),
-                  ),
-                  if (showPaints)
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: CustomPaint(painter: _PaintsPainter(page.paints, draftPaint, _original)),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (showPictures)
+        child: Listener(
+          behavior: HitTestBehavior.opaque,
+          onPointerDown: _down,
+          onPointerMove: (e) {
+            if (hovers) _hover = e.localPosition;
+            _move(e);
+          },
+          onPointerUp: _up,
+          onPointerCancel: (_) {
+            _drag = null;
+            if (mounted) ref.read(strokeActiveProvider.notifier).set(false);
+            if (mounted) setState(() {});
+          },
+          // The page is cut at its edges (but in the webtoon strip); pictures
+          // and the handles over it are not, so a picture reaching past the
+          // edge is seen whole ("As it will be" cuts it, as export does).
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
               Positioned.fill(
-                child: RepaintBoundary(
-                  child: CustomPaint(
-                    painter: _PicturesPainter(page.pictures, Map.of(_pictures), pictureDraft, cut: preview),
-                  ),
-                ),
-              ),
-            Positioned.fill(
-              child: Stack(
-                clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
-                children: [
-                  if (overflow != null)
-                    Positioned(
-                      left: 0,
-                      top: widget.size.height,
-                      width: widget.size.width,
-                      child: IgnorePointer(
-                        child: Image.file(
-                          File(overflow),
-                          key: ValueKey(overflow),
-                          gaplessPlayback: true,
-                          fit: BoxFit.fitWidth,
-                          filterQuality: FilterQuality.medium,
-                          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                child: Stack(
+                  clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
+                  children: [
+                    Positioned.fill(
+                      child: maskOnly
+                          ? const ColoredBox(color: Colors.black)
+                          : needsTiles(widget.size)
+                          ? TiledImage(path: image)
+                          : Image.file(
+                              File(image),
+                              key: ValueKey(image),
+                              gaplessPlayback: true,
+                              filterQuality: FilterQuality.medium,
+                              errorBuilder: (_, _, _) =>
+                                  const Center(child: Icon(Icons.broken_image_outlined, size: 64)),
+                            ),
+                    ),
+                    if (showPaints)
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: CustomPaint(painter: _PaintsPainter(page.paints, draftPaint, _original)),
                         ),
                       ),
-                    ),
-                  if (showMask)
-                    Positioned.fill(
-                      child: RepaintBoundary(
-                        child: CustomPaint(painter: _MaskPainter(_mask, page.strokes, draftStroke, solid: maskOnly)),
-                      ),
-                    ),
-                  if (layout != null && engines != null && !peek)
-                    Positioned.fill(
-                      child: RepaintBoundary(child: CustomPaint(painter: _TextPainter(layout, engines, hiddenItems))),
-                    ),
-                ],
-              ),
-            ),
-            if (!preview && !peek)
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _OverlayPainter(
-                    transform: widget.transform,
-                    colors: colors,
-                    page: page,
-                    editor: editor,
-                    selected: selected,
-                    picked: picked,
-                    layout: layout,
-                    engines: engines,
-                    areaOf: (i) => _textArea(page.blocks, i),
-                    drag: d,
-                    hover: hovers && !polygon && !widget.readOnly && !_grab ? _hover : null,
-                    outline: _outlineDraft(editor),
-                    selection: selection == null ? null : [for (final p in selection.outline) Offset(p.x, p.y)],
-                    pictureBoxes: editor.tool == EditorTool.pictures && !widget.readOnly
-                        ? [
-                            for (final (i, pic) in page.pictures.indexed)
-                              pictureDraft != null && pictureDraft.$1 == i && pictureDraft.$2 != null
-                                  ? pictureDraft.$2!
-                                  : _rectOf(pic.box),
-                          ]
-                        : const [],
-                    pictureSelected: pictureSelected,
-                    closedOutline: !polygon,
-                    picking: picking,
-                    hoverColour: hoverColour,
-                    lineFrom: _shift && d == null ? _lineStart : null,
-                    showBoxes: editor.tool == EditorTool.boxes || (editor.showBoxes && editor.tool == EditorTool.pan),
-                    rotateHandle: _rotateHandle,
-                  ),
+                  ],
                 ),
               ),
-          ],
+              if (showPictures)
+                Positioned.fill(
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _PicturesPainter(page.pictures, Map.of(_pictures), pictureDraft, cut: preview),
+                    ),
+                  ),
+                ),
+              Positioned.fill(
+                child: Stack(
+                  clipBehavior: widget.strip ? Clip.none : Clip.hardEdge,
+                  children: [
+                    if (overflow != null)
+                      Positioned(
+                        left: 0,
+                        top: widget.size.height,
+                        width: widget.size.width,
+                        child: IgnorePointer(
+                          child: Image.file(
+                            File(overflow),
+                            key: ValueKey(overflow),
+                            gaplessPlayback: true,
+                            fit: BoxFit.fitWidth,
+                            filterQuality: FilterQuality.medium,
+                            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                    if (showMask)
+                      Positioned.fill(
+                        child: RepaintBoundary(
+                          child: CustomPaint(painter: _MaskPainter(_mask, page.strokes, draftStroke, solid: maskOnly)),
+                        ),
+                      ),
+                    if (layout != null && engines != null && !peek)
+                      Positioned.fill(
+                        child: RepaintBoundary(child: CustomPaint(painter: _TextPainter(layout, engines, hiddenItems))),
+                      ),
+                  ],
+                ),
+              ),
+              if (!preview && !peek)
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _OverlayPainter(
+                      transform: widget.transform,
+                      colors: colors,
+                      page: page,
+                      editor: editor,
+                      selected: selected,
+                      picked: picked,
+                      layout: layout,
+                      engines: engines,
+                      areaOf: (i) => _textArea(page.blocks, i),
+                      drag: d,
+                      hover: hovers && !polygon && !widget.readOnly && !_grab ? _hover : null,
+                      outline: _outlineDraft(editor),
+                      selection: selection == null ? null : [for (final p in selection.outline) Offset(p.x, p.y)],
+                      pictureBoxes: editor.tool == EditorTool.pictures && !widget.readOnly
+                          ? [
+                              for (final (i, pic) in page.pictures.indexed)
+                                pictureDraft != null && pictureDraft.$1 == i && pictureDraft.$2 != null
+                                    ? pictureDraft.$2!
+                                    : _rectOf(pic.box),
+                            ]
+                          : const [],
+                      pictureSelected: pictureSelected,
+                      closedOutline: !polygon,
+                      picking: picking,
+                      hoverColour: hoverColour,
+                      lineFrom: _shift && d == null ? _lineStart : null,
+                      showBoxes: editor.tool == EditorTool.boxes || (editor.showBoxes && editor.tool == EditorTool.pan),
+                      rotateHandle: _rotateHandle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  /// Whether a press at [p] past the page's edges grabs something: a picture
+  /// (or a corner of the selected one) reaching past them, a handle of the
+  /// selected box or text on the edge.
+  bool _grabsPast(Offset p) {
+    if (!mounted || widget.readOnly || widget.strip || !widget.active) return false;
+    final editor = ref.read(editorProvider);
+    if (editor.preview || _grab) return false;
+    final page = widget.page;
+    final ws = ref.read(workspaceProvider);
+    final selected = ws.selectedBlock;
+    final alone = ws.pickedBlocks.isEmpty;
+    switch (editor.tool) {
+      case EditorTool.pictures:
+        final sel = ref.read(pictureSelectionProvider.notifier).of(page.id);
+        if (sel != null && sel < page.pictures.length) {
+          if (_hitHandle(_rectOf(page.pictures[sel].box), p, cornersOnly: true) != null) return true;
+        }
+        return _hitPicture(p) != null;
+      case EditorTool.boxes:
+        if (!alone || selected == null || selected >= page.blocks.length) return false;
+        return _hitHandle(_rectOf(page.blocks[selected].xyxy), p) != null;
+      case EditorTool.text:
+        if (!alone || selected == null || !_drawn(page).contains(selected)) return false;
+        final area = _textArea(page.blocks, selected);
+        return _hitHandle(area, p, cornersOnly: true) != null || (_rotateHandle(area) - p).distance <= _handle / _zoom;
+      default:
+        return false;
+    }
+  }
+
+  /// A press grabbed past the page's edges, and the moves and letting go
+  /// after it: as on the page.
+  void _pastEvent(PointerEvent e) {
+    switch (e) {
+      case PointerDownEvent():
+        _down(e);
+      case PointerMoveEvent():
+        _move(e);
+      case PointerUpEvent():
+        _up(e);
+      case PointerCancelEvent():
+        _drag = null;
+        if (mounted) {
+          ref.read(strokeActiveProvider.notifier).set(false);
+          setState(() {});
+        }
+      default:
+        break;
+    }
+  }
+}
+
+/// Sizes the page and takes presses past its edges as well, where [grabs]
+/// says there is something to take (a picture reaching past them): only
+/// those come to [onEvent], the rest of the window is left alone.
+class _ReachPast extends SingleChildRenderObjectWidget {
+  const _ReachPast({required this.size, required this.grabs, required this.onEvent, super.child});
+
+  final Size size;
+  final bool Function(Offset p) grabs;
+  final void Function(PointerEvent e) onEvent;
+
+  @override
+  _RenderReachPast createRenderObject(BuildContext context) => _RenderReachPast(size, grabs, onEvent);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderReachPast renderObject) => renderObject
+    ..pageSize = size
+    ..grabs = grabs
+    ..onEvent = onEvent;
+}
+
+/// The hit of a press past the page's edges.
+class _PastEntry extends BoxHitTestEntry {
+  _PastEntry(super.target, super.localPosition);
+}
+
+class _RenderReachPast extends RenderProxyBox {
+  _RenderReachPast(this._pageSize, this.grabs, this.onEvent);
+
+  Size _pageSize;
+  set pageSize(Size v) {
+    if (v == _pageSize) return;
+    _pageSize = v;
+    markNeedsLayout();
+  }
+
+  bool Function(Offset p) grabs;
+  void Function(PointerEvent e) onEvent;
+
+  @override
+  void performLayout() {
+    size = constraints.constrain(_pageSize);
+    child?.layout(BoxConstraints.tight(size));
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (size.contains(position)) return super.hitTest(result, position: position);
+    if (!grabs(position)) return false;
+    result.add(_PastEntry(this, position));
+    return true;
+  }
+
+  @override
+  void handleEvent(PointerEvent event, HitTestEntry entry) {
+    if (entry is _PastEntry) onEvent(event);
   }
 }
 
