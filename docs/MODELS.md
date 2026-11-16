@@ -56,6 +56,18 @@ and publishes those files in its GitHub releases under the models' own licence, 
 authors. The English model also translates into Belarusian and Ukrainian; the app asks it for Russian
 with the token `>>rus<<`. The weights are otherwise unchanged.
 
+Offline dictionary (new in this project; the book button in the "Text" panel, Chat → Dictionary):
+
+| Id | Use | Files | Size | License | Source |
+|---|---|---|---|---|---|
+| `dict-en-ru` | Dictionary, English → Russian | `dictionary.sqlite` | 121 MB | CC-BY-SA-4.0 (Wiktionary contributors) | github.com/m8x3a2/comic-translate-screen releases (`dict-en-ru-wiktionary-1.sqlite`) |
+
+Built by `tools/dictionary/build_dictionary.py` from the Wiktionary extracts of kaikki.org (wiktextract,
+Tatu Ylonen): the English edition gives Russian words by meaning, the Russian edition short Russian
+explanations with translated examples. Kept are the 92 thousand words and phrases with Russian and the
+80 thousand frequent English words (English explanations only), plus the forms Wiktionary lists (ran → run).
+Wiktionary is licensed CC BY-SA 4.0; so is the file.
+
 Text removal levels (new in this project; Settings → Tools → Text removal quality): Simple uses
 `aot-inpainting`, Medium `comic-text-detector` + `aot-inpainting`, High (default)
 `comic-text-detector` + `lama-manga`.

@@ -10,6 +10,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../../state/workspace.dart';
 import '../common/labels.dart';
 
@@ -26,12 +27,80 @@ class _GlossaryDialog extends ConsumerStatefulWidget {
 
 class _GlossaryDialogState extends ConsumerState<_GlossaryDialog> {
   late final _text = TextEditingController(text: ref.read(workspaceProvider).glossary);
+  final _search = TextEditingController();
   String? _note;
+
+  /// Lines with a delete button and search, or the text to edit freely.
+  bool _asList = true;
 
   @override
   void dispose() {
     _text.dispose();
+    _search.dispose();
     super.dispose();
+  }
+
+  void _deleteLine(int index) {
+    final lines = _text.text.replaceAll('\r\n', '\n').split('\n')..removeAt(index);
+    setState(() => _text.text = lines.join('\n'));
+  }
+
+  Widget _list(AppLocalizations l, ThemeData theme) {
+    final query = _search.text.trim().toLowerCase();
+    final lines = _text.text.replaceAll('\r\n', '\n').split('\n');
+    final shown = [
+      for (var i = 0; i < lines.length; i++)
+        if (lines[i].trim().isNotEmpty && (query.isEmpty || lines[i].toLowerCase().contains(query))) i,
+    ];
+    final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _search,
+          decoration: InputDecoration(
+            hintText: l.glossarySearch,
+            prefixIcon: const Icon(Icons.search),
+            isDense: true,
+            border: const OutlineInputBorder(),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 320,
+          child: shown.isEmpty
+              ? Center(child: Text(query.isEmpty ? l.glossaryEmptyList : l.glossaryNothing, style: muted))
+              : ListView.builder(
+                  itemCount: shown.length,
+                  itemBuilder: (context, k) {
+                    final line = lines[shown[k]];
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            line,
+                            style: TextStyle(
+                              fontFamily: 'Consolas',
+                              fontSize: 13,
+                              color: line.trimLeft().startsWith('#') ? theme.colorScheme.onSurfaceVariant : null,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: l.glossaryDeleteLine,
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () => _deleteLine(shown[k]),
+                          icon: const Icon(Icons.close, size: 18),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
   }
 
   Future<void> _load() async {
@@ -74,14 +143,26 @@ class _GlossaryDialogState extends ConsumerState<_GlossaryDialog> {
           children: [
             Text(l.glossaryHelp, style: theme.textTheme.bodySmall),
             const SizedBox(height: 12),
-            TextField(
-              controller: _text,
-              minLines: 10,
-              maxLines: 18,
-              style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
-              decoration: InputDecoration(hintText: l.glossaryHint, border: const OutlineInputBorder()),
-              onChanged: (_) => setState(() {}),
+            SegmentedButton<bool>(
+              segments: [
+                ButtonSegment(value: true, icon: const Icon(Icons.list), label: Text(l.glossaryAsList)),
+                ButtonSegment(value: false, icon: const Icon(Icons.edit_note), label: Text(l.glossaryAsText)),
+              ],
+              selected: {_asList},
+              onSelectionChanged: (v) => setState(() => _asList = v.first),
             ),
+            const SizedBox(height: 8),
+            if (_asList)
+              _list(l, theme)
+            else
+              TextField(
+                controller: _text,
+                minLines: 10,
+                maxLines: 18,
+                style: const TextStyle(fontFamily: 'Consolas', fontSize: 13),
+                decoration: InputDecoration(hintText: l.glossaryHint, border: const OutlineInputBorder()),
+                onChanged: (_) => setState(() {}),
+              ),
             const SizedBox(height: 6),
             Text(l.glossaryCounts(g.entries.length, g.notes.length), style: theme.textTheme.bodySmall),
             if (_note != null)

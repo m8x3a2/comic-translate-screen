@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/app_state.dart';
 import '../../state/block_looks.dart';
+import '../../state/dictionary.dart';
 import '../../state/background.dart';
 import '../../state/batch.dart';
 import '../../state/editor.dart';
@@ -24,6 +25,7 @@ import '../common/translator_history_dialog.dart';
 import 'auto_look.dart';
 import 'batch_dialogs.dart';
 import 'block_style_editor.dart';
+import 'dictionary_dialog.dart';
 import 'find_replace.dart';
 import 'run_editor.dart';
 
@@ -437,6 +439,14 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
   final _translationFocus = FocusNode();
   bool _showStyle = true;
 
+  /// The selected words of the original (or the word at the cursor) in the
+  /// dictionary.
+  void _lookUp() {
+    final s = _source.selection;
+    final query = s.isValid ? dictionaryQueryAt(_source.text, s.start, s.end) : '';
+    showDictionary(context, query: query);
+  }
+
   @override
   void didUpdateWidget(_BlockEditor old) {
     super.didUpdateWidget(old);
@@ -511,6 +521,12 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
                     icon: const Icon(Icons.space_bar, size: 20),
                   ),
                   IconButton(
+                    tooltip: l.dictLookUp,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: _lookUp,
+                    icon: const Icon(Icons.auto_stories_outlined, size: 20),
+                  ),
+                  IconButton(
                     tooltip: l.translateBlock,
                     visualDensity: VisualDensity.compact,
                     onPressed: busy
@@ -549,6 +565,20 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
           maxLines: 6,
           style: theme.textTheme.bodySmall,
           decoration: deco(l.sourceText),
+          // The selected word or phrase in the dictionary.
+          contextMenuBuilder: (context, state) => AdaptiveTextSelectionToolbar.buttonItems(
+            anchors: state.contextMenuAnchors,
+            buttonItems: [
+              ...state.contextMenuButtonItems,
+              ContextMenuButtonItem(
+                label: l.dictContextMenu,
+                onPressed: () {
+                  state.hideToolbar();
+                  _lookUp();
+                },
+              ),
+            ],
+          ),
           onChanged: (v) => ws.changeBlock(i, (b) => b.text = v, mergeKey: 'text:$i'),
         ),
         const SizedBox(height: 8),

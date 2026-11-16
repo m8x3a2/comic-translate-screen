@@ -5314,4 +5314,142 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get modelOpusBigInfo =>
       'The \"High\" level of the offline translator: noticeably more accurate than the usual model, about 1.7 times slower (about 0.7 s per bubble on a weak laptop). Converted to ONNX by this project from the Helsinki-NLP models; licence CC-BY 4.0.';
+
+  @override
+  String get dictTitle => 'Dictionary (English → Russian)';
+
+  @override
+  String get dictMenu => 'Dictionary (English → Russian)…';
+
+  @override
+  String get dictLookUp =>
+      'Look up in the dictionary: select a word or phrase in the original first';
+
+  @override
+  String get dictContextMenu => 'In the dictionary';
+
+  @override
+  String get dictSearchHint => 'An English word or phrase';
+
+  @override
+  String get dictEmpty =>
+      'Type an English word or phrase, e.g. gave up. In the \"Text\" panel, select a word in the original and press the book button.';
+
+  @override
+  String dictNotFound(String query) {
+    return '\"$query\" is not in the dictionary.';
+  }
+
+  @override
+  String get dictSimilar => 'Words starting the same way:';
+
+  @override
+  String get dictTranslateOffline => 'Translate offline';
+
+  @override
+  String get dictNoOfflineModel =>
+      'The offline translator is not downloaded (Settings → Models).';
+
+  @override
+  String dictNotDownloaded(String size) {
+    return 'The dictionary is not downloaded yet. It works without the internet and takes $size. Source: Wiktionary (CC-BY-SA 4.0).';
+  }
+
+  @override
+  String get dictDownload => 'Download the dictionary';
+
+  @override
+  String dictBroken(String error) {
+    return 'The dictionary file cannot be read: $error. Delete it in Settings → Models and download again.';
+  }
+
+  @override
+  String get dictAddHint =>
+      'Click a Russian word to put it into the project\'s names and words.';
+
+  @override
+  String get dictAddTip => 'Add to names and words';
+
+  @override
+  String dictAdded(String term, String word) {
+    return 'Added to names and words: $term → $word';
+  }
+
+  @override
+  String dictAlreadyThere(String term) {
+    return '\"$term\" is in the names and words already';
+  }
+
+  @override
+  String dictEnglish(int count) {
+    return 'In English ($count)';
+  }
+
+  @override
+  String get dictOnlyEnglish =>
+      'Only English explanations (turned off in Settings → Translator).';
+
+  @override
+  String dictPos(String pos) {
+    String _temp0 = intl.Intl.selectLogic(pos, {
+      'noun': 'noun',
+      'verb': 'verb',
+      'adj': 'adjective',
+      'adv': 'adverb',
+      'intj': 'interjection',
+      'phrase': 'phrase',
+      'name': 'name',
+      'prep': 'preposition',
+      'pron': 'pronoun',
+      'conj': 'conjunction',
+      'num': 'numeral',
+      'det': 'determiner',
+      'particle': 'particle',
+      'contraction': 'contraction',
+      'abbrev': 'abbreviation',
+      'prefix': 'prefix',
+      'suffix': 'suffix',
+      'prep_phrase': 'phrase',
+      'proverb': 'proverb',
+      'other': '?',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get dictShowEnglish => 'Show English explanations in the dictionary';
+
+  @override
+  String get dictShowEnglishHelp =>
+      'Folded; they open by themselves when a word has no Russian translation.';
+
+  @override
+  String get dictInfo =>
+      'The offline dictionary, English to Russian, from Wiktionary: Russian words by meaning, explanations and examples for 136 thousand words and phrases, slang too. Open it with the book button at a bubble in the \"Text\" panel (select a word in the original first) or from the Chat menu. A Russian word clicked goes into the names and words of the project. Download it in Settings → Models.';
+
+  @override
+  String get modelDictEnRu => 'Dictionary English → Russian (Wiktionary)';
+
+  @override
+  String get modelDictEnRuInfo =>
+      'The offline dictionary: Russian words, explanations and examples for 136 thousand English words and phrases, slang too. Built by this project from Wiktionary (kaikki.org / wiktextract); licence CC-BY-SA 4.0.';
+
+  @override
+  String get glossarySearch => 'Search';
+
+  @override
+  String get glossaryAsList => 'As a list';
+
+  @override
+  String get glossaryAsText => 'As text';
+
+  @override
+  String get glossaryDeleteLine => 'Delete the line';
+
+  @override
+  String get glossaryNothing => 'Nothing found';
+
+  @override
+  String get glossaryEmptyList =>
+      'Empty. Add lines in \"As text\" or from the dictionary.';
 }

@@ -5310,4 +5310,142 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get modelOpusBigInfo =>
       'Уровень «Высокое» офлайн-переводчика: заметно точнее обычной модели, примерно в 1,7 раза медленнее (около 0,7 с на пузырь на слабом ноутбуке). Переведена в ONNX этим проектом из моделей Helsinki-NLP; лицензия CC-BY 4.0.';
+
+  @override
+  String get dictTitle => 'Словарь (англ. → рус.)';
+
+  @override
+  String get dictMenu => 'Словарь (англ. → рус.)…';
+
+  @override
+  String get dictLookUp =>
+      'Найти в словаре: сначала выделите слово или выражение в оригинале';
+
+  @override
+  String get dictContextMenu => 'В словаре';
+
+  @override
+  String get dictSearchHint => 'Английское слово или выражение';
+
+  @override
+  String get dictEmpty =>
+      'Введите английское слово или выражение, например gave up. В панели «Текст» можно выделить слово в оригинале и нажать кнопку с книгой.';
+
+  @override
+  String dictNotFound(String query) {
+    return '«$query» нет в словаре.';
+  }
+
+  @override
+  String get dictSimilar => 'Слова, которые начинаются так же:';
+
+  @override
+  String get dictTranslateOffline => 'Перевести офлайн';
+
+  @override
+  String get dictNoOfflineModel =>
+      'Офлайн-переводчик не скачан (Настройки → Модели).';
+
+  @override
+  String dictNotDownloaded(String size) {
+    return 'Словарь ещё не скачан. Он работает без интернета и занимает $size. Источник — Викисловарь (CC-BY-SA 4.0).';
+  }
+
+  @override
+  String get dictDownload => 'Скачать словарь';
+
+  @override
+  String dictBroken(String error) {
+    return 'Файл словаря не читается: $error. Удалите его в «Настройки → Модели» и скачайте заново.';
+  }
+
+  @override
+  String get dictAddHint =>
+      'Нажмите на русское слово — оно попадёт в словарь имён и терминов проекта.';
+
+  @override
+  String get dictAddTip => 'Добавить в словарь имён и терминов';
+
+  @override
+  String dictAdded(String term, String word) {
+    return 'Добавлено в словарь терминов: $term → $word';
+  }
+
+  @override
+  String dictAlreadyThere(String term) {
+    return '«$term» уже есть в словаре терминов';
+  }
+
+  @override
+  String dictEnglish(int count) {
+    return 'По-английски ($count)';
+  }
+
+  @override
+  String get dictOnlyEnglish =>
+      'Есть только английские толкования (выключены в «Настройки → Переводчик»).';
+
+  @override
+  String dictPos(String pos) {
+    String _temp0 = intl.Intl.selectLogic(pos, {
+      'noun': 'существительное',
+      'verb': 'глагол',
+      'adj': 'прилагательное',
+      'adv': 'наречие',
+      'intj': 'междометие',
+      'phrase': 'выражение',
+      'name': 'имя',
+      'prep': 'предлог',
+      'pron': 'местоимение',
+      'conj': 'союз',
+      'num': 'числительное',
+      'det': 'определитель',
+      'particle': 'частица',
+      'contraction': 'сокращение',
+      'abbrev': 'сокращение',
+      'prefix': 'приставка',
+      'suffix': 'суффикс',
+      'prep_phrase': 'выражение',
+      'proverb': 'пословица',
+      'other': '?',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get dictShowEnglish => 'Показывать английские толкования в словаре';
+
+  @override
+  String get dictShowEnglishHelp =>
+      'Свёрнуты; раскрываются сами, если у слова нет русского перевода.';
+
+  @override
+  String get dictInfo =>
+      'Офлайн-словарь английский → русский из Викисловаря: русские слова по значениям, толкования и примеры для 136 тыс. слов и выражений, в том числе разговорных. Открывается кнопкой с книгой у пузыря в панели «Текст» (сначала выделите слово в оригинале) или из меню «Чат». Нажатое русское слово попадает в словарь имён и терминов проекта. Скачивается в «Настройки → Модели».';
+
+  @override
+  String get modelDictEnRu => 'Словарь английский → русский (Викисловарь)';
+
+  @override
+  String get modelDictEnRuInfo =>
+      'Офлайн-словарь: русские слова, толкования и примеры для 136 тыс. английских слов и выражений, в том числе разговорных. Собран этим проектом из Викисловаря (выгрузка kaikki.org / wiktextract); лицензия CC-BY-SA 4.0.';
+
+  @override
+  String get glossarySearch => 'Поиск';
+
+  @override
+  String get glossaryAsList => 'Списком';
+
+  @override
+  String get glossaryAsText => 'Текстом';
+
+  @override
+  String get glossaryDeleteLine => 'Удалить строку';
+
+  @override
+  String get glossaryNothing => 'Ничего не найдено';
+
+  @override
+  String get glossaryEmptyList =>
+      'Пусто. Добавьте строки во вкладке «Текстом» или из словаря.';
 }

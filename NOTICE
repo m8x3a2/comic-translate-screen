@@ -42,6 +42,15 @@ https://github.com/Helsinki-NLP/Tatoeba-Challenge), licensed under Creative
 Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/); this
 project converted the models to int8 ONNX (see docs/MODELS.md).
 
+The offline dictionary (English to Russian) is built from Wiktionary
+(https://www.wiktionary.org/, the English and Russian editions, by the
+Wiktionary contributors), licensed under Creative Commons Attribution-ShareAlike
+4.0 (https://creativecommons.org/licenses/by-sa/4.0/), as extracted by
+wiktextract / kaikki.org (Tatu Ylonen, "Wiktextract: Wiktionary as
+Machine-Readable Structured Data", LREC 2022). This project selected and
+rearranged the entries into one SQLite file (tools/dictionary/build_dictionary.py),
+published in its GitHub releases under the same licence.
+
 The PSD text layer layout follows ag-psd (https://github.com/Agamnentzar/ag-psd,
 Copyright 2016 Agamnentzar, MIT License).
 

@@ -79,6 +79,9 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
   in your own browser, and their answer is pasted back; the program itself sends nothing.
 - **Offline translation** English ↔ Russian (OPUS-MT, no internet and no keys); the "High" level uses the
   big OPUS-MT tc-big models (Helsinki-NLP, CC BY 4.0), converted to ONNX by this project.
+- **Offline dictionary** English → Russian: select a word or phrase of the original in the "Text" panel and
+  press the book button — Russian words by meaning, explanations and examples (slang too), from Wiktionary
+  (CC BY-SA 4.0, via kaikki.org); a Russian word clicked goes into the project's names and words.
 - **Comics / Sites and games**: screenshots of sites, games and visual novels are read line by line
   (PP-OCRv5 line detector) instead of bubble by bubble.
 - **Preparing small text for reading**: only the pieces with thin lines are enlarged before OCR —

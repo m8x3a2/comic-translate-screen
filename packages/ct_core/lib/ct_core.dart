@@ -15,6 +15,7 @@ export 'src/detection/reading_order.dart';
 export 'src/detection/slicer.dart';
 export 'src/detection/text_blocks.dart';
 export 'src/diagnostics/bug_report.dart';
+export 'src/dictionary/offline_dictionary.dart';
 export 'src/diagnostics/env_info.dart';
 export 'src/diagnostics/event_log.dart';
 export 'src/diagnostics/gpu_info.dart';

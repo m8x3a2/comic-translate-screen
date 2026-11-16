@@ -1028,6 +1028,18 @@ class _TranslatorSection extends ConsumerWidget {
           ],
         ),
         SettingsGroup(
+          title: l.dictTitle,
+          children: [
+            _switch(
+              l.dictShowEnglish,
+              s.dictShowEnglish,
+              (v) => _change(ref, (s) => s.dictShowEnglish = v),
+              help: l.dictShowEnglishHelp,
+              info: l.dictInfo,
+            ),
+          ],
+        ),
+        SettingsGroup(
           title: l.usageTitle,
           children: [
             const UsagePanel(),

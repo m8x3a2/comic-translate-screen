@@ -54,7 +54,8 @@ void copySettingsPart(
       s
         ..translator = from.translator
         ..extraContext = from.extraContext
-        ..sendPageImage = from.sendPageImage;
+        ..sendPageImage = from.sendPageImage
+        ..dictShowEnglish = from.dictShowEnglish;
       if (reset) {
         s.approvedNetworkPlugins.clear();
       } else {

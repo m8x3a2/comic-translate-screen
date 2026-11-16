@@ -9007,6 +9007,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The \"High\" level of the offline translator: noticeably more accurate than the usual model, about 1.7 times slower (about 0.7 s per bubble on a weak laptop). Converted to ONNX by this project from the Helsinki-NLP models; licence CC-BY 4.0.'**
   String get modelOpusBigInfo;
+
+  /// No description provided for @dictTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictionary (English → Russian)'**
+  String get dictTitle;
+
+  /// No description provided for @dictMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictionary (English → Russian)…'**
+  String get dictMenu;
+
+  /// No description provided for @dictLookUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up in the dictionary: select a word or phrase in the original first'**
+  String get dictLookUp;
+
+  /// No description provided for @dictContextMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'In the dictionary'**
+  String get dictContextMenu;
+
+  /// No description provided for @dictSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'An English word or phrase'**
+  String get dictSearchHint;
+
+  /// No description provided for @dictEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Type an English word or phrase, e.g. gave up. In the \"Text\" panel, select a word in the original and press the book button.'**
+  String get dictEmpty;
+
+  /// No description provided for @dictNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{query}\" is not in the dictionary.'**
+  String dictNotFound(String query);
+
+  /// No description provided for @dictSimilar.
+  ///
+  /// In en, this message translates to:
+  /// **'Words starting the same way:'**
+  String get dictSimilar;
+
+  /// No description provided for @dictTranslateOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate offline'**
+  String get dictTranslateOffline;
+
+  /// No description provided for @dictNoOfflineModel.
+  ///
+  /// In en, this message translates to:
+  /// **'The offline translator is not downloaded (Settings → Models).'**
+  String get dictNoOfflineModel;
+
+  /// No description provided for @dictNotDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'The dictionary is not downloaded yet. It works without the internet and takes {size}. Source: Wiktionary (CC-BY-SA 4.0).'**
+  String dictNotDownloaded(String size);
+
+  /// No description provided for @dictDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download the dictionary'**
+  String get dictDownload;
+
+  /// No description provided for @dictBroken.
+  ///
+  /// In en, this message translates to:
+  /// **'The dictionary file cannot be read: {error}. Delete it in Settings → Models and download again.'**
+  String dictBroken(String error);
+
+  /// No description provided for @dictAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Click a Russian word to put it into the project\'s names and words.'**
+  String get dictAddHint;
+
+  /// No description provided for @dictAddTip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to names and words'**
+  String get dictAddTip;
+
+  /// No description provided for @dictAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to names and words: {term} → {word}'**
+  String dictAdded(String term, String word);
+
+  /// No description provided for @dictAlreadyThere.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{term}\" is in the names and words already'**
+  String dictAlreadyThere(String term);
+
+  /// No description provided for @dictEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'In English ({count})'**
+  String dictEnglish(int count);
+
+  /// No description provided for @dictOnlyEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'Only English explanations (turned off in Settings → Translator).'**
+  String get dictOnlyEnglish;
+
+  /// No description provided for @dictPos.
+  ///
+  /// In en, this message translates to:
+  /// **'{pos, select, noun{noun} verb{verb} adj{adjective} adv{adverb} intj{interjection} phrase{phrase} name{name} prep{preposition} pron{pronoun} conj{conjunction} num{numeral} det{determiner} particle{particle} contraction{contraction} abbrev{abbreviation} prefix{prefix} suffix{suffix} prep_phrase{phrase} proverb{proverb} other{?}}'**
+  String dictPos(String pos);
+
+  /// No description provided for @dictShowEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'Show English explanations in the dictionary'**
+  String get dictShowEnglish;
+
+  /// No description provided for @dictShowEnglishHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Folded; they open by themselves when a word has no Russian translation.'**
+  String get dictShowEnglishHelp;
+
+  /// No description provided for @dictInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The offline dictionary, English to Russian, from Wiktionary: Russian words by meaning, explanations and examples for 136 thousand words and phrases, slang too. Open it with the book button at a bubble in the \"Text\" panel (select a word in the original first) or from the Chat menu. A Russian word clicked goes into the names and words of the project. Download it in Settings → Models.'**
+  String get dictInfo;
+
+  /// No description provided for @modelDictEnRu.
+  ///
+  /// In en, this message translates to:
+  /// **'Dictionary English → Russian (Wiktionary)'**
+  String get modelDictEnRu;
+
+  /// No description provided for @modelDictEnRuInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The offline dictionary: Russian words, explanations and examples for 136 thousand English words and phrases, slang too. Built by this project from Wiktionary (kaikki.org / wiktextract); licence CC-BY-SA 4.0.'**
+  String get modelDictEnRuInfo;
+
+  /// No description provided for @glossarySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get glossarySearch;
+
+  /// No description provided for @glossaryAsList.
+  ///
+  /// In en, this message translates to:
+  /// **'As a list'**
+  String get glossaryAsList;
+
+  /// No description provided for @glossaryAsText.
+  ///
+  /// In en, this message translates to:
+  /// **'As text'**
+  String get glossaryAsText;
+
+  /// No description provided for @glossaryDeleteLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the line'**
+  String get glossaryDeleteLine;
+
+  /// No description provided for @glossaryNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found'**
+  String get glossaryNothing;
+
+  /// No description provided for @glossaryEmptyList.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty. Add lines in \"As text\" or from the dictionary.'**
+  String get glossaryEmptyList;
 }
 
 class _AppLocalizationsDelegate

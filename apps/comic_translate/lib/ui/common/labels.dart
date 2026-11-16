@@ -193,6 +193,7 @@ ModelGroup modelGroupOf(String id) => switch (id) {
   'opus-mt-en-ru' => (l.modelOpusEnRu, l.modelOpusInfo),
   'opus-mt-ru-en' => (l.modelOpusRuEn, l.modelOpusInfo),
   'opus-mt-tc-big-en-ru' => (l.modelOpusBigEnRu, l.modelOpusBigInfo),
+  'dict-en-ru' => (l.modelDictEnRu, l.modelDictEnRuInfo),
   'opus-mt-tc-big-ru-en' => (l.modelOpusBigRuEn, l.modelOpusBigInfo),
   'waifu2x-cunet-art-2x' => (l.modelW2xCunet, l.modelW2xCunetInfo),
   'waifu2x-swin-art-2x' => (l.modelW2xSwin, l.modelW2xSwinInfo),

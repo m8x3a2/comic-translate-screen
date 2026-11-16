@@ -517,6 +517,28 @@ abstract final class ModelCatalog {
     ],
   );
 
+  /// The offline dictionary, English to Russian: one SQLite file built by
+  /// this project from Wiktionary (`tools/dictionary/build_dictionary.py`),
+  /// in this project's GitHub releases. Read by `OfflineDictionary`.
+  static const dictEnRu = ModelSpec(
+    id: 'dict-en-ru',
+    displayName: 'Dictionary, English to Russian (Wiktionary)',
+    purpose: 'Offline dictionary: Russian words, meanings and examples for English words and phrases',
+    license: 'CC-BY-SA-4.0',
+    homepage: 'https://kaikki.org/',
+    files: [
+      ModelFile(
+        name: dictionaryFile,
+        url: 'https://github.com/m8x3a2/comic-translate-screen/releases/download/models-v1/dict-en-ru-wiktionary-1.sqlite',
+        sha256: '527362f4992fbf0b6f2644164d2849572827f6adc5f06d4c126dbd624316b81c',
+        size: 121495552,
+      ),
+    ],
+  );
+
+  /// The file name of every dictionary model.
+  static const dictionaryFile = 'dictionary.sqlite';
+
   static const all = [
     rtdetrV2,
     ppocrDet,
@@ -527,6 +549,7 @@ abstract final class ModelCatalog {
     opusMtRuEn,
     opusMtBigEnRu,
     opusMtBigRuEn,
+    dictEnRu,
     ppocrRecEn,
     ppocrRecLatin,
     ppocrRecEslav,
