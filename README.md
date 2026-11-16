@@ -77,7 +77,8 @@ with Android to follow. See the [architecture](docs/ARCHITECTURE.md) for the roa
 
 - **Exchange with a chat AI by hand**: crops of the bubbles (or text) go to ChatGPT, Gemini or Claude
   in your own browser, and their answer is pasted back; the program itself sends nothing.
-- **Offline translation** English ↔ Russian (OPUS-MT, no internet and no keys).
+- **Offline translation** English ↔ Russian (OPUS-MT, no internet and no keys); the "High" level uses the
+  big OPUS-MT tc-big models (Helsinki-NLP, CC BY 4.0), converted to ONNX by this project.
 - **Comics / Sites and games**: screenshots of sites, games and visual novels are read line by line
   (PP-OCRv5 line detector) instead of bubble by bubble.
 - **Preparing small text for reading**: only the pieces with thin lines are enlarged before OCR —

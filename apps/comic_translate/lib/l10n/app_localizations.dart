@@ -8989,6 +8989,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Go on with \"{key}\"'**
   String switchKeyContinue(String key);
+
+  /// No description provided for @modelOpusBigEnRu.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline translation English → Russian, big model (OPUS-MT tc-big)'**
+  String get modelOpusBigEnRu;
+
+  /// No description provided for @modelOpusBigRuEn.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline translation Russian → English, big model (OPUS-MT tc-big)'**
+  String get modelOpusBigRuEn;
+
+  /// No description provided for @modelOpusBigInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The \"High\" level of the offline translator: noticeably more accurate than the usual model, about 1.7 times slower (about 0.7 s per bubble on a weak laptop). Converted to ONNX by this project from the Helsinki-NLP models; licence CC-BY 4.0.'**
+  String get modelOpusBigInfo;
 }
 
 class _AppLocalizationsDelegate

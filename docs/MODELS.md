@@ -39,6 +39,23 @@ GitHub releases under the model's own licence, CC BY-NC-SA 4.0: non-commercial
 use, credit the author, share changes under the same licence. Comic Translate
 Screen is free and non-commercial.
 
+Offline translation (new in this project; the translator "Offline (OPUS-MT)", only the direction and
+level in use are needed). Fast and Better use the OPUS-MT models (`opus-mt-en-ru`, `opus-mt-ru-en`,
+int8 ONNX by Xenova); High uses the big ones:
+
+| Id | Level | Files | Size | License | Source |
+|---|---|---|---|---|---|
+| `opus-mt-tc-big-en-ru` | High, English → Russian | `encoder_model_quantized.onnx`, `decoder_model_merged_quantized.onnx` (+ `source.spm`, `vocab.json`) | 353 MB | CC-BY-4.0 (Helsinki-NLP, Tatoeba Challenge) | github.com/m8x3a2/comic-translate-screen releases; tokenizer from huggingface.co/Helsinki-NLP/opus-mt-tc-big-en-zle |
+| `opus-mt-tc-big-ru-en` | High, Russian → English | the same | 352 MB | CC-BY-4.0 (Helsinki-NLP, Tatoeba Challenge) | github.com/m8x3a2/comic-translate-screen releases; tokenizer from huggingface.co/Helsinki-NLP/opus-mt-tc-big-zle-en |
+
+OPUS-MT tc-big (Helsinki-NLP/opus-mt-tc-big-en-zle and opus-mt-tc-big-zle-en, by Jörg Tiedemann and the
+Language Technology Research Group at the University of Helsinki, https://github.com/Helsinki-NLP/Tatoeba-Challenge)
+is published by its authors as PyTorch weights; this project exported it to ONNX (optimum) and made it
+int8 (dynamic, per channel; the decoders one by one, then merged), as the Xenova models of OPUS-MT are,
+and publishes those files in its GitHub releases under the models' own licence, CC BY 4.0: credit the
+authors. The English model also translates into Belarusian and Ukrainian; the app asks it for Russian
+with the token `>>rus<<`. The weights are otherwise unchanged.
+
 Text removal levels (new in this project; Settings → Tools → Text removal quality): Simple uses
 `aot-inpainting`, Medium `comic-text-detector` + `aot-inpainting`, High (default)
 `comic-text-detector` + `lama-manga`.

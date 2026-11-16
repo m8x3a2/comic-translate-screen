@@ -3409,5 +3409,8 @@
   "sectionLocked": "Locked",
   "usageKeyRemoved": "a deleted key",
   "switchKeyContinue": "Go on with \"{key}\"",
-  "@switchKeyContinue": {"placeholders": {"key": {"type": "String"}}}
+  "@switchKeyContinue": {"placeholders": {"key": {"type": "String"}}},
+  "modelOpusBigEnRu": "Offline translation English → Russian, big model (OPUS-MT tc-big)",
+  "modelOpusBigRuEn": "Offline translation Russian → English, big model (OPUS-MT tc-big)",
+  "modelOpusBigInfo": "The \"High\" level of the offline translator: noticeably more accurate than the usual model, about 1.7 times slower (about 0.7 s per bubble on a weak laptop). Converted to ONNX by this project from the Helsinki-NLP models; licence CC-BY 4.0."
 }

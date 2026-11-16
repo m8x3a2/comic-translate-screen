@@ -5298,4 +5298,16 @@ class AppLocalizationsRu extends AppLocalizations {
   String switchKeyContinue(String key) {
     return 'Перейти на «$key» и продолжить';
   }
+
+  @override
+  String get modelOpusBigEnRu =>
+      'Офлайн-перевод английский → русский, большая модель (OPUS-MT tc-big)';
+
+  @override
+  String get modelOpusBigRuEn =>
+      'Офлайн-перевод русский → английский, большая модель (OPUS-MT tc-big)';
+
+  @override
+  String get modelOpusBigInfo =>
+      'Уровень «Высокое» офлайн-переводчика: заметно точнее обычной модели, примерно в 1,7 раза медленнее (около 0,7 с на пузырь на слабом ноутбуке). Переведена в ONNX этим проектом из моделей Helsinki-NLP; лицензия CC-BY 4.0.';
 }

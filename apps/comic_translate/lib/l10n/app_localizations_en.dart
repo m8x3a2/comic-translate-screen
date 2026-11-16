@@ -5302,4 +5302,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String switchKeyContinue(String key) {
     return 'Go on with \"$key\"';
   }
+
+  @override
+  String get modelOpusBigEnRu =>
+      'Offline translation English → Russian, big model (OPUS-MT tc-big)';
+
+  @override
+  String get modelOpusBigRuEn =>
+      'Offline translation Russian → English, big model (OPUS-MT tc-big)';
+
+  @override
+  String get modelOpusBigInfo =>
+      'The \"High\" level of the offline translator: noticeably more accurate than the usual model, about 1.7 times slower (about 0.7 s per bubble on a weak laptop). Converted to ONNX by this project from the Helsinki-NLP models; licence CC-BY 4.0.';
 }

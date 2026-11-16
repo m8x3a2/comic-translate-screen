@@ -884,10 +884,12 @@ Future<List<ModelSpec>> missingModels(
     if (parts.contains(PipelinePart.textMask)) settings.textMask,
   ];
   final languages = sourceLanguages ?? {settings.sourceLanguage};
+  // The models of a plugin may depend on its settings (the offline translator's level).
+  PluginConfig configOf(String id) => PluginConfig.resolve(registry.info(id).settings, settings.pluginValues(id));
   final ids = <String>{
     for (final id in chosen)
       if (registry.contains(id))
-        for (final language in languages) ...registry.info(id).requiredModels(language),
+        for (final language in languages) ...registry.info(id).requiredModels(language, configOf(id)),
     if (parts.contains(PipelinePart.ocr))
       for (final language in languages)
         for (final id in readLevelPlugins(settings, language))

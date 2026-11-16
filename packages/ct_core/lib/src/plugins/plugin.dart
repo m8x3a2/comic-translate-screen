@@ -70,6 +70,7 @@ class PluginInfo {
     this.settings = const [],
     this.models = const [],
     this.modelsForLanguage,
+    this.modelsForConfig,
     this.endpoint,
     this.keyStatus,
     this.modelCatalog,
@@ -95,15 +96,22 @@ class PluginInfo {
   /// source language, used instead of [models].
   final List<String> Function(String sourceLanguage)? modelsForLanguage;
 
-  /// Every model needed to run with [sourceLanguage].
-  List<String> requiredModels(String sourceLanguage) {
+  /// For engines whose models also depend on their settings (the level of
+  /// the offline translator): used instead of [modelsForLanguage] when the
+  /// configuration is known.
+  final List<String> Function(String sourceLanguage, PluginConfig config)? modelsForConfig;
+
+  /// Every model needed to run with [sourceLanguage] (and [config]).
+  List<String> requiredModels(String sourceLanguage, [PluginConfig? config]) {
+    final forConfig = modelsForConfig;
     final forLanguage = modelsForLanguage;
-    if (forLanguage == null) return models;
     try {
-      return forLanguage(sourceLanguage);
+      if (forConfig != null && config != null) return forConfig(sourceLanguage, config);
+      if (forLanguage != null) return forLanguage(sourceLanguage);
     } on UnsupportedError {
       return models;
     }
+    return models;
   }
 
   /// For plugins whose destination depends on their settings (e.g. a server

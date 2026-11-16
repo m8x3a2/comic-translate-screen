@@ -1,5 +1,6 @@
 /// Offline translation between English and Russian with OPUS-MT (Marian
-/// models of Helsinki-NLP, int8 ONNX exports of Xenova): nothing leaves the
+/// models of Helsinki-NLP, int8 ONNX exports of Xenova; the big "tc-big"
+/// ones of the "High" level converted by this project): nothing leaves the
 /// computer, no key. New in this project.
 ///
 /// Comic text is prepared first: lines in capitals go in sentence case,
@@ -26,53 +27,81 @@ const opusMtInfo = PluginInfo(
     ChoiceSetting(
       key: 'quality',
       label: 'Quality',
-      help: 'Better compares four variants of each sentence.',
+      help: 'Better compares four variants of each sentence; High does it with a bigger model.',
       info:
-          'Fast: about 0.4 s per bubble on a weak laptop. Better: the model weighs four variants of each '
-          'sentence and keeps the best; about 1.7 times slower, noticeably fewer odd phrases.',
-      options: {'fast': 'Fast', 'better': 'Better'},
+          'Fast: about 0.2 s per bubble on a weak laptop. Better: the model weighs four variants of each '
+          'sentence and keeps the best; about twice as slow, noticeably fewer odd phrases. High: the big model '
+          '(OPUS-MT tc-big, about 370 MB per direction, downloaded when chosen), as Better; noticeably more '
+          'accurate, about 1.7 times slower than Better. Licence CC-BY 4.0, Helsinki-NLP.',
+      options: {'fast': 'Fast', 'better': 'Better', 'high': 'High'},
       defaultValue: 'better',
     ),
   ],
   models: ['opus-mt-en-ru'],
   modelsForLanguage: opusMtModelsFor,
+  modelsForConfig: opusMtModelsForConfig,
 );
 
 final opusMtFactory = PluginFactory<Translator>(opusMtInfo, (config, env) async {
-  return OpusMtTranslator(env.models, beams: config.value<String>('quality') == 'fast' ? 1 : 4, log: env.log);
+  final quality = config.value<String>('quality');
+  return OpusMtTranslator(env.models, beams: quality == 'fast' ? 1 : 4, big: quality == 'high', log: env.log);
 });
 
-/// The model for each direction, by source language.
-const opusMtModels = {'English': (ModelCatalog.opusMtEnRu, 'Russian'), 'Russian': (ModelCatalog.opusMtRuEn, 'English')};
+/// The model for each direction, by source language, with the token that
+/// asks for the target language (none for a model with one).
+const opusMtModels = {
+  'English': (ModelCatalog.opusMtEnRu, 'Russian', null),
+  'Russian': (ModelCatalog.opusMtRuEn, 'English', null),
+};
+
+/// The big models ("High"); the English one also does Belarusian and
+/// Ukrainian, so it is asked for Russian.
+const opusMtBigModels = {
+  'English': (ModelCatalog.opusMtBigEnRu, 'Russian', '>>rus<<'),
+  'Russian': (ModelCatalog.opusMtBigRuEn, 'English', null),
+};
 
 /// The model translating from [sourceLanguage] (English or Russian).
-List<String> opusMtModelsFor(String sourceLanguage) {
-  final m = opusMtModels[sourceLanguage] ?? (throw UnsupportedError('OPUS-MT: no model from $sourceLanguage'));
+List<String> opusMtModelsFor(String sourceLanguage, {bool big = false}) {
+  final m =
+      (big ? opusMtBigModels : opusMtModels)[sourceLanguage] ??
+      (throw UnsupportedError('OPUS-MT: no model from $sourceLanguage'));
   return [m.$1.id];
 }
 
+/// The model for [sourceLanguage] at the level of [config].
+List<String> opusMtModelsForConfig(String sourceLanguage, PluginConfig config) =>
+    opusMtModelsFor(sourceLanguage, big: config.value<String>('quality') == 'high');
+
 class OpusMtTranslator implements Translator {
-  OpusMtTranslator(this._models, {this.beams = 4, this.log});
+  OpusMtTranslator(this._models, {this.beams = 4, this.big = false, this.log});
 
   final ModelManager _models;
   final int beams;
+
+  /// The big models ("High").
+  final bool big;
   final EventLog? log;
   final _engines = <String, OpusMtEngine>{};
 
   @override
   PluginInfo get info => opusMtInfo;
 
-  Future<OpusMtEngine> engine(ModelSpec spec) async {
+  /// The engine of [spec]; [target] is the token asking for the target
+  /// language, for a model with several.
+  Future<OpusMtEngine> engine(ModelSpec spec, {String? target}) async {
     final made = _engines[spec.id];
     if (made != null) return made;
     Future<String> file(String name) => _models.ensureFile(spec, name);
+    final tokenizer = MarianTokenizer.fromFiles(
+      await File(await file('source.spm')).readAsBytes(),
+      await File(await file('vocab.json')).readAsString(),
+    );
     final engine = OpusMtEngine(
-      MarianTokenizer.fromFiles(
-        await File(await file('source.spm')).readAsBytes(),
-        await File(await file('vocab.json')).readAsString(),
-      ),
+      tokenizer,
       encoder: await file('encoder_model_quantized.onnx'),
       decoder: await file('decoder_model_merged_quantized.onnx'),
+      targetToken: target == null ? null : tokenizer.vocab[target],
     );
     log?.info('translator_session', {'model': spec.id});
     return _engines[spec.id] = engine;
@@ -80,7 +109,7 @@ class OpusMtTranslator implements Translator {
 
   @override
   Future<void> translate(TranslationRequest request, PluginContext context) async {
-    final pair = opusMtModels[request.sourceLanguage];
+    final pair = (big ? opusMtBigModels : opusMtModels)[request.sourceLanguage];
     if (pair == null || pair.$2 != request.targetLanguage) {
       throw TranslationException(
         'OPUS-MT translates only English to Russian and Russian to English, not '
@@ -88,7 +117,7 @@ class OpusMtTranslator implements Translator {
         kind: TranslationErrorKind.config,
       );
     }
-    final e = await engine(pair.$1);
+    final e = await engine(pair.$1, target: pair.$3);
     final done = <String, String>{};
     final sw = Stopwatch()..start();
     var sentences = 0;
@@ -125,7 +154,7 @@ String prepareComicText(String text) {
 /// One OPUS-MT direction: encoder and decoder (with past keys and values)
 /// on the processor. The int8 models do not run on DirectML.
 class OpusMtEngine {
-  OpusMtEngine(this.tokenizer, {required String encoder, required String decoder})
+  OpusMtEngine(this.tokenizer, {required String encoder, required String decoder, this.targetToken})
     : _encoder = OrtSession.open(encoder, config: _config),
       _decoder = OrtSession.open(decoder, config: _config) {
     _pastNames = [
@@ -143,6 +172,10 @@ class OpusMtEngine {
   static int maxLengthFor(int n) => 3 * n + 10;
 
   final MarianTokenizer tokenizer;
+
+  /// Put before the source tokens to ask a model of several target
+  /// languages for one (`>>rus<<`); null for a model with one.
+  final int? targetToken;
   final OrtSession _encoder;
   final OrtSession _decoder;
   late final List<String> _pastNames;
@@ -150,7 +183,8 @@ class OpusMtEngine {
   late final int _headDim;
 
   /// [text] translated (one sentence is best).
-  String translate(String text, {int beams = 4}) => tokenizer.decode(generate(tokenizer.encode(text), beams: beams));
+  String translate(String text, {int beams = 4}) =>
+      tokenizer.decode(generate([?targetToken, ...tokenizer.encode(text)], beams: beams));
 
   /// Output tokens for the input tokens [ids] (`</s>` left out).
   List<int> generate(List<int> ids, {int beams = 4}) {

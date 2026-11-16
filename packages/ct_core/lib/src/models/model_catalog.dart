@@ -357,6 +357,89 @@ abstract final class ModelCatalog {
     ],
   );
 
+  /// The big OPUS-MT ("transformer-big", Tatoeba Challenge) for the "High"
+  /// offline translation: converted to int8 ONNX by this project (the
+  /// authors publish PyTorch weights only; files in this project's GitHub
+  /// releases under the model's own licence). English to East Slavic: the
+  /// target token `>>rus<<` asks for Russian.
+  static const opusMtBigEnRu = ModelSpec(
+    id: 'opus-mt-tc-big-en-ru',
+    displayName: 'OPUS-MT big translator, English to Russian',
+    purpose: 'Offline translation from English to Russian (high quality)',
+    license: 'CC-BY-4.0',
+    homepage: 'https://huggingface.co/Helsinki-NLP/opus-mt-tc-big-en-zle',
+    files: [
+      ModelFile(
+        name: 'source.spm',
+        url: 'https://huggingface.co/Helsinki-NLP/opus-mt-tc-big-en-zle/resolve/main/source.spm',
+        sha256: '3612abfe04bf08344ba91115f0e15e228a7a15a621ea856bfd548097dbaeb43c',
+        size: 802747,
+      ),
+      ModelFile(
+        name: 'vocab.json',
+        url: 'https://huggingface.co/Helsinki-NLP/opus-mt-tc-big-en-zle/resolve/main/vocab.json',
+        sha256: '41dbdff4a0b5a6ab125715c3342c5ce6516e93ffd49608813240403f036c5efb',
+        size: 2510527,
+      ),
+      ModelFile(
+        name: 'encoder_model_quantized.onnx',
+        url:
+            'https://github.com/m8x3a2/comic-translate-screen/releases/download/models-v1/'
+            'opus-mt-tc-big-en-zle_encoder_int8.onnx',
+        sha256: '2263f458c4fef3e155c04d24baee362c26b227987734f7f92226c532c9216c31',
+        size: 140340374,
+      ),
+      ModelFile(
+        name: 'decoder_model_merged_quantized.onnx',
+        url:
+            'https://github.com/m8x3a2/comic-translate-screen/releases/download/models-v1/'
+            'opus-mt-tc-big-en-zle_decoder_merged_int8.onnx',
+        sha256: '8a4d06007b18d10b3138e7b75dd9f45b107c1d37cab05907917748f5d8b15ab0',
+        size: 229684649,
+      ),
+    ],
+  );
+
+  /// The big OPUS-MT from East Slavic (Russian here) to English; see
+  /// [opusMtBigEnRu].
+  static const opusMtBigRuEn = ModelSpec(
+    id: 'opus-mt-tc-big-ru-en',
+    displayName: 'OPUS-MT big translator, Russian to English',
+    purpose: 'Offline translation from Russian to English (high quality)',
+    license: 'CC-BY-4.0',
+    homepage: 'https://huggingface.co/Helsinki-NLP/opus-mt-tc-big-zle-en',
+    files: [
+      ModelFile(
+        name: 'source.spm',
+        url: 'https://huggingface.co/Helsinki-NLP/opus-mt-tc-big-zle-en/resolve/main/source.spm',
+        sha256: 'a982dbb9362861151e36b0db1595b324cd1ce09acf46ce1f4d6d624e11c5807f',
+        size: 1016851,
+      ),
+      ModelFile(
+        name: 'vocab.json',
+        url: 'https://huggingface.co/Helsinki-NLP/opus-mt-tc-big-zle-en/resolve/main/vocab.json',
+        sha256: '92148daf001ba378588442dfcdc7c4529210f2f28635ebc092faecf508190680',
+        size: 2492486,
+      ),
+      ModelFile(
+        name: 'encoder_model_quantized.onnx',
+        url:
+            'https://github.com/m8x3a2/comic-translate-screen/releases/download/models-v1/'
+            'opus-mt-tc-big-zle-en_encoder_int8.onnx',
+        sha256: 'b0f3cdc989b604e97cfd275b3effb3bca82aac871ae65b5726657c84b350edd8',
+        size: 139766933,
+      ),
+      ModelFile(
+        name: 'decoder_model_merged_quantized.onnx',
+        url:
+            'https://github.com/m8x3a2/comic-translate-screen/releases/download/models-v1/'
+            'opus-mt-tc-big-zle-en_decoder_merged_int8.onnx',
+        sha256: '2ca160883ae5c5b854c4b2c16f624f92cf77cd71d7eb082f86472c51fcc69d02',
+        size: 228532727,
+      ),
+    ],
+  );
+
   static const waifu2xCunet = ModelSpec(
     id: 'waifu2x-cunet-art-2x',
     displayName: 'waifu2x CUNet art ×2',
@@ -442,6 +525,8 @@ abstract final class ModelCatalog {
     fatalityComix,
     opusMtEnRu,
     opusMtRuEn,
+    opusMtBigEnRu,
+    opusMtBigRuEn,
     ppocrRecEn,
     ppocrRecLatin,
     ppocrRecEslav,

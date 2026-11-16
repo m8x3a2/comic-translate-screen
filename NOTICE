@@ -35,6 +35,13 @@ SymSpell (https://github.com/wolfgarbe/SymSpell, Copyright 2018 Wolf Garbe, MIT
 License), built from the Google Books Ngram data (CC BY 3.0); see
 apps/comic_translate/assets/dict/en_words-LICENSE.txt.
 
+The "High" level of the offline translator uses OPUS-MT tc-big
+(Helsinki-NLP/opus-mt-tc-big-en-zle and opus-mt-tc-big-zle-en, Jörg Tiedemann
+and the Language Technology Research Group at the University of Helsinki,
+https://github.com/Helsinki-NLP/Tatoeba-Challenge), licensed under Creative
+Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/); this
+project converted the models to int8 ONNX (see docs/MODELS.md).
+
 The PSD text layer layout follows ag-psd (https://github.com/Agamnentzar/ag-psd,
 Copyright 2016 Agamnentzar, MIT License).
 
