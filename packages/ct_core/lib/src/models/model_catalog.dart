@@ -530,8 +530,8 @@ abstract final class ModelCatalog {
       ModelFile(
         name: dictionaryFile,
         url: 'https://github.com/m8x3a2/comic-translate-screen/releases/download/models-v1/dict-en-ru-wiktionary-1.sqlite',
-        sha256: '527362f4992fbf0b6f2644164d2849572827f6adc5f06d4c126dbd624316b81c',
-        size: 121495552,
+        sha256: '882bc4e5108f599f996e80c836080f5ece7eec19bcb848c40c88a685ca2336e5',
+        size: 209948672,
       ),
     ],
   );

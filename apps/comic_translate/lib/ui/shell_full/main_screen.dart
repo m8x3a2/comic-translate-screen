@@ -1127,7 +1127,7 @@ class _TopBar extends ConsumerWidget {
             child: Text(l.glossaryMenu),
           ),
           MenuItemButton(
-            leadingIcon: const Icon(Icons.auto_stories_outlined),
+            leadingIcon: const Icon(Icons.local_library_outlined),
             onPressed: () => showDictionary(context),
             child: Text(l.dictMenu),
           ),

@@ -524,7 +524,7 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
                     tooltip: l.dictLookUp,
                     visualDensity: VisualDensity.compact,
                     onPressed: _lookUp,
-                    icon: const Icon(Icons.auto_stories_outlined, size: 20),
+                    icon: const Icon(Icons.local_library_outlined, size: 20),
                   ),
                   IconButton(
                     tooltip: l.translateBlock,

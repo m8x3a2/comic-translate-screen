@@ -138,7 +138,7 @@ class _DictionaryDialogState extends ConsumerState<DictionaryDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          const Icon(Icons.auto_stories_outlined),
+          const Icon(Icons.local_library_outlined),
           const SizedBox(width: 8),
           Expanded(child: Text(l.dictTitle)),
         ],
@@ -211,7 +211,7 @@ class _DictionaryDialogState extends ConsumerState<DictionaryDialog> {
     final cards = dict.lookup(_query);
     final muted = theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant);
     if (cards.isEmpty) {
-      final similar = dict.suggest(_query.length > 3 ? _query.substring(0, 3) : _query, limit: 12);
+      final similar = _similar(dict, _query);
       return ListView(
         children: [
           Text(l.dictNotFound(_query)),
@@ -245,13 +245,24 @@ class _DictionaryDialogState extends ConsumerState<DictionaryDialog> {
     }
     return ListView(
       children: [
-        Text(l.dictAddHint, style: muted),
+        if (cards.any((c) => c.parts.any((p) => p.translations.isNotEmpty))) Text(l.dictAddHint, style: muted),
         const SizedBox(height: 8),
         for (final c in cards)
           _Card(card: c, showEnglish: showEnglish, onWord: (w) => _addToGlossary(c.headword, w), onLink: _searchNow),
       ],
     );
   }
+}
+
+/// Words starting as much like [query] as the dictionary has (the longest
+/// beginning, down to 3 letters): "messing up" → messing, messing about…
+List<String> _similar(OfflineDictionary dict, String query) {
+  final q = normalizeDictQuery(query);
+  for (var n = q.length; n > 0 && (n >= 3 || n == q.length); n--) {
+    final found = dict.suggest(q.substring(0, n), limit: 12);
+    if (found.isNotEmpty) return found;
+  }
+  return const [];
 }
 
 class _Card extends StatelessWidget {

@@ -4,7 +4,8 @@ Usage: python -I build_dictionary.py <src_dir> <out.sqlite> <en_words.txt>
   src_dir: en.jsonl.gz      https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl.gz
            ru-extract.jsonl.gz  https://kaikki.org/dictionary/downloads/ru/ru-extract.jsonl.gz
   en_words.txt: the frequency list of the app (apps/comic_translate/assets/dict/en_words.txt).
-Kept: every word or phrase with a Russian translation, plus the frequent English words (English
+Kept: every word or phrase with a Russian translation, every phrase of several words and the frequent
+English words (English
 definitions only); forms (ran -> run) of kept words. Data: Wiktionary (CC-BY-SA 4.0), extracted by
 wiktextract / kaikki.org (Tatu Ylonen). Streams through a staging table: memory stays small.
 
@@ -194,7 +195,7 @@ def main(src, out, words_file):
                     p.setdefault(k, [])
                     p[k] += v[:MAX_SENSES - len(p[k])]
         russian = any('tr' in p or 'ru' in p for p in merged.values())
-        if not russian and w not in freq:
+        if not russian and w not in freq and ' ' not in w:  # phrases (mess with) stay: slang and idioms
             continue
         kept.add(w)
         if 'name' in merged:  # names (Guy) after the words

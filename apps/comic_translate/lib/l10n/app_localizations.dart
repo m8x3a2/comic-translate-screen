@@ -9143,7 +9143,7 @@ abstract class AppLocalizations {
   /// No description provided for @dictInfo.
   ///
   /// In en, this message translates to:
-  /// **'The offline dictionary, English to Russian, from Wiktionary: Russian words by meaning, explanations and examples for 136 thousand words and phrases, slang too. Open it with the book button at a bubble in the \"Text\" panel (select a word in the original first) or from the Chat menu. A Russian word clicked goes into the names and words of the project. Download it in Settings → Models.'**
+  /// **'The offline dictionary, English to Russian, from Wiktionary: Russian words by meaning, explanations and examples for 92 thousand words and phrases, English explanations for 345 thousand more, slang and phrases too. Open it with the book button at a bubble in the \"Text\" panel (select a word in the original first) or from the Chat menu. A Russian word clicked goes into the names and words of the project. Download it in Settings → Models.'**
   String get dictInfo;
 
   /// No description provided for @modelDictEnRu.
@@ -9155,7 +9155,7 @@ abstract class AppLocalizations {
   /// No description provided for @modelDictEnRuInfo.
   ///
   /// In en, this message translates to:
-  /// **'The offline dictionary: Russian words, explanations and examples for 136 thousand English words and phrases, slang too. Built by this project from Wiktionary (kaikki.org / wiktextract); licence CC-BY-SA 4.0.'**
+  /// **'The offline dictionary: Russian words, explanations and examples for 92 thousand English words and phrases, English explanations for 345 thousand more, slang and phrases too. Built by this project from Wiktionary (kaikki.org / wiktextract); licence CC-BY-SA 4.0.'**
   String get modelDictEnRuInfo;
 
   /// No description provided for @glossarySearch.

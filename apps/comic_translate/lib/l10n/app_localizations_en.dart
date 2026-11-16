@@ -5425,14 +5425,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dictInfo =>
-      'The offline dictionary, English to Russian, from Wiktionary: Russian words by meaning, explanations and examples for 136 thousand words and phrases, slang too. Open it with the book button at a bubble in the \"Text\" panel (select a word in the original first) or from the Chat menu. A Russian word clicked goes into the names and words of the project. Download it in Settings → Models.';
+      'The offline dictionary, English to Russian, from Wiktionary: Russian words by meaning, explanations and examples for 92 thousand words and phrases, English explanations for 345 thousand more, slang and phrases too. Open it with the book button at a bubble in the \"Text\" panel (select a word in the original first) or from the Chat menu. A Russian word clicked goes into the names and words of the project. Download it in Settings → Models.';
 
   @override
   String get modelDictEnRu => 'Dictionary English → Russian (Wiktionary)';
 
   @override
   String get modelDictEnRuInfo =>
-      'The offline dictionary: Russian words, explanations and examples for 136 thousand English words and phrases, slang too. Built by this project from Wiktionary (kaikki.org / wiktextract); licence CC-BY-SA 4.0.';
+      'The offline dictionary: Russian words, explanations and examples for 92 thousand English words and phrases, English explanations for 345 thousand more, slang and phrases too. Built by this project from Wiktionary (kaikki.org / wiktextract); licence CC-BY-SA 4.0.';
 
   @override
   String get glossarySearch => 'Search';

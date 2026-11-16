@@ -60,12 +60,13 @@ Offline dictionary (new in this project; the book button in the "Text" panel, Ch
 
 | Id | Use | Files | Size | License | Source |
 |---|---|---|---|---|---|
-| `dict-en-ru` | Dictionary, English → Russian | `dictionary.sqlite` | 121 MB | CC-BY-SA-4.0 (Wiktionary contributors) | github.com/m8x3a2/comic-translate-screen releases (`dict-en-ru-wiktionary-1.sqlite`) |
+| `dict-en-ru` | Dictionary, English → Russian | `dictionary.sqlite` | 210 MB | CC-BY-SA-4.0 (Wiktionary contributors) | github.com/m8x3a2/comic-translate-screen releases (`dict-en-ru-wiktionary-1.sqlite`) |
 
 Built by `tools/dictionary/build_dictionary.py` from the Wiktionary extracts of kaikki.org (wiktextract,
 Tatu Ylonen): the English edition gives Russian words by meaning, the Russian edition short Russian
-explanations with translated examples. Kept are the 92 thousand words and phrases with Russian and the
-80 thousand frequent English words (English explanations only), plus the forms Wiktionary lists (ran → run).
+explanations with translated examples. Kept are the 92 thousand words and phrases with Russian, every phrase
+of several words (mess with: slang and idioms often have English explanations only) and the 80 thousand
+frequent English words, plus the forms Wiktionary lists (ran → run): 438 thousand entries.
 Wiktionary is licensed CC BY-SA 4.0; so is the file.
 
 Text removal levels (new in this project; Settings → Tools → Text removal quality): Simple uses
