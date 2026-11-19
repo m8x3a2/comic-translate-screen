@@ -1046,6 +1046,13 @@ class _TranslatorSection extends ConsumerWidget {
               help: l.sendPageImageHelp,
               info: l.sendPageImageInfo,
             ),
+            _Dropdown<int>(
+              label: l.rememberPages,
+              value: const {0, 1, 2, 3, 5}.contains(s.rememberPages) ? s.rememberPages : 0,
+              options: {0: l.rememberPagesOff, 1: '1', 2: '2', 3: '3', 5: '5'},
+              onChanged: (v) => _change(ref, (s) => s.rememberPages = v),
+              info: l.rememberPagesInfo,
+            ),
             const SizedBox(height: 8),
             _Dropdown(
               // A choice remembered in the question shows here.

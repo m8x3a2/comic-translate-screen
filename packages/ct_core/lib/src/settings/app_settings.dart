@@ -73,6 +73,7 @@ class AppSettings {
     this.targetLanguage = 'Russian',
     this.extraContext = '',
     this.sendPageImage = false,
+    this.rememberPages = 0,
     this.render = const RenderSettings(),
     this.upscale = const UpscaleSettings(),
     this.export = const ExportSettings(),
@@ -221,6 +222,12 @@ class AppSettings {
   /// Send the page image to translators that accept it (off by default,
   /// as in the original).
   bool sendPageImage;
+
+  /// How many earlier translated pages of the same chapter go to the
+  /// translator with each page ("one conversation per chapter", an idea of
+  /// Koharu): names, terms and tone stay the same. 0 = off (the default:
+  /// paid translators are charged for the longer request).
+  int rememberPages;
 
   /// Text rendering (font, sizes, colours, outline...), defaults of the
   /// original.
@@ -470,7 +477,7 @@ class AppSettings {
     },
     'inpaint': inpaint.toJson(),
     'languages': {'source': sourceLanguage, 'target': targetLanguage},
-    'llm': {'extra_context': extraContext, 'send_page_image': sendPageImage},
+    'llm': {'extra_context': extraContext, 'send_page_image': sendPageImage, 'remember_pages': rememberPages},
     'render': render.toJson(),
     'upscale': upscale.toJson(),
     'export': export.toJson(),
@@ -599,6 +606,7 @@ class AppSettings {
       targetLanguage: pick(languages, 'target', defaults.targetLanguage),
       extraContext: pick(llm, 'extra_context', defaults.extraContext),
       sendPageImage: pick(llm, 'send_page_image', defaults.sendPageImage),
+      rememberPages: pick(llm, 'remember_pages', defaults.rememberPages),
       render: RenderSettings.fromJson(render),
       upscale: UpscaleSettings.fromJson(upscale),
       export: ExportSettings.fromJson(export),

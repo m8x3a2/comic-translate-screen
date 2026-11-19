@@ -1256,6 +1256,24 @@ abstract class AppLocalizations {
   /// **'Make it number {n} (now there: {text})'**
   String blockOrderPlace(int n, String text);
 
+  /// No description provided for @rememberPages.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember earlier pages of the chapter (experimental)'**
+  String get rememberPages;
+
+  /// No description provided for @rememberPagesOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off (default)'**
+  String get rememberPagesOff;
+
+  /// No description provided for @rememberPagesInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'An idea of Koharu, one conversation per chapter. With each page the translator gets the source and translation of a few earlier pages of the same chapter (folder or archive), so names, terms and tone stay the same from page to page. For networks: OpenRouter, your own server, offline Medium and up; OPUS-MT (Low) does not use it. Paid translators charge for these lines too, the request is longer; the offline network gets slower. Pages translated in this working session, at most 1500 characters.'**
+  String get rememberPagesInfo;
+
   /// No description provided for @offlineCheck.
   ///
   /// In en, this message translates to:

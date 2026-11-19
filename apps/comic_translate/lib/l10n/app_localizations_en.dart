@@ -666,6 +666,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get rememberPages =>
+      'Remember earlier pages of the chapter (experimental)';
+
+  @override
+  String get rememberPagesOff => 'Off (default)';
+
+  @override
+  String get rememberPagesInfo =>
+      'An idea of Koharu, one conversation per chapter. With each page the translator gets the source and translation of a few earlier pages of the same chapter (folder or archive), so names, terms and tone stay the same from page to page. For networks: OpenRouter, your own server, offline Medium and up; OPUS-MT (Low) does not use it. Paid translators charge for these lines too, the request is longer; the offline network gets slower. Pages translated in this working session, at most 1500 characters.';
+
+  @override
   String get offlineCheck => 'Try a translation';
 
   @override

@@ -745,6 +745,9 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
   }
   toMain.send(_Ready(inbox.sendPort, recorder?.dir.path, recorder?.runId));
 
+  // The pages translated last, for "remember earlier pages of the chapter".
+  final chapterMemory = ChapterMemory();
+
   // The text masker's letters of the image last fitted ("fit to letters"
   // clicks one after another on the same image).
   (String, GrayImage?)? fitLetters;
@@ -773,6 +776,8 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
         ),
         sourceLanguage: m.source,
         targetLanguage: m.target,
+        memory: chapterMemory,
+        chapter: chapterOfPath(m.pack.first.path),
       );
       return [for (final p in m.pack) p.blocks];
     }
@@ -842,6 +847,8 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
           blocks: m.blocks,
           read: m.read,
           translate: m.translate,
+          memory: chapterMemory,
+          chapter: chapterOfPath(m.path),
         );
       case _Op.detect:
         final found = await detectOnStrip(await plugins.detector, image, context, next: next, covered: m.covered);
@@ -867,6 +874,8 @@ Future<void> _workerMain((SendPort, WorkerSetup) args) async {
           context,
           sourceLanguage: m.source,
           targetLanguage: m.target,
+          memory: chapterMemory,
+          chapter: chapterOfPath(m.path),
         );
         return blocks;
       case _Op.mask:

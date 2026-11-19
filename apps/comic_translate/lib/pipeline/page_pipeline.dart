@@ -11,6 +11,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:ct_core/ct_core.dart';
+import 'package:path/path.dart' as p;
 
 import '../bootstrap.dart';
 import '../render/text_renderer.dart';
@@ -509,6 +510,8 @@ class PagePipeline {
     List<TextBlock>? blocks,
     bool read = true,
     bool translate = true,
+    ChapterMemory? memory,
+    String chapter = '',
   }) async {
     final recorder = context.recorder;
     final page = context.page;
@@ -563,6 +566,8 @@ class PagePipeline {
         context,
         sourceLanguage: sourceLanguage,
         targetLanguage: targetLanguage,
+        memory: memory,
+        chapter: chapter,
       );
       lap('03_translate');
     }
@@ -679,9 +684,67 @@ const smallTextTranslatorNote =
     'Some of the source text was recognized from very small letters: words may be glued together and letters '
     'misread. Translate what was most likely meant.';
 
+/// The pages a worker translated last, by chapter ("one conversation per
+/// chapter", an idea of Koharu, the owner's choice of 2026-11-19): with
+/// `rememberPages` on, each page goes to the translator with the source and
+/// translation of the earlier ones of its chapter, so names, terms and tone
+/// stay the same. Kept in the worker; another chapter starts afresh.
+class ChapterMemory {
+  /// The longest memory sent, in characters (older pages drop first).
+  static const maxChars = 1500;
+
+  String? _chapter;
+  final _pages = <List<(String, String)>>[];
+
+  /// The note for the translator on a page of [chapter]; empty when there is
+  /// nothing to remember or [pages] is 0.
+  String noteFor(String chapter, int pages) {
+    if (pages <= 0 || chapter != _chapter || _pages.isEmpty) return '';
+    final lines = <String>[];
+    var length = 0;
+    for (final page in _pages.reversed.take(pages)) {
+      final part = [for (final (s, t) in page) '$s → $t'];
+      final size = part.fold<int>(0, (a, l) => a + l.length + 1);
+      if (length + size > maxChars && lines.isNotEmpty) break;
+      lines.insertAll(0, part);
+      length += size;
+    }
+    return 'Earlier pages of this chapter, already translated (keep names, terms and tone the same; do not '
+        'translate them again):\n${lines.join('\n')}';
+  }
+
+  /// Keeps the translated [blocks] of a page of [chapter].
+  void remember(String chapter, List<TextBlock> blocks) {
+    if (chapter != _chapter) {
+      _chapter = chapter;
+      _pages.clear();
+    }
+    final pairs = [
+      for (final b in blocks)
+        if (b.text.trim().isNotEmpty && b.translation.trim().isNotEmpty)
+          (b.text.replaceAll(RegExp(r'\s+'), ' ').trim(), b.translation.replaceAll(RegExp(r'\s+'), ' ').trim()),
+    ];
+    if (pairs.isEmpty) return;
+    _pages.add(pairs);
+    if (_pages.length > 10) _pages.removeAt(0);
+  }
+}
+
+/// The chapter of a page for [ChapterMemory]: its folder or archive.
+String chapterOfPath(String? path) => path == null ? '' : p.dirname(path);
+
+/// The context for the translator: the settings' (with the glossary), the
+/// note on very small text, and the earlier pages of the chapter.
+String _translatorContext(AppSettings settings, bool smallText, String memory) => [
+  settings.extraContext,
+  if (smallText) smallTextTranslatorNote,
+  memory,
+].where((s) => s.trim().isNotEmpty).join('\n');
+
 /// Translation of [blocks] (the page image goes along when the setting
 /// allows it). Blocks of very small text add [smallTextTranslatorNote] to
-/// the context.
+/// the context; with [memory], the earlier pages of [chapter] go along and
+/// this page is remembered.
 Future<void> translatePageBlocks(
   Translator translator,
   RgbImage image,
@@ -690,19 +753,26 @@ Future<void> translatePageBlocks(
   PluginContext context, {
   required String sourceLanguage,
   required String targetLanguage,
-}) => translateBlocks(
-  translator,
-  TranslationRequest(
-    blocks: blocks,
-    sourceLanguage: sourceLanguage,
-    targetLanguage: targetLanguage,
-    pageImage: settings.sendPageImage ? image : null,
-    extraContext: blocks.any(isSmallText)
-        ? [settings.extraContext, smallTextTranslatorNote].where((s) => s.trim().isNotEmpty).join('\n')
-        : settings.extraContext,
-  ),
-  context,
-);
+  ChapterMemory? memory,
+  String chapter = '',
+}) async {
+  await translateBlocks(
+    translator,
+    TranslationRequest(
+      blocks: blocks,
+      sourceLanguage: sourceLanguage,
+      targetLanguage: targetLanguage,
+      pageImage: settings.sendPageImage ? image : null,
+      extraContext: _translatorContext(
+        settings,
+        blocks.any(isSmallText),
+        memory?.noteFor(chapter, settings.rememberPages) ?? '',
+      ),
+    ),
+    context,
+  );
+  memory?.remember(chapter, blocks);
+}
 
 /// Several pages in one request (pictures given only when the setting
 /// allows it); as [translatePageBlocks] otherwise.
@@ -713,16 +783,25 @@ Future<void> translatePackBlocks(
   PluginContext context, {
   required String sourceLanguage,
   required String targetLanguage,
-}) => translatePack(
-  translator,
-  pages,
-  context,
-  sourceLanguage: sourceLanguage,
-  targetLanguage: targetLanguage,
-  extraContext: pages.any((p) => p.blocks.any(isSmallText))
-      ? [settings.extraContext, smallTextTranslatorNote].where((s) => s.trim().isNotEmpty).join('\n')
-      : settings.extraContext,
-);
+  ChapterMemory? memory,
+  String chapter = '',
+}) async {
+  await translatePack(
+    translator,
+    pages,
+    context,
+    sourceLanguage: sourceLanguage,
+    targetLanguage: targetLanguage,
+    extraContext: _translatorContext(
+      settings,
+      pages.any((p) => p.blocks.any(isSmallText)),
+      memory?.noteFor(chapter, settings.rememberPages) ?? '',
+    ),
+  );
+  for (final page in pages) {
+    memory?.remember(chapter, page.blocks);
+  }
+}
 
 /// The plugins of a [PipelineSpec], created when first needed and kept.
 class LazyPlugins {
