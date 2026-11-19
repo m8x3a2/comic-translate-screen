@@ -1238,6 +1238,24 @@ abstract class AppLocalizations {
   /// **'The profile, its settings and all its saved keys and notes will be deleted.'**
   String get ownServerRemoveBody;
 
+  /// No description provided for @blockOrderTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'The bubble\'s number in the reading order: click to put it in another place'**
+  String get blockOrderTooltip;
+
+  /// No description provided for @blockOrderHere.
+  ///
+  /// In en, this message translates to:
+  /// **'{n}: this bubble'**
+  String blockOrderHere(int n);
+
+  /// No description provided for @blockOrderPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Make it number {n} (now there: {text})'**
+  String blockOrderPlace(int n, String text);
+
   /// No description provided for @offlineCheck.
   ///
   /// In en, this message translates to:

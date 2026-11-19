@@ -650,6 +650,20 @@ class AppLocalizationsRu extends AppLocalizations {
       'Профиль, его настройки и все сохранённые ключи и заметки будут удалены.';
 
   @override
+  String get blockOrderTooltip =>
+      'Номер пузыря в порядке чтения — нажмите, чтобы поставить его на другое место';
+
+  @override
+  String blockOrderHere(int n) {
+    return '$n — этот пузырь';
+  }
+
+  @override
+  String blockOrderPlace(int n, String text) {
+    return 'Сделать $n-м (сейчас там: $text)';
+  }
+
+  @override
   String get offlineCheck => 'Проверить перевод';
 
   @override

@@ -491,10 +491,7 @@ class _BlockEditorState extends ConsumerState<_BlockEditor> {
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text('${i + 1}', style: theme.textTheme.labelLarge),
-            ),
+            _OrderButton(index: i, enabled: !busy),
             // A narrow panel: the buttons go on to a second row.
             Expanded(
               child: Wrap(
@@ -847,6 +844,51 @@ class _LookMenu extends ConsumerWidget {
           child: Text(l.showLookInPanel),
         ),
       ],
+    );
+  }
+}
+
+/// The number of the selected bubble in the reading order; a click offers
+/// the other places, each with the start of the bubble there now.
+class _OrderButton extends ConsumerWidget {
+  const _OrderButton({required this.index, required this.enabled});
+
+  final int index;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final blocks = ref.watch(workspaceProvider.select((w) => w.currentPage?.blocks ?? const <TextBlock>[]));
+    String start(TextBlock b) {
+      final t = (b.translation.isNotEmpty ? b.translation : b.text).replaceAll(RegExp(r'\s+'), ' ').trim();
+      return t.length > 32 ? '${t.substring(0, 32)}…' : (t.isEmpty ? '—' : t);
+    }
+
+    return PopupMenuButton<int>(
+      tooltip: l.blockOrderTooltip,
+      enabled: enabled && blocks.length > 1,
+      initialValue: index,
+      onSelected: (to) => ref.read(workspaceProvider.notifier).moveBlock(index, to),
+      itemBuilder: (_) => [
+        for (final (n, b) in blocks.indexed)
+          PopupMenuItem(
+            value: n,
+            enabled: n != index,
+            child: Text(n == index ? l.blockOrderHere(n + 1) : l.blockOrderPlace(n + 1, start(b))),
+          ),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.only(top: 10, right: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${index + 1}', style: theme.textTheme.labelLarge),
+            Icon(Icons.arrow_drop_down, size: 16, color: theme.colorScheme.onSurfaceVariant),
+          ],
+        ),
+      ),
     );
   }
 }

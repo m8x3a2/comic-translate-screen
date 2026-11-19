@@ -167,6 +167,27 @@ void main() {
     expect(container.read(workspaceProvider).canUndo, isFalse);
   });
 
+  test('a bubble gets another number in the reading order: one undo step, still selected', () {
+    final id = page().id;
+    TextBlock b(String t) => TextBlock(xyxy: const BBox(1, 1, 50, 30), text: t);
+    ws().edit(id, (p) => p.copyWith(blocks: [b('A'), b('B'), b('C'), b('D')]));
+    String order() => page().blocks.map((b) => b.text).join();
+
+    ws().moveBlock(0, 2);
+    expect(order(), 'BCAD');
+    expect(container.read(workspaceProvider).selectedBlock, 2);
+    ws().moveBlock(3, 0);
+    expect(order(), 'DBCA');
+    // Out of range goes to the end; the same place changes nothing.
+    ws().moveBlock(1, 99);
+    expect(order(), 'DCAB');
+    final steps = container.read(workspaceProvider).history[id]!.undo.length;
+    ws().moveBlock(2, 2);
+    expect(container.read(workspaceProvider).history[id]!.undo, hasLength(steps));
+    ws().undo();
+    expect(order(), 'DBCA');
+  });
+
   test('an edit clears the drawn page and the exported mark', () {
     final id = page().id;
     ws().updatePage(id, (p) => p.copyWith(translatedPath: 'x.png', exported: true));

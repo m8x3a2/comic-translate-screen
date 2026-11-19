@@ -652,6 +652,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'The profile, its settings and all its saved keys and notes will be deleted.';
 
   @override
+  String get blockOrderTooltip =>
+      'The bubble\'s number in the reading order: click to put it in another place';
+
+  @override
+  String blockOrderHere(int n) {
+    return '$n: this bubble';
+  }
+
+  @override
+  String blockOrderPlace(int n, String text) {
+    return 'Make it number $n (now there: $text)';
+  }
+
+  @override
   String get offlineCheck => 'Try a translation';
 
   @override

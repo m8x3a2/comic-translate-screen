@@ -1061,6 +1061,21 @@ class WorkspaceNotifier extends Notifier<WorkspaceState> {
     return true;
   }
 
+  /// Puts block [from] of the current page at place [to] of the reading
+  /// order (the owner's wish of 2026-11-19: give a bubble its own number) as
+  /// one undo step, and keeps it selected.
+  void moveBlock(int from, int to) {
+    final page = state.currentPage;
+    if (page == null || from < 0 || from >= page.blocks.length) return;
+    final target = to.clamp(0, page.blocks.length - 1);
+    if (target == from) return;
+    edit(page.id, (p) {
+      final blocks = [...p.blocks];
+      return p.copyWith(blocks: blocks..insert(target, blocks.removeAt(from)));
+    });
+    state = state.copyWith(selectedBlock: target);
+  }
+
   void deleteBlock(int index) {
     final page = state.currentPage;
     if (page == null || index < 0 || index >= page.blocks.length) return;
