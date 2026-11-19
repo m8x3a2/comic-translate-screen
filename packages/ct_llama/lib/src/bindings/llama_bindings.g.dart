@@ -14,12 +14,46 @@ import 'dart:ffi' as ffi;
 @ffi.Native<ffi.Void Function()>()
 external void llama_backend_init();
 
+@Deprecated('use llama_batch_ext_init and llama_batch_ext_add_token instead')
 @ffi.Native<llama_batch Function(ffi.Pointer<ffi.Int32>, ffi.Int32)>()
-external llama_batch llama_batch_get_one(ffi.Pointer<ffi.Int32> tokens, int n_tokens);
+external llama_batch llama_batch_get_one(
+  ffi.Pointer<ffi.Int32> tokens,
+  int n_tokens,
+);
+
+/// Apply chat template. Inspired by hf apply_chat_template() on python.
+///
+/// NOTE: This function does not use a jinja parser. It only support a pre-defined list of template. See more: https://github.com/ggml-org/llama.cpp/wiki/Templates-supported-by-llama_chat_apply_template
+/// @param tmpl A Jinja template to use for this chat.
+/// @param chat Pointer to a list of multiple llama_chat_message
+/// @param n_msg Number of llama_chat_message in this chat
+/// @param add_ass Whether to end the prompt with the token(s) that indicate the start of an assistant message.
+/// @param buf A buffer to hold the output formatted prompt. The recommended alloc size is 2 * (total number of characters of all messages)
+/// @param length The size of the allocated buffer
+/// @return The total number of bytes of the formatted prompt. If is it larger than the size of buffer, you may need to re-alloc it and then re-apply the template.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Pointer<ffi.Char>,
+    ffi.Pointer<llama_chat_message>,
+    ffi.Size,
+    ffi.Bool,
+    ffi.Pointer<ffi.Char>,
+    ffi.Int32,
+  )
+>()
+external int llama_chat_apply_template(
+  ffi.Pointer<ffi.Char> tmpl,
+  ffi.Pointer<llama_chat_message> chat,
+  int n_msg,
+  bool add_ass,
+  ffi.Pointer<ffi.Char> buf,
+  int length,
+);
 
 @ffi.Native<llama_context_params Function()>()
 external llama_context_params llama_context_default_params();
 
+@Deprecated('use llama_process with LLAMA_PROCESS_TYPE_DECODE instead')
 @ffi.Native<ffi.Int32 Function(ffi.Pointer<llama_context>, llama_batch)>()
 external int llama_decode(ffi.Pointer<llama_context> ctx, llama_batch batch);
 
@@ -27,16 +61,30 @@ external int llama_decode(ffi.Pointer<llama_context> ctx, llama_batch batch);
 external void llama_free(ffi.Pointer<llama_context> ctx);
 
 @ffi.Native<ffi.Pointer<llama_memory_i> Function(ffi.Pointer<llama_context>)>()
-external ffi.Pointer<llama_memory_i> llama_get_memory(ffi.Pointer<llama_context> ctx);
+external ffi.Pointer<llama_memory_i> llama_get_memory(
+  ffi.Pointer<llama_context> ctx,
+);
 
-@ffi.Native<ffi.Pointer<llama_context> Function(ffi.Pointer<llama_model>, llama_context_params)>()
-external ffi.Pointer<llama_context> llama_init_from_model(ffi.Pointer<llama_model> model, llama_context_params params);
+@ffi.Native<
+  ffi.Pointer<llama_context> Function(
+    ffi.Pointer<llama_model>,
+    llama_context_params,
+  )
+>()
+external ffi.Pointer<llama_context> llama_init_from_model(
+  ffi.Pointer<llama_model> model,
+  llama_context_params params,
+);
 
 @ffi.Native<
   ffi.Void Function(
     ffi.Pointer<
       ffi.NativeFunction<
-        ffi.Void Function(ffi.UnsignedInt level, ffi.Pointer<ffi.Char> text, ffi.Pointer<ffi.Void> user_data)
+        ffi.Void Function(
+          ffi.UnsignedInt level,
+          ffi.Pointer<ffi.Char> text,
+          ffi.Pointer<ffi.Void> user_data,
+        )
       >
     >,
     ffi.Pointer<ffi.Void>,
@@ -45,7 +93,11 @@ external ffi.Pointer<llama_context> llama_init_from_model(ffi.Pointer<llama_mode
 external void llama_log_set(
   ffi.Pointer<
     ffi.NativeFunction<
-      ffi.Void Function(ffi.UnsignedInt level, ffi.Pointer<ffi.Char> text, ffi.Pointer<ffi.Void> user_data)
+      ffi.Void Function(
+        ffi.UnsignedInt level,
+        ffi.Pointer<ffi.Char> text,
+        ffi.Pointer<ffi.Void> user_data,
+      )
     >
   >
   log_callback,
@@ -55,6 +107,17 @@ external void llama_log_set(
 @ffi.Native<ffi.Void Function(ffi.Pointer<llama_memory_i>, ffi.Bool)>()
 external void llama_memory_clear(ffi.Pointer<llama_memory_i> mem, bool data);
 
+@ffi.Native<
+  ffi.Pointer<ffi.Char> Function(
+    ffi.Pointer<llama_model>,
+    ffi.Pointer<ffi.Char>,
+  )
+>()
+external ffi.Pointer<ffi.Char> llama_model_chat_template(
+  ffi.Pointer<llama_model> model,
+  ffi.Pointer<ffi.Char> name,
+);
+
 @ffi.Native<llama_model_params Function()>()
 external llama_model_params llama_model_default_params();
 
@@ -62,9 +125,13 @@ external llama_model_params llama_model_default_params();
 external void llama_model_free(ffi.Pointer<llama_model> model);
 
 @ffi.Native<ffi.Pointer<llama_vocab> Function(ffi.Pointer<llama_model>)>()
-external ffi.Pointer<llama_vocab> llama_model_get_vocab(ffi.Pointer<llama_model> model);
+external ffi.Pointer<llama_vocab> llama_model_get_vocab(
+  ffi.Pointer<llama_model> model,
+);
 
-@ffi.Native<ffi.Pointer<llama_model> Function(ffi.Pointer<ffi.Char>, llama_model_params)>()
+@ffi.Native<
+  ffi.Pointer<llama_model> Function(ffi.Pointer<ffi.Char>, llama_model_params)
+>()
 external ffi.Pointer<llama_model> llama_model_load_from_file(
   ffi.Pointer<ffi.Char> path_model,
   llama_model_params params,
@@ -76,23 +143,42 @@ external int llama_n_ctx(ffi.Pointer<llama_context> ctx);
 @ffi.Native<ffi.Void Function(ffi.Pointer<llama_sampler>, ffi.Int32)>()
 external void llama_sampler_accept(ffi.Pointer<llama_sampler> smpl, int token);
 
-@ffi.Native<ffi.Void Function(ffi.Pointer<llama_sampler>, ffi.Pointer<llama_sampler>)>()
-external void llama_sampler_chain_add(ffi.Pointer<llama_sampler> chain, ffi.Pointer<llama_sampler> smpl);
+@ffi.Native<
+  ffi.Void Function(ffi.Pointer<llama_sampler>, ffi.Pointer<llama_sampler>)
+>()
+external void llama_sampler_chain_add(
+  ffi.Pointer<llama_sampler> chain,
+  ffi.Pointer<llama_sampler> smpl,
+);
 
 @ffi.Native<llama_sampler_chain_params Function()>()
 external llama_sampler_chain_params llama_sampler_chain_default_params();
 
 @ffi.Native<ffi.Pointer<llama_sampler> Function(llama_sampler_chain_params)>()
-external ffi.Pointer<llama_sampler> llama_sampler_chain_init(llama_sampler_chain_params params);
+external ffi.Pointer<llama_sampler> llama_sampler_chain_init(
+  llama_sampler_chain_params params,
+);
 
 @ffi.Native<ffi.Void Function(ffi.Pointer<llama_sampler>)>()
 external void llama_sampler_free(ffi.Pointer<llama_sampler> smpl);
+
+/// seed == LLAMA_DEFAULT_SEED to use a random seed.
+@ffi.Native<ffi.Pointer<llama_sampler> Function(ffi.Uint32)>()
+external ffi.Pointer<llama_sampler> llama_sampler_init_dist(int seed);
 
 @ffi.Native<ffi.Pointer<llama_sampler> Function()>()
 external ffi.Pointer<llama_sampler> llama_sampler_init_greedy();
 
 /// NOTE: Avoid using on the full vocabulary as searching for repeated tokens can become slow. For example, apply top-k or top-p sampling first.
-@ffi.Native<ffi.Pointer<llama_sampler> Function(ffi.Int32, ffi.Int32, ffi.Float, ffi.Float, ffi.Float)>()
+@ffi.Native<
+  ffi.Pointer<llama_sampler> Function(
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Float,
+    ffi.Float,
+    ffi.Float,
+  )
+>()
 external ffi.Pointer<llama_sampler> llama_sampler_init_penalties(
   int n_vocab,
   int penalty_last_n,
@@ -101,14 +187,47 @@ external ffi.Pointer<llama_sampler> llama_sampler_init_penalties(
   double penalty_present,
 );
 
+/// #details Updates the logits l_i` = l_i/t. When t <= 0.0f, the maximum logit is kept at it's original value, the rest are set to -inf
+@ffi.Native<ffi.Pointer<llama_sampler> Function(ffi.Float)>()
+external ffi.Pointer<llama_sampler> llama_sampler_init_temp(double t);
+
+/// @details Top-K sampling described in academic paper "The Curious Case of Neural Text Degeneration" https://arxiv.org/abs/1904.09751
+/// Setting k <= 0 makes this a noop
+@ffi.Native<ffi.Pointer<llama_sampler> Function(ffi.Int32)>()
+external ffi.Pointer<llama_sampler> llama_sampler_init_top_k(int k);
+
+/// @details Nucleus sampling described in academic paper "The Curious Case of Neural Text Degeneration" https://arxiv.org/abs/1904.09751
+@ffi.Native<ffi.Pointer<llama_sampler> Function(ffi.Float, ffi.Size)>()
+external ffi.Pointer<llama_sampler> llama_sampler_init_top_p(
+  double p,
+  int min_keep,
+);
+
 @ffi.Native<ffi.Void Function(ffi.Pointer<llama_sampler>)>()
 external void llama_sampler_reset(ffi.Pointer<llama_sampler> smpl);
 
-@ffi.Native<ffi.Int32 Function(ffi.Pointer<llama_sampler>, ffi.Pointer<llama_context>, ffi.Int32)>()
-external int llama_sampler_sample(ffi.Pointer<llama_sampler> smpl, ffi.Pointer<llama_context> ctx, int idx);
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Pointer<llama_sampler>,
+    ffi.Pointer<llama_context>,
+    ffi.Int32,
+  )
+>()
+external int llama_sampler_sample(
+  ffi.Pointer<llama_sampler> smpl,
+  ffi.Pointer<llama_context> ctx,
+  int idx,
+);
 
 @ffi.Native<
-  ffi.Int32 Function(ffi.Pointer<llama_vocab>, ffi.Int32, ffi.Pointer<ffi.Char>, ffi.Int32, ffi.Int32, ffi.Bool)
+  ffi.Int32 Function(
+    ffi.Pointer<llama_vocab>,
+    ffi.Int32,
+    ffi.Pointer<ffi.Char>,
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Bool,
+  )
 >()
 external int llama_token_to_piece(
   ffi.Pointer<llama_vocab> vocab,
@@ -117,6 +236,35 @@ external int llama_token_to_piece(
   int length,
   int lstrip,
   bool special,
+);
+
+/// @details Convert the provided text into tokens.
+/// @param tokens The tokens pointer must be large enough to hold the resulting tokens.
+/// @return Returns the number of tokens on success, no more than n_tokens_max
+/// @return Returns a negative number on failure - the number of tokens that would have been returned
+/// @return Returns INT32_MIN on overflow (e.g., tokenization result size exceeds int32_t limit)
+/// @param add_special Allow to add BOS and EOS tokens if model is configured to do so.
+/// @param parse_special Allow tokenizing special and/or control tokens which otherwise are not exposed and treated
+/// as plaintext. Does not insert a leading space.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Pointer<llama_vocab>,
+    ffi.Pointer<ffi.Char>,
+    ffi.Int32,
+    ffi.Pointer<ffi.Int32>,
+    ffi.Int32,
+    ffi.Bool,
+    ffi.Bool,
+  )
+>()
+external int llama_tokenize(
+  ffi.Pointer<llama_vocab> vocab,
+  ffi.Pointer<ffi.Char> text,
+  int text_len,
+  ffi.Pointer<ffi.Int32> tokens,
+  int n_tokens_max,
+  bool add_special,
+  bool parse_special,
 );
 
 @ffi.Native<ffi.Bool Function(ffi.Pointer<llama_vocab>, ffi.Int32)>()
@@ -187,7 +335,8 @@ enum ggml_type {
   GGML_TYPE_NVFP4(40),
   GGML_TYPE_Q1_0(41),
   GGML_TYPE_Q2_0(42),
-  GGML_TYPE_COUNT(43);
+  GGML_TYPE_F8_E4M3(43),
+  GGML_TYPE_COUNT(44);
 
   final int value;
   const ggml_type(this.value);
@@ -228,7 +377,8 @@ enum ggml_type {
     40 => GGML_TYPE_NVFP4,
     41 => GGML_TYPE_Q1_0,
     42 => GGML_TYPE_Q2_0,
-    43 => GGML_TYPE_COUNT,
+    43 => GGML_TYPE_F8_E4M3,
+    44 => GGML_TYPE_COUNT,
     _ => throw ArgumentError('Unknown value for ggml_type: $value'),
   };
 }
@@ -284,6 +434,8 @@ final class llama_batch extends ffi.Struct {
     ..ref.logits = logits;
 }
 
+final class llama_chat_message extends ffi.Opaque {}
+
 final class llama_context extends ffi.Opaque {}
 
 final class llama_context_params extends ffi.Struct {
@@ -317,32 +469,40 @@ final class llama_context_params extends ffi.Struct {
   @ffi.UnsignedInt()
   external int ctx_typeAsInt;
 
-  llama_context_type get ctx_type => llama_context_type.fromValue(ctx_typeAsInt);
+  llama_context_type get ctx_type =>
+      llama_context_type.fromValue(ctx_typeAsInt);
   set ctx_type(llama_context_type value) => ctx_typeAsInt = value.value;
 
   @ffi.Int()
   external int rope_scaling_typeAsInt;
 
-  llama_rope_scaling_type get rope_scaling_type => llama_rope_scaling_type.fromValue(rope_scaling_typeAsInt);
-  set rope_scaling_type(llama_rope_scaling_type value) => rope_scaling_typeAsInt = value.value;
+  llama_rope_scaling_type get rope_scaling_type =>
+      llama_rope_scaling_type.fromValue(rope_scaling_typeAsInt);
+  set rope_scaling_type(llama_rope_scaling_type value) =>
+      rope_scaling_typeAsInt = value.value;
 
   @ffi.Int()
   external int pooling_typeAsInt;
 
-  llama_pooling_type get pooling_type => llama_pooling_type.fromValue(pooling_typeAsInt);
+  llama_pooling_type get pooling_type =>
+      llama_pooling_type.fromValue(pooling_typeAsInt);
   set pooling_type(llama_pooling_type value) => pooling_typeAsInt = value.value;
 
   @ffi.Int()
   external int attention_typeAsInt;
 
-  llama_attention_type get attention_type => llama_attention_type.fromValue(attention_typeAsInt);
-  set attention_type(llama_attention_type value) => attention_typeAsInt = value.value;
+  llama_attention_type get attention_type =>
+      llama_attention_type.fromValue(attention_typeAsInt);
+  set attention_type(llama_attention_type value) =>
+      attention_typeAsInt = value.value;
 
   @ffi.Int()
   external int flash_attn_typeAsInt;
 
-  llama_flash_attn_type get flash_attn_type => llama_flash_attn_type.fromValue(flash_attn_typeAsInt);
-  set flash_attn_type(llama_flash_attn_type value) => flash_attn_typeAsInt = value.value;
+  llama_flash_attn_type get flash_attn_type =>
+      llama_flash_attn_type.fromValue(flash_attn_typeAsInt);
+  set flash_attn_type(llama_flash_attn_type value) =>
+      flash_attn_typeAsInt = value.value;
 
   @ffi.Float()
   external double rope_freq_base;
@@ -365,11 +525,14 @@ final class llama_context_params extends ffi.Struct {
   @ffi.Uint32()
   external int yarn_orig_ctx;
 
-  @ffi.Float()
-  external double defrag_thold;
-
   external ffi.Pointer<
-    ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ggml_tensor> t, ffi.Bool ask, ffi.Pointer<ffi.Void> user_data)>
+    ffi.NativeFunction<
+      ffi.Bool Function(
+        ffi.Pointer<ggml_tensor> t,
+        ffi.Bool ask,
+        ffi.Pointer<ffi.Void> user_data,
+      )
+    >
   >
   cb_eval;
 
@@ -390,7 +553,13 @@ final class llama_context_params extends ffi.Struct {
   @ffi.Size()
   external int moe_cache_size;
 
-  external ffi.Pointer<ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void> data)>> abort_callback;
+  @ffi.Float()
+  external double moe_cache_cpu_share;
+
+  external ffi.Pointer<
+    ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void> data)>
+  >
+  abort_callback;
 
   external ffi.Pointer<ffi.Void> abort_callback_data;
 
@@ -442,16 +611,25 @@ final class llama_context_params extends ffi.Struct {
     required double yarn_beta_fast,
     required double yarn_beta_slow,
     required int yarn_orig_ctx,
-    required double defrag_thold,
     required ffi.Pointer<
-      ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ggml_tensor> t, ffi.Bool ask, ffi.Pointer<ffi.Void> user_data)>
+      ffi.NativeFunction<
+        ffi.Bool Function(
+          ffi.Pointer<ggml_tensor> t,
+          ffi.Bool ask,
+          ffi.Pointer<ffi.Void> user_data,
+        )
+      >
     >
     cb_eval,
     required ffi.Pointer<ffi.Void> cb_eval_user_data,
     required ggml_type type_k,
     required ggml_type type_v,
     required int moe_cache_size,
-    required ffi.Pointer<ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void> data)>> abort_callback,
+    required double moe_cache_cpu_share,
+    required ffi.Pointer<
+      ffi.NativeFunction<ffi.Bool Function(ffi.Pointer<ffi.Void> data)>
+    >
+    abort_callback,
     required ffi.Pointer<ffi.Void> abort_callback_data,
     required bool embeddings,
     required bool offload_kqv,
@@ -484,12 +662,12 @@ final class llama_context_params extends ffi.Struct {
     ..ref.yarn_beta_fast = yarn_beta_fast
     ..ref.yarn_beta_slow = yarn_beta_slow
     ..ref.yarn_orig_ctx = yarn_orig_ctx
-    ..ref.defrag_thold = defrag_thold
     ..ref.cb_eval = cb_eval
     ..ref.cb_eval_user_data = cb_eval_user_data
     ..ref.type_k = type_k
     ..ref.type_v = type_v
     ..ref.moe_cache_size = moe_cache_size
+    ..ref.moe_cache_cpu_share = moe_cache_cpu_share
     ..ref.abort_callback = abort_callback
     ..ref.abort_callback_data = abort_callback_data
     ..ref.embeddings = embeddings
@@ -588,7 +766,8 @@ final class llama_model_params extends ffi.Struct {
   @ffi.UnsignedInt()
   external int split_modeAsInt;
 
-  llama_split_mode get split_mode => llama_split_mode.fromValue(split_modeAsInt);
+  llama_split_mode get split_mode =>
+      llama_split_mode.fromValue(split_modeAsInt);
   set split_mode(llama_split_mode value) => split_modeAsInt = value.value;
 
   @ffi.Int()
@@ -608,7 +787,11 @@ final class llama_model_params extends ffi.Struct {
 
   external ffi.Pointer<ffi.Float> tensor_split;
 
-  external ffi.Pointer<ffi.NativeFunction<ffi.Bool Function(ffi.Float progress, ffi.Pointer<ffi.Void> user_data)>>
+  external ffi.Pointer<
+    ffi.NativeFunction<
+      ffi.Bool Function(ffi.Float progress, ffi.Pointer<ffi.Void> user_data)
+    >
+  >
   progress_callback;
 
   external ffi.Pointer<ffi.Void> progress_callback_user_data;
@@ -636,14 +819,19 @@ final class llama_model_params extends ffi.Struct {
   static ffi.Pointer<llama_model_params> $allocate(
     ffi.Allocator $allocator, {
     required ffi.Pointer<ffi.Pointer<ggml_backend_device>> devices,
-    required ffi.Pointer<llama_model_tensor_buft_override> tensor_buft_overrides,
+    required ffi.Pointer<llama_model_tensor_buft_override>
+    tensor_buft_overrides,
     required int n_gpu_layers,
     required llama_split_mode split_mode,
     required llama_load_mode load_mode,
     required llama_lazy_mode lazy_mode,
     required int main_gpu,
     required ffi.Pointer<ffi.Float> tensor_split,
-    required ffi.Pointer<ffi.NativeFunction<ffi.Bool Function(ffi.Float progress, ffi.Pointer<ffi.Void> user_data)>>
+    required ffi.Pointer<
+      ffi.NativeFunction<
+        ffi.Bool Function(ffi.Float progress, ffi.Pointer<ffi.Void> user_data)
+      >
+    >
     progress_callback,
     required ffi.Pointer<ffi.Void> progress_callback_user_data,
     required ffi.Pointer<llama_model_kv_override> kv_overrides,
@@ -704,7 +892,8 @@ enum llama_rope_scaling_type {
   LLAMA_ROPE_SCALING_TYPE_YARN(2),
   LLAMA_ROPE_SCALING_TYPE_LONGROPE(3);
 
-  static const LLAMA_ROPE_SCALING_TYPE_MAX_VALUE = LLAMA_ROPE_SCALING_TYPE_LONGROPE;
+  static const LLAMA_ROPE_SCALING_TYPE_MAX_VALUE =
+      LLAMA_ROPE_SCALING_TYPE_LONGROPE;
 
   final int value;
   const llama_rope_scaling_type(this.value);
@@ -715,7 +904,9 @@ enum llama_rope_scaling_type {
     1 => LLAMA_ROPE_SCALING_TYPE_LINEAR,
     2 => LLAMA_ROPE_SCALING_TYPE_YARN,
     3 => LLAMA_ROPE_SCALING_TYPE_LONGROPE,
-    _ => throw ArgumentError('Unknown value for llama_rope_scaling_type: $value'),
+    _ => throw ArgumentError(
+      'Unknown value for llama_rope_scaling_type: $value',
+    ),
   };
 
   @override
@@ -732,8 +923,10 @@ final class llama_sampler_chain_params extends ffi.Struct {
   @ffi.Bool()
   external bool no_perf;
 
-  static ffi.Pointer<llama_sampler_chain_params> $allocate(ffi.Allocator $allocator, {required bool no_perf}) =>
-      $allocator<llama_sampler_chain_params>()..ref.no_perf = no_perf;
+  static ffi.Pointer<llama_sampler_chain_params> $allocate(
+    ffi.Allocator $allocator, {
+    required bool no_perf,
+  }) => $allocator<llama_sampler_chain_params>()..ref.no_perf = no_perf;
 }
 
 final class llama_sampler_seq_config extends ffi.Opaque {}

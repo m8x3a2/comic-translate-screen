@@ -9,12 +9,12 @@
 /// `dart run tool/ffigen.dart` and check `lib/src/bindings/mtmd.dart`
 /// against `mtmd.h`.
 abstract final class LlamaNativeRelease {
-  static const version = 'b11858';
+  static const version = 'b12527';
 
   static const windowsZipUrl =
       'https://github.com/ggml-org/llama.cpp/releases/download/$version/llama-$version-bin-win-cpu-x64.zip';
 
-  static const windowsZipSha256 = '5c6d23b10d04c5592acdd6508e0730457c3bba76dc7aa0a25cd06be99fe13c7d';
+  static const windowsZipSha256 = '815758c855b6f561104a3d9e17ae599ba830065ff7807a0e1ce1f9656c4601b0';
 
   /// Libraries the vision reader needs (the processor backends are found by
   /// [isCpuBackend]).

@@ -72,6 +72,10 @@ class VisionModel {
   /// Told when llama.cpp logs an error (its other lines are dropped).
   static void Function(String line)? onError;
 
+  /// Loads llama.cpp and its processor backends once (also for
+  /// [TextModel]).
+  static void initBackends() => _init();
+
   /// Loads the libraries in dependency order (each by its full path, so
   /// that the next one finds the ones it imports) and the processor
   /// backends from the folder of ggml.dll.

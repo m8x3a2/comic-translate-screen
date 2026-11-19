@@ -37,6 +37,14 @@ const _funcs = {
   'llama_sampler_accept',
   'llama_sampler_reset',
   'llama_sampler_free',
+  // Text models (the offline translator).
+  'llama_tokenize',
+  'llama_chat_apply_template',
+  'llama_model_chat_template',
+  'llama_sampler_init_temp',
+  'llama_sampler_init_top_k',
+  'llama_sampler_init_top_p',
+  'llama_sampler_init_dist',
 };
 
 Future<void> main() async {
