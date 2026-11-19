@@ -5042,6 +5042,48 @@ abstract class AppLocalizations {
   /// **'Everything needed is downloaded'**
   String get modelsNothingNeeded;
 
+  /// No description provided for @memoryHave.
+  ///
+  /// In en, this message translates to:
+  /// **'Device memory: {total} in all, {free} free now.'**
+  String memoryHave(String total, String free);
+
+  /// No description provided for @memoryNeed.
+  ///
+  /// In en, this message translates to:
+  /// **'The current settings need about {need} (the app and the networks of all steps together).'**
+  String memoryNeed(String need);
+
+  /// No description provided for @memoryTight.
+  ///
+  /// In en, this message translates to:
+  /// **'Free memory may run short: close other programs, or the work slows down.'**
+  String get memoryTight;
+
+  /// No description provided for @memoryShort.
+  ///
+  /// In en, this message translates to:
+  /// **'This device does not have enough memory: choose a simpler level or networks.'**
+  String get memoryShort;
+
+  /// No description provided for @memoryInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Each step (finding text, reading, preparing small text, cleaning, translating) keeps its network in memory while the app works, so their memory adds up. The numbers were measured on a big page on the processor; on a video card part of it is taken there.'**
+  String get memoryInfo;
+
+  /// No description provided for @modelMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'memory ≈ {size}'**
+  String modelMemory(String size);
+
+  /// No description provided for @modelsLevelMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'{level}: needs ≈ {size}'**
+  String modelsLevelMemory(String level, String size);
+
   /// No description provided for @modelsSummary.
   ///
   /// In en, this message translates to:

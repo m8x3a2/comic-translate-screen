@@ -2882,6 +2882,38 @@ class AppLocalizationsRu extends AppLocalizations {
   String get modelsNothingNeeded => 'Всё нужное уже скачано';
 
   @override
+  String memoryHave(String total, String free) {
+    return 'Память устройства: всего $total, сейчас свободно $free.';
+  }
+
+  @override
+  String memoryNeed(String need) {
+    return 'Нынешним настройкам нужно около $need (программа и все нейросети шагов вместе).';
+  }
+
+  @override
+  String get memoryTight =>
+      'Свободной памяти может не хватить: закройте лишние программы, иначе работа замедлится.';
+
+  @override
+  String get memoryShort =>
+      'Этому устройству памяти не хватит — выберите уровень или нейросети попроще.';
+
+  @override
+  String get memoryInfo =>
+      'Каждый шаг (поиск текста, распознавание, подготовка мелкого текста, очистка, перевод) держит свою нейросеть в памяти, пока программа работает, поэтому их память складывается. Числа замерены на большой странице на процессоре; на видеокарте часть памяти берёт она.';
+
+  @override
+  String modelMemory(String size) {
+    return 'память ≈ $size';
+  }
+
+  @override
+  String modelsLevelMemory(String level, String size) {
+    return '$level — нужно ≈ $size';
+  }
+
+  @override
   String modelsSummary(String count, String total, String size) {
     return 'Скачано $count из $total · $size на диске';
   }

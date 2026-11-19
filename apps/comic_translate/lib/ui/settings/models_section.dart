@@ -10,7 +10,9 @@ import 'package:path/path.dart' as p;
 
 import '../../l10n/app_localizations.dart';
 import '../../state/app_state.dart';
+import '../../services/system_memory.dart';
 import '../../state/batch.dart' show levelModels, missingModels;
+import '../../state/memory_need.dart';
 import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../shell_full/batch_dialogs.dart' show DialogBatchUi;
@@ -294,6 +296,8 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
           l.modelsSummary('${installed.length}', '${_shown.length}', formatBytes(size)),
           style: theme.textTheme.bodyMedium,
         ),
+        const SizedBox(height: 4),
+        _memory(l, theme, settings),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -312,7 +316,15 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
                   (ReadLevel.high, l.modelsLevelHigh),
                   (ReadLevel.ultra, l.modelsLevelUltra),
                 ])
-                  MenuItemButton(onPressed: () => _downloadLevel(level), child: Text(label)),
+                  MenuItemButton(
+                    onPressed: () => _downloadLevel(level),
+                    child: Text(
+                      l.modelsLevelMemory(
+                        label,
+                        formatMb(levelMemoryMb(ref.read(servicesProvider).registry, settings, level)),
+                      ),
+                    ),
+                  ),
               ],
               builder: (context, menu, _) => OutlinedButton.icon(
                 onPressed: busy ? null : () => menu.isOpen ? menu.close() : menu.open(),
@@ -333,6 +345,31 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
             OutlinedButton(onPressed: busy || installed.isEmpty ? null : _verifyAll, child: Text(l.modelsVerifyAll)),
           ],
         ),
+      ],
+    );
+  }
+
+  /// The device's memory and what the current settings need.
+  Widget _memory(AppLocalizations l, ThemeData theme, AppSettings settings) {
+    final have = SystemMemory.read();
+    final need = settingsMemoryMb(ref.read(servicesProvider).registry, settings);
+    final fit = have == null ? MemoryFit.ok : memoryFit(need, have.freeMb, have.totalMb);
+    final color = switch (fit) {
+      MemoryFit.ok => null,
+      MemoryFit.tight => Colors.orange.shade700,
+      MemoryFit.short => theme.colorScheme.error,
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (have != null)
+          Text(l.memoryHave(formatMb(have.totalMb), formatMb(have.freeMb)), style: theme.textTheme.bodySmall),
+        titleWithInfo(l.memoryNeed(formatMb(need)), l.memoryInfo, style: theme.textTheme.bodySmall),
+        if (fit != MemoryFit.ok)
+          Text(
+            fit == MemoryFit.tight ? l.memoryTight : l.memoryShort,
+            style: theme.textTheme.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w600),
+          ),
       ],
     );
   }
@@ -364,7 +401,15 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
               ],
             ),
             const SizedBox(height: 2),
-            Text('$size · $hosts · ${spec.license}', style: theme.textTheme.bodySmall),
+            Text(
+              [
+                size,
+                if (spec.memoryMb case final mb?) context.l10n.modelMemory(formatMb(mb)),
+                hosts,
+                spec.license,
+              ].join(' · '),
+              style: theme.textTheme.bodySmall,
+            ),
             if (progress != null) ...[const SizedBox(height: 8), LinearProgressIndicator(value: progress)],
             const SizedBox(height: 4),
             Wrap(

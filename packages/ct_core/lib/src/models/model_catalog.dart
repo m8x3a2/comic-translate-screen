@@ -24,6 +24,7 @@ class ModelSpec {
     required this.files,
     required this.license,
     required this.homepage,
+    this.memoryMb,
   });
 
   final String id;
@@ -32,6 +33,11 @@ class ModelSpec {
   final List<ModelFile> files;
   final String license;
   final String homepage;
+
+  /// Memory (RAM, MB) the model takes while it works on the processor:
+  /// measured on a big comic page (self/ram-measure); null when not
+  /// measured.
+  final int? memoryMb;
 
   int get totalSize => files.fold(0, (sum, f) => sum + f.size);
 
@@ -49,6 +55,7 @@ abstract final class ModelCatalog {
     purpose: 'Text and speech bubble detection',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/ogkalu/comic-text-and-bubble-detector',
+    memoryMb: 180,
     files: [
       ModelFile(
         name: 'detector-v4-s_int8.onnx',
@@ -65,6 +72,7 @@ abstract final class ModelCatalog {
     purpose: 'OCR for English',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/ogkalu/ppocr-v5-onnx',
+    memoryMb: 900,
     files: [
       ModelFile(
         name: 'en_PP-OCRv5_rec_mobile_infer.onnx',
@@ -87,6 +95,7 @@ abstract final class ModelCatalog {
     purpose: 'OCR for French, German, Spanish, Italian, Dutch',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/ogkalu/ppocr-v5-onnx',
+    memoryMb: 900,
     files: [
       ModelFile(
         name: 'latin_PP-OCRv5_rec_mobile_infer.onnx',
@@ -109,6 +118,7 @@ abstract final class ModelCatalog {
     purpose: 'OCR for Russian',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/ogkalu/ppocr-v5-onnx',
+    memoryMb: 900,
     files: [
       ModelFile(
         name: 'eslav_PP-OCRv5_rec_mobile_infer.onnx',
@@ -131,6 +141,7 @@ abstract final class ModelCatalog {
     purpose: 'OCR for Korean',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/ogkalu/ppocr-v5-onnx',
+    memoryMb: 900,
     files: [
       ModelFile(
         name: 'korean_PP-OCRv5_rec_mobile_infer.onnx',
@@ -153,6 +164,7 @@ abstract final class ModelCatalog {
     purpose: 'OCR for Chinese',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/ogkalu/ppocr-v6-onnx',
+    memoryMb: 900,
     files: [
       ModelFile(
         name: 'PP-OCRv6_small_rec.onnx',
@@ -175,6 +187,7 @@ abstract final class ModelCatalog {
     purpose: 'OCR for Japanese',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/ogkalu/manga-ocr-mobile',
+    memoryMb: 150,
     files: [
       ModelFile(
         name: 'encoder.onnx',
@@ -209,6 +222,7 @@ abstract final class ModelCatalog {
     purpose: 'Text removal (default inpainter)',
     license: 'MIT',
     homepage: 'https://huggingface.co/ogkalu/aot-inpainting',
+    memoryMb: 130,
     files: [
       ModelFile(
         name: 'aot.onnx',
@@ -225,6 +239,7 @@ abstract final class ModelCatalog {
     purpose: 'Text removal (higher quality, slower, larger)',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/ogkalu/lama-manga-onnx-dynamic',
+    memoryMb: 300,
     files: [
       ModelFile(
         name: 'lama-manga-dynamic.onnx',
@@ -241,6 +256,7 @@ abstract final class ModelCatalog {
     purpose: 'Text removal: finds the letters themselves, so less of the drawing is repainted',
     license: 'GPL-3.0',
     homepage: 'https://github.com/dmMaze/comic-text-detector',
+    memoryMb: 780,
     files: [
       ModelFile(
         name: 'comic-text-detector.onnx',
@@ -257,6 +273,7 @@ abstract final class ModelCatalog {
     purpose: 'Automatic source-language (script) detection',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/ogkalu/image-script-identification',
+    memoryMb: 50,
     files: [
       ModelFile(
         name: 'osd_lstm.onnx',
@@ -279,6 +296,7 @@ abstract final class ModelCatalog {
     purpose: 'Text line detection for screenshots, sites and games',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/ogkalu/ppocr-v5-onnx',
+    memoryMb: 400,
     files: [
       ModelFile(
         name: 'ch_PP-OCRv5_mobile_det.onnx',
@@ -370,6 +388,7 @@ abstract final class ModelCatalog {
     purpose: 'Offline translation from English to Russian (high quality)',
     license: 'CC-BY-4.0',
     homepage: 'https://huggingface.co/Helsinki-NLP/opus-mt-tc-big-en-zle',
+    memoryMb: 600,
     files: [
       ModelFile(
         name: 'source.spm',
@@ -410,6 +429,7 @@ abstract final class ModelCatalog {
     purpose: 'Offline translation from Russian to English (high quality)',
     license: 'CC-BY-4.0',
     homepage: 'https://huggingface.co/Helsinki-NLP/opus-mt-tc-big-zle-en',
+    memoryMb: 600,
     files: [
       ModelFile(
         name: 'source.spm',
@@ -448,6 +468,7 @@ abstract final class ModelCatalog {
     purpose: 'Preparing small text for reading (fast)',
     license: 'MIT',
     homepage: 'https://github.com/nagadomi/nunif',
+    memoryMb: 120,
     files: [
       ModelFile(
         name: 'waifu2x_cunet_art_scale2x.onnx',
@@ -464,6 +485,7 @@ abstract final class ModelCatalog {
     purpose: 'Preparing small text for reading (balanced)',
     license: 'MIT',
     homepage: 'https://github.com/nagadomi/nunif',
+    memoryMb: 200,
     files: [
       ModelFile(
         name: 'waifu2x_swin_unet_art_scale2x.onnx',
@@ -483,6 +505,7 @@ abstract final class ModelCatalog {
     purpose: 'Preparing small text for reading (best, slow)',
     license: 'CC-BY-NC-SA-4.0',
     homepage: 'https://openmodeldb.info/models/4x-Fatality-Comix',
+    memoryMb: 380,
     files: [
       ModelFile(
         name: 'fatality_comix_4x.onnx',
@@ -499,6 +522,7 @@ abstract final class ModelCatalog {
     purpose: 'Recognition levels High and Ultra: reads English blocks as a whole, best of all, slowly',
     license: 'Apache-2.0',
     homepage: 'https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6-GGUF',
+    memoryMb: 1700,
     files: [
       ModelFile(
         name: 'PaddleOCR-VL-1.6-GGUF.gguf',

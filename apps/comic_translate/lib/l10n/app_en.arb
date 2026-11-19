@@ -1711,6 +1711,17 @@
   "modelsLevelInfo": "Includes the models for the selected levels of recognition, small text preparation and cleaning, for comics and screens. The list and total size appear before the download. Set the levels in the Recognition and Cleaning sections.",
   "modelsVerifyAll": "Check all",
   "modelsNothingNeeded": "Everything needed is downloaded",
+  "memoryHave": "Device memory: {total} in all, {free} free now.",
+  "@memoryHave": {"placeholders": {"total": {"type": "String"}, "free": {"type": "String"}}},
+  "memoryNeed": "The current settings need about {need} (the app and the networks of all steps together).",
+  "@memoryNeed": {"placeholders": {"need": {"type": "String"}}},
+  "memoryTight": "Free memory may run short: close other programs, or the work slows down.",
+  "memoryShort": "This device does not have enough memory: choose a simpler level or networks.",
+  "memoryInfo": "Each step (finding text, reading, preparing small text, cleaning, translating) keeps its network in memory while the app works, so their memory adds up. The numbers were measured on a big page on the processor; on a video card part of it is taken there.",
+  "modelMemory": "memory ≈ {size}",
+  "@modelMemory": {"placeholders": {"size": {"type": "String"}}},
+  "modelsLevelMemory": "{level}: needs ≈ {size}",
+  "@modelsLevelMemory": {"placeholders": {"level": {"type": "String"}, "size": {"type": "String"}}},
   "modelsSummary": "Downloaded {count} of {total} · {size} on disk",
   "@modelsSummary": {
     "placeholders": {

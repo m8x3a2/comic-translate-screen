@@ -2883,6 +2883,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelsNothingNeeded => 'Everything needed is downloaded';
 
   @override
+  String memoryHave(String total, String free) {
+    return 'Device memory: $total in all, $free free now.';
+  }
+
+  @override
+  String memoryNeed(String need) {
+    return 'The current settings need about $need (the app and the networks of all steps together).';
+  }
+
+  @override
+  String get memoryTight =>
+      'Free memory may run short: close other programs, or the work slows down.';
+
+  @override
+  String get memoryShort =>
+      'This device does not have enough memory: choose a simpler level or networks.';
+
+  @override
+  String get memoryInfo =>
+      'Each step (finding text, reading, preparing small text, cleaning, translating) keeps its network in memory while the app works, so their memory adds up. The numbers were measured on a big page on the processor; on a video card part of it is taken there.';
+
+  @override
+  String modelMemory(String size) {
+    return 'memory ≈ $size';
+  }
+
+  @override
+  String modelsLevelMemory(String level, String size) {
+    return '$level: needs ≈ $size';
+  }
+
+  @override
   String modelsSummary(String count, String total, String size) {
     return 'Downloaded $count of $total · $size on disk';
   }

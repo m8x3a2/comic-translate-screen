@@ -873,6 +873,22 @@ Future<List<ModelSpec>> missingModels(
   Set<PipelinePart> parts = const {...PipelinePart.values},
   Set<String>? sourceLanguages,
 }) async {
+  final ids = chosenModelIds(registry, settings, parts: parts, sourceLanguages: sourceLanguages);
+  return [
+    for (final id in ids)
+      if (ModelCatalog.byId(id) case final spec? when await models.status(spec) != ModelStatus.installed) spec,
+  ];
+}
+
+/// The ids of the models that [parts] of the plugins chosen in [settings]
+/// need for [sourceLanguages] (default: the settings' source language),
+/// downloaded or not.
+Set<String> chosenModelIds(
+  PluginRegistry registry,
+  AppSettings settings, {
+  Set<PipelinePart> parts = const {...PipelinePart.values},
+  Set<String>? sourceLanguages,
+}) {
   // A model that reads the page by itself needs no preparation of the text.
   final prepares = !registry.readsWholePage(settings.ocr);
   final chosen = [
@@ -895,10 +911,7 @@ Future<List<ModelSpec>> missingModels(
         for (final id in readLevelPlugins(settings, language))
           if (registry.contains(id)) ...registry.info(id).requiredModels(language),
   };
-  return [
-    for (final id in ids)
-      if (ModelCatalog.byId(id) case final spec? when await models.status(spec) != ModelStatus.installed) spec,
-  ];
+  return ids;
 }
 
 /// What working at [level] needs and is not downloaded yet (new): the
@@ -914,25 +927,32 @@ Future<List<ModelSpec>> levelModels(
   final ids = <String>{};
   final found = <ModelSpec>[];
   for (final kind in ContentKind.values) {
-    final s = AppSettings.fromJson(settings.toJson())
-      ..contentKind = kind
-      ..readLevel = level
-      ..screenReadLevel = level
-      ..textPrep = switch (level) {
-        ReadLevel.simple => 'waifu2x_cunet',
-        ReadLevel.medium => 'waifu2x_swin',
-        ReadLevel.high || ReadLevel.ultra => 'fatality_comix',
-      };
-    (switch (level) {
-      ReadLevel.simple => CleanLevel.simple,
-      ReadLevel.medium => CleanLevel.medium,
-      ReadLevel.high || ReadLevel.ultra => CleanLevel.high,
-    }).applyTo(s);
-    for (final spec in await missingModels(registry, models, s)) {
+    for (final spec in await missingModels(registry, models, levelSettings(settings, level, kind))) {
       if (ids.add(spec.id)) found.add(spec);
     }
   }
   return found;
+}
+
+/// A copy of [settings] working at [level] on [kind]: its recognition, the
+/// small text preparation of comics and the cleaning of that level ("Ultra"
+/// cleans as "High").
+AppSettings levelSettings(AppSettings settings, ReadLevel level, ContentKind kind) {
+  final s = AppSettings.fromJson(settings.toJson())
+    ..contentKind = kind
+    ..readLevel = level
+    ..screenReadLevel = level
+    ..textPrep = switch (level) {
+      ReadLevel.simple => 'waifu2x_cunet',
+      ReadLevel.medium => 'waifu2x_swin',
+      ReadLevel.high || ReadLevel.ultra => 'fatality_comix',
+    };
+  (switch (level) {
+    ReadLevel.simple => CleanLevel.simple,
+    ReadLevel.medium => CleanLevel.medium,
+    ReadLevel.high || ReadLevel.ultra => CleanLevel.high,
+  }).applyTo(s);
+  return s;
 }
 
 String _stamp(DateTime t) {
