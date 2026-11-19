@@ -6,7 +6,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:ct_core/ct_core.dart';
-import 'package:ct_providers/ct_providers.dart' show httpRequestSpec, llmPromptSetting, llmStreamSetting;
+import 'package:ct_providers/ct_providers.dart'
+    show httpRequestSpec, llmPromptSetting, llmStreamSetting, resolveOfflineLevel;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
@@ -987,6 +988,14 @@ class _TranslatorSection extends ConsumerWidget {
                   ),
                   icon: const Icon(Icons.chat_bubble_outline),
                   label: Text(l.translatorTestChat),
+                ),
+              ),
+            if (info?.id == 'opus_mt' && config!.value<String>('level') == 'auto')
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  l.offlineAutoNow(optionLabel(context, info!, info.field('level')!, resolveOfflineLevel('auto'), '')),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
             if (info?.id == 'opus_mt')

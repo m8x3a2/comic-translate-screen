@@ -1262,6 +1262,12 @@ abstract class AppLocalizations {
   /// **'Level from the settings: {level}. Change it in the Level field above.'**
   String offlineCheckLevel(String level);
 
+  /// No description provided for @offlineAutoNow.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Automatically\" chooses now: {level}.'**
+  String offlineAutoNow(String level);
+
   /// No description provided for @offlineCheckEnRu.
   ///
   /// In en, this message translates to:
@@ -1289,7 +1295,7 @@ abstract class AppLocalizations {
   /// No description provided for @offlineCheckTime.
   ///
   /// In en, this message translates to:
-  /// **'Done in {seconds} s (longer the first time: the model loads).'**
+  /// **'Done in {seconds} s (with loading the model).'**
   String offlineCheckTime(String seconds);
 
   /// No description provided for @offlineCheckNoModel.

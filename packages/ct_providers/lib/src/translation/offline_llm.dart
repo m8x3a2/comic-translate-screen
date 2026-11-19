@@ -21,9 +21,10 @@ const offlineLevelModels = <String, ModelSpec?>{
   'ultra': ModelCatalog.indexTranslate9bQ6,
 };
 
-/// Memory left to the other steps (finding text, reading, cleaning) when
-/// "auto" picks the translator's level.
-const offlineOtherStepsMb = 1500;
+/// Memory left to the app and the other steps (finding text, reading,
+/// cleaning) when "auto" picks the translator's level: a full run of the
+/// default comic settings peaked at 3.1 GB with OPUS-MT (2026-11-19).
+const offlineOtherStepsMb = 2700;
 
 /// The translation models run where llama.cpp is bundled (Windows for now).
 bool get offlineLlmAvailable => Platform.isWindows;

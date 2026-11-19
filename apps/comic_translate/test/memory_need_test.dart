@@ -20,9 +20,11 @@ void main() {
       ..sourceLanguage = 'English';
     s.plugins['opus_mt'] = {'level': 'low'};
     final need = settingsMemoryMb(registry, s);
-    expect(need, greaterThan(appBaseMb + ModelCatalog.opusMtBigEnRu.memoryMb!));
-    // The translator by key needs no model, so less.
-    expect(settingsMemoryMb(registry, s..translator = 'openrouter'), need - ModelCatalog.opusMtBigEnRu.memoryMb!);
+    final opus = modelsMemoryMb([ModelCatalog.opusMtBigEnRu.id]);
+    expect(opus, (ModelCatalog.opusMtBigEnRu.memoryMb! * onnxShare).round());
+    expect(need, greaterThan(appBaseMb + opus));
+    // The translator by key needs no model, so less (rounding aside).
+    expect(settingsMemoryMb(registry, s..translator = 'openrouter'), closeTo(need - opus, 1));
   });
 
   test('a higher level needs more; "Ultra" reads with the slow reader alone, so less than "High"', () {
@@ -79,9 +81,10 @@ void main() {
     s.plugins['opus_mt'] = {'level': 'low'};
     final low = settingsMemoryMb(registry, s);
     s.plugins['opus_mt'] = {'level': 'high'};
+    // A llama.cpp network counts in full.
     expect(
       settingsMemoryMb(registry, s) - low,
-      ModelCatalog.indexTranslate9b.memoryMb! - ModelCatalog.opusMtBigEnRu.memoryMb!,
+      closeTo(ModelCatalog.indexTranslate9b.memoryMb! - modelsMemoryMb([ModelCatalog.opusMtBigEnRu.id]), 1),
     );
   });
 }

@@ -230,7 +230,10 @@ class _OfflineTranslateCheckState extends ConsumerState<OfflineTranslateCheck> {
               ),
             if (_time != null) ...[
               const SizedBox(height: 6),
-              Text(l.offlineCheckTime(_time!), style: theme.textTheme.bodySmall),
+              Text(
+                l.offlineCheckTime(l.localeName.startsWith('ru') ? _time!.replaceAll('.', ',') : _time!),
+                style: theme.textTheme.bodySmall,
+              ),
             ],
           ],
         ),

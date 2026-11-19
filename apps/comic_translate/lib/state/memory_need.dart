@@ -13,8 +13,27 @@ import 'batch.dart';
 /// The app itself with a page open, without models.
 const appBaseMb = 400;
 
-/// Memory the models of [ids] take together (unknown ones count nothing).
-int modelsMemoryMb(Iterable<String> ids) => ids.fold(0, (sum, id) => sum + (ModelCatalog.byId(id)?.memoryMb ?? 0));
+/// ONNX models of the steps share the runtime's buffers: a full run of the
+/// default comic settings (detector, PaddleOCR, Fatality Comix, letter mask,
+/// LaMa, OPUS-MT) peaked at 3148 MB on two pages (2026-11-19), where the sum
+/// of the single measurements gives 4300. So their sum counts 70 %.
+const onnxShare = 0.7;
+
+/// Memory the models of [ids] take together (unknown ones count nothing):
+/// llama.cpp networks (GGUF files) in full, ONNX models at [onnxShare].
+int modelsMemoryMb(Iterable<String> ids) {
+  var onnx = 0, llama = 0;
+  for (final id in ids) {
+    final spec = ModelCatalog.byId(id);
+    final mb = spec?.memoryMb ?? 0;
+    if (spec != null && spec.files.any((f) => f.name.endsWith('.gguf'))) {
+      llama += mb;
+    } else {
+      onnx += mb;
+    }
+  }
+  return llama + (onnx * onnxShare).round();
+}
 
 /// What [settings] need while a page is processed: the app and the models of
 /// every step.

@@ -667,6 +667,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String offlineAutoNow(String level) {
+    return '\"Automatically\" chooses now: $level.';
+  }
+
+  @override
   String get offlineCheckEnRu => 'English → Russian';
 
   @override
@@ -680,7 +685,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String offlineCheckTime(String seconds) {
-    return 'Done in $seconds s (longer the first time: the model loads).';
+    return 'Done in $seconds s (with loading the model).';
   }
 
   @override

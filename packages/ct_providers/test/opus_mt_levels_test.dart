@@ -26,8 +26,9 @@ void main() {
   test('automatically: the highest level that fits with room for the other steps', () {
     String auto(int budget) => resolveOfflineLevel('auto', budgetMb: budget);
     expect(auto(2000), 'low');
-    // The owner's laptop: 8 GB, budget 4 GB.
-    expect(auto(4096), 'medium');
+    // The owner's laptop: 8 GB, budget 4 GB, of which the other steps take 2.7.
+    expect(auto(4096), 'low');
+    expect(auto(5200), 'medium');
     // 16 GB.
     expect(auto(memoryBudgetMb(16 * 1024, phone: false)), 'high');
     expect(auto(memoryBudgetMb(32 * 1024, phone: false)), 'ultra');
