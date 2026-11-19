@@ -22,6 +22,7 @@ export 'src/diagnostics/gpu_info.dart';
 export 'src/diagnostics/log_event.dart';
 export 'src/diagnostics/redactor.dart';
 export 'src/diagnostics/run_recorder.dart';
+export 'src/diagnostics/system_memory.dart';
 export 'src/export/export_pages.dart';
 export 'src/export/pdf_writer.dart';
 export 'src/export/strip_export.dart';

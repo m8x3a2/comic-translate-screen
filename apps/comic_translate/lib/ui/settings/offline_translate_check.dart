@@ -1,6 +1,9 @@
 // "Try a translation" of the offline translator: type a phrase, see the
-// translation (the owner's wish of 2026-11-19; the offline translator is not
-// a chat model, so it gets this box instead of the test chat).
+// translation at the chosen level (the owner's wish of 2026-11-19). The
+// network runs in the background, loaded for each check.
+
+import 'dart:io';
+import 'dart:isolate';
 
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
@@ -10,6 +13,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../state/app_state.dart';
 import '../../state/dictionary.dart';
 import '../common/labels.dart';
+import '../common/plugin_strings.dart';
+
+// Top level: in a method of the dialog the closure would share its captured
+// variables with the dialog's other closures, `this` included.
+Future<String> _llmCheckInBackground(String root, String specId, String target, String text) =>
+    Isolate.run(() => _llmCheck(root, specId, target, text));
+
+/// [text] translated into [target] by the network [specId] (a level above
+/// "Low"), in its own isolate: plain data only.
+Future<String> _llmCheck(String root, String specId, String target, String text) async {
+  final translator = OfflineLlmTranslator(
+    ModelManager(Directory(root)),
+    ModelCatalog.byId(specId)!,
+    info: opusMtInfo,
+    followNotes: false,
+  );
+  try {
+    final block = TextBlock(xyxy: const BBox(0, 0, 1, 1), text: text);
+    await translator.translate(
+      TranslationRequest(blocks: [block], sourceLanguage: '', targetLanguage: target),
+      PluginContext(log: EventLog.silent()),
+    );
+    return block.translation;
+  } finally {
+    await translator.dispose();
+  }
+}
 
 Future<void> showOfflineTranslateCheck(BuildContext context) =>
     showDialog<void>(context: context, builder: (_) => const OfflineTranslateCheck());
@@ -31,7 +61,18 @@ class _OfflineTranslateCheckState extends ConsumerState<OfflineTranslateCheck> {
   String? _result;
   String? _time;
 
-  ModelSpec get _spec => opusMtBigModels[_from]!.$1;
+  /// The level of the settings, "auto" resolved.
+  String get _level => resolveOfflineLevel(
+    PluginConfig.resolve(
+      opusMtInfo.settings,
+      ref.read(settingsProvider).pluginValues(opusMtInfo.id),
+    ).value<String>('level'),
+  );
+
+  /// The network of the level; null for "Low" (OPUS-MT).
+  ModelSpec? get _llm => offlineLevelModels[_level];
+
+  ModelSpec get _spec => _llm ?? opusMtBigModels[_from]!.$1;
 
   @override
   void initState() {
@@ -87,7 +128,16 @@ class _OfflineTranslateCheckState extends ConsumerState<OfflineTranslateCheck> {
     final sw = Stopwatch()..start();
     String? result;
     try {
-      result = await translateOffline(ref.read(servicesProvider).models, text, from: from);
+      final llm = _llm;
+      final models = ref.read(servicesProvider).models;
+      if (llm == null) {
+        result = await translateOffline(models, text, from: from);
+      } else if (await models.status(llm) != ModelStatus.installed) {
+        result = null;
+      } else {
+        final root = models.root.path, id = llm.id, target = from == 'English' ? 'Russian' : 'English';
+        result = await _llmCheckInBackground(root, id, target, text);
+      }
     } catch (e) {
       result = '$e';
     }
@@ -117,6 +167,11 @@ class _OfflineTranslateCheckState extends ConsumerState<OfflineTranslateCheck> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(l.offlineCheckHelp, style: theme.textTheme.bodySmall),
+            const SizedBox(height: 4),
+            Text(
+              l.offlineCheckLevel(optionLabel(context, opusMtInfo, opusMtInfo.field('level')!, _level, _level)),
+              style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 12),
             SegmentedButton<String>(
               segments: [

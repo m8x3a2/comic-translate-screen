@@ -5,10 +5,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:ct_core/ct_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../services/system_memory.dart';
 import '../../state/app_state.dart';
 import '../../state/memory_need.dart';
 import '../../state/worker_pool.dart';

@@ -690,7 +690,7 @@ Future<bool> _confirmAutoBugReportOff(BuildContext context) async {
 
 /// "Now: Medium, needs ≈ 3.9 GB of 4.8 GB the networks may take here."
 String _levelAutoHelp(AppLocalizations l, PluginRegistry registry, AppSettings s) {
-  final budget = deviceBudgetMb();
+  final budget = deviceMemoryBudgetMb();
   final level = s.activeReadLevel;
   final name = switch (level) {
     ReadLevel.simple => l.readLevelSimple,

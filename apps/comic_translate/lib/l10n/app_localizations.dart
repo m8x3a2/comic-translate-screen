@@ -1256,6 +1256,12 @@ abstract class AppLocalizations {
   /// **'Type or paste a phrase to see how the offline translator puts it. Nothing goes to the internet.'**
   String get offlineCheckHelp;
 
+  /// No description provided for @offlineCheckLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level from the settings: {level}. Change it in the Level field above.'**
+  String offlineCheckLevel(String level);
+
   /// No description provided for @offlineCheckEnRu.
   ///
   /// In en, this message translates to:
@@ -9169,6 +9175,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Offline translation Russian → English, big model (OPUS-MT tc-big)'**
   String get modelOpusBigRuEn;
+
+  /// No description provided for @modelIndex2b.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline translation Medium (Index-Translate-2B)'**
+  String get modelIndex2b;
+
+  /// No description provided for @modelIndex9b.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline translation High (Index-Translate-9B)'**
+  String get modelIndex9b;
+
+  /// No description provided for @modelIndex9bQ6.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline translation Ultra (Index-Translate-9B, more accurate)'**
+  String get modelIndex9bQ6;
+
+  /// No description provided for @modelIndexInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The bilibili Index-Translate translation network for llama.cpp: translates on this computer, no internet, 150 languages, follows the glossary and notes. Live speech reads more naturally than with OPUS-MT. Licence Apache-2.0.'**
+  String get modelIndexInfo;
 
   /// No description provided for @modelOpusBigInfo.
   ///

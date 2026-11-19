@@ -562,6 +562,65 @@ abstract final class ModelCatalog {
     ],
   );
 
+  /// The offline translator "Medium": Index-Translate-2B (bilibili, on
+  /// Qwen3.5), 4-bit GGUF for llama.cpp; 150 languages, follows
+  /// instructions (glossary, notes). Memory measured with llama-server
+  /// (2026-11-19).
+  static const indexTranslate2b = ModelSpec(
+    id: 'index-translate-2b-q4',
+    displayName: 'Index-Translate-2B offline translator (Q4_K_M)',
+    purpose: 'Offline translation, level Medium',
+    license: 'Apache-2.0',
+    homepage: 'https://huggingface.co/IndexTeam/Index-Translate-2B',
+    memoryMb: 2400,
+    files: [
+      ModelFile(
+        name: 'Index-Translate-2B.Q4_K_M.gguf',
+        url: 'https://huggingface.co/IndexTeam/Index-Translate-2B-GGUF/resolve/main/Index-Translate-2B.Q4_K_M.gguf',
+        sha256: '044b313d29342bd3b2c77cbb64023ca0d209bd9b3247763f9d162767ef2d746a',
+        size: 1312164352,
+      ),
+    ],
+  );
+
+  /// The offline translator "High": Index-Translate-9B, 4-bit. Memory is an
+  /// estimate (file + context) until the check on the second computer.
+  static const indexTranslate9b = ModelSpec(
+    id: 'index-translate-9b-q4',
+    displayName: 'Index-Translate-9B offline translator (Q4_K_M)',
+    purpose: 'Offline translation, level High',
+    license: 'Apache-2.0',
+    homepage: 'https://huggingface.co/IndexTeam/Index-Translate-9B',
+    memoryMb: 6600,
+    files: [
+      ModelFile(
+        name: 'Index-Translate-9B.Q4_K_M.gguf',
+        url: 'https://huggingface.co/IndexTeam/Index-Translate-9B-GGUF/resolve/main/Index-Translate-9B.Q4_K_M.gguf',
+        sha256: '9cc6758b0007f4cbf42ea3400768cbff91ae74ef8d640e467158348426d33713',
+        size: 5780090304,
+      ),
+    ],
+  );
+
+  /// The offline translator "Ultra": Index-Translate-9B, 6-bit (closer to
+  /// the full model). Memory is an estimate.
+  static const indexTranslate9bQ6 = ModelSpec(
+    id: 'index-translate-9b-q6',
+    displayName: 'Index-Translate-9B offline translator (Q6_K)',
+    purpose: 'Offline translation, level Ultra',
+    license: 'Apache-2.0',
+    homepage: 'https://huggingface.co/IndexTeam/Index-Translate-9B',
+    memoryMb: 8400,
+    files: [
+      ModelFile(
+        name: 'Index-Translate-9B.Q6_K.gguf',
+        url: 'https://huggingface.co/IndexTeam/Index-Translate-9B-GGUF/resolve/main/Index-Translate-9B.Q6_K.gguf',
+        sha256: '5e47c636c75de6c5065f8550869a744e049451ac591a001968872d5c8b4b7898',
+        size: 7558901184,
+      ),
+    ],
+  );
+
   /// The file name of every dictionary model.
   static const dictionaryFile = 'dictionary.sqlite';
 
@@ -573,6 +632,9 @@ abstract final class ModelCatalog {
     fatalityComix,
     opusMtBigEnRu,
     opusMtBigRuEn,
+    indexTranslate2b,
+    indexTranslate9b,
+    indexTranslate9bQ6,
     dictEnRu,
     ppocrRecEn,
     ppocrRecLatin,

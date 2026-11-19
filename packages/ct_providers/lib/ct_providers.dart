@@ -20,4 +20,5 @@ export 'src/translation/mock.dart';
 export 'src/translation/http_request_editor.dart';
 export 'src/translation/openai_compatible.dart';
 export 'src/translation/openrouter.dart';
+export 'src/translation/offline_llm.dart';
 export 'src/translation/opus_mt.dart';

@@ -15,24 +15,61 @@ import 'dart:typed_data';
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_onnx/ct_onnx.dart';
 
+import 'offline_llm.dart';
+
 const opusMtInfo = PluginInfo(
   id: 'opus_mt',
-  displayName: 'Offline (OPUS-MT)',
+  displayName: 'Offline',
   description:
-      'Translates between English and Russian on this computer: no internet, no key. The big OPUS-MT '
-      'model (about 370 MB per direction, downloaded when needed), about 0.5 s per bubble. Simpler than large '
-      'online models. Licence CC-BY 4.0, Helsinki-NLP.',
+      'Translates on this computer: no internet, no key. Low: OPUS-MT (English and Russian, about 0.5 s per '
+      'bubble); Medium, High, Ultra: the Index-Translate models of llama.cpp (more natural, follow the '
+      'glossary and notes; seconds per bubble, more memory).',
   kind: PluginKind.translator,
   privacy: Privacy.local,
   platforms: {PlatformId.windows, PlatformId.android, PlatformId.linux, PlatformId.macos},
+  settings: [
+    ChoiceSetting(
+      key: 'level',
+      label: 'Level',
+      help: 'Automatically: the highest level that fits the memory of this device.',
+      info:
+          'Low: OPUS-MT tc-big (370 MB per direction, about 1.3 GB of memory, under a second per bubble, English '
+          'and Russian only). Medium: Index-Translate-2B (1.3 GB, about 2.4 GB of memory, 3-5 s per bubble on a '
+          'weak laptop). High: Index-Translate-9B (5.8 GB, about 6.6 GB of memory). Ultra: Index-Translate-9B '
+          'closer to the full model (7.6 GB, about 8.4 GB). Licences: CC-BY 4.0 (Helsinki-NLP), Apache-2.0 '
+          '(bilibili Index).',
+      options: {'auto': 'Automatically', 'low': 'Low', 'medium': 'Medium', 'high': 'High', 'ultra': 'Ultra'},
+      defaultValue: 'auto',
+    ),
+    BoolSetting(
+      key: 'follow_notes',
+      label: 'Follow the glossary and notes',
+      help: 'Medium and up: the glossary, who speaks and the notes of the comic go to the model.',
+      defaultValue: true,
+    ),
+  ],
   models: ['opus-mt-tc-big-en-ru'],
   modelsForLanguage: opusMtModelsFor,
+  modelsForConfig: offlineModelsForConfig,
 );
 
-final opusMtFactory = PluginFactory<Translator>(
-  opusMtInfo,
-  (config, env) async => OpusMtTranslator(env.models, big: true, log: env.log),
-);
+final opusMtFactory = PluginFactory<Translator>(opusMtInfo, (config, env) async {
+  final spec = offlineLevelModels[resolveOfflineLevel(config.value<String>('level'))];
+  if (spec == null) return OpusMtTranslator(env.models, big: true, log: env.log);
+  return OfflineLlmTranslator(
+    env.models,
+    spec,
+    info: opusMtInfo,
+    followNotes: config.value<bool>('follow_notes'),
+    log: env.log,
+  );
+});
+
+/// The models of the offline translator at the level of [config].
+List<String> offlineModelsForConfig(String sourceLanguage, PluginConfig config) {
+  final spec = offlineLevelModels[resolveOfflineLevel(config.value<String>('level'))];
+  return spec == null ? opusMtModelsFor(sourceLanguage) : [spec.id];
+}
 
 /// The small models (the former "Fast" and "Better" levels, removed by the
 /// owner on 2026-11-19 as worse): kept for the parity test only.

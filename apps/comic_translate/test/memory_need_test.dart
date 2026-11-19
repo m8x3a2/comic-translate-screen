@@ -1,6 +1,5 @@
 // How much memory the settings and the levels need, against the device.
 
-import 'package:comic_translate/services/system_memory.dart';
 import 'package:comic_translate/state/memory_need.dart';
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
@@ -19,6 +18,7 @@ void main() {
     final s = AppSettings()
       ..translator = 'opus_mt'
       ..sourceLanguage = 'English';
+    s.plugins['opus_mt'] = {'level': 'low'};
     final need = settingsMemoryMb(registry, s);
     expect(need, greaterThan(appBaseMb + ModelCatalog.opusMtBigEnRu.memoryMb!));
     // The translator by key needs no model, so less.
@@ -69,5 +69,19 @@ void main() {
     final s = AppSettings.fromJson((AppSettings()..levelAuto = true).toJson());
     expect(s.levelAuto, isTrue);
     expect(AppSettings().levelAuto, isFalse);
+  });
+
+  test('the offline translator counts the network of its level', () {
+    final registry = builtInRegistry();
+    final s = AppSettings()
+      ..translator = 'opus_mt'
+      ..sourceLanguage = 'English';
+    s.plugins['opus_mt'] = {'level': 'low'};
+    final low = settingsMemoryMb(registry, s);
+    s.plugins['opus_mt'] = {'level': 'high'};
+    expect(
+      settingsMemoryMb(registry, s) - low,
+      ModelCatalog.indexTranslate9b.memoryMb! - ModelCatalog.opusMtBigEnRu.memoryMb!,
+    );
   });
 }

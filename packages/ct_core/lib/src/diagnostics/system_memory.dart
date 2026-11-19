@@ -1,7 +1,7 @@
 /// How much memory (RAM) the device has and how much is free: shown next to
-/// what each level of the neural networks needs (the owner's wish of
-/// 2026-11-19). Windows asks the system; Linux and Android read
-/// /proc/meminfo.
+/// what each level of the neural networks needs, and the budget the
+/// automatic levels pick by (the owner's wish of 2026-11-19). Windows asks
+/// the system; Linux and Android read /proc/meminfo.
 library;
 
 import 'dart:ffi';
@@ -76,4 +76,20 @@ SystemMemory? _procMeminfo() {
   final free = values['MemAvailable'] ?? values['MemFree'];
   if (total == null || free == null) return null;
   return SystemMemory(totalMb: total >> 10, freeMb: free >> 10);
+}
+
+/// Memory the networks may take on a device with [totalMb]: a phone keeps
+/// most for the system and other apps (the owner's phone: 12 GB, plan for
+/// 5.5 free), a computer keeps 4 GB and gives at most 60 %.
+int memoryBudgetMb(int totalMb, {required bool phone}) {
+  if (phone) return (totalMb * 0.45).round();
+  final keep = totalMb - 4096;
+  final share = (totalMb * 0.6).round();
+  return keep < share ? keep : share;
+}
+
+/// The budget of this device; null when its memory is unknown.
+int? deviceMemoryBudgetMb() {
+  final m = SystemMemory.read();
+  return m == null ? null : memoryBudgetMb(m.totalMb, phone: Platform.isAndroid || Platform.isIOS);
 }

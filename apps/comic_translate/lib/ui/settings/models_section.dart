@@ -11,7 +11,6 @@ import 'package:path/path.dart' as p;
 import '../../l10n/app_localizations.dart';
 import '../../state/app_state.dart';
 import '../../state/batch.dart' show levelModels, missingModels;
-import '../../services/system_memory.dart';
 import '../../state/memory_need.dart';
 import '../common/info_hint.dart';
 import '../common/labels.dart';

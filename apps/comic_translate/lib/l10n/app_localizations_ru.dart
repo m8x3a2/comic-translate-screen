@@ -660,6 +660,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Напишите или вставьте фразу — увидите, как её переведёт офлайн-переводчик. Ничего не уходит в интернет.';
 
   @override
+  String offlineCheckLevel(String level) {
+    return 'Уровень из настроек: $level. Сменить — в поле «Уровень» выше.';
+  }
+
+  @override
   String get offlineCheckEnRu => 'Английский → русский';
 
   @override
@@ -5416,6 +5421,20 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get modelOpusBigRuEn =>
       'Офлайн-перевод русский → английский, большая модель (OPUS-MT tc-big)';
+
+  @override
+  String get modelIndex2b => 'Офлайн-перевод «Среднее» (Index-Translate-2B)';
+
+  @override
+  String get modelIndex9b => 'Офлайн-перевод «Высокое» (Index-Translate-9B)';
+
+  @override
+  String get modelIndex9bQ6 =>
+      'Офлайн-перевод «Ультра» (Index-Translate-9B, точнее)';
+
+  @override
+  String get modelIndexInfo =>
+      'Нейросеть-переводчик bilibili Index-Translate для llama.cpp: переводит на компьютере, без интернета, 150 языков, слушается глоссария и подсказок. Живую речь переводит естественнее OPUS-MT. Лицензия Apache-2.0.';
 
   @override
   String get modelOpusBigInfo =>
