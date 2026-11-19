@@ -1,24 +1,23 @@
-// The levels of the offline translator: "High" needs the big models.
+// The offline translator: the big model of each direction (the small ones,
+// the former "Fast" and "Better" levels, were dropped on 2026-11-19).
 
 import 'package:ct_core/ct_core.dart';
 import 'package:ct_providers/ct_providers.dart';
 import 'package:test/test.dart';
 
 void main() {
-  PluginConfig at(String quality) => PluginConfig.resolve(opusMtInfo.settings, {'quality': quality});
-
-  test('"High" needs the big model of the direction, the other levels the usual one', () {
-    expect(opusMtInfo.requiredModels('English', at('high')), [ModelCatalog.opusMtBigEnRu.id]);
-    expect(opusMtInfo.requiredModels('Russian', at('high')), [ModelCatalog.opusMtBigRuEn.id]);
-    expect(opusMtInfo.requiredModels('English', at('better')), [ModelCatalog.opusMtEnRu.id]);
-    expect(opusMtInfo.requiredModels('Russian', at('fast')), [ModelCatalog.opusMtRuEn.id]);
-    // Without the settings, as before.
-    expect(opusMtInfo.requiredModels('English'), [ModelCatalog.opusMtEnRu.id]);
+  test('each direction needs its big model; no level setting is left', () {
+    expect(opusMtInfo.requiredModels('English'), [ModelCatalog.opusMtBigEnRu.id]);
+    expect(opusMtInfo.requiredModels('Russian'), [ModelCatalog.opusMtBigRuEn.id]);
+    // An old saved level changes nothing.
+    final old = PluginConfig.resolve(opusMtInfo.settings, {'quality': 'fast'});
+    expect(opusMtInfo.requiredModels('English', old), [ModelCatalog.opusMtBigEnRu.id]);
+    expect(opusMtInfo.settings, isEmpty);
     // No model from another language.
-    expect(opusMtInfo.requiredModels('Japanese', at('high')), opusMtInfo.models);
+    expect(opusMtInfo.requiredModels('Japanese'), opusMtInfo.models);
   });
 
-  test('the big English model is asked for Russian; the models are in the catalog', () {
+  test('the big English model is asked for Russian; the models are in the catalog, the small ones are not', () {
     expect(opusMtBigModels['English']!.$3, '>>rus<<');
     expect(opusMtBigModels['Russian']!.$3, isNull);
     for (final spec in [ModelCatalog.opusMtBigEnRu, ModelCatalog.opusMtBigRuEn]) {
@@ -30,5 +29,7 @@ void main() {
         'decoder_model_merged_quantized.onnx',
       ]);
     }
+    expect(ModelCatalog.all, isNot(contains(ModelCatalog.opusMtEnRu)));
+    expect(ModelCatalog.all, isNot(contains(ModelCatalog.opusMtRuEn)));
   });
 }

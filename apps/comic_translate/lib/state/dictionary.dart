@@ -39,24 +39,19 @@ String dictionaryQueryAt(String text, int start, int end) {
   return text.substring(a, b).replaceAll(RegExp(r"^['’\-]+|['’\-]+$"), '');
 }
 
-/// [text] translated by the offline translator (the big model when it is
-/// downloaded, else the usual one), in the background; null when no
-/// offline English to Russian model is downloaded.
-Future<String?> translateOffline(ModelManager models, String text) async {
-  for (final spec in [ModelCatalog.opusMtBigEnRu, ModelCatalog.opusMtEnRu]) {
-    if (await models.status(spec) == ModelStatus.installed) {
-      return Isolate.run(() => _translate(models.root.path, spec.id, text));
-    }
-  }
-  return null;
+/// [text] translated by the offline translator from [from] (English or
+/// Russian), in the background; null when its model is not downloaded.
+Future<String?> translateOffline(ModelManager models, String text, {String from = 'English'}) async {
+  final spec = opusMtBigModels[from]!.$1;
+  if (await models.status(spec) != ModelStatus.installed) return null;
+  return Isolate.run(() => _translate(models.root.path, from, text));
 }
 
 // Top level: the isolate gets plain data only.
-Future<String> _translate(String root, String modelId, String text) async {
-  final translator = OpusMtTranslator(ModelManager(Directory(root)), big: modelId == ModelCatalog.opusMtBigEnRu.id);
+Future<String> _translate(String root, String from, String text) async {
+  final translator = OpusMtTranslator(ModelManager(Directory(root)), big: true);
   try {
-    final big = modelId == ModelCatalog.opusMtBigEnRu.id;
-    final (spec, _, target) = (big ? opusMtBigModels : opusMtModels)['English']!;
+    final (spec, _, target) = opusMtBigModels[from]!;
     final engine = await translator.engine(spec, target: target);
     return [for (final s in splitSentences(prepareComicText(text))) engine.translate(s)].join(' ');
   } finally {

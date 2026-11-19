@@ -652,6 +652,44 @@ class AppLocalizationsEn extends AppLocalizations {
       'The profile, its settings and all its saved keys and notes will be deleted.';
 
   @override
+  String get offlineCheck => 'Try a translation';
+
+  @override
+  String get offlineCheckTitle => 'Offline translation check';
+
+  @override
+  String get offlineCheckHelp =>
+      'Type or paste a phrase to see how the offline translator puts it. Nothing goes to the internet.';
+
+  @override
+  String get offlineCheckEnRu => 'English → Russian';
+
+  @override
+  String get offlineCheckRuEn => 'Russian → English';
+
+  @override
+  String get offlineCheckPhrase => 'Phrase';
+
+  @override
+  String get offlineCheckTranslate => 'Translate';
+
+  @override
+  String offlineCheckTime(String seconds) {
+    return 'Done in $seconds s (longer the first time: the model loads).';
+  }
+
+  @override
+  String offlineCheckNoModel(int megabytes) {
+    return 'The model of this direction is not downloaded (about $megabytes MB).';
+  }
+
+  @override
+  String get offlineCheckDownload => 'Download';
+
+  @override
+  String get offlineCheckDownloading => 'Downloading…';
+
+  @override
   String get translatorTestChat => 'Test chat';
 
   @override
@@ -3221,16 +3259,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get modelLinesInfo =>
       'Finds lines of ordinary text for \"Sites and games\": screenshots, games, visual novels. In \"Comics\" it helps to read dense text (see \"Check the lines\"). Small and fast.';
-
-  @override
-  String get modelOpusEnRu => 'Offline translation English → Russian (OPUS-MT)';
-
-  @override
-  String get modelOpusRuEn => 'Offline translation Russian → English (OPUS-MT)';
-
-  @override
-  String get modelOpusInfo =>
-      'Translates on this computer without internet or keys (translator \"Offline (OPUS-MT)\"). About 0.4–0.7 s per bubble. Licence CC-BY 4.0, Helsinki-NLP.';
 
   @override
   String get modelW2xCunet => 'waifu2x CUNet (level Simple)';

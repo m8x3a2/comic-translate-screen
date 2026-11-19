@@ -32,6 +32,7 @@ import 'app_icon_section.dart';
 import 'gpu_section.dart';
 import 'keys_section.dart';
 import 'models_section.dart';
+import 'offline_translate_check.dart';
 import 'own_server_profiles.dart';
 import 'model_prompt.dart';
 import 'request_templates.dart';
@@ -970,6 +971,15 @@ class _TranslatorSection extends ConsumerWidget {
                   ),
                   icon: const Icon(Icons.chat_bubble_outline),
                   label: Text(l.translatorTestChat),
+                ),
+              ),
+            if (info?.id == 'opus_mt')
+              Align(
+                alignment: Alignment.centerLeft,
+                child: OutlinedButton.icon(
+                  onPressed: () => showOfflineTranslateCheck(context),
+                  icon: const Icon(Icons.translate),
+                  label: Text(l.offlineCheck),
                 ),
               ),
             if (info?.field(llmPromptSetting.key) != null) ModelPromptButton(pluginId: info!.id, storageId: storageId),

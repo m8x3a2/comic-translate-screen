@@ -1238,6 +1238,72 @@ abstract class AppLocalizations {
   /// **'The profile, its settings and all its saved keys and notes will be deleted.'**
   String get ownServerRemoveBody;
 
+  /// No description provided for @offlineCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a translation'**
+  String get offlineCheck;
+
+  /// No description provided for @offlineCheckTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline translation check'**
+  String get offlineCheckTitle;
+
+  /// No description provided for @offlineCheckHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Type or paste a phrase to see how the offline translator puts it. Nothing goes to the internet.'**
+  String get offlineCheckHelp;
+
+  /// No description provided for @offlineCheckEnRu.
+  ///
+  /// In en, this message translates to:
+  /// **'English → Russian'**
+  String get offlineCheckEnRu;
+
+  /// No description provided for @offlineCheckRuEn.
+  ///
+  /// In en, this message translates to:
+  /// **'Russian → English'**
+  String get offlineCheckRuEn;
+
+  /// No description provided for @offlineCheckPhrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Phrase'**
+  String get offlineCheckPhrase;
+
+  /// No description provided for @offlineCheckTranslate.
+  ///
+  /// In en, this message translates to:
+  /// **'Translate'**
+  String get offlineCheckTranslate;
+
+  /// No description provided for @offlineCheckTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Done in {seconds} s (longer the first time: the model loads).'**
+  String offlineCheckTime(String seconds);
+
+  /// No description provided for @offlineCheckNoModel.
+  ///
+  /// In en, this message translates to:
+  /// **'The model of this direction is not downloaded (about {megabytes} MB).'**
+  String offlineCheckNoModel(int megabytes);
+
+  /// No description provided for @offlineCheckDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get offlineCheckDownload;
+
+  /// No description provided for @offlineCheckDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading…'**
+  String get offlineCheckDownloading;
+
   /// No description provided for @translatorTestChat.
   ///
   /// In en, this message translates to:
@@ -5569,24 +5635,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finds lines of ordinary text for \"Sites and games\": screenshots, games, visual novels. In \"Comics\" it helps to read dense text (see \"Check the lines\"). Small and fast.'**
   String get modelLinesInfo;
-
-  /// No description provided for @modelOpusEnRu.
-  ///
-  /// In en, this message translates to:
-  /// **'Offline translation English → Russian (OPUS-MT)'**
-  String get modelOpusEnRu;
-
-  /// No description provided for @modelOpusRuEn.
-  ///
-  /// In en, this message translates to:
-  /// **'Offline translation Russian → English (OPUS-MT)'**
-  String get modelOpusRuEn;
-
-  /// No description provided for @modelOpusInfo.
-  ///
-  /// In en, this message translates to:
-  /// **'Translates on this computer without internet or keys (translator \"Offline (OPUS-MT)\"). About 0.4–0.7 s per bubble. Licence CC-BY 4.0, Helsinki-NLP.'**
-  String get modelOpusInfo;
 
   /// No description provided for @modelW2xCunet.
   ///

@@ -1,7 +1,8 @@
-/// Offline translation between English and Russian with OPUS-MT (Marian
-/// models of Helsinki-NLP, int8 ONNX exports of Xenova; the big "tc-big"
-/// ones of the "High" level converted by this project): nothing leaves the
-/// computer, no key. New in this project.
+/// Offline translation between English and Russian with OPUS-MT (the big
+/// "tc-big" Marian models of Helsinki-NLP, converted to int8 ONNX by this
+/// project; the small ones of Xenova, the former "Fast" and "Better" levels,
+/// were dropped as worse): nothing leaves the computer, no key. New in this
+/// project.
 ///
 /// Comic text is prepared first: lines in capitals go in sentence case,
 /// words broken by a hyphen at a line end are joined, and each sentence is
@@ -18,60 +19,43 @@ const opusMtInfo = PluginInfo(
   id: 'opus_mt',
   displayName: 'Offline (OPUS-MT)',
   description:
-      'Translates between English and Russian on this computer: no internet, no key. Simpler than large '
-      'online models.',
+      'Translates between English and Russian on this computer: no internet, no key. The big OPUS-MT '
+      'model (about 370 MB per direction, downloaded when needed), about 0.5 s per bubble. Simpler than large '
+      'online models. Licence CC-BY 4.0, Helsinki-NLP.',
   kind: PluginKind.translator,
   privacy: Privacy.local,
   platforms: {PlatformId.windows, PlatformId.android, PlatformId.linux, PlatformId.macos},
-  settings: [
-    ChoiceSetting(
-      key: 'quality',
-      label: 'Quality',
-      help: 'Better compares four variants of each sentence; High does it with a bigger model.',
-      info:
-          'Fast: about 0.2 s per bubble on a weak laptop. Better: the model weighs four variants of each '
-          'sentence and keeps the best; about twice as slow, noticeably fewer odd phrases. High: the big model '
-          '(OPUS-MT tc-big, about 370 MB per direction, downloaded when chosen), as Better; noticeably more '
-          'accurate, about 1.7 times slower than Better. Licence CC-BY 4.0, Helsinki-NLP.',
-      options: {'fast': 'Fast', 'better': 'Better', 'high': 'High'},
-      defaultValue: 'better',
-    ),
-  ],
-  models: ['opus-mt-en-ru'],
+  models: ['opus-mt-tc-big-en-ru'],
   modelsForLanguage: opusMtModelsFor,
-  modelsForConfig: opusMtModelsForConfig,
 );
 
-final opusMtFactory = PluginFactory<Translator>(opusMtInfo, (config, env) async {
-  final quality = config.value<String>('quality');
-  return OpusMtTranslator(env.models, beams: quality == 'fast' ? 1 : 4, big: quality == 'high', log: env.log);
-});
+final opusMtFactory = PluginFactory<Translator>(
+  opusMtInfo,
+  (config, env) async => OpusMtTranslator(env.models, big: true, log: env.log),
+);
 
-/// The model for each direction, by source language, with the token that
-/// asks for the target language (none for a model with one).
+/// The small models (the former "Fast" and "Better" levels, removed by the
+/// owner on 2026-11-19 as worse): kept for the parity test only.
 const opusMtModels = {
   'English': (ModelCatalog.opusMtEnRu, 'Russian', null),
   'Russian': (ModelCatalog.opusMtRuEn, 'English', null),
 };
 
-/// The big models ("High"); the English one also does Belarusian and
-/// Ukrainian, so it is asked for Russian.
+/// The models of the translator, by source language, with the token that
+/// asks for the target language (none for a model with one); the English one
+/// also does Belarusian and Ukrainian, so it is asked for Russian.
 const opusMtBigModels = {
   'English': (ModelCatalog.opusMtBigEnRu, 'Russian', '>>rus<<'),
   'Russian': (ModelCatalog.opusMtBigRuEn, 'English', null),
 };
 
 /// The model translating from [sourceLanguage] (English or Russian).
-List<String> opusMtModelsFor(String sourceLanguage, {bool big = false}) {
+List<String> opusMtModelsFor(String sourceLanguage, {bool big = true}) {
   final m =
       (big ? opusMtBigModels : opusMtModels)[sourceLanguage] ??
       (throw UnsupportedError('OPUS-MT: no model from $sourceLanguage'));
   return [m.$1.id];
 }
-
-/// The model for [sourceLanguage] at the level of [config].
-List<String> opusMtModelsForConfig(String sourceLanguage, PluginConfig config) =>
-    opusMtModelsFor(sourceLanguage, big: config.value<String>('quality') == 'high');
 
 class OpusMtTranslator implements Translator {
   OpusMtTranslator(this._models, {this.beams = 4, this.big = false, this.log});

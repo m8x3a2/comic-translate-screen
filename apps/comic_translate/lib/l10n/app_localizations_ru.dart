@@ -650,6 +650,44 @@ class AppLocalizationsRu extends AppLocalizations {
       'Профиль, его настройки и все сохранённые ключи и заметки будут удалены.';
 
   @override
+  String get offlineCheck => 'Проверить перевод';
+
+  @override
+  String get offlineCheckTitle => 'Проверка офлайн-перевода';
+
+  @override
+  String get offlineCheckHelp =>
+      'Напишите или вставьте фразу — увидите, как её переведёт офлайн-переводчик. Ничего не уходит в интернет.';
+
+  @override
+  String get offlineCheckEnRu => 'Английский → русский';
+
+  @override
+  String get offlineCheckRuEn => 'Русский → английский';
+
+  @override
+  String get offlineCheckPhrase => 'Фраза';
+
+  @override
+  String get offlineCheckTranslate => 'Перевести';
+
+  @override
+  String offlineCheckTime(String seconds) {
+    return 'Готово за $seconds с (в первый раз дольше: модель загружается).';
+  }
+
+  @override
+  String offlineCheckNoModel(int megabytes) {
+    return 'Модель этого направления не скачана (около $megabytes МБ).';
+  }
+
+  @override
+  String get offlineCheckDownload => 'Скачать';
+
+  @override
+  String get offlineCheckDownloading => 'Скачивание…';
+
+  @override
   String get translatorTestChat => 'Тестовый чат';
 
   @override
@@ -3221,16 +3259,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get modelLinesInfo =>
       'Находит строки обычного текста для «Сайтов и игр»: скриншоты, игры, визуальные новеллы. В «Комиксах» помогает читать плотный текст (см. «Проверять строки»). Небольшая и быстрая.';
-
-  @override
-  String get modelOpusEnRu => 'Офлайн-перевод английский → русский (OPUS-MT)';
-
-  @override
-  String get modelOpusRuEn => 'Офлайн-перевод русский → английский (OPUS-MT)';
-
-  @override
-  String get modelOpusInfo =>
-      'Переводит прямо на компьютере, без интернета и ключей (переводчик «Офлайн (OPUS-MT)»). Около 0,4–0,7 с на пузырь. Лицензия CC-BY 4.0, Helsinki-NLP.';
 
   @override
   String get modelW2xCunet => 'waifu2x CUNet (уровень «Простой»)';

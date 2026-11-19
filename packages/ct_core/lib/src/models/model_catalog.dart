@@ -289,6 +289,8 @@ abstract final class ModelCatalog {
     ],
   );
 
+  /// The small OPUS-MT (the former "Fast" and "Better" levels, dropped on
+  /// 2026-11-19 as worse): not in [all], kept for the parity test only.
   static const opusMtEnRu = ModelSpec(
     id: 'opus-mt-en-ru',
     displayName: 'OPUS-MT translator, English to Russian',
@@ -545,8 +547,6 @@ abstract final class ModelCatalog {
     waifu2xCunet,
     waifu2xSwin,
     fatalityComix,
-    opusMtEnRu,
-    opusMtRuEn,
     opusMtBigEnRu,
     opusMtBigRuEn,
     dictEnRu,
