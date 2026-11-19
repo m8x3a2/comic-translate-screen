@@ -71,6 +71,14 @@ class WorkerPool {
     await worker?.dispose(success: success, summary: summary);
   }
 
+  /// Frees the models now ("Unload models"); false while a step uses them
+  /// (they go as usual when it ends).
+  Future<bool> unload() async {
+    if (_users > 0) return false;
+    await close();
+    return true;
+  }
+
   /// Stops at once (the app is closing).
   void kill() {
     _timer?.cancel();

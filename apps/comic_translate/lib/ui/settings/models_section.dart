@@ -10,13 +10,14 @@ import 'package:path/path.dart' as p;
 
 import '../../l10n/app_localizations.dart';
 import '../../state/app_state.dart';
-import '../../services/system_memory.dart';
 import '../../state/batch.dart' show levelModels, missingModels;
+import '../../services/system_memory.dart';
 import '../../state/memory_need.dart';
 import '../common/info_hint.dart';
 import '../common/labels.dart';
 import '../shell_full/batch_dialogs.dart' show DialogBatchUi;
 import '../shell_full/main_screen.dart' show showInExplorer;
+import 'memory_panel.dart';
 import 'settings_screen.dart' show SettingsGroup;
 
 class ModelsSection extends ConsumerStatefulWidget {
@@ -297,7 +298,7 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 4),
-        _memory(l, theme, settings),
+        const MemoryPanel(),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -316,15 +317,7 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
                   (ReadLevel.high, l.modelsLevelHigh),
                   (ReadLevel.ultra, l.modelsLevelUltra),
                 ])
-                  MenuItemButton(
-                    onPressed: () => _downloadLevel(level),
-                    child: Text(
-                      l.modelsLevelMemory(
-                        label,
-                        formatMb(levelMemoryMb(ref.read(servicesProvider).registry, settings, level)),
-                      ),
-                    ),
-                  ),
+                  _levelItem(level, label, settings, theme),
               ],
               builder: (context, menu, _) => OutlinedButton.icon(
                 onPressed: busy ? null : () => menu.isOpen ? menu.close() : menu.open(),
@@ -349,28 +342,15 @@ class _ModelsSectionState extends ConsumerState<ModelsSection> {
     );
   }
 
-  /// The device's memory and what the current settings need.
-  Widget _memory(AppLocalizations l, ThemeData theme, AppSettings settings) {
+  /// A level of the "Download for a level" menu with what it needs, amber or
+  /// red when the device's memory is short for it.
+  Widget _levelItem(ReadLevel level, String label, AppSettings settings, ThemeData theme) {
+    final need = levelMemoryMb(ref.read(servicesProvider).registry, settings, level);
     final have = SystemMemory.read();
-    final need = settingsMemoryMb(ref.read(servicesProvider).registry, settings);
-    final fit = have == null ? MemoryFit.ok : memoryFit(need, have.freeMb, have.totalMb);
-    final color = switch (fit) {
-      MemoryFit.ok => null,
-      MemoryFit.tight => Colors.orange.shade700,
-      MemoryFit.short => theme.colorScheme.error,
-    };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (have != null)
-          Text(l.memoryHave(formatMb(have.totalMb), formatMb(have.freeMb)), style: theme.textTheme.bodySmall),
-        titleWithInfo(l.memoryNeed(formatMb(need)), l.memoryInfo, style: theme.textTheme.bodySmall),
-        if (fit != MemoryFit.ok)
-          Text(
-            fit == MemoryFit.tight ? l.memoryTight : l.memoryShort,
-            style: theme.textTheme.bodySmall?.copyWith(color: color, fontWeight: FontWeight.w600),
-          ),
-      ],
+    final color = have == null ? null : memoryFitColor(memoryFit(need, have.freeMb, have.totalMb), theme);
+    return MenuItemButton(
+      onPressed: () => _downloadLevel(level),
+      child: Text(context.l10n.modelsLevelMemory(label, formatMb(need)), style: TextStyle(color: color)),
     );
   }
 

@@ -24,6 +24,7 @@ import '../../state/batch.dart';
 import '../../state/block_looks.dart';
 import '../../state/editor.dart';
 import '../../state/exchange.dart';
+import '../../state/memory_need.dart' show applyAutoLevel;
 import '../../state/export.dart';
 import '../../state/project.dart';
 import '../../state/steps.dart';
@@ -240,6 +241,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
     HardwareKeyboard.instance.addHandler(_onHardwareKey);
     _gpuFallbackSub = gpuFallbacks.stream.listen(_onGpuFallback);
     _lifecycle;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        applyAutoLevel(
+          ref.read(settingsProvider),
+          ref.read(settingsProvider.notifier).change,
+          ref.read(servicesProvider).registry,
+        ),
+      );
+    });
     final section = ref.read(settingsOnStartProvider);
     if (section != null) {
       WidgetsBinding.instance.addPostFrameCallback(

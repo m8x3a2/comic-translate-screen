@@ -2552,6 +2552,30 @@ abstract class AppLocalizations {
   /// **'Ultra'**
   String get readLevelUltra;
 
+  /// No description provided for @levelAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the level by memory automatically'**
+  String get levelAuto;
+
+  /// No description provided for @levelAutoHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Now: {level}, needs ≈ {need} of the {budget} the networks may take here.'**
+  String levelAutoHelp(String level, String need, String budget);
+
+  /// No description provided for @levelAutoHelpUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Now: {level}, needs ≈ {need}.'**
+  String levelAutoHelpUnknown(String level, String need);
+
+  /// No description provided for @levelAutoInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'The app takes the highest of the levels Simple, Medium and High that fits this device\'s memory (chosen at start). On a computer the networks may take all memory but 4 GB and at most 60%; on a phone 45% (12 GB → 5.4 GB). Ultra is very slow, so only by hand. Choosing a level yourself turns the automatic choice off.'**
+  String get levelAutoInfo;
+
   /// No description provided for @readLevelInfo.
   ///
   /// In en, this message translates to:
@@ -5057,13 +5081,13 @@ abstract class AppLocalizations {
   /// No description provided for @memoryTight.
   ///
   /// In en, this message translates to:
-  /// **'Free memory may run short: close other programs, or the work slows down.'**
+  /// **'It needs more than is free now. What may happen: Windows starts moving other programs from memory to disk, so everything slows down, the browser and games may stutter, the first page takes longer. Close other programs or choose a simpler level.'**
   String get memoryTight;
 
   /// No description provided for @memoryShort.
   ///
   /// In en, this message translates to:
-  /// **'This device does not have enough memory: choose a simpler level or networks.'**
+  /// **'Almost all of the device\'s memory. What may happen: the work goes very slowly (disk instead of memory), the computer may freeze for a while, and the app may close with an out-of-memory error. Choose a simpler level or networks.'**
   String get memoryShort;
 
   /// No description provided for @memoryInfo.
@@ -5083,6 +5107,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{level}: needs ≈ {size}'**
   String modelsLevelMemory(String level, String size);
+
+  /// No description provided for @memoryShowNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show memory now'**
+  String get memoryShowNow;
+
+  /// No description provided for @memoryHideNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide'**
+  String get memoryHideNow;
+
+  /// No description provided for @memoryNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Now: the app {app}, the whole device uses {used} of {total} (refreshed every 5 s).'**
+  String memoryNow(String app, String used, String total);
+
+  /// No description provided for @memoryModelsLoaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Models are loaded.'**
+  String get memoryModelsLoaded;
+
+  /// No description provided for @memoryUnload.
+  ///
+  /// In en, this message translates to:
+  /// **'Unload models'**
+  String get memoryUnload;
+
+  /// No description provided for @memoryUnloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Models unloaded, memory freed. The next step loads them again (the first page takes a little longer).'**
+  String get memoryUnloaded;
+
+  /// No description provided for @memoryUnloadBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'Work is running and needs the models. They are freed by themselves 3 minutes after it ends.'**
+  String get memoryUnloadBusy;
+
+  /// No description provided for @memoryUnloadInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'While the app works, the networks of all steps (finding text, reading, preparing small text, cleaning, offline translation) stay in memory together, so the next page starts at once. A new model does not unload the previous one. After 3 minutes without work the app frees them by itself. This button frees them at once, for example before a game or another heavy program.'**
+  String get memoryUnloadInfo;
+
+  /// No description provided for @memoryCriteria.
+  ///
+  /// In en, this message translates to:
+  /// **'How it is judged: usual colour, it needs less than is free now; amber, more than is free (other programs get cramped); red, more than 85% of all the device\'s memory.'**
+  String get memoryCriteria;
 
   /// No description provided for @modelsSummary.
   ///

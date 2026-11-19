@@ -47,4 +47,27 @@ void main() {
     expect(m!.totalMb, greaterThan(1000));
     expect(m.freeMb, inInclusiveRange(1, m.totalMb));
   });
+
+  test('budget: a phone gives the networks 45 %, a computer all but 4 GB and at most 60 %', () {
+    expect(memoryBudgetMb(12 * 1024, phone: true), 5530);
+    expect(memoryBudgetMb(8 * 1024, phone: false), 4096);
+    expect(memoryBudgetMb(32 * 1024, phone: false), (32 * 1024 * 0.6).round());
+  });
+
+  test('automatic level: the highest of Simple, Medium, High that fits, never Ultra', () {
+    final registry = builtInRegistry();
+    final s = AppSettings();
+    final medium = levelMemoryMb(registry, s, ReadLevel.medium);
+    final high = levelMemoryMb(registry, s, ReadLevel.high);
+    expect(autoReadLevel(registry, s, medium - 1), ReadLevel.simple);
+    expect(autoReadLevel(registry, s, medium), ReadLevel.medium);
+    expect(autoReadLevel(registry, s, high), ReadLevel.high);
+    expect(autoReadLevel(registry, s, 1 << 30), ReadLevel.high);
+  });
+
+  test('the automatic choice is saved with the settings', () {
+    final s = AppSettings.fromJson((AppSettings()..levelAuto = true).toJson());
+    expect(s.levelAuto, isTrue);
+    expect(AppSettings().levelAuto, isFalse);
+  });
 }

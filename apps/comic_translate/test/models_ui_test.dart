@@ -109,8 +109,8 @@ void main() {
     }
     expect(find.text('Японский (manga-ocr)'), findsOneWidget);
     expect(find.text('Определение языка'), findsOneWidget, reason: 'for the source language "Auto"');
-    // One per model, one for "Download for a level" and one for the memory line.
-    expect(find.byType(InfoHint), findsNWidgets(ModelCatalog.all.length + 2));
+    // One per model, one for "Download for a level", one for the memory line and one for "Unload models".
+    expect(find.byType(InfoHint), findsNWidgets(ModelCatalog.all.length + 3));
     expect(find.text('Скачать для уровня'), findsOneWidget);
     expect(find.text('Скачано 0 из ${ModelCatalog.all.length} · 0 B на диске'), findsOneWidget);
 

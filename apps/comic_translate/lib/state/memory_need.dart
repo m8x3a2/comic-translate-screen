@@ -6,7 +6,11 @@
 /// all steps loaded at once, so they add up.
 library;
 
+import 'dart:io';
+
 import 'package:ct_core/ct_core.dart';
+
+import '../services/system_memory.dart';
 
 import 'batch.dart';
 
@@ -38,3 +42,50 @@ MemoryFit memoryFit(int needMb, int freeMb, int totalMb) {
 
 /// [mb] megabytes as text ("1.4 GB").
 String formatMb(int mb) => formatBytes(mb << 20);
+
+/// Memory the networks may take on a device with [totalMb]: a phone keeps
+/// most for the system and other apps (the owner's phone: 12 GB, plan for
+/// 5.5 free), a computer keeps 4 GB and at least 40 %.
+int memoryBudgetMb(int totalMb, {required bool phone}) {
+  if (phone) return (totalMb * 0.45).round();
+  final keep = totalMb - 4096;
+  final share = (totalMb * 0.6).round();
+  return keep < share ? keep : share;
+}
+
+/// The recognition level "Automatically by memory" picks: the highest of
+/// "Simple", "Medium" and "High" that fits [budgetMb] ("Ultra" is slow on
+/// purpose, so only by hand); "High" only where its slow reader exists.
+ReadLevel autoReadLevel(PluginRegistry registry, AppSettings settings, int budgetMb) {
+  var best = ReadLevel.simple;
+  for (final level in const [ReadLevel.medium, ReadLevel.high]) {
+    if (level == ReadLevel.high && !registry.contains(vlmReaderId)) continue;
+    if (levelMemoryMb(registry, settings, level) <= budgetMb) best = level;
+  }
+  return best;
+}
+
+/// The budget of this device; null when its memory is unknown.
+int? deviceBudgetMb() {
+  final m = SystemMemory.read();
+  return m == null ? null : memoryBudgetMb(m.totalMb, phone: Platform.isAndroid || Platform.isIOS);
+}
+
+/// With "Automatically by memory" on, sets both recognition levels to what
+/// fits this device (at start and when it is switched on).
+Future<void> applyAutoLevel(
+  AppSettings settings,
+  Future<void> Function(void Function(AppSettings)) change,
+  PluginRegistry registry,
+) async {
+  if (!settings.levelAuto) return;
+  final budget = deviceBudgetMb();
+  if (budget == null) return;
+  final level = autoReadLevel(registry, settings, budget);
+  if (settings.readLevel == level && settings.screenReadLevel == level) return;
+  await change(
+    (s) => s
+      ..readLevel = level
+      ..screenReadLevel = level,
+  );
+}

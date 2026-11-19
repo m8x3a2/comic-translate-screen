@@ -64,6 +64,7 @@ class AppSettings {
     this.fixCyrillicLookalikes = false,
     this.splitGluedWords = false,
     this.checkLines = true,
+    this.levelAuto = false,
     this.dictShowEnglish = true,
     this.textPrepSeconds = 60,
     this.emptyFrames = EmptyFrames.ask,
@@ -186,6 +187,11 @@ class AppSettings {
   /// let the PP-OCR line detector redo the wrong ones (see `line_check.dart`).
   /// New in this project.
   bool checkLines;
+
+  /// The recognition level is picked by the device's memory: the highest of
+  /// "Simple", "Medium" and "High" that fits (the app sets [readLevel] and
+  /// [screenReadLevel] at start and when this is switched on).
+  bool levelAuto;
 
   /// The cards of the offline dictionary show English explanations too
   /// (folded, open by themselves when a word has no Russian). New in this
@@ -457,6 +463,7 @@ class AppSettings {
       'fix_cyrillic_lookalikes': fixCyrillicLookalikes,
       'split_glued_words': splitGluedWords,
       'check_lines': checkLines,
+      'level_auto': levelAuto,
       'dict_show_english': dictShowEnglish,
       'text_prep_seconds': textPrepSeconds,
       'empty_frames': emptyFrames.name,
@@ -578,6 +585,7 @@ class AppSettings {
       fixCyrillicLookalikes: pick(tools, 'fix_cyrillic_lookalikes', defaults.fixCyrillicLookalikes),
       splitGluedWords: pick(tools, 'split_glued_words', defaults.splitGluedWords),
       checkLines: pick(tools, 'check_lines', defaults.checkLines),
+      levelAuto: pick(tools, 'level_auto', defaults.levelAuto),
       dictShowEnglish: pick(tools, 'dict_show_english', defaults.dictShowEnglish),
       textPrepSeconds: pick(tools, 'text_prep_seconds', defaults.textPrepSeconds),
       emptyFrames: EmptyFrames.values.asNameMap()[tools['empty_frames']] ?? defaults.emptyFrames,

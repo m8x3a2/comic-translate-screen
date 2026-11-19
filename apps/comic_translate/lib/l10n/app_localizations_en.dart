@@ -1435,6 +1435,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get readLevelUltra => 'Ultra';
 
   @override
+  String get levelAuto => 'Pick the level by memory automatically';
+
+  @override
+  String levelAutoHelp(String level, String need, String budget) {
+    return 'Now: $level, needs ≈ $need of the $budget the networks may take here.';
+  }
+
+  @override
+  String levelAutoHelpUnknown(String level, String need) {
+    return 'Now: $level, needs ≈ $need.';
+  }
+
+  @override
+  String get levelAutoInfo =>
+      'The app takes the highest of the levels Simple, Medium and High that fits this device\'s memory (chosen at start). On a computer the networks may take all memory but 4 GB and at most 60%; on a phone 45% (12 GB → 5.4 GB). Ultra is very slow, so only by hand. Choosing a level yourself turns the automatic choice off.';
+
+  @override
   String get readLevelInfo =>
       'How many networks read each block of English text (times on a slow laptop without a graphics card, the reading of a page alone; finding the text and preparing small text come on top):\n• Simple — as before: PP-OCRv5. About 1 s.\n• Medium — PP-OCRv6 small reads too (21 MB, already there for Chinese and Japanese); of the two readings of a block, the one with more real English words is kept. About 2 s.\n• High — after Medium, the PaddleOCR-VL network reads again the blocks where either fast reader found a word missing from the dictionary (about half). Nearly Ultra, faster: about 7 s per such block, 30 s per page on average (about 1 min for a manga screenshot).\n• Ultra — PaddleOCR-VL reads every block: best of all on full comic pages. About 7 s per block, 1 min per page on average (up to 3 min).\nPaddleOCR-VL is a separate download (1.8 GB, Apache-2.0 licence) and takes about 2.5 GB of memory; the first block after starting takes 10–20 s longer, a huge block of a wall of text up to 2 min. Until it is there, High and Ultra work as Medium.\nOther languages are read as on Simple.';
 
@@ -2894,11 +2911,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get memoryTight =>
-      'Free memory may run short: close other programs, or the work slows down.';
+      'It needs more than is free now. What may happen: Windows starts moving other programs from memory to disk, so everything slows down, the browser and games may stutter, the first page takes longer. Close other programs or choose a simpler level.';
 
   @override
   String get memoryShort =>
-      'This device does not have enough memory: choose a simpler level or networks.';
+      'Almost all of the device\'s memory. What may happen: the work goes very slowly (disk instead of memory), the computer may freeze for a while, and the app may close with an out-of-memory error. Choose a simpler level or networks.';
 
   @override
   String get memoryInfo =>
@@ -2913,6 +2930,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String modelsLevelMemory(String level, String size) {
     return '$level: needs ≈ $size';
   }
+
+  @override
+  String get memoryShowNow => 'Show memory now';
+
+  @override
+  String get memoryHideNow => 'Hide';
+
+  @override
+  String memoryNow(String app, String used, String total) {
+    return 'Now: the app $app, the whole device uses $used of $total (refreshed every 5 s).';
+  }
+
+  @override
+  String get memoryModelsLoaded => 'Models are loaded.';
+
+  @override
+  String get memoryUnload => 'Unload models';
+
+  @override
+  String get memoryUnloaded =>
+      'Models unloaded, memory freed. The next step loads them again (the first page takes a little longer).';
+
+  @override
+  String get memoryUnloadBusy =>
+      'Work is running and needs the models. They are freed by themselves 3 minutes after it ends.';
+
+  @override
+  String get memoryUnloadInfo =>
+      'While the app works, the networks of all steps (finding text, reading, preparing small text, cleaning, offline translation) stay in memory together, so the next page starts at once. A new model does not unload the previous one. After 3 minutes without work the app frees them by itself. This button frees them at once, for example before a game or another heavy program.';
+
+  @override
+  String get memoryCriteria =>
+      'How it is judged: usual colour, it needs less than is free now; amber, more than is free (other programs get cramped); red, more than 85% of all the device\'s memory.';
 
   @override
   String modelsSummary(String count, String total, String size) {

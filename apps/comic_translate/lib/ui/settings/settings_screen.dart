@@ -14,7 +14,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app_info.dart';
+import '../../l10n/app_localizations.dart';
 import '../../state/app_state.dart';
+import '../../state/memory_need.dart';
 import '../../state/settings_reset.dart';
 import '../../render/text_renderer.dart' show defaultFontFamily;
 import '../common/content_kind_switch.dart';
@@ -686,6 +688,20 @@ Future<bool> _confirmAutoBugReportOff(BuildContext context) async {
   return off ?? false;
 }
 
+/// "Now: Medium, needs ≈ 3.9 GB of 4.8 GB the networks may take here."
+String _levelAutoHelp(AppLocalizations l, PluginRegistry registry, AppSettings s) {
+  final budget = deviceBudgetMb();
+  final level = s.activeReadLevel;
+  final name = switch (level) {
+    ReadLevel.simple => l.readLevelSimple,
+    ReadLevel.medium => l.readLevelMedium,
+    ReadLevel.high => l.readLevelHigh,
+    ReadLevel.ultra => l.readLevelUltra,
+  };
+  final need = formatMb(levelMemoryMb(registry, s, level));
+  return budget == null ? l.levelAutoHelpUnknown(name, need) : l.levelAutoHelp(name, need, formatMb(budget));
+}
+
 Widget _switch(String title, bool value, ValueChanged<bool> onChanged, {String? help, String? info}) => SwitchListTile(
   contentPadding: EdgeInsets.zero,
   title: titleWithInfo(title, info),
@@ -1203,9 +1219,28 @@ class _OcrSection extends ConsumerWidget {
                     if (s.activeReadLevel == level || services.registry.contains(vlmReaderId))
                       level: level == ReadLevel.high ? l.readLevelHigh : l.readLevelUltra,
                 },
-                onChanged: (v) =>
-                    _change(ref, (s) => s.contentKind == ContentKind.screens ? s.screenReadLevel = v : s.readLevel = v),
+                onChanged: (v) => _change(ref, (s) {
+                  s.levelAuto = false;
+                  s.contentKind == ContentKind.screens ? s.screenReadLevel = v : s.readLevel = v;
+                }),
                 info: l.readLevelInfo,
+              ),
+            if (leveledOcrIds.contains(s.ocr))
+              _switch(
+                l.levelAuto,
+                s.levelAuto,
+                (v) async {
+                  await ref.read(settingsProvider.notifier).change((s) => s.levelAuto = v);
+                  if (v) {
+                    await applyAutoLevel(
+                      ref.read(settingsProvider),
+                      ref.read(settingsProvider.notifier).change,
+                      services.registry,
+                    );
+                  }
+                },
+                help: _levelAutoHelp(l, services.registry, s),
+                info: l.levelAutoInfo,
               ),
             withInfo(
               _PluginPicker(
